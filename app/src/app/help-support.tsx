@@ -39,7 +39,7 @@ export default function HelpSupportScreen() {
           >
             <View style={styles.menuLeft}>
               <View style={styles.menuIcon}>
-                <Ionicons name={item.icon} size={22} color="#BD632F" />
+                <Ionicons name={item.icon} size={22} color="#171717" />
               </View>
               <View>
                 <Text style={styles.menuTitle}>{item.title}</Text>
@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
   menuCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FFFFFF', borderRadius: 16, borderWidth: 1, borderColor: '#E6E1DC', padding: 16, marginBottom: 12 },
   menuCardBorder: {},
   menuLeft: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  menuIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#FFF2EB', justifyContent: 'center', alignItems: 'center' },
+  menuIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#E4EAF2', justifyContent: 'center', alignItems: 'center' },
   menuTitle: { fontSize: 15, fontWeight: '700', color: '#1A1817' },
   menuSubtitle: { fontSize: 12, fontWeight: '500', color: '#7C7672', marginTop: 2 },
 });

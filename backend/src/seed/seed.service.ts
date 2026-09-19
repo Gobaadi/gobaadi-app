@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
@@ -33,11 +33,12 @@ import {
   NotificationType,
 } from '../notifications/notification.entity';
 import { AiDiagnosis } from '../ai-diagnosis/ai-diagnosis.entity';
+import { Faq } from '../faqs/faq.entity';
 
 export const SEED_PASSWORD = 'Password123!';
 
 @Injectable()
-export class SeedService {
+export class SeedService implements OnModuleInit {
   private readonly logger = new Logger(SeedService.name);
 
   constructor(
@@ -90,7 +91,17 @@ export class SeedService {
     private readonly aiDiagnosisRepository: Repository<AiDiagnosis>,
     @InjectRepository(Admin)
     private readonly adminRepository: Repository<Admin>,
+    @InjectRepository(Faq)
+    private readonly faqRepository: Repository<Faq>,
   ) {}
+
+  async onModuleInit(): Promise<void> {
+    try {
+      await this.seedFaqs();
+    } catch (err) {
+      this.logger.error('Failed to seed FAQs', err);
+    }
+  }
 
 
 
@@ -747,5 +758,41 @@ export class SeedService {
           SEED_PASSWORD,
       );
     }
+  }
+
+  async seedFaqs(): Promise<void> {
+    const count = await this.faqRepository.count();
+    if (count > 0) {
+      this.logger.log('FAQs already seeded, skipping.');
+      return;
+    }
+
+    this.logger.log('Seeding FAQs...');
+
+    const faqs = [
+      // General
+      { question: 'What is the Smart Farming App?', answer: 'The Smart Farming App helps farmers manage daily agricultural activities such as crop planning, weather tracking, pest alerts, marketplace trading, and equipment sharing—all in one place.', category: 'general', sortOrder: 1 },
+      { question: 'How accurate is the weather forecast?', answer: 'Our weather forecasts are powered by trusted meteorological data sources and are updated in real-time. While we strive for high accuracy, local conditions may vary, so we recommend using forecasts as a guiding tool alongside your own observations.', category: 'general', sortOrder: 2 },
+      { question: 'How can I add my farm or field details?', answer: 'Go to the Profile tab, tap on your farm section, and fill in the required details such as farm name, location, size, and crop types. You can update this information anytime.', category: 'general', sortOrder: 3 },
+      { question: 'Can I share my equipment with others?', answer: 'Yes! The app has an equipment sharing feature where you can list your unused tools and machinery for other farmers to rent or borrow. Go to the Marketplace section to get started.', category: 'general', sortOrder: 4 },
+
+      // Doctor Connection
+      { question: 'How do I connect with a veterinarian?', answer: 'Navigate to the Doctors tab, browse available veterinarians, check their ratings and availability, and book a consultation directly through the app.', category: 'doctor', sortOrder: 1 },
+      { question: 'Can I have video consultations with doctors?', answer: 'Yes, the app supports video call consultations with verified veterinarians. Simply book a video appointment and join at the scheduled time from the app.', category: 'doctor', sortOrder: 2 },
+      { question: 'What if the doctor is unavailable?', answer: 'If your preferred doctor is unavailable, you can check other available veterinarians or book an appointment for a later date. You can also set up notifications to be alerted when the doctor becomes available.', category: 'doctor', sortOrder: 3 },
+      { question: 'How are consultation fees determined?', answer: 'Consultation fees are set by each veterinarian based on their specialty, experience, and consultation type. Fees are displayed before you confirm any booking.', category: 'doctor', sortOrder: 4 },
+
+      // Photo Diagnosis
+      { question: 'How does the AI photo diagnosis work?', answer: 'Simply upload a photo of your animal showing any symptoms. Our AI system analyzes the image and provides a preliminary diagnosis along with recommended actions. For confirmation, consult a veterinarian.', category: 'photo', sortOrder: 1 },
+      { question: 'Is the AI diagnosis accurate?', answer: 'Our AI model is trained on thousands of veterinary images and provides a confidence score with each diagnosis. While it is highly accurate for common conditions, it should be used as a preliminary screening tool, not a replacement for professional veterinary advice.', category: 'photo', sortOrder: 2 },
+      { question: 'What types of animals can be diagnosed?', answer: 'The AI photo diagnosis supports cattle (cows, buffalo), goats, and other common livestock animals. The system continuously improves and adds support for more species over time.', category: 'photo', sortOrder: 3 },
+      { question: 'Can I save diagnosis results for my vet?', answer: 'Yes, all diagnosis results are saved in your medical records. You can share them with your veterinarian during consultations for better treatment planning.', category: 'photo', sortOrder: 4 },
+    ];
+
+    for (const faq of faqs) {
+      await this.faqRepository.save(this.faqRepository.create(faq));
+    }
+
+    this.logger.log(`Seeded ${faqs.length} FAQs across 3 categories.`);
   }
 }

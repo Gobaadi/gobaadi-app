@@ -29,5 +29,5 @@ export class CreateFaqDto {
   @ApiPropertyOptional({ example: 1 })
   @IsOptional()
   @IsInt()
-  order?: number;
+  sortOrder?: number;
 }

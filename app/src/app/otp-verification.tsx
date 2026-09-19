@@ -7,21 +7,30 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useVerifyPaymentMethodOtpMutation } from '@/store/paymentMethodsApi';
 
 type OtpStep = 'input' | 'success';
 
 export default function OtpVerificationScreen() {
   const router = useRouter();
+  const { paymentMethodId, phone, provider } = useLocalSearchParams<{
+    paymentMethodId: string;
+    phone: string;
+    provider: string;
+  }>();
   const isDoctor = useRequireDoctor();
-  if (!isDoctor) return null;
   const [step, setStep] = useState<OtpStep>('input');
   const [otp, setOtp] = useState(['', '', '', '']);
   const [timer, setTimer] = useState(23);
   const [activeIndex, setActiveIndex] = useState(0);
+
+  const [verifyOtp, { isLoading: isVerifying }] = useVerifyPaymentMethodOtpMutation();
 
   useEffect(() => {
     if (step !== 'input') return;
@@ -30,6 +39,8 @@ export default function OtpVerificationScreen() {
     }, 1000);
     return () => clearInterval(interval);
   }, [step]);
+
+  if (!isDoctor) return null;
 
   const handleOtpChange = (text: string, index: number) => {
     if (text.length > 1) text = text.slice(-1);
@@ -47,11 +58,34 @@ export default function OtpVerificationScreen() {
     }
   };
 
-  const handleVerify = () => {
-    setStep('success');
+  const handleVerify = async () => {
+    if (!paymentMethodId) {
+      Alert.alert('Error', 'Payment method ID not found');
+      return;
+    }
+
+    try {
+      await verifyOtp({
+        id: parseInt(paymentMethodId, 10),
+        code: otp.join(''),
+      }).unwrap();
+      setStep('success');
+    } catch {
+      Alert.alert('Error', 'Invalid OTP. Please try again.');
+    }
   };
 
   if (step === 'success') {
+    const maskedPhone = phone ? phone.replace(/(\d{2})\d+(\d{2})/, '$1•••••$2') : '••••••••';
+    const providerName = provider || 'Payment Method';
+    const providerInitial = providerName.charAt(0).toLowerCase();
+    const providerColors: Record<string, string> = {
+      bKash: '#E53935',
+      Nagad: '#FF9800',
+      Upay: '#4CAF50',
+    };
+    const providerColor = providerColors[providerName] || '#BD632F';
+
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
@@ -67,22 +101,22 @@ export default function OtpVerificationScreen() {
           </View>
 
           <View style={styles.successBadge}>
-            <Text style={styles.successBadgeText}>bKash Linked Successfully</Text>
+            <Text style={styles.successBadgeText}>{providerName} Linked Successfully</Text>
           </View>
 
           <Text style={styles.successTitle}>Account Linked!</Text>
           <Text style={styles.successDesc}>
-            Your bKash account ending in 9012 has been successfully linked to Druto. You can now use it for rides and payments.
+            Your {providerName} account ending in {maskedPhone.replace(/.*•+/, '')} has been successfully linked. You can now use it for rides and payments.
           </Text>
 
           <View style={styles.linkedCard}>
             <View style={styles.linkedLeft}>
-              <View style={[styles.linkedIcon, { backgroundColor: '#E53935' }]}>
-                <Text style={styles.linkedIconText}>b</Text>
+              <View style={[styles.linkedIcon, { backgroundColor: providerColor }]}>
+                <Text style={styles.linkedIconText}>{providerInitial}</Text>
               </View>
               <View>
-                <Text style={styles.linkedType}>bKash</Text>
-                <Text style={styles.linkedDetail}>•••• •••• 9012 · Verified</Text>
+                <Text style={styles.linkedType}>{providerName}</Text>
+                <Text style={styles.linkedDetail}>{maskedPhone} · Verified</Text>
               </View>
             </View>
             <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
@@ -163,12 +197,16 @@ export default function OtpVerificationScreen() {
 
         {/* Verify */}
         <TouchableOpacity
-          style={[styles.verifyBtn, otp.some((d) => !d) && styles.verifyBtnDisabled]}
+          style={[styles.verifyBtn, (otp.some((d) => !d) || isVerifying) && styles.verifyBtnDisabled]}
           activeOpacity={0.85}
           onPress={handleVerify}
-          disabled={otp.some((d) => !d)}
+          disabled={otp.some((d) => !d) || isVerifying}
         >
-          <Text style={styles.verifyBtnText}>Verify</Text>
+          {isVerifying ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <Text style={styles.verifyBtnText}>Verify</Text>
+          )}
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

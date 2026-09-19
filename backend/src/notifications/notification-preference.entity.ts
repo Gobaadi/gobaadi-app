@@ -20,7 +20,7 @@ export class NotificationPreference {
   appointmentReminders: boolean;
 
   @Column({ default: true })
-  promotions: boolean;
+  promotionalOffers: boolean;
 
   @Column({ default: true })
   chatMessages: boolean;
@@ -33,6 +33,15 @@ export class NotificationPreference {
 
   @Column({ default: true })
   vaccinationReminders: boolean;
+
+  @Column({ default: true })
+  systemUpdates: boolean;
+
+  @Column({ default: true })
+  weatherAlerts: boolean;
+
+  @Column({ default: true })
+  taskReminders: boolean;
 
   @CreateDateColumn()
   createdAt: Date;

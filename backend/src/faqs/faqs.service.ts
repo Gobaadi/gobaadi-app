@@ -15,7 +15,7 @@ export class FaqsService {
     const where = category ? { category } : {};
     return this.faqRepository.find({
       where,
-      order: { order: 'ASC', createdAt: 'ASC' },
+      order: { sortOrder: 'ASC', createdAt: 'ASC' },
     });
   }
 

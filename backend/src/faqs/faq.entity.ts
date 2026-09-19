@@ -20,7 +20,7 @@ export class Faq {
   category?: string;
 
   @Column({ default: 0 })
-  order: number;
+  sortOrder: number;
 
   @CreateDateColumn()
   createdAt: Date;
