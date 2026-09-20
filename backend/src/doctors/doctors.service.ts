@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -261,5 +262,69 @@ export class DoctorsService {
     }
 
     return recurring;
+  }
+
+  async updateQualifications(
+    doctorUserId: number,
+    qualifications: string[],
+  ): Promise<Doctor> {
+    const doctor = await this.doctorRepository.findOneBy({
+      userId: doctorUserId,
+    });
+    if (!doctor) {
+      throw new ForbiddenException('No doctor profile linked to this account');
+    }
+    doctor.qualifications = qualifications;
+    return this.doctorRepository.save(doctor);
+  }
+
+  async updateSpecializations(
+    doctorUserId: number,
+    specializations: string[],
+  ): Promise<Doctor> {
+    const doctor = await this.doctorRepository.findOneBy({
+      userId: doctorUserId,
+    });
+    if (!doctor) {
+      throw new ForbiddenException('No doctor profile linked to this account');
+    }
+    doctor.specializations = specializations;
+    return this.doctorRepository.save(doctor);
+  }
+
+  async updateExperiences(
+    doctorUserId: number,
+    experiences: Array<{
+      title: string;
+      organization: string;
+      duration: string;
+      description?: string;
+    }>,
+  ): Promise<Doctor> {
+    const doctor = await this.doctorRepository.findOneBy({
+      userId: doctorUserId,
+    });
+    if (!doctor) {
+      throw new ForbiddenException('No doctor profile linked to this account');
+    }
+    doctor.experiences = experiences;
+    return this.doctorRepository.save(doctor);
+  }
+
+  async getDashboardStats(doctorUserId: number) {
+    const doctor = await this.doctorRepository.findOneBy({
+      userId: doctorUserId,
+    });
+    if (!doctor) {
+      throw new ForbiddenException('No doctor profile linked to this account');
+    }
+
+    return {
+      yearsOfExperience: doctor.experience,
+      specializations: doctor.specializations,
+      qualifications: doctor.qualifications,
+      consultationFee: doctor.consultationFee,
+      rating: doctor.rating,
+    };
   }
 }

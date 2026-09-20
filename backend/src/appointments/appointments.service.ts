@@ -35,8 +35,9 @@ import {
   MedicalEventStatus,
 } from '../medical-events/medical-event.entity';
 import { VideoCallService } from '../video-call/video-call.service';
+import { User } from '../users/user.entity';
 
-const RESCHEDULE_CANCEL_BUFFER_MS = 2 * 60 * 60 * 1000; // 2 hours
+const RESCHEDULE_CANCEL_BUFFER_MS = 1 * 60 * 60 * 1000; // 1 hour
 
 export interface AppointmentWithPatient extends Appointment {
   patientName?: string;
@@ -479,6 +480,220 @@ export class AppointmentsService {
     return saved;
   }
 
+  async getAppointmentById(
+    appointmentId: number,
+    requesterId: number,
+    requesterRole: UserRole,
+  ): Promise<AppointmentWithPatient> {
+    const appointment = await this.getOwnedAppointment(
+      appointmentId,
+      requesterId,
+      requesterRole,
+    );
+    const enriched = await this.enrichWithPatientAndAnimal(
+      [appointment],
+      requesterRole,
+    );
+    return enriched[0];
+  }
+
+  async startConsultation(
+    appointmentId: number,
+    doctorUserId: number,
+    consultationNotes?: string,
+  ): Promise<Appointment> {
+    const doctor = await this.doctorsService.getDoctorByUserId(doctorUserId);
+    if (!doctor) {
+      throw new ForbiddenException('No doctor profile linked to this account');
+    }
+    const appointment = await this.appointmentRepository.findOneBy({
+      id: appointmentId,
+    });
+    if (!appointment || appointment.doctorId !== doctor.id) {
+      throw new NotFoundException('Appointment not found');
+    }
+    if (
+      appointment.status !== AppointmentStatus.CONFIRMED &&
+      appointment.status !== AppointmentStatus.RESCHEDULED
+    ) {
+      throw new BadRequestException(
+        'Appointment must be confirmed or rescheduled to start consultation',
+      );
+    }
+
+    appointment.consultationNotes = consultationNotes;
+    return this.appointmentRepository.save(appointment);
+  }
+
+  async getDoctorStats(doctorUserId: number) {
+    const doctor = await this.doctorsService.getDoctorByUserId(doctorUserId);
+    if (!doctor) {
+      throw new ForbiddenException('No doctor profile linked to this account');
+    }
+
+    const now = new Date();
+    const todayStart = new Date(now);
+    todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date(todayStart);
+    todayEnd.setDate(todayEnd.getDate() + 1);
+
+    const totalToday = await this.appointmentRepository
+      .createQueryBuilder('a')
+      .where('a.doctorId = :doctorId', { doctorId: doctor.id })
+      .andWhere('a.startAt >= :todayStart AND a.startAt < :todayEnd', {
+        todayStart,
+        todayEnd,
+      })
+      .andWhere("a.status != 'CANCELLED'")
+      .getCount();
+
+    const completedToday = await this.appointmentRepository
+      .createQueryBuilder('a')
+      .where('a.doctorId = :doctorId', { doctorId: doctor.id })
+      .andWhere('a.startAt >= :todayStart AND a.startAt < :todayEnd', {
+        todayStart,
+        todayEnd,
+      })
+      .andWhere("a.status = 'COMPLETED'")
+      .getCount();
+
+    return { totalToday, completedToday };
+  }
+
+  async getRecentCompleted(
+    doctorUserId: number,
+    days: number = 2,
+  ): Promise<AppointmentWithPatient[]> {
+    const doctor = await this.doctorsService.getDoctorByUserId(doctorUserId);
+    if (!doctor) {
+      throw new ForbiddenException('No doctor profile linked to this account');
+    }
+
+    const since = new Date();
+    since.setDate(since.getDate() - days);
+
+    const appointments = await this.appointmentRepository
+      .createQueryBuilder('a')
+      .where('a.doctorId = :doctorId', { doctorId: doctor.id })
+      .andWhere("a.status = 'COMPLETED'")
+      .andWhere('a.startAt >= :since', { since })
+      .orderBy('a.startAt', 'DESC')
+      .getMany();
+
+    return this.enrichWithPatientAndAnimal(appointments, UserRole.DOCTOR);
+  }
+
+  async searchDoctorAppointments(
+    doctorUserId: number,
+    opts: {
+      search?: string;
+      date?: string;
+      consultationType?: ConsultationType;
+      page?: number;
+      limit?: number;
+    },
+  ): Promise<AppointmentWithPatient[] | PaginatedResult<AppointmentWithPatient>> {
+    const doctor = await this.doctorsService.getDoctorByUserId(doctorUserId);
+    if (!doctor) {
+      throw new ForbiddenException('No doctor profile linked to this account');
+    }
+
+    const qb = this.appointmentRepository
+      .createQueryBuilder('a')
+      .where('a.doctorId = :doctorId', { doctorId: doctor.id });
+
+    if (opts.date) {
+      const dayStart = new Date(`${opts.date}T00:00:00`);
+      const dayEnd = new Date(`${opts.date}T23:59:59`);
+      qb.andWhere('a.startAt >= :dayStart AND a.startAt <= :dayEnd', {
+        dayStart,
+        dayEnd,
+      });
+    }
+
+    if (opts.consultationType) {
+      qb.andWhere('a.consultationType = :consultationType', {
+        consultationType: opts.consultationType,
+      });
+    }
+
+    if (opts.search) {
+      const matchingAnimals = await this.animalRepository
+        .createQueryBuilder('an')
+        .select('an.id')
+        .where('an.name ILIKE :search', { search: `%${opts.search}%` })
+        .getMany();
+      const animalIds = matchingAnimals.map((a) => a.id);
+
+      const userRepo = this.dataSource.getRepository(User);
+      const matchingUsers = await userRepo
+        .createQueryBuilder('u')
+        .select('u.id')
+        .where('u.name ILIKE :search', { search: `%${opts.search}%` })
+        .getMany();
+      const userIds = matchingUsers.map((u) => u.id);
+
+      if (animalIds.length === 0 && userIds.length === 0) {
+        return this.emptyResult(opts.page, opts.limit);
+      }
+
+      const conditions: string[] = [];
+      const params: Record<string, unknown> = {};
+      if (animalIds.length > 0) {
+        conditions.push('a.animalId IN (:...animalIds)');
+        params.animalIds = animalIds;
+      }
+      if (userIds.length > 0) {
+        conditions.push('a.patientId IN (:...userIds)');
+        params.userIds = userIds;
+      }
+      if (conditions.length > 0) {
+        qb.andWhere(`(${conditions.join(' OR ')})`, params);
+      }
+    }
+
+    qb.orderBy('a.startAt', 'DESC');
+
+    const currentPage = opts.page && opts.page > 0 ? opts.page : 1;
+    const pageSize = opts.limit && opts.limit > 0 ? opts.limit : 20;
+
+    let appointments: Appointment[];
+    let total: number | undefined;
+    if (opts.page || opts.limit) {
+      qb.skip((currentPage - 1) * pageSize).take(pageSize);
+      [appointments, total] = await qb.getManyAndCount();
+    } else {
+      appointments = await qb.getMany();
+    }
+
+    const enriched = await this.enrichWithPatientAndAnimal(
+      appointments,
+      UserRole.DOCTOR,
+    );
+
+    if (opts.page || opts.limit) {
+      return {
+        data: enriched,
+        page: currentPage,
+        limit: pageSize,
+        total: total ?? 0,
+      };
+    }
+    return enriched;
+  }
+
+  private emptyResult(
+    page?: number,
+    limit?: number,
+  ): PaginatedResult<AppointmentWithPatient> {
+    return {
+      data: [],
+      page: page ?? 1,
+      limit: limit ?? 20,
+      total: 0,
+    };
+  }
+
   /**
    * Returns Agora token + channel info for joining a video call.
    */
@@ -652,7 +867,7 @@ export class AppointmentsService {
       RESCHEDULE_CANCEL_BUFFER_MS
     ) {
       throw new BadRequestException(
-        'Appointments can only be rescheduled or cancelled at least 2 hours in advance',
+        'Appointments can only be rescheduled or cancelled at least 1 hour in advance',
       );
     }
   }
