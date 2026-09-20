@@ -1,6 +1,5 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { API_URL } from '@/constants/api';
-import type { RootState } from './store';
+import { createApi } from '@reduxjs/toolkit/query/react';
+import { baseQueryWithReauth } from './base-query-with-reauth';
 
 export interface DoctorProfile {
   id: number;
@@ -55,16 +54,7 @@ export interface Availability extends AvailabilityEntry {
 
 export const doctorPortalApi = createApi({
   reducerPath: 'doctorPortalApi',
-  baseQuery: fetchBaseQuery({
-    baseUrl: API_URL,
-    prepareHeaders: (headers, { getState }) => {
-      const token = (getState() as RootState).auth.token;
-      if (token) {
-        headers.set('Authorization', `Bearer ${token}`);
-      }
-      return headers;
-    },
-  }),
+  baseQuery: baseQueryWithReauth,
   tagTypes: ['DoctorBookings', 'Availability'],
   endpoints: (builder) => ({
     getMyDoctorProfile: builder.query<DoctorProfile, void>({

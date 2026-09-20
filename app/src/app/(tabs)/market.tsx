@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   StyleSheet,
   View,
@@ -6,12 +6,15 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
+  Modal,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useGetProductsQuery } from '@/store/productsApi';
 import { useGetLivestockQuery, useGetMyListingsQuery } from '@/store/livestockApi';
+import { useDebounce } from '@/hooks/use-debounce';
 import { EmptyState } from '@/components/ui/empty-state';
 import { MediaCardSkeleton } from '@/components/ui/skeleton';
 
@@ -40,6 +43,10 @@ export default function MarketScreen() {
   const [activeCategory, setActiveCategory] = useState('Animals');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
+  const [selectedSpecies, setSelectedSpecies] = useState<string[]>([]);
+  const [priceRange, setPriceRange] = useState<{ min: string; max: string }>({ min: '', max: '' });
+  const debouncedSearch = useDebounce(searchQuery, 300);
 
   const categories: Category[] = [
     { id: '1', name: 'Animals', icon: '🐂' },
@@ -86,8 +93,8 @@ export default function MarketScreen() {
     const items = tradeType === 'Sell'
       ? myListings.map((item: any) => ({
           id: item.id,
-          title: `${item.breed || ''} ${item.species || ''}`,
-          price: item.price.toLocaleString(),
+          title: `${item.breed || ''} ${item.species || ''}`.trim(),
+          price: item.price?.toLocaleString() || '0',
           timeAgo: 'Active',
           species: item.species || 'Cattle',
           age: item.age || 'N/A',
@@ -101,10 +108,68 @@ export default function MarketScreen() {
       : marketItems;
 
     return items.filter((item) => {
-      if (searchQuery && !item.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+      // Search filter — matches title, species, breed, location
+      if (debouncedSearch) {
+        const q = debouncedSearch.toLowerCase();
+        const searchable = `${item.title} ${item.species} ${item.location}`.toLowerCase();
+        if (!searchable.includes(q)) return false;
+      }
+
+      // Category chip filter (Calf, Bull, etc.)
+      if (activeFilter !== 'All') {
+        const filterLower = activeFilter.toLowerCase();
+        const itemText = `${item.title} ${item.species} ${item.age}`.toLowerCase();
+        if (!itemText.includes(filterLower)) return false;
+      }
+
+      // Modal species filter
+      if (selectedSpecies.length > 0) {
+        if (!selectedSpecies.includes(item.species)) return false;
+      }
+
+      // Modal price range filter
+      const price = parseInt(item.price.replace(/[^0-9]/g, ''), 10);
+      if (priceRange.min && price < parseInt(priceRange.min, 10)) return false;
+      if (priceRange.max && price > parseInt(priceRange.max, 10)) return false;
+
       return true;
     });
-  }, [tradeType, myListings, marketItems, searchQuery]);
+  }, [tradeType, myListings, marketItems, debouncedSearch, activeFilter, selectedSpecies, priceRange]);
+
+  // Derive dynamic filter chip counts from current items
+  const filterChips = useMemo(() => {
+    const allCount = marketItems.length;
+    const calfCount = marketItems.filter((i) => /calf|baby|young/i.test(`${i.title} ${i.species} ${i.age}`)).length;
+    const bullCount = marketItems.filter((i) => /bull|ox|steer/i.test(`${i.title} ${i.species}`)).length;
+
+    return [
+      { label: `All (${allCount})`, value: 'All' },
+      { label: `Calf (${calfCount})`, value: 'Calf' },
+      { label: `Bull (${bullCount})`, value: 'Bull' },
+    ];
+  }, [marketItems]);
+
+  const hasActiveFilters = activeFilter !== 'All' || selectedSpecies.length > 0 || priceRange.min || priceRange.max;
+
+  const clearFilters = useCallback(() => {
+    setActiveFilter('All');
+    setSelectedSpecies([]);
+    setPriceRange({ min: '', max: '' });
+    setSearchQuery('');
+  }, []);
+
+  const toggleSpecies = useCallback((species: string) => {
+    setSelectedSpecies((prev) =>
+      prev.includes(species) ? prev.filter((s) => s !== species) : [...prev, species]
+    );
+  }, []);
+
+  // Derive available species from current catalog
+  const availableSpecies = useMemo(() => {
+    const speciesSet = new Set<string>();
+    marketItems.forEach((item) => speciesSet.add(item.species));
+    return Array.from(speciesSet).sort();
+  }, [marketItems]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -173,7 +238,24 @@ export default function MarketScreen() {
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')} activeOpacity={0.7}>
+              <Ionicons name="close-circle" size={20} color="#9C9690" />
+            </TouchableOpacity>
+          )}
         </View>
+
+        {/* Active filters indicator */}
+        {hasActiveFilters && (
+          <View style={styles.activeFiltersBanner}>
+            <Text style={styles.activeFiltersText}>
+              Filters active{filteredItems.length > 0 ? ` — ${filteredItems.length} results` : ''}
+            </Text>
+            <TouchableOpacity onPress={clearFilters} activeOpacity={0.7}>
+              <Text style={styles.clearFiltersText}>Clear all</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Categories Horizontal Selector Row */}
         <ScrollView
@@ -255,21 +337,25 @@ export default function MarketScreen() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.filtersRow}
             >
-              <TouchableOpacity style={styles.filterBtn} activeOpacity={0.8}>
+              <TouchableOpacity
+                style={styles.filterBtn}
+                activeOpacity={0.8}
+                onPress={() => setFilterModalVisible(true)}
+              >
                 <Text style={styles.filterBtnIcon}>⚙️</Text>
                 <Text style={styles.filterBtnText}>Filter</Text>
               </TouchableOpacity>
-              {['All (12)', 'Calf(3)', 'Bull (2)'].map((filterVal) => {
-                const isSelected = activeFilter === filterVal || (filterVal.startsWith('All') && activeFilter === 'All');
+              {filterChips.map((chip) => {
+                const isSelected = activeFilter === chip.value;
                 return (
                   <TouchableOpacity
-                    key={filterVal}
+                    key={chip.value}
                     style={[styles.filterChip, isSelected && styles.filterChipActive]}
-                    onPress={() => setActiveFilter(filterVal.startsWith('All') ? 'All' : filterVal)}
+                    onPress={() => setActiveFilter(chip.value)}
                     activeOpacity={0.7}
                   >
                     <Text style={[styles.filterChipText, isSelected && styles.filterChipTextActive]}>
-                      {filterVal}
+                      {chip.label}
                     </Text>
                   </TouchableOpacity>
                 );
@@ -372,6 +458,83 @@ export default function MarketScreen() {
           </>
         )}
       </ScrollView>
+
+      {/* Filter Modal */}
+      <Modal
+        visible={filterModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setFilterModalVisible(false)}
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={() => setFilterModalVisible(false)} activeOpacity={0.7}>
+              <Ionicons name="close" size={24} color="#1A1817" />
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Filters</Text>
+            <TouchableOpacity onPress={clearFilters} activeOpacity={0.7}>
+              <Text style={styles.modalClearBtn}>Reset</Text>
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView style={styles.modalBody} contentContainerStyle={styles.modalBodyContent}>
+            {/* Species filter */}
+            <Text style={styles.modalSectionTitle}>Species</Text>
+            <View style={styles.modalChipRow}>
+              {availableSpecies.map((species) => {
+                const isActive = selectedSpecies.includes(species);
+                return (
+                  <TouchableOpacity
+                    key={species}
+                    style={[styles.modalChip, isActive && styles.modalChipActive]}
+                    onPress={() => toggleSpecies(species)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.modalChipText, isActive && styles.modalChipTextActive]}>
+                      {species}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {/* Price Range */}
+            <Text style={[styles.modalSectionTitle, { marginTop: 24 }]}>Price Range (৳)</Text>
+            <View style={styles.priceRow}>
+              <TextInput
+                style={styles.priceInput}
+                placeholder="Min"
+                placeholderTextColor="#A39E99"
+                keyboardType="numeric"
+                value={priceRange.min}
+                onChangeText={(v) => setPriceRange((p) => ({ ...p, min: v }))}
+              />
+              <Text style={styles.priceDash}>—</Text>
+              <TextInput
+                style={styles.priceInput}
+                placeholder="Max"
+                placeholderTextColor="#A39E99"
+                keyboardType="numeric"
+                value={priceRange.max}
+                onChangeText={(v) => setPriceRange((p) => ({ ...p, max: v }))}
+              />
+            </View>
+          </ScrollView>
+
+          {/* Apply button */}
+          <View style={styles.modalFooter}>
+            <TouchableOpacity
+              style={styles.modalApplyBtn}
+              onPress={() => setFilterModalVisible(false)}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.modalApplyBtnText}>
+                Show {filteredItems.length} result{filteredItems.length !== 1 ? 's' : ''}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -751,6 +914,128 @@ const styles = StyleSheet.create({
   buyBtnText: {
     color: '#FFFFFF',
     fontSize: 14,
+    fontWeight: '700',
+  },
+  activeFiltersBanner: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#FFF8F4',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    marginBottom: 12,
+  },
+  activeFiltersText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#BD632F',
+  },
+  clearFiltersText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#BD632F',
+    textDecorationLine: 'underline',
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: '#FAF9F6',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E6E1DC',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1A1817',
+  },
+  modalClearBtn: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#BD632F',
+  },
+  modalBody: {
+    flex: 1,
+  },
+  modalBodyContent: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 40,
+  },
+  modalSectionTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1A1817',
+    marginBottom: 12,
+  },
+  modalChipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  modalChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E6E1DC',
+  },
+  modalChipActive: {
+    backgroundColor: '#BD632F',
+    borderColor: '#BD632F',
+  },
+  modalChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#7C7672',
+  },
+  modalChipTextActive: {
+    color: '#FFFFFF',
+  },
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  priceInput: {
+    flex: 1,
+    height: 48,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E6E1DC',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    fontSize: 14,
+    color: '#1A1817',
+  },
+  priceDash: {
+    fontSize: 16,
+    color: '#9C9690',
+  },
+  modalFooter: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    paddingBottom: 30,
+    borderTopWidth: 1,
+    borderTopColor: '#E6E1DC',
+  },
+  modalApplyBtn: {
+    backgroundColor: '#BD632F',
+    height: 52,
+    borderRadius: 26,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalApplyBtnText: {
+    color: '#FFFFFF',
+    fontSize: 16,
     fontWeight: '700',
   },
 });
