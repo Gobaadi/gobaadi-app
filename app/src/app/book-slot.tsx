@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Image,
   TextInput,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -30,13 +31,24 @@ export default function BookSlotScreen() {
 
   const selectedDateStr = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(selectedDay)}`;
 
-  const { data: availableSlots = [] } = useGetSlotsQuery(
+  const { data: availableSlots = [], refetch: refetchSlots } = useGetSlotsQuery(
     { doctorId, date: selectedDateStr },
     { skip: !doctorId },
   );
 
+  // Refetch slots when page opens
   React.useEffect(() => {
-    setSelectedTimeSlot(availableSlots[0] || '');
+    if (doctorId) {
+      refetchSlots();
+    }
+  }, [doctorId, refetchSlots]);
+
+  React.useEffect(() => {
+    if (availableSlots.length > 0 && !availableSlots.includes(selectedTimeSlot)) {
+      setSelectedTimeSlot(availableSlots[0]);
+    } else if (availableSlots.length === 0) {
+      setSelectedTimeSlot('');
+    }
   }, [availableSlots]);
 
   const { data: doctorData } = useGetDoctorByIdQuery(doctorId, { skip: !doctorId });
@@ -46,7 +58,7 @@ export default function BookSlotScreen() {
   const doctor = useMemo(() => {
     if (!doctorData) {
       return {
-        id: '1',
+        id: doctorId || '1',
         name: 'Dr. David Patel',
         specialty: 'Veterinary Surgery',
         location: 'Cardiology Center, USA',
@@ -66,10 +78,17 @@ export default function BookSlotScreen() {
         ? require('@/assets/images/jessica_doctor.png')
         : require('@/assets/images/michael_doctor.png'),
     };
-  }, [doctorData]);
+  }, [doctorData, doctorId]);
 
   const handleConfirmSlot = async () => {
     if (!selectedTimeSlot) return;
+
+    // Require booking reason
+    if (!bookingReason.trim()) {
+      Alert.alert('Required', 'Please enter a booking reason before proceeding.');
+      return;
+    }
+
     try {
       if (isReschedule) {
         await rescheduleBooking({

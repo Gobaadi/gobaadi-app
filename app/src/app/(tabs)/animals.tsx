@@ -86,21 +86,21 @@ export default function AnimalsListScreen() {
           style={[styles.filterTab, activeFilter === 'All' && styles.filterTabActive]}
           onPress={() => setActiveFilter('All')}
         >
-          <Text style={[styles.filterTabText, activeFilter === 'All' && styles.filterTabTextActive]}>All (12)</Text>
+          <Text style={[styles.filterTabText, activeFilter === 'All' && styles.filterTabTextActive]}>All ({animals.length})</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={[styles.filterTab, activeFilter === 'Calf' && styles.filterTabActive]}
           onPress={() => setActiveFilter('Calf')}
         >
-          <Text style={[styles.filterTabText, activeFilter === 'Calf' && styles.filterTabTextActive]}>Calf (3)</Text>
+          <Text style={[styles.filterTabText, activeFilter === 'Calf' && styles.filterTabTextActive]}>Calf ({animals.filter(a => (a.age || '').toLowerCase().includes('calf') || (a.name || '').toLowerCase().includes('calf')).length})</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={[styles.filterTab, activeFilter === 'Bull' && styles.filterTabActive]}
           onPress={() => setActiveFilter('Bull')}
         >
-          <Text style={[styles.filterTabText, activeFilter === 'Bull' && styles.filterTabTextActive]}>Bull (2)</Text>
+          <Text style={[styles.filterTabText, activeFilter === 'Bull' && styles.filterTabTextActive]}>Bull ({animals.filter(a => (a.gender || '').toLowerCase() === 'male').length})</Text>
         </TouchableOpacity>
       </ScrollView>
 
@@ -119,8 +119,14 @@ export default function AnimalsListScreen() {
             actionLabel="Add Animal"
             onAction={() => router.push('/add-animal')}
           />
-        ) : (
-          animals.map((item) => (
+        ) : (() => {
+          const displayAnimals = animals.filter((a) => {
+            if (activeFilter === 'All') return true;
+            if (activeFilter === 'Calf') return (a.age || '').toLowerCase().includes('calf') || (a.name || '').toLowerCase().includes('calf');
+            if (activeFilter === 'Bull') return (a.gender || '').toLowerCase() === 'male';
+            return true;
+          });
+          return displayAnimals.map((item) => (
             <TouchableOpacity
               key={item.id}
               style={styles.card}
@@ -173,7 +179,8 @@ export default function AnimalsListScreen() {
                 </View>
               </View>
             </TouchableOpacity>
-          )))}
+          ));
+          })()}
       </ScrollView>
 
       {/* Floating Add Animal Button */}

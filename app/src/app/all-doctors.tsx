@@ -6,6 +6,7 @@ import {
   TextInput,
   ScrollView,
   TouchableOpacity,
+  Modal,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -29,6 +30,8 @@ export default function AllDoctorsScreen() {
   const router = useRouter();
   const [activeFilter, setActiveFilter] = useState('All');
   const [searchText, setSearchText] = useState('');
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
+  const [selectedSpecialties, setSelectedSpecialties] = useState<string[]>([]);
   const { data: doctorList = [], isLoading } = useGetDoctorsQuery();
 
   const doctors: DoctorView[] = useMemo(() => {
@@ -135,7 +138,9 @@ export default function AllDoctorsScreen() {
                   opt.value === 'filter' && styles.filterSettingsChip
                 ]}
                 onPress={() => {
-                  if (opt.value !== 'filter') {
+                  if (opt.value === 'filter') {
+                    setFilterModalVisible(true);
+                  } else {
                     setActiveFilter(opt.value);
                   }
                 }}
@@ -212,6 +217,71 @@ export default function AllDoctorsScreen() {
           </View>
         )))}
       </ScrollView>
+
+      {/* Filter Modal */}
+      <Modal
+        visible={filterModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setFilterModalVisible(false)}
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={() => setFilterModalVisible(false)} activeOpacity={0.7}>
+              <Ionicons name="close" size={24} color="#1A1817" />
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Filter Doctors</Text>
+            <TouchableOpacity
+              onPress={() => {
+                setSelectedSpecialties([]);
+                setActiveFilter('All');
+                setFilterModalVisible(false);
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.modalClearBtn}>Reset</Text>
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView style={styles.modalBody} contentContainerStyle={styles.modalBodyContent}>
+            <Text style={styles.modalSectionTitle}>Specialty</Text>
+            <View style={styles.modalChipRow}>
+              {['All', 'Medicine', 'Gynaecology', 'Surgery', 'Dermatology'].map((spec) => {
+                const isActive = activeFilter === spec || selectedSpecialties.includes(spec);
+                return (
+                  <TouchableOpacity
+                    key={spec}
+                    style={[styles.modalChip, isActive && styles.modalChipActive]}
+                    onPress={() => {
+                      if (spec === 'All') {
+                        setActiveFilter('All');
+                        setSelectedSpecialties([]);
+                      } else {
+                        setActiveFilter(spec);
+                      }
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.modalChipText, isActive && styles.modalChipTextActive]}>
+                      {spec}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </ScrollView>
+
+          <View style={styles.modalFooter}>
+            <TouchableOpacity
+              style={styles.modalApplyBtn}
+              onPress={() => setFilterModalVisible(false)}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.modalApplyBtnText}>Apply Filter</Text>
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -431,5 +501,86 @@ const styles = StyleSheet.create({
   },
   buttonIcon: {
     marginRight: 4,
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: '#FAF9F6',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E6E1DC',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1A1817',
+  },
+  modalClearBtn: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#BD632F',
+  },
+  modalBody: {
+    flex: 1,
+  },
+  modalBodyContent: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 40,
+  },
+  modalSectionTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1A1817',
+    marginBottom: 12,
+  },
+  modalChipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  modalChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E6E1DC',
+  },
+  modalChipActive: {
+    backgroundColor: '#BD632F',
+    borderColor: '#BD632F',
+  },
+  modalChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#7C7672',
+  },
+  modalChipTextActive: {
+    color: '#FFFFFF',
+  },
+  modalFooter: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    paddingBottom: 30,
+    borderTopWidth: 1,
+    borderTopColor: '#E6E1DC',
+  },
+  modalApplyBtn: {
+    backgroundColor: '#BD632F',
+    height: 52,
+    borderRadius: 26,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalApplyBtnText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
   },
 });

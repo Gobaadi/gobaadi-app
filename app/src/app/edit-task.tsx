@@ -51,12 +51,15 @@ export default function EditTaskScreen() {
     if (repeat !== 'none') detailParts.push(`Repeat: ${repeat.charAt(0).toUpperCase() + repeat.slice(1)}`);
     if (instruction.trim()) detailParts.push(`Instruction: ${instruction.trim()}`);
 
+    // Use existing scheduledTime or current time
+    const scheduledTime = params.scheduledTime || new Date().toISOString();
+
     try {
       await updateTask({
         id: Number(params.id),
         title,
         detail: detailParts.join(' | '),
-        scheduledTime: params.scheduledTime || new Date().toISOString(),
+        scheduledTime,
       }).unwrap();
 
       router.back();

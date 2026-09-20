@@ -28,6 +28,7 @@ interface Treatment {
   date: string;
   bookedOn: string;
   status: AppointmentStatus;
+  consultationType: string;
 }
 
 function formatDate(iso: string): string {
@@ -80,6 +81,7 @@ export default function MyTreatmentScreen() {
           date: formatDate(a.startAt),
           bookedOn: formatDate(a.createdAt),
           status: a.status,
+          consultationType: a.consultationType || 'online_video',
         };
       }),
     [appointments, doctorsById],
@@ -88,6 +90,15 @@ export default function MyTreatmentScreen() {
   const filteredTreatments = treatments.filter((item) => {
     if (searchQuery && !item.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     if (activeFilter === 'Upcoming' && !isUpcoming(item.status)) return false;
+
+    // Filter by visit type tab
+    if (activeVisitTab === 'online') {
+      const isOnline = item.consultationType?.startsWith('online_') || item.consultationType === 'online';
+      if (!isOnline) return false;
+    } else if (activeVisitTab === 'physical') {
+      if (item.consultationType !== 'physical') return false;
+    }
+
     return true;
   });
 

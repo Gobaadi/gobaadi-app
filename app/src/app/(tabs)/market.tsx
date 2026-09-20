@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Modal,
+  Alert,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -178,11 +179,11 @@ export default function MarketScreen() {
         <View>
           <Text style={styles.headerTitle}>Marketplace</Text>
           {/* Location row */}
-          <View style={styles.locationRow}>
+          <TouchableOpacity style={styles.locationRow} activeOpacity={0.7} onPress={() => Alert.alert('Location', 'Location selection coming soon.')}>
             <Text style={styles.locationPin}>📍</Text>
             <Text style={styles.locationText}>Uttar Badda, Dhaka</Text>
             <Text style={styles.dropdownArrow}>▼</Text>
-          </View>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.headerActions}>

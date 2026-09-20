@@ -317,7 +317,7 @@ export default function ChatScreen() {
           >
             <Ionicons name="videocam" size={18} color="#FFFFFF" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.headerActionBtn} activeOpacity={0.7}>
+          <TouchableOpacity style={styles.headerActionBtn} activeOpacity={0.7} onPress={() => Alert.alert('Options', 'More options coming soon.')}>
             <Ionicons name="ellipsis-vertical" size={18} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
@@ -473,13 +473,13 @@ export default function ChatScreen() {
               value={inputText}
               onChangeText={setInputText}
             />
-            <TouchableOpacity style={styles.plusBtn} activeOpacity={0.8}>
+            <TouchableOpacity style={styles.plusBtn} activeOpacity={0.8} onPress={() => Alert.alert('Attachments', 'File attachment feature coming soon.')}>
               <Ionicons name="add" size={22} color="#BD632F" />
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.micBtn, sending && { opacity: 0.5 }]}
               activeOpacity={0.8}
-              onPress={handleSendMessage}
+              onPress={inputText.trim() ? handleSendMessage : () => Alert.alert('Audio Recording', 'Audio recording feature coming soon.')}
               disabled={sending}
             >
               {sending ? (

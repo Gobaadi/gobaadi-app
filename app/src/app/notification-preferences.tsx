@@ -21,7 +21,7 @@ import type { NotificationPreference } from '@/store/notificationPreferencesApi'
 type FilterTab = 'all' | 'appointments' | 'patients' | 'messages';
 
 interface PreferenceItem {
-  key: keyof Pick<NotificationPreference, 'appointmentReminders' | 'chatMessages' | 'followUpReminders' | 'hygieneReminders' | 'systemUpdates'>;
+  key: keyof Pick<NotificationPreference, 'appointmentReminders' | 'chatMessages' | 'followUpReminders' | 'hygieneReminders' | 'systemUpdates' | 'weatherAlerts' | 'taskReminders' | 'promotionalOffers'>;
   title: string;
   description: string;
   icon: string;
@@ -34,8 +34,11 @@ const PREFERENCES: PreferenceItem[] = [
   { key: 'appointmentReminders', title: 'Appointments Reminders', description: 'Get notified about upcoming appointments', icon: 'calendar', iconBg: '#FFF2EB', iconColor: '#BD632F', tab: 'appointments' },
   { key: 'chatMessages', title: 'Patient Messages', description: 'Get notified when patients send messages', icon: 'chatbubble-ellipses', iconBg: '#FFF2EB', iconColor: '#BD632F', tab: 'patients' },
   { key: 'followUpReminders', title: 'Follow-up Reminders', description: 'Reminders for scheduled follow-ups', icon: 'notifications', iconBg: '#E8F5E9', iconColor: '#4CAF50', tab: 'appointments' },
-  { key: 'hygieneReminders', title: 'Hygiene Reminder', description: 'Get notified about consultation payments', icon: 'medical', iconBg: '#E8F5E9', iconColor: '#4CAF50', tab: 'patients' },
+  { key: 'hygieneReminders', title: 'Hygiene Reminder', description: 'Get notified about animal hygiene updates', icon: 'medical', iconBg: '#E8F5E9', iconColor: '#4CAF50', tab: 'patients' },
   { key: 'systemUpdates', title: 'System Updates', description: 'Important updates from the platform', icon: 'volume-high', iconBg: '#F3E5F5', iconColor: '#9C27B0', tab: 'messages' },
+  { key: 'weatherAlerts', title: 'Weather Alerts', description: 'Get notified about weather changes affecting livestock', icon: 'partly-sunny', iconBg: '#E3F2FD', iconColor: '#2196F3', tab: 'all' },
+  { key: 'taskReminders', title: 'Task Reminders', description: 'Reminders for your scheduled tasks', icon: 'checkbox', iconBg: '#FFF9C4', iconColor: '#F9A825', tab: 'all' },
+  { key: 'promotionalOffers', title: 'Promotions', description: 'Get notified about offers and discounts', icon: 'pricetag', iconBg: '#FEECE2', iconColor: '#BD632F', tab: 'messages' },
 ];
 
 export default function NotificationPreferencesScreen() {
