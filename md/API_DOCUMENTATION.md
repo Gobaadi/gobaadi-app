@@ -1,268 +1,384 @@
-# Gobadi Backend API Documentation
-
-Base URL: `http://localhost:3000`
-
-All authenticated endpoints require `Authorization: Bearer <token>` header.
-
-Roles: `USER`, `DOCTOR`, `CLINIC`, `ADMIN`
-
----
+# API Documentation
 
 ## Table of Contents
 
-1. [Auth](#auth)
-2. [Users](#users)
-3. [Addresses](#addresses)
-4. [Animals](#animals)
-5. [Doctors](#doctors)
-6. [Clinics](#clinics)
-7. [Services](#services)
-8. [Appointments](#appointments)
-9. [Video Call](#video-call)
-10. [Products](#products)
-11. [Livestock](#livestock)
-12. [Cart](#cart)
-13. [Wishlist](#wishlist)
-14. [Orders](#orders)
-15. [Payments](#payments)
-16. [Wallet](#wallet)
-17. [Payment Methods](#payment-methods)
-18. [Discounts](#discounts)
-19. [Prescriptions](#prescriptions)
-20. [Calendar](#calendar)
-21. [Subscriptions](#subscriptions)
-22. [FAQs](#faqs)
-23. [Support Tickets](#support-tickets)
-24. [Fields](#fields)
-25. [Market Rates](#market-rates)
-26. [Badges](#badges)
-27. [Block Times](#block-times)
-28. [Delivery](#delivery)
-29. [Chat](#chat)
-30. [Reviews](#reviews)
-31. [Referrals](#referrals)
-32. [AI Diagnosis](#ai-diagnosis)
-33. [Medical Records](#medical-records)
-34. [Medical Events](#medical-events)
-35. [Alerts](#alerts)
-36. [Notifications](#notifications)
-37. [Tasks](#tasks)
-38. [Search](#search)
-39. [Weather](#weather)
-40. [Admin](#admin)
-41. [Health](#health)
+- [Base URL](#base-url)
+- [Authentication](#authentication)
+- [Roles](#roles)
+- [1. Auth](#1-auth-rate-limited-10min)
+- [2. Users](#2-users)
+- [3. Addresses](#3-addresses)
+- [4. Animals](#4-animals)
+- [5. Doctors](#5-doctors)
+- [6. Patients](#6-patients)
+- [7. Clinics](#7-clinics)
+- [8. Services](#8-services)
+- [9. Appointments](#9-appointments)
+- [10. Video Call](#10-video-call)
+- [11. Products](#11-products)
+- [12. Livestock](#12-livestock)
+- [13. Cart](#13-cart)
+- [14. Wishlist](#14-wishlist)
+- [15. Orders](#15-orders)
+- [16. Payments](#16-payments)
+- [17. Wallet](#17-wallet)
+- [18. Payment Methods](#18-payment-methods)
+- [19. Discounts (User-side)](#19-discounts-user-side)
+- [20. Discounts (Doctor-side)](#20-discounts-doctor-side)
+- [21. Prescriptions](#21-prescriptions)
+- [22. Calendar](#22-calendar)
+- [23. Block Times (Time-Off)](#23-block-times-time-off)
+- [24. Subscriptions](#24-subscriptions)
+- [25. FAQs](#25-faqs)
+- [26. Support Tickets](#26-support-tickets)
+- [27. Fields](#27-fields)
+- [28. Market Rates](#28-market-rates)
+- [29. Badges](#29-badges)
+- [30. Delivery](#30-delivery)
+- [31. Chat](#31-chat)
+- [32. Reviews](#32-reviews)
+- [33. Referrals](#33-referrals)
+- [34. AI Diagnosis](#34-ai-diagnosis)
+- [35. Medical Records](#35-medical-records)
+- [36. Medical Events](#36-medical-events)
+- [37. Lab Tests](#37-lab-tests)
+- [38. Vaccinations](#38-vaccinations)
+- [39. Consultations](#39-consultations)
+- [40. Alerts](#40-alerts)
+- [41. Notifications](#41-notifications)
+- [42. Tasks](#42-tasks-rate-limited-30min)
+- [43. Search](#43-search)
+- [44. Weather](#44-weather)
+- [45. Health](#45-health)
+- [46. Admin Auth](#46-admin-auth-admins)
+- [47. Admin CRUD](#47-admin-crud-admins--roles-super_admin)
+- [48. Admin Users](#48-admin-users-adminusers)
+- [49. Admin Orders](#49-admin-orders-adminorders)
+- [50. Admin Alerts](#50-admin-alerts-adminalerts)
+- [51. Admin Notifications](#51-admin-notifications-adminnotifications)
+- [52. Admin Referrals](#52-admin-referrals-adminreferrals)
+- [53. Admin Discounts](#53-admin-discounts-admindiscounts)
+- [54. WebSocket: ChatGateway](#54-websocket-chatgateway)
+- [55. Swagger](#55-swagger)
 
 ---
 
-## Auth
+## Base URL
 
-Rate limited: 10 requests/minute.
+```
+http://localhost:3000
+```
+
+## Authentication
+
+All authenticated endpoints require the following header:
+
+```
+Authorization: Bearer <token>
+```
+
+## Roles
+
+| Role | Description |
+|------|-------------|
+| `USER` | Regular user (farmer, pet owner) |
+| `DOCTOR` | Veterinary doctor |
+| `CLINIC` | Clinic account |
+| `ADMIN` | System administrator |
+| `SUPER_ADMIN` | Super administrator |
+
+---
+
+## 1. Auth (rate limited: 10/min)
 
 ### POST `/auth/register`
 
-Create a new account.
+Register a new user account.
 
-- **Roles:** Public
 - **Request Body:**
   ```json
   {
     "name": "string",
-    "identifier": "string (email or phone)",
-    "password": "string (min 8 chars)",
+    "identifier": "string",
+    "password": "string (min 8 characters)",
     "role": "USER | DOCTOR | CLINIC | ADMIN"
   }
   ```
-- **Response:** `{ user, accessToken, refreshToken }`
+- **Response:**
+  ```json
+  {
+    "user": "User",
+    "accessToken": "string",
+    "refreshToken": "string"
+  }
+  ```
+
+---
 
 ### POST `/auth/login`
 
-Log in with credentials.
+Authenticate with identifier and password.
 
-- **Roles:** Public
 - **Request Body:**
   ```json
   {
-    "identifier": "string (email or phone)",
+    "identifier": "string",
     "password": "string"
   }
   ```
-- **Response:** `{ user, accessToken, refreshToken }`
+- **Response:**
+  ```json
+  {
+    "user": "User",
+    "accessToken": "string",
+    "refreshToken": "string"
+  }
+  ```
+
+---
 
 ### POST `/auth/send-otp`
 
-Send OTP code to phone/email for login, verification, or password reset.
+Send a one-time password to a phone number.
 
-- **Roles:** Public
 - **Request Body:**
   ```json
   {
-    "phone": "string (email or phone)",
-    "purpose": "login | verify | reset (optional)"
+    "phone": "string",
+    "purpose": "'login' | 'verify' | 'reset' (optional)"
   }
   ```
-- **Response:** `{ success: true }`
+- **Response:**
+  ```json
+  {
+    "success": true
+  }
+  ```
+
+---
 
 ### POST `/auth/verify-otp`
 
-Verify OTP and receive session token.
+Verify a one-time password.
 
-- **Roles:** Public
 - **Request Body:**
   ```json
   {
     "phone": "string",
     "code": "string",
-    "purpose": "login | verify | reset (optional)"
+    "purpose": "'login' | 'verify' | 'reset' (optional)"
   }
   ```
-- **Response:** `{ user, accessToken, refreshToken }`
+- **Response:**
+  ```json
+  {
+    "user": "User",
+    "accessToken": "string",
+    "refreshToken": "string"
+  }
+  ```
+
+---
 
 ### POST `/auth/forgot-password`
 
-Request a password reset OTP.
+Request a password reset token.
 
-- **Roles:** Public
 - **Request Body:**
   ```json
   {
-    "identifier": "string (email or phone)"
+    "identifier": "string"
   }
   ```
-- **Response:** `{ success: true }`
+- **Response:**
+  ```json
+  {
+    "success": true
+  }
+  ```
+
+---
 
 ### POST `/auth/reset-password`
 
-Reset password using verified reset token.
+Reset password using a reset token.
 
-- **Roles:** Public
 - **Request Body:**
   ```json
   {
     "resetToken": "string",
-    "newPassword": "string (min 8 chars)"
+    "newPassword": "string (min 8 characters)"
   }
   ```
-- **Response:** `{ success: true }`
+- **Response:**
+  ```json
+  {
+    "success": true
+  }
+  ```
+
+---
 
 ### POST `/auth/oauth/google`
 
-Login or register via Google ID token.
+Authenticate via Google OAuth.
 
-- **Roles:** Public
 - **Request Body:**
   ```json
   {
     "idToken": "string"
   }
   ```
-- **Response:** `{ user, accessToken, refreshToken }`
+- **Response:**
+  ```json
+  {
+    "user": "User",
+    "accessToken": "string",
+    "refreshToken": "string"
+  }
+  ```
+
+---
 
 ### POST `/auth/oauth/facebook`
 
-Login or register via Facebook access token.
+Authenticate via Facebook OAuth.
 
-- **Roles:** Public
 - **Request Body:**
   ```json
   {
     "accessToken": "string"
   }
   ```
-- **Response:** `{ user, accessToken, refreshToken }`
-
-### POST `/auth/refresh`
-
-Exchange refresh token for new token pair.
-
-- **Roles:** Public
-- **Request Body:**
+- **Response:**
   ```json
   {
+    "user": "User",
+    "accessToken": "string",
     "refreshToken": "string"
   }
   ```
-- **Response:** `{ accessToken, refreshToken }`
-
-### POST `/auth/logout`
-
-Revoke a refresh token.
-
-- **Roles:** Public
-- **Request Body:**
-  ```json
-  {
-    "refreshToken": "string"
-  }
-  ```
-- **Response:** `{ success: true }`
 
 ---
 
-## Users
+### POST `/auth/refresh`
+
+Refresh an access token.
+
+- **Request Body:**
+  ```json
+  {
+    "refreshToken": "string"
+  }
+  ```
+- **Response:**
+  ```json
+  {
+    "accessToken": "string",
+    "refreshToken": "string"
+  }
+  ```
+
+---
+
+### POST `/auth/logout`
+
+Invalidate a refresh token.
+
+- **Request Body:**
+  ```json
+  {
+    "refreshToken": "string"
+  }
+  ```
+- **Response:**
+  ```json
+  {
+    "success": true
+  }
+  ```
+
+---
+
+## 2. Users
 
 ### GET `/users/me`
 
-Get current user's profile.
+Get the authenticated user's profile.
 
-- **Roles:** Any authenticated
-- **Response:** `User` object (without password)
+- **Roles:** Any authenticated user
+- **Response:** User object (no password)
+
+---
 
 ### PATCH `/users/me`
 
-Update current user's profile.
+Update the authenticated user's profile.
 
-- **Roles:** Any authenticated
+- **Roles:** Any authenticated user
 - **Request Body:**
   ```json
   {
     "name": "string (optional)",
     "email": "string (optional)",
     "profilePhoto": "string (optional)",
-    "dateOfBirth": "ISO date (optional)",
+    "dateOfBirth": "string (optional)",
     "bloodGroup": "string (optional)",
     "allergies": "string (optional)",
     "emergencyContactName": "string (optional)",
     "emergencyContactPhone": "string (optional)"
   }
   ```
-- **Response:** Updated `User` object
-
-### PATCH `/users/me/language`
-
-Update preferred language.
-
-- **Roles:** Any authenticated
-- **Request Body:**
-  ```json
-  {
-    "language": "en | bn"
-  }
-  ```
-- **Response:** `{ success: true, language: string }`
+- **Response:** Updated User object
 
 ---
 
-## Addresses
+### PATCH `/users/me/language`
+
+Update the authenticated user's language preference.
+
+- **Roles:** Any authenticated user
+- **Request Body:**
+  ```json
+  {
+    "language": "'en' | 'bn'"
+  }
+  ```
+- **Response:**
+  ```json
+  {
+    "success": true,
+    "language": "string"
+  }
+  ```
+
+---
+
+## 3. Addresses
 
 ### GET `/addresses`
 
-List current user's addresses.
+Get all addresses for the authenticated user.
 
-- **Roles:** Any authenticated
+- **Roles:** Any authenticated user
 - **Response:** `Address[]`
+
+---
 
 ### GET `/addresses/:id`
 
-Get single address by ID.
+Get a specific address by ID.
 
-- **Roles:** Any authenticated (own only)
+- **Roles:** Any authenticated user
 - **Response:** `Address`
+
+---
 
 ### POST `/addresses`
 
 Create a new address.
 
-- **Roles:** Any authenticated
+- **Roles:** Any authenticated user
 - **Request Body:**
   ```json
   {
@@ -278,111 +394,225 @@ Create a new address.
     "isDefault": "boolean (optional)"
   }
   ```
-- **Response:** `Address`
+- **Response:** Created `Address`
+
+---
 
 ### PUT `/addresses/:id`
 
-Update an address.
+Update an existing address.
 
-- **Roles:** Any authenticated (own only)
-- **Request Body:** Same as create, all fields optional
-- **Response:** `Address`
+- **Roles:** Any authenticated user
+- **Request Body:** Same as POST, all fields optional
+- **Response:** Updated `Address`
+
+---
 
 ### DELETE `/addresses/:id`
 
 Delete an address.
 
-- **Roles:** Any authenticated (own only)
-- **Response:** `void`
+- **Roles:** Any authenticated user
+- **Response:** void
 
 ---
 
-## Animals
+## 4. Animals
 
 ### GET `/animals`
 
-List current user's animals.
+Get all animals for the authenticated user.
 
-- **Roles:** Any authenticated
-- **Query Params:** `page`, `limit`, `breed`
+- **Roles:** Any authenticated user
+- **Query Params:**
+  - `page` (optional) — page number
+  - `limit` (optional) — items per page
+  - `breed` (optional) — filter by breed
 - **Response:** `Animal[]` or `PaginatedResult<Animal>`
+
+---
 
 ### GET `/animals/:id`
 
-Get animal by ID.
+Get a specific animal by ID.
 
-- **Roles:** Any authenticated (own only)
+- **Roles:** Any authenticated user
 - **Response:** `Animal`
+
+---
 
 ### POST `/animals`
 
-Add a new animal.
+Create a new animal record.
 
-- **Roles:** Any authenticated
+- **Roles:** Any authenticated user
 - **Request Body:**
   ```json
   {
     "name": "string",
     "breed": "string",
-    "weight": "string",
-    "age": "string",
+    "weight": "number",
+    "age": "number",
     "color": "string",
-    "image": "string (optional)"
+    "image": "string (optional)",
+    "description": "string (optional)",
+    "dob": "string (optional)",
+    "gender": "string (optional)",
+    "source": "string (optional)",
+    "joinedFarm": "string (optional)",
+    "liveWeight": "number (optional)",
+    "reproStatus": "string (optional)",
+    "photos": "array (optional)",
+    "photoCost": "number (optional)",
+    "sellingPrice": "number (optional)",
+    "liveWeightPrice": "number (optional)"
   }
   ```
-- **Response:** `Animal`
-
-### PATCH `/animals/:id`
-
-Update animal details.
-
-- **Roles:** Any authenticated (own only)
-- **Request Body:** Same as create, all fields optional
-- **Response:** `Animal`
-
-### DELETE `/animals/:id`
-
-Delete an animal.
-
-- **Roles:** Any authenticated (own only)
-- **Response:** `{ success: true }`
+- **Response:** Created `Animal`
 
 ---
 
-## Doctors
+### PATCH `/animals/:id`
+
+Update an existing animal record.
+
+- **Roles:** Any authenticated user
+- **Request Body:** Same as POST, all fields optional
+- **Response:** Updated `Animal`
+
+---
+
+### DELETE `/animals/:id`
+
+Delete an animal record.
+
+- **Roles:** Any authenticated user
+- **Response:**
+  ```json
+  {
+    "success": true
+  }
+  ```
+
+---
+
+## 5. Doctors
 
 ### GET `/doctors`
 
-List all doctors.
+Get all doctors.
 
 - **Roles:** Public
-- **Query Params:** `page`, `limit`, `specialty`
+- **Query Params:**
+  - `page` (optional) — page number
+  - `limit` (optional) — items per page
+  - `specialty` (optional) — filter by specialty
 - **Response:** `Doctor[]` or `PaginatedResult<Doctor>`
+
+---
 
 ### GET `/doctors/me`
 
-Get current logged-in doctor's own profile.
+Get the authenticated doctor's profile.
 
 - **Roles:** `DOCTOR`
 - **Response:** `Doctor`
 
+---
+
+### GET `/doctors/me/dashboard-stats`
+
+Get dashboard statistics for the authenticated doctor.
+
+- **Roles:** `DOCTOR`
+- **Response:**
+  ```json
+  {
+    "totalPatients": "number",
+    "totalConsultations": "number",
+    "yearsOfExperience": "number",
+    "specializations": ["string"],
+    "qualifications": ["string"],
+    "consultationFee": "number",
+    "rating": "number"
+  }
+  ```
+
+---
+
+### PATCH `/doctors/me/qualifications`
+
+Update the authenticated doctor's qualifications.
+
+- **Roles:** `DOCTOR`
+- **Request Body:**
+  ```json
+  {
+    "qualifications": ["string"]
+  }
+  ```
+- **Response:** Updated `Doctor`
+
+---
+
+### PATCH `/doctors/me/specializations`
+
+Update the authenticated doctor's specializations.
+
+- **Roles:** `DOCTOR`
+- **Request Body:**
+  ```json
+  {
+    "specializations": ["string"]
+  }
+  ```
+- **Response:** Updated `Doctor`
+
+---
+
+### PATCH `/doctors/me/experiences`
+
+Update the authenticated doctor's work experiences.
+
+- **Roles:** `DOCTOR`
+- **Request Body:**
+  ```json
+  {
+    "experiences": [
+      {
+        "title": "string",
+        "organization": "string",
+        "duration": "string",
+        "description": "string (optional)"
+      }
+    ]
+  }
+  ```
+- **Response:** Updated `Doctor`
+
+---
+
 ### GET `/doctors/:id`
 
-Get doctor by ID.
+Get a specific doctor by ID.
 
 - **Roles:** Public
 - **Response:** `Doctor`
 
+---
+
 ### GET `/doctors/:id/availability`
 
-Get doctor's weekly availability schedule.
+Get availability slots for a specific doctor.
 
 - **Roles:** Public
 - **Response:** `Availability[]`
 
+---
+
 ### POST `/doctors/:id/availability`
 
-Replace doctor's weekly availability (own profile only).
+Create availability entries for a doctor.
 
 - **Roles:** `DOCTOR`
 - **Request Body:**
@@ -390,59 +620,124 @@ Replace doctor's weekly availability (own profile only).
   {
     "entries": [
       {
-        "dayOfWeek": "number (0-6, Sunday=0)",
-        "startTime": "string (HH:mm)",
-        "endTime": "string (HH:mm)",
-        "slotDurationMinutes": "number (optional, min 5)",
-        "bufferMinutes": "number (optional, min 0)"
+        "dayOfWeek": "number (0-6)",
+        "startTime": "string",
+        "endTime": "string",
+        "slotDurationMinutes": "number (optional)",
+        "bufferMinutes": "number (optional)"
       }
     ]
   }
   ```
 - **Response:** `Availability[]`
 
+---
+
 ### PATCH `/doctors/:id/availability/:dayId`
 
-Update a single day's availability (doctor only).
+Update a specific availability entry.
 
 - **Roles:** `DOCTOR`
 - **Request Body:**
   ```json
   {
-    "startTime": "string (HH:mm, optional)",
-    "endTime": "string (HH:mm, optional)",
+    "startTime": "string (optional)",
+    "endTime": "string (optional)",
     "slotDurationMinutes": "number (optional)",
     "bufferMinutes": "number (optional)",
     "isActive": "boolean (optional)",
-    "specificDate": "string (YYYY-MM-DD, optional)",
+    "specificDate": "string (optional)",
     "isAvailable": "boolean (optional)",
-    "overrideSlots": "string[] (optional, e.g. ['09:00-09:30', '10:00-10:30'])"
+    "overrideSlots": "boolean (optional)"
   }
   ```
-- **Response:** `Availability`
+- **Response:** Updated `Availability`
 
 ---
 
-## Clinics
+### GET `/doctors/:id/schedule`
+
+Get the schedule for a specific doctor.
+
+- **Roles:** Public
+- **Query Params:**
+  - `date` (optional) — filter by date
+  - `consultationType` (optional) — filter by consultation type
+  - `status` (optional) — filter by status
+  - `month` (optional) — month number
+  - `year` (optional) — year number
+- **Response:**
+  ```json
+  {
+    "appointments": ["Appointment"],
+    "blockTimes": ["DoctorTimeOff"]
+  }
+  ```
+
+---
+
+### GET `/doctors/:id/schedule/list`
+
+Get a list of appointments for a specific doctor sorted chronologically.
+
+- **Roles:** Public
+- **Query Params:**
+  - `month` (optional) — month number
+  - `year` (optional) — year number
+- **Response:** `Appointment[]` (sorted ASC by startAt)
+
+---
+
+## 6. Patients
+
+### GET `/patients`
+
+Get all patients (with owner info).
+
+- **Roles:** `DOCTOR`, `ADMIN`
+- **Query Params:**
+  - `page` (optional) — page number
+  - `limit` (optional) — items per page
+  - `search` (optional) — search term
+- **Response:** `PaginatedResult<PatientWithOwner>`
+
+---
+
+### GET `/patients/:id`
+
+Get a specific patient with owner info.
+
+- **Roles:** `DOCTOR`, `ADMIN`
+- **Response:** `PatientWithOwner`
+
+---
+
+## 7. Clinics
 
 ### GET `/clinics`
 
-List all clinics.
+Get all clinics.
 
 - **Roles:** Public
-- **Query Params:** `page`, `limit`
+- **Query Params:**
+  - `page` (optional) — page number
+  - `limit` (optional) — items per page
 - **Response:** `Clinic[]` or `PaginatedResult<Clinic>`
+
+---
 
 ### GET `/clinics/:id`
 
-Get clinic details by ID.
+Get a specific clinic by ID.
 
 - **Roles:** Public
 - **Response:** `Clinic`
 
+---
+
 ### POST `/clinics`
 
-Create a new clinic profile.
+Create a new clinic.
 
 - **Roles:** `CLINIC`, `ADMIN`
 - **Request Body:**
@@ -455,19 +750,23 @@ Create a new clinic profile.
     "avatar": "string (optional)"
   }
   ```
-- **Response:** `Clinic`
+- **Response:** Created `Clinic`
+
+---
 
 ### PUT `/clinics/:id`
 
-Update clinic profile.
+Update an existing clinic.
 
-- **Roles:** Any authenticated (owner/admin)
-- **Request Body:** Same as create, all fields optional
-- **Response:** `Clinic`
+- **Roles:** `CLINIC`, `ADMIN`
+- **Request Body:** Same as POST, all fields optional
+- **Response:** Updated `Clinic`
+
+---
 
 ### PATCH `/clinics/:id/verify`
 
-Verify or unverify a clinic.
+Toggle verification status for a clinic.
 
 - **Roles:** `ADMIN`
 - **Request Body:**
@@ -476,61 +775,71 @@ Verify or unverify a clinic.
     "isVerified": "boolean"
   }
   ```
-- **Response:** `Clinic`
+- **Response:** Updated `Clinic`
+
+---
 
 ### POST `/clinics/:id/doctors`
 
-Add doctor association to clinic.
+Add a doctor to a clinic.
 
-- **Roles:** Any authenticated (owner/admin)
+- **Roles:** `CLINIC`, `ADMIN`
 - **Request Body:**
   ```json
   {
     "doctorId": "number"
   }
   ```
-- **Response:** `Clinic`
-
-### DELETE `/clinics/:id/doctors/:doctorId`
-
-Remove doctor from clinic.
-
-- **Roles:** Any authenticated (owner/admin)
-- **Response:** `Clinic`
+- **Response:** Updated `Clinic`
 
 ---
 
-## Services
+### DELETE `/clinics/:id/doctors/:doctorId`
+
+Remove a doctor from a clinic.
+
+- **Roles:** `CLINIC`, `ADMIN`
+- **Response:** Updated `Clinic`
+
+---
+
+## 8. Services
 
 ### GET `/services`
 
-List all active consulting services.
+Get all services.
 
 - **Roles:** Public
-- **Query Params:** `providerType`, `providerId`
+- **Query Params:**
+  - `providerType` (optional) — filter by provider type
+  - `providerId` (optional) — filter by provider ID
 - **Response:** `Service[]`
+
+---
 
 ### GET `/services/:id`
 
-Get service details by ID.
+Get a specific service by ID.
 
 - **Roles:** Public
 - **Response:** `Service`
 
+---
+
 ### POST `/services`
 
-Create a new consulting service.
+Create a new service.
 
 - **Roles:** `DOCTOR`, `CLINIC`, `ADMIN`
 - **Request Body:**
   ```json
   {
-    "providerType": "DOCTOR | CLINIC",
+    "providerType": "string",
     "providerId": "number",
     "name": "string",
     "description": "string",
-    "durationMinutes": "number (min 5)",
-    "price": "number (min 0)",
+    "durationMinutes": "number (>= 5)",
+    "price": "number (>= 0)",
     "preparationInstructions": "string (optional)",
     "requirements": "string (optional)",
     "isOnline": "boolean (optional)",
@@ -540,83 +849,151 @@ Create a new consulting service.
     "isRecurring": "boolean (optional)"
   }
   ```
-- **Response:** `Service`
-
-### PUT `/services/:id`
-
-Update service details.
-
-- **Roles:** `DOCTOR`, `CLINIC`, `ADMIN`
-- **Request Body:** Same as create, all fields optional
-- **Response:** `Service`
-
-### DELETE `/services/:id`
-
-Deactivate a service.
-
-- **Roles:** `DOCTOR`, `CLINIC`, `ADMIN`
-- **Response:** `void`
+- **Response:** Created `Service`
 
 ---
 
-## Appointments
+### PUT `/services/:id`
+
+Update an existing service.
+
+- **Roles:** `DOCTOR`, `CLINIC`, `ADMIN`
+- **Request Body:** Same as POST, all fields optional
+- **Response:** Updated `Service`
+
+---
+
+### DELETE `/services/:id`
+
+Delete a service.
+
+- **Roles:** `DOCTOR`, `CLINIC`, `ADMIN`
+- **Response:** void
+
+---
+
+## 9. Appointments
 
 ### GET `/doctors/:id/slots`
 
-List available booking slots for a doctor on a given date.
+Get available time slots for a specific date.
 
-- **Roles:** Public
-- **Query Params:** `date` (YYYY-MM-DD)
-- **Response:** `string[]` (list of available times)
+- **Roles:** Any authenticated user
+- **Query Params:**
+  - `date` (required) — format YYYY-MM-DD
+- **Response:** `string[]` (array of time slot strings)
+
+---
 
 ### POST `/doctors/book`
 
-Book an appointment slot with a doctor.
+Book an appointment with a doctor.
 
 - **Roles:** `USER`
 - **Request Body:**
   ```json
   {
-    "doctorId": "string",
-    "date": "string (YYYY-MM-DD)",
-    "time": "string (HH:mm)",
+    "doctorId": "number",
+    "date": "string",
+    "time": "string",
     "clinicId": "number (optional)",
     "serviceId": "number (optional)",
     "animalId": "number (optional)",
-    "consultationType": "PHYSICAL | ONLINE (optional)",
+    "consultationType": "string (optional)",
     "reasonForConsultation": "string (optional)",
-    "symptoms": "string[] (optional)"
+    "symptoms": "string (optional)"
   }
   ```
-- **Response:** `Appointment`
+- **Response:** Created `Appointment`
+
+---
 
 ### GET `/doctors/bookings/all`
 
-List current user's appointments. Patients see own bookings; doctors see their bookings.
+Get all bookings for the authenticated doctor.
 
-- **Roles:** Any authenticated
-- **Query Params:** `filter` (optional: `today | previous | upcoming | completed | cancelled`), `consultationType` (optional), `search` (optional, filter by animal name), `page`, `limit`
-- **Response:** `AppointmentWithPatient[]` or `PaginatedResult<AppointmentWithPatient>`
+- **Roles:** `DOCTOR`
+- **Query Params:**
+  - `filter` (optional) — `today`, `previous`, `upcoming`, `completed`, `cancelled`
+  - `consultationType` (optional) — filter by consultation type
+  - `search` (optional) — search term
+  - `page` (optional) — page number
+  - `limit` (optional) — items per page
+- **Response:** `AppointmentWithPatient[]`
+
+---
+
+### GET `/doctors/bookings/:id`
+
+Get a specific booking by ID.
+
+- **Roles:** `DOCTOR`
+- **Response:** `AppointmentWithPatient`
+
+---
+
+### GET `/doctors/bookings/stats/today`
+
+Get today's booking statistics.
+
+- **Roles:** `DOCTOR`
+- **Response:**
+  ```json
+  {
+    "totalToday": "number",
+    "completedToday": "number"
+  }
+  ```
+
+---
+
+### GET `/doctors/bookings/search`
+
+Search bookings with filters.
+
+- **Roles:** `DOCTOR`
+- **Query Params:**
+  - `search` (optional) — search term
+  - `date` (optional) — filter by date
+  - `consultationType` (optional) — filter by consultation type
+  - `page` (optional) — page number
+  - `limit` (optional) — items per page
+- **Response:** `AppointmentWithPatient[]`
+
+---
+
+### GET `/doctors/bookings/recent-completed`
+
+Get recently completed bookings.
+
+- **Roles:** `DOCTOR`
+- **Query Params:**
+  - `days` (optional) — number of days, default 2
+- **Response:** `AppointmentWithPatient[]`
+
+---
 
 ### PATCH `/doctors/bookings/:id/reschedule`
 
-Reschedule an appointment (must be >2h before start).
+Reschedule an appointment.
 
-- **Roles:** Any authenticated
+- **Roles:** `DOCTOR`
 - **Request Body:**
   ```json
   {
-    "date": "string (YYYY-MM-DD)",
-    "time": "string (HH:mm)"
+    "date": "string",
+    "time": "string"
   }
   ```
-- **Response:** `Appointment`
+- **Response:** Updated `Appointment`
+
+---
 
 ### PATCH `/doctors/bookings/:id/cancel`
 
-Cancel an appointment (must be >2h before start).
+Cancel an appointment.
 
-- **Roles:** Any authenticated
+- **Roles:** `DOCTOR`
 - **Request Body:**
   ```json
   {
@@ -624,25 +1001,58 @@ Cancel an appointment (must be >2h before start).
     "note": "string (optional)"
   }
   ```
-- **Response:** `Appointment`
+- **Response:**
+  ```json
+  {
+    "appointment": "Appointment",
+    "walletDeduction": "number",
+    "cancellationFee": "number",
+    "refundAmount": "number"
+  }
+  ```
+
+---
 
 ### PATCH `/doctors/bookings/:id/complete`
 
-Mark appointment as completed.
+Mark an appointment as completed.
 
 - **Roles:** `DOCTOR`
-- **Response:** `Appointment`
+- **Response:** Updated `Appointment`
+
+---
+
+### PATCH `/doctors/bookings/:id/start-consultation`
+
+Start a consultation for an appointment.
+
+- **Roles:** `DOCTOR`
+- **Request Body:**
+  ```json
+  {
+    "consultationNotes": "string (optional)"
+  }
+  ```
+- **Response:** Updated `Appointment`
+
+---
 
 ### POST `/doctors/bookings/:id/join`
 
 Join a video call for an appointment.
 
-- **Roles:** Any authenticated
-- **Response:** `{ sessionId, channelName, token }`
+- **Roles:** Any authenticated user
+- **Response:**
+  ```json
+  {
+    "token": "string",
+    "channelName": "string"
+  }
+  ```
 
 ---
 
-## Video Call
+## 10. Video Call
 
 ### POST `/video-call/create`
 
@@ -655,51 +1065,90 @@ Create a video call session for an appointment.
     "appointmentId": "number"
   }
   ```
-- **Response:** `{ sessionId: string, channelName: string }`
+- **Response:**
+  ```json
+  {
+    "sessionId": "string",
+    "channelName": "string"
+  }
+  ```
+
+---
 
 ### POST `/video-call/join/:appointmentId`
 
 Join an existing video call session.
 
-- **Roles:** Any authenticated
-- **Response:** `{ sessionId, channelName, token }`
-
-### POST `/video-call/end/:appointmentId`
-
-End an active video call session.
-
-- **Roles:** Any authenticated
-- **Response:** `{ success: true }`
-
-### GET `/video-call/token/:appointmentId`
-
-Get a fresh Agora token for reconnection.
-
-- **Roles:** Any authenticated
-- **Response:** `{ sessionId, channelName, token }`
+- **Roles:** Any authenticated user
+- **Response:**
+  ```json
+  {
+    "sessionId": "string",
+    "channelName": "string",
+    "token": "string"
+  }
+  ```
 
 ---
 
-## Products
+### POST `/video-call/end/:appointmentId`
+
+End a video call session.
+
+- **Roles:** `DOCTOR`
+- **Response:**
+  ```json
+  {
+    "success": true
+  }
+  ```
+
+---
+
+### GET `/video-call/token/:appointmentId`
+
+Get a token to join an existing video call.
+
+- **Roles:** Any authenticated user
+- **Response:**
+  ```json
+  {
+    "sessionId": "string",
+    "channelName": "string",
+    "token": "string"
+  }
+  ```
+
+---
+
+## 11. Products
 
 ### GET `/products`
 
-List product catalog.
+Get all products.
 
 - **Roles:** Public
-- **Query Params:** `page`, `limit`, `categoryId`, `brandId`
-- **Response:** `Product[]` or `PaginatedResult<Product>`
+- **Query Params:**
+  - `page` (optional) — page number
+  - `limit` (optional) — items per page
+  - `categoryId` (optional) — filter by category
+  - `brandId` (optional) — filter by brand
+- **Response:** `Product[]`
+
+---
 
 ### GET `/products/categories`
 
-List all product categories.
+Get all product categories.
 
 - **Roles:** Public
 - **Response:** `Category[]`
 
+---
+
 ### POST `/products/categories`
 
-Create a product category.
+Create a new product category.
 
 - **Roles:** `ADMIN`
 - **Request Body:**
@@ -710,18 +1159,22 @@ Create a product category.
     "description": "string (optional)"
   }
   ```
-- **Response:** `Category`
+- **Response:** Created `Category`
+
+---
 
 ### GET `/products/brands`
 
-List all product brands.
+Get all product brands.
 
 - **Roles:** Public
 - **Response:** `Brand[]`
 
+---
+
 ### POST `/products/brands`
 
-Create a product brand.
+Create a new product brand.
 
 - **Roles:** `ADMIN`
 - **Request Body:**
@@ -732,22 +1185,30 @@ Create a product brand.
     "description": "string (optional)"
   }
   ```
-- **Response:** `Brand`
+- **Response:** Created `Brand`
+
+---
 
 ### GET `/products/search`
 
-Search active products.
+Search products.
 
 - **Roles:** Public
-- **Query Params:** `q` (search text), `categoryId` (optional)
+- **Query Params:**
+  - `q` (required) — search query
+  - `categoryId` (optional) — filter by category
 - **Response:** `Product[]`
+
+---
 
 ### GET `/products/:id`
 
-Get product details by ID.
+Get a specific product by ID.
 
 - **Roles:** Public
 - **Response:** `Product`
+
+---
 
 ### POST `/products`
 
@@ -761,7 +1222,7 @@ Create a new product.
     "barcode": "string (optional)",
     "name": "string",
     "description": "string",
-    "price": "number (min 0)",
+    "price": "number",
     "discount": "number (optional)",
     "brandId": "number (optional)",
     "categoryId": "number (optional)",
@@ -772,39 +1233,53 @@ Create a new product.
     "documents": "string[] (optional)",
     "seoTitle": "string (optional)",
     "seoDescription": "string (optional)",
-    "seoKeywords": "string (optional)",
-    "status": "DRAFT | ACTIVE | ARCHIVED (optional)",
-    "visibility": "boolean (optional)",
+    "seoKeywords": "string[] (optional)",
+    "status": "string (optional)",
+    "visibility": "string (optional)",
     "isPrescriptionRequired": "boolean (optional)"
   }
   ```
-- **Response:** `Product`
+- **Response:** Created `Product`
+
+---
 
 ### PUT `/products/:id`
 
-Update a product.
+Update an existing product.
 
 - **Roles:** `ADMIN`
-- **Request Body:** Same as create, all fields optional
-- **Response:** `Product`
+- **Request Body:** Same as POST, all fields optional
+- **Response:** Updated `Product`
+
+---
 
 ### DELETE `/products/:id`
 
 Delete a product.
 
 - **Roles:** `ADMIN`
-- **Response:** `void`
+- **Response:** void
+
+---
 
 ### GET `/products/:id/stock`
 
-Get current stock level for a product.
+Get stock quantity for a product.
 
 - **Roles:** Public
-- **Response:** `{ productId: number, stock: number }`
+- **Response:**
+  ```json
+  {
+    "productId": "number",
+    "stock": "number"
+  }
+  ```
+
+---
 
 ### POST `/products/:id/stock`
 
-Add inventory stock for a product.
+Add stock for a product.
 
 - **Roles:** `ADMIN`
 - **Request Body:**
@@ -812,67 +1287,88 @@ Add inventory stock for a product.
   {
     "quantity": "number",
     "batchNumber": "string (optional)",
-    "expiryDate": "string (optional, ISO date)"
+    "expiryDate": "string (optional)"
   }
   ```
-- **Response:** `{ success: true }`
+- **Response:**
+  ```json
+  {
+    "success": true
+  }
+  ```
 
 ---
 
-## Livestock
+## 12. Livestock
 
 ### GET `/livestock`
 
-List active livestock listings.
+Get all livestock listings.
 
 - **Roles:** Public
-- **Query Params:** `page`, `limit`, `species`, `breed`
-- **Response:** `Livestock[]` or `PaginatedResult<Livestock>`
+- **Query Params:**
+  - `page` (optional) — page number
+  - `limit` (optional) — items per page
+  - `species` (optional) — filter by species
+  - `breed` (optional) — filter by breed
+- **Response:** `Livestock[]`
+
+---
 
 ### GET `/livestock/featured`
 
-List top featured livestock listings.
+Get featured livestock listings.
 
 - **Roles:** Public
 - **Response:** `Livestock[]`
+
+---
 
 ### GET `/livestock/search`
 
 Search livestock listings.
 
 - **Roles:** Public
-- **Query Params:** `q` (search text), `species` (optional)
+- **Query Params:**
+  - `q` (required) — search query
+  - `species` (optional) — filter by species
 - **Response:** `Livestock[]`
+
+---
 
 ### GET `/livestock/my`
 
-List current seller's own listings.
+Get the authenticated user's livestock listings.
 
-- **Roles:** Any authenticated
+- **Roles:** Any authenticated user
 - **Response:** `Livestock[]`
+
+---
 
 ### GET `/livestock/:id`
 
-Get livestock listing details.
+Get a specific livestock listing by ID.
 
 - **Roles:** Public
 - **Response:** `Livestock`
+
+---
 
 ### POST `/livestock`
 
 Create a new livestock listing.
 
-- **Roles:** Any authenticated
+- **Roles:** Any authenticated user
 - **Request Body:**
   ```json
   {
     "species": "string",
     "breed": "string",
-    "age": "string",
-    "weight": "number (min 0)",
+    "age": "number",
+    "weight": "number",
     "gender": "string",
-    "vaccinationHistory": "object (optional)",
-    "medicalHistory": "object (optional)",
+    "vaccinationHistory": "string (optional)",
+    "medicalHistory": "string (optional)",
     "healthStatus": "string",
     "pregnancyStatus": "string (optional)",
     "certification": "string (optional)",
@@ -881,31 +1377,37 @@ Create a new livestock listing.
     "images": "string[] (optional)",
     "videos": "string[] (optional)",
     "documents": "string[] (optional)",
-    "price": "number (min 0)",
+    "price": "number",
     "isNegotiable": "boolean (optional)",
-    "status": "ACTIVE | SOLD | RESERVED (optional)"
+    "status": "string (optional)"
   }
   ```
-- **Response:** `Livestock`
+- **Response:** Created `Livestock`
+
+---
 
 ### PUT `/livestock/:id`
 
-Update livestock listing (owner only).
+Update an existing livestock listing.
 
-- **Roles:** Any authenticated (owner)
-- **Request Body:** Same as create, all fields optional
-- **Response:** `Livestock`
+- **Roles:** Any authenticated user
+- **Request Body:** Same as POST, all fields optional
+- **Response:** Updated `Livestock`
+
+---
 
 ### DELETE `/livestock/:id`
 
-Delete livestock listing (owner only).
+Delete a livestock listing.
 
-- **Roles:** Any authenticated (owner)
-- **Response:** `void`
+- **Roles:** Any authenticated user
+- **Response:** void
+
+---
 
 ### PATCH `/livestock/:id/verify`
 
-Verify or unverify a livestock listing.
+Toggle verification status for a livestock listing.
 
 - **Roles:** `ADMIN`
 - **Request Body:**
@@ -914,11 +1416,13 @@ Verify or unverify a livestock listing.
     "isVerified": "boolean"
   }
   ```
-- **Response:** `Livestock`
+- **Response:** Updated `Livestock`
+
+---
 
 ### PATCH `/livestock/:id/feature`
 
-Set featured status on a listing.
+Toggle featured status for a livestock listing.
 
 - **Roles:** `ADMIN`
 - **Request Body:**
@@ -927,103 +1431,117 @@ Set featured status on a listing.
     "isFeatured": "boolean"
   }
   ```
-- **Response:** `Livestock`
+- **Response:** Updated `Livestock`
+
+---
 
 ### PATCH `/livestock/:id/reserve`
 
-Reserve or release a livestock listing.
+Toggle reservation status for a livestock listing.
 
-- **Roles:** Any authenticated (owner)
+- **Roles:** Any authenticated user
 - **Request Body:**
   ```json
   {
     "isReserved": "boolean"
   }
   ```
-- **Response:** `Livestock`
+- **Response:** Updated `Livestock`
+
+---
 
 ### PATCH `/livestock/:id/sold`
 
-Mark listing as sold.
+Toggle sold status for a livestock listing.
 
-- **Roles:** Any authenticated (owner)
+- **Roles:** Any authenticated user
 - **Request Body:**
   ```json
   {
     "isSold": "boolean"
   }
   ```
-- **Response:** `Livestock`
+- **Response:** Updated `Livestock`
 
 ---
 
-## Cart
+## 13. Cart
 
 ### GET `/cart`
 
-Get current user's cart with price and stock validation.
+Get the authenticated user's cart summary.
 
-- **Roles:** Any authenticated
+- **Roles:** Any authenticated user
 - **Response:** `CartSummary`
+
+---
 
 ### POST `/cart/add`
 
-Add a product or livestock item to cart.
+Add an item to the cart.
 
-- **Roles:** Any authenticated
+- **Roles:** Any authenticated user
 - **Request Body:**
   ```json
   {
     "productId": "number (optional)",
     "livestockId": "number (optional)",
-    "quantity": "number (optional, min 1)"
+    "quantity": "number (optional)"
   }
   ```
 - **Response:** `CartItem`
+
+---
 
 ### PUT `/cart/item/:id`
 
 Update cart item quantity.
 
-- **Roles:** Any authenticated (own cart)
+- **Roles:** Any authenticated user
 - **Request Body:**
   ```json
   {
-    "quantity": "number (min 1)"
+    "quantity": "number (>= 1)"
   }
   ```
-- **Response:** `CartItem`
-
-### DELETE `/cart/item/:id`
-
-Remove item from cart.
-
-- **Roles:** Any authenticated (own cart)
-- **Response:** `void`
-
-### DELETE `/cart`
-
-Clear all items from user's cart.
-
-- **Roles:** Any authenticated
-- **Response:** `void`
+- **Response:** Updated `CartItem`
 
 ---
 
-## Wishlist
+### DELETE `/cart/item/:id`
+
+Remove an item from the cart.
+
+- **Roles:** Any authenticated user
+- **Response:** void
+
+---
+
+### DELETE `/cart`
+
+Clear the entire cart.
+
+- **Roles:** Any authenticated user
+- **Response:** void
+
+---
+
+## 14. Wishlist
 
 ### GET `/wishlist`
 
-Get current user's wishlist.
+Get the authenticated user's wishlist.
 
-- **Roles:** Any authenticated
+- **Roles:** Any authenticated user
 - **Response:** `WishlistItem[]`
+
+---
 
 ### POST `/wishlist`
 
-Add a product or livestock item to wishlist.
+Add an item to the wishlist.
 
-- **Roles:** Any authenticated
+- **Roles:** Any authenticated user
 - **Request Body:**
   ```json
   {
@@ -1033,22 +1551,24 @@ Add a product or livestock item to wishlist.
   ```
 - **Response:** `WishlistItem`
 
+---
+
 ### DELETE `/wishlist/:id`
 
-Remove item from wishlist.
+Remove an item from the wishlist.
 
-- **Roles:** Any authenticated (own only)
-- **Response:** `void`
+- **Roles:** Any authenticated user
+- **Response:** void
 
 ---
 
-## Orders
+## 15. Orders
 
 ### POST `/orders`
 
-Place a new order from the shopping cart.
+Place a new order.
 
-- **Roles:** Any authenticated
+- **Roles:** Any authenticated user
 - **Request Body:**
   ```json
   {
@@ -1057,29 +1577,40 @@ Place a new order from the shopping cart.
     "deliveryNotes": "string (optional)"
   }
   ```
-- **Response:** `Order`
+- **Response:** Created `Order`
+
+---
 
 ### GET `/orders/my`
 
-Get current user's orders.
+Get all orders for the authenticated user.
 
-- **Roles:** Any authenticated
+- **Roles:** Any authenticated user
 - **Response:** `Order[]`
+
+---
 
 ### GET `/orders/:id`
 
-Get order details by ID.
+Get a specific order by ID.
 
-- **Roles:** Any authenticated (own orders)
+- **Roles:** Any authenticated user
 - **Response:** `Order`
+
+---
 
 ### GET `/orders/admin`
 
-List all orders (admin view).
+Get all orders (admin view).
 
 - **Roles:** `ADMIN`
-- **Query Params:** `page`, `limit`, `status`
-- **Response:** `Order[]` or `PaginatedResult<Order>`
+- **Query Params:**
+  - `page` (optional) — page number
+  - `limit` (optional) — items per page
+  - `status` (optional) — filter by status
+- **Response:** `Order[]`
+
+---
 
 ### PATCH `/orders/:id/status`
 
@@ -1092,71 +1623,77 @@ Update order status.
     "status": "PENDING | CONFIRMED | PREPARING | PACKED | SHIPPED | DELIVERED | COMPLETED | CANCELLED | REFUNDED | RETURNED | FAILED"
   }
   ```
-- **Response:** `Order`
+- **Response:** Updated `Order`
 
 ---
 
-## Payments
+## 16. Payments
 
 ### POST `/payments/intent`
 
-Create a payment intent (returns simulation URLs).
+Create a payment intent.
 
-- **Roles:** Any authenticated
+- **Roles:** Any authenticated user
 - **Request Body:**
   ```json
   {
-    "amount": "number (min 1)",
-    "orderId": "string (optional)",
+    "amount": "number (>= 1)",
+    "orderId": "number (optional)",
     "bookingId": "number (optional)",
     "provider": "string (optional)"
   }
   ```
 - **Response:** `Transaction`
 
+---
+
 ### GET `/payments/verify/:transactionId`
 
-Verify transaction status.
+Verify a transaction status.
 
-- **Roles:** Any authenticated
+- **Roles:** Any authenticated user
 - **Response:** `Transaction`
+
+---
 
 ### POST `/payments/simulate-success`
 
-Gateway simulation: force success status.
+Simulate a successful payment (for testing).
 
-- **Roles:** Public (dev/test only)
+- **Roles:** Any authenticated user
 - **Request Body:**
   ```json
   {
-    "transactionId": "string",
+    "transactionId": "number",
     "gatewayTxId": "string (optional)"
-  }
-  ```
-- **Response:** `Transaction`
-
-### POST `/payments/simulate-fail`
-
-Gateway simulation: force fail status.
-
-- **Roles:** Public (dev/test only)
-- **Request Body:**
-  ```json
-  {
-    "transactionId": "string"
   }
   ```
 - **Response:** `Transaction`
 
 ---
 
-## Wallet
+### POST `/payments/simulate-fail`
+
+Simulate a failed payment (for testing).
+
+- **Roles:** Any authenticated user
+- **Request Body:**
+  ```json
+  {
+    "transactionId": "number"
+  }
+  ```
+- **Response:** `Transaction`
+
+---
+
+## 17. Wallet
 
 ### GET `/wallet`
 
-Get current user's wallet balance and coins.
+Get the authenticated user's wallet balance.
 
-- **Roles:** Any authenticated
+- **Roles:** Any authenticated user
 - **Response:**
   ```json
   {
@@ -1165,161 +1702,222 @@ Get current user's wallet balance and coins.
   }
   ```
 
+---
+
 ### GET `/wallet/transactions`
 
-List current user's wallet transaction history.
+Get paginated wallet transactions.
 
-- **Roles:** Any authenticated
-- **Query Params:** `page`, `limit`
+- **Roles:** Any authenticated user
+- **Query Params:**
+  - `page` (optional) — page number
+  - `limit` (optional) — items per page
 - **Response:** `PaginatedResult<WalletTransaction>`
+
+---
 
 ### POST `/wallet/topup`
 
-Add money to wallet.
+Top up wallet balance.
 
-- **Roles:** Any authenticated
+- **Roles:** Any authenticated user
 - **Request Body:**
   ```json
   {
-    "amount": "number (min 0.01)",
+    "amount": "number (>= 0.01)",
     "method": "string"
   }
   ```
-- **Response:** `{ balance: number, coins: number }`
+- **Response:**
+  ```json
+  {
+    "balance": "number",
+    "coins": "number"
+  }
+  ```
+
+---
 
 ### POST `/wallet/pay`
 
-Pay from wallet balance.
+Make a payment from wallet balance.
 
-- **Roles:** Any authenticated
+- **Roles:** Any authenticated user
 - **Request Body:**
   ```json
   {
-    "amount": "number (min 0.01)",
+    "amount": "number (>= 0.01)",
     "appointmentId": "number (optional)",
     "reason": "string"
   }
   ```
-- **Response:** `{ balance: number, coins: number }`
-
-### POST `/wallet/earn-coins`
-
-Earn coins (internal endpoint).
-
-- **Roles:** Any authenticated
-- **Request Body:**
+- **Response:**
   ```json
   {
-    "amount": "number (min 1)",
-    "reason": "string"
+    "balance": "number",
+    "coins": "number"
   }
   ```
-- **Response:** `{ balance: number, coins: number }`
-
-### POST `/wallet/spend-coins`
-
-Spend coins (internal endpoint).
-
-- **Roles:** Any authenticated
-- **Request Body:**
-  ```json
-  {
-    "amount": "number (min 1)",
-    "reason": "string"
-  }
-  ```
-- **Response:** `{ balance: number, coins: number }`
 
 ---
 
-## Payment Methods
+### POST `/wallet/earn-coins`
+
+Earn coins (e.g., referral bonus).
+
+- **Roles:** Any authenticated user
+- **Request Body:**
+  ```json
+  {
+    "amount": "number (>= 1)",
+    "reason": "string"
+  }
+  ```
+- **Response:**
+  ```json
+  {
+    "balance": "number",
+    "coins": "number"
+  }
+  ```
+
+---
+
+### POST `/wallet/spend-coins`
+
+Spend coins.
+
+- **Roles:** Any authenticated user
+- **Request Body:**
+  ```json
+  {
+    "amount": "number (>= 1)",
+    "reason": "string"
+  }
+  ```
+- **Response:**
+  ```json
+  {
+    "balance": "number",
+    "coins": "number"
+  }
+  ```
+
+---
+
+## 18. Payment Methods
 
 ### GET `/payment-methods`
 
-List current user's saved payment methods.
+Get all payment methods for the authenticated user.
 
-- **Roles:** Any authenticated
+- **Roles:** Any authenticated user
 - **Response:** `PaymentMethod[]`
+
+---
 
 ### POST `/payment-methods`
 
 Add a new payment method.
 
-- **Roles:** Any authenticated
+- **Roles:** Any authenticated user
 - **Request Body:**
   ```json
   {
-    "type": "bkash | card | nagad | rocket",
-    "number": "string",
-    "isDefault": "boolean (optional)"
+    "type": "'bkash' | 'card' | 'nagad' | 'rocket'",
+    "maskedNumber": "string (optional)",
+    "provider": "string (optional)"
   }
   ```
-- **Response:** `PaymentMethod`
+- **Response:** Created `PaymentMethod`
+
+---
 
 ### PUT `/payment-methods/:id`
 
-Update a payment method (owner only).
+Update a payment method.
 
-- **Roles:** Any authenticated (owner)
-- **Request Body:** Same as create, all fields optional
-- **Response:** `PaymentMethod`
+- **Roles:** Any authenticated user
+- **Request Body:**
+  ```json
+  {
+    "maskedNumber": "string (optional)",
+    "provider": "string (optional)"
+  }
+  ```
+- **Response:** Updated `PaymentMethod`
+
+---
 
 ### DELETE `/payment-methods/:id`
 
-Remove a payment method (owner only).
+Delete a payment method.
 
-- **Roles:** Any authenticated (owner)
-- **Response:** `void`
+- **Roles:** Any authenticated user
+- **Response:**
+  ```json
+  {
+    "success": true
+  }
+  ```
+
+---
 
 ### PATCH `/payment-methods/:id/default`
 
-Set a payment method as default (owner only).
+Set a payment method as default.
 
-- **Roles:** Any authenticated (owner)
-- **Response:** `PaymentMethod`
+- **Roles:** Any authenticated user
+- **Response:** Updated `PaymentMethod`
+
+---
 
 ### POST `/payment-methods/:id/verify-otp`
 
 Verify a payment method with OTP.
 
-- **Roles:** Any authenticated (owner)
+- **Roles:** Any authenticated user
 - **Request Body:**
   ```json
   {
     "otp": "string"
   }
   ```
-- **Response:** `PaymentMethod`
+- **Response:** Updated `PaymentMethod`
 
 ---
 
-## Discounts
+## 19. Discounts (User-side)
 
 ### GET `/discounts/available`
 
-Get available discount codes for current user.
+Get all available discounts for the authenticated user.
 
-- **Roles:** Any authenticated
+- **Roles:** Any authenticated user
 - **Response:** `Discount[]`
+
+---
 
 ### POST `/discounts/validate`
 
 Validate a discount code.
 
-- **Roles:** Any authenticated
+- **Roles:** Any authenticated user
 - **Request Body:**
   ```json
   {
     "code": "string"
   }
   ```
-- **Response:** `Discount` (with discount details)
+- **Response:** `Discount`
+
+---
 
 ### POST `/discounts/apply`
 
 Apply a discount code to an appointment.
 
-- **Roles:** Any authenticated
+- **Roles:** Any authenticated user
 - **Request Body:**
   ```json
   {
@@ -1327,58 +1925,51 @@ Apply a discount code to an appointment.
     "appointmentId": "number"
   }
   ```
-- **Response:** `{ success: boolean, discountPercent: number }`
+- **Response:**
+  ```json
+  {
+    "success": true,
+    "discountPercent": "number"
+  }
+  ```
+
+---
 
 ### GET `/discounts/my`
 
-Get current user's discount usage history.
+Get the authenticated user's discounts.
 
-- **Roles:** Any authenticated
+- **Roles:** Any authenticated user
 - **Response:** `Discount[]`
 
-### POST `/admin/discounts`
+---
 
-Create a discount promo code (admin only).
+## 20. Discounts (Doctor-side)
 
-- **Roles:** `ADMIN`
-- **Request Body:**
-  ```json
-  {
-    "code": "string",
-    "percent": "number (optional)",
-    "amount": "number (optional)",
-    "validFrom": "ISO date",
-    "validTo": "ISO date",
-    "usageLimit": "number (optional)"
-  }
-  ```
-- **Response:** `Discount`
+### GET `/doctors/me/patients`
 
-### PATCH `/admin/discounts/:id`
+Get patients for the authenticated doctor.
 
-Update a discount promo code (admin only).
+- **Roles:** `DOCTOR`
+- **Query Params:**
+  - `search` (optional) — search term
+  - `discountGiven` (optional) — filter by discount given status
+- **Response:** `DoctorPatient[]`
 
-- **Roles:** `ADMIN`
-- **Request Body:** Same as create, all fields optional
-- **Response:** `Discount`
-
-### DELETE `/admin/discounts/:id`
-
-Delete a discount promo code (admin only).
-
-- **Roles:** `ADMIN`
-- **Response:** `void`
+---
 
 ### GET `/discounts/:patientId`
 
-Get the current discount (if any) for a patient.
+Get discount for a specific patient.
 
 - **Roles:** `DOCTOR`
 - **Response:** `PatientDiscount | null`
 
+---
+
 ### POST `/discounts`
 
-Apply a discount to a patient's next appointment fee.
+Create a new patient discount.
 
 - **Roles:** `DOCTOR`
 - **Request Body:**
@@ -1390,9 +1981,11 @@ Apply a discount to a patient's next appointment fee.
   ```
 - **Response:** `PatientDiscount`
 
+---
+
 ### PUT `/discounts/:id`
 
-Edit an existing discount percent.
+Update a patient discount.
 
 - **Roles:** `DOCTOR`
 - **Request Body:**
@@ -1401,30 +1994,29 @@ Edit an existing discount percent.
     "percent": "number (0-100)"
   }
   ```
-- **Response:** `PatientDiscount`
-
-### DELETE `/discounts/:id`
-
-Remove a discount.
-
-- **Roles:** `DOCTOR`
-- **Response:** `{ success: true }`
-
-### GET `/doctors/me/patients`
-
-Doctor lists patients with discounts.
-
-- **Roles:** `DOCTOR`
-- **Query Params:** `search` (optional), `discountGiven` (optional)
-- **Response:** `DoctorPatient[]`
+- **Response:** Updated `PatientDiscount`
 
 ---
 
-## Prescriptions
+### DELETE `/discounts/:id`
+
+Delete a patient discount.
+
+- **Roles:** `DOCTOR`
+- **Response:**
+  ```json
+  {
+    "success": true
+  }
+  ```
+
+---
+
+## 21. Prescriptions
 
 ### POST `/prescriptions`
 
-Create a prescription (doctor only).
+Create a new prescription.
 
 - **Roles:** `DOCTOR`
 - **Request Body:**
@@ -1435,8 +2027,11 @@ Create a prescription (doctor only).
     "medicines": [
       {
         "name": "string",
-        "dosage": "string",
-        "duration": "string",
+        "dosage": "string (optional)",
+        "quantity": "number (optional)",
+        "frequency": "string (optional)",
+        "duration": "string (optional)",
+        "instructions": "string (optional)",
         "notes": "string (optional)"
       }
     ]
@@ -1444,143 +2039,254 @@ Create a prescription (doctor only).
   ```
 - **Response:** `Prescription`
 
-### GET `/prescriptions/:appointmentId`
-
-Get prescription by appointment ID.
-
-- **Roles:** Any authenticated
-- **Response:** `Prescription`
+---
 
 ### GET `/prescriptions/by-appointment/:appointmentId`
 
-Get prescription by appointment ID (alias).
+Get prescription for a specific appointment.
 
-- **Roles:** Any authenticated
-- **Response:** `Prescription`
-
-### GET `/prescriptions/animal/:animalId`
-
-Get animal's prescription history.
-
-- **Roles:** Any authenticated
-- **Response:** `Prescription[]`
-
-### GET `/prescriptions/by-animal/:animalId`
-
-Get animal's prescription history (alias).
-
-- **Roles:** Any authenticated
-- **Response:** `Prescription[]`
-
-### PUT `/prescriptions/:id`
-
-Update a prescription (doctor only).
-
-- **Roles:** `DOCTOR`
-- **Request Body:** Same as create, all fields optional
-- **Response:** `Prescription`
-
-### POST `/prescriptions/:id/attachment`
-
-Upload attachment for prescription (doctor only).
-
-- **Roles:** `DOCTOR`
-- **Request:** `multipart/form-data` with `file` field
-- **Response:** `Prescription`
-
-### POST `/prescriptions/:id/send`
-
-Send prescription to owner (doctor only).
-
-- **Roles:** `DOCTOR`
-- **Response:** `Prescription`
+- **Roles:** Any authenticated user
+- **Response:** `Prescription | null`
 
 ---
 
-## Calendar
+### GET `/prescriptions/:appointmentId`
+
+Alias for `GET /prescriptions/by-appointment/:appointmentId`.
+
+- **Roles:** Any authenticated user
+- **Response:** `Prescription | null`
+
+---
+
+### GET `/prescriptions/by-animal/:animalId`
+
+Get all prescriptions for a specific animal.
+
+- **Roles:** Any authenticated user
+- **Response:** `Prescription[]`
+
+---
+
+### GET `/prescriptions/animal/:animalId`
+
+Alias for `GET /prescriptions/by-animal/:animalId`.
+
+- **Roles:** Any authenticated user
+- **Response:** `Prescription[]`
+
+---
+
+### PUT `/prescriptions/:id`
+
+Update an existing prescription.
+
+- **Roles:** `DOCTOR`
+- **Request Body:**
+  ```json
+  {
+    "medicines": [
+      {
+        "name": "string",
+        "dosage": "string (optional)",
+        "quantity": "number (optional)",
+        "frequency": "string (optional)",
+        "duration": "string (optional)",
+        "instructions": "string (optional)",
+        "notes": "string (optional)"
+      }
+    ]
+  }
+  ```
+- **Response:** Updated `Prescription`
+
+---
+
+### POST `/prescriptions/:id/attachment`
+
+Upload an attachment for a prescription.
+
+- **Roles:** `DOCTOR`
+- **Request:** `multipart/form-data` with `file` field
+- **Response:** Updated `Prescription`
+
+---
+
+### POST `/prescriptions/:id/send`
+
+Send a prescription to the patient.
+
+- **Roles:** `DOCTOR`
+- **Response:** Updated `Prescription`
+
+---
+
+## 22. Calendar
 
 ### GET `/calendar/doctor/:doctorId`
 
-Get doctor's monthly calendar with appointments and block times.
+Get monthly calendar data for a doctor.
 
-- **Roles:** Any authenticated
-- **Query Params:** `month` (1-12), `year` (YYYY)
+- **Roles:** Any authenticated user
+- **Query Params:**
+  - `month` (required) — month number
+  - `year` (required) — year number
 - **Response:**
   ```json
   {
     "days": [
       {
-        "date": "YYYY-MM-DD",
-        "appointments": [...],
-        "blockTimes": [...]
+        "date": "string",
+        "appointments": [],
+        "blockTimes": []
       }
     ]
-  }
-  ```
-
-### GET `/calendar/doctor/:doctorId/week`
-
-Get doctor's weekly calendar.
-
-- **Roles:** Any authenticated
-- **Query Params:** `date` (YYYY-MM-DD)
-- **Response:** Same as monthly, but for the week containing the date
-
-### GET `/calendar/appointments`
-
-Get current user's appointments grouped by view.
-
-- **Roles:** Any authenticated
-- **Query Params:** `date` (YYYY-MM-DD), `view` (day|week|month)
-- **Response:**
-  ```json
-  {
-    "appointments": [
-      {
-        "date": "YYYY-MM-DD",
-        "items": [...]
-      }
-    ]
-  }
-  ```
-
-### GET `/calendar/badges`
-
-Get per-day appointment counts for a month.
-
-- **Roles:** Any authenticated
-- **Query Params:** `month` (1-12), `year` (YYYY)
-- **Response:**
-  ```json
-  {
-    "2026-08-15": { "appointments": 3, "tasks": 1 },
-    "2026-08-16": { "appointments": 0, "tasks": 2 }
   }
   ```
 
 ---
 
-## Subscriptions
+### GET `/calendar/doctor/:doctorId/week`
+
+Get weekly calendar data for a doctor.
+
+- **Roles:** Any authenticated user
+- **Query Params:**
+  - `date` (required) — format YYYY-MM-DD
+- **Response:** Same structure as monthly calendar
+
+---
+
+### GET `/calendar/appointments`
+
+Get appointments calendar view.
+
+- **Roles:** Any authenticated user
+- **Query Params:**
+  - `date` (required) — filter by date
+  - `view` (required) — `day`, `week`, or `month`
+- **Response:**
+  ```json
+  {
+    "appointments": [
+      {
+        "date": "string",
+        "items": []
+      }
+    ]
+  }
+  ```
+
+---
+
+### GET `/calendar/badges`
+
+Get calendar badge counts.
+
+- **Roles:** Any authenticated user
+- **Query Params:**
+  - `month` (required) — month number
+  - `year` (required) — year number
+- **Response:**
+  ```json
+  {
+    "badges": {
+      "YYYY-MM-DD": "number"
+    },
+    "totalAppointments": "number",
+    "openDays": "number",
+    "blockedDays": "number"
+  }
+  ```
+
+---
+
+## 23. Block Times (Time-Off)
+
+### GET `/doctors/:id/block-times`
+
+Get all block time entries for a doctor.
+
+- **Roles:** Any authenticated user
+- **Response:** `DoctorTimeOff[]`
+
+---
+
+### POST `/doctors/:id/block-times`
+
+Create a block time entry for a doctor.
+
+- **Roles:** `DOCTOR`
+- **Request Body:**
+  ```json
+  {
+    "startDate": "string",
+    "endDate": "string",
+    "reason": "TimeOffReason",
+    "note": "string (optional)",
+    "force": "boolean (optional)"
+  }
+  ```
+- **Response:** `CreateTimeOffResult` (201 Created or 409 Conflict)
+
+---
+
+### DELETE `/doctors/:id/block-times/:blockId`
+
+Delete a block time entry.
+
+- **Roles:** `DOCTOR`
+- **Response:**
+  ```json
+  {
+    "success": true
+  }
+  ```
+
+---
+
+### GET `/doctors/:id/block-times/calculate-fee`
+
+Calculate cancellation fee for an appointment.
+
+- **Roles:** Any authenticated user
+- **Query Params:**
+  - `appointmentId` (required) — appointment ID
+- **Response:**
+  ```json
+  {
+    "cancellationFee": "number",
+    "refundAmount": "number"
+  }
+  ```
+
+---
+
+## 24. Subscriptions
 
 ### GET `/subscriptions/plans`
 
-List available subscription plans.
+Get all available subscription plans.
 
 - **Roles:** Public
 - **Response:** `SubscriptionPlan[]`
 
+---
+
 ### GET `/subscriptions/my`
 
-Get current user's subscription.
+Get the authenticated user's current subscription.
 
-- **Roles:** Any authenticated
-- **Response:** `UserSubscription`
+- **Roles:** Any authenticated user
+- **Response:** `UserSubscription | null`
+
+---
 
 ### POST `/subscriptions/subscribe`
 
 Subscribe to a plan.
 
-- **Roles:** Any authenticated
+- **Roles:** Any authenticated user
 - **Request Body:**
   ```json
   {
@@ -1590,42 +2296,60 @@ Subscribe to a plan.
   ```
 - **Response:** `UserSubscription`
 
+---
+
 ### POST `/subscriptions/cancel`
 
-Cancel current subscription.
+Cancel the current subscription.
 
-- **Roles:** Any authenticated
-- **Response:** `{ success: true }`
+- **Roles:** Any authenticated user
+- **Response:** `UserSubscription`
+
+---
 
 ### GET `/subscriptions/admin/all`
 
-List all subscriptions (admin only).
+Get all subscriptions (admin view).
 
 - **Roles:** `ADMIN`
 - **Response:** `UserSubscription[]`
 
 ---
 
-## FAQs
+### GET `/admin/subscriptions`
+
+Get all subscriptions (admin view, alternative route).
+
+- **Roles:** `ADMIN`
+- **Response:** `UserSubscription[]`
+
+---
+
+## 25. FAQs
 
 ### GET `/faqs`
 
-List all FAQs (optionally filter by category).
+Get all FAQs.
 
 - **Roles:** Public
-- **Query Params:** `category` (optional)
+- **Query Params:**
+  - `category` (optional) — filter by category
 - **Response:** `Faq[]`
+
+---
 
 ### GET `/faqs/:id`
 
-Get single FAQ.
+Get a specific FAQ by ID.
 
 - **Roles:** Public
 - **Response:** `Faq`
 
+---
+
 ### POST `/admin/faqs`
 
-Create an FAQ (admin only).
+Create a new FAQ.
 
 - **Roles:** `ADMIN`
 - **Request Body:**
@@ -1637,60 +2361,75 @@ Create an FAQ (admin only).
     "order": "number (optional)"
   }
   ```
-- **Response:** `Faq`
-
-### PUT `/admin/faqs/:id`
-
-Update an FAQ (admin only).
-
-- **Roles:** `ADMIN`
-- **Request Body:** Same as create, all fields optional
-- **Response:** `Faq`
-
-### DELETE `/admin/faqs/:id`
-
-Delete an FAQ (admin only).
-
-- **Roles:** `ADMIN`
-- **Response:** `void`
+- **Response:** Created `Faq`
 
 ---
 
-## Support Tickets
+### PUT `/admin/faqs/:id`
+
+Update an existing FAQ.
+
+- **Roles:** `ADMIN`
+- **Request Body:** Same as POST, all fields optional
+- **Response:** Updated `Faq`
+
+---
+
+### DELETE `/admin/faqs/:id`
+
+Delete an FAQ.
+
+- **Roles:** `ADMIN`
+- **Response:**
+  ```json
+  {
+    "success": true
+  }
+  ```
+
+---
+
+## 26. Support Tickets
 
 ### POST `/support/tickets`
 
-Create a support ticket.
+Create a new support ticket.
 
-- **Roles:** Any authenticated
+- **Roles:** Any authenticated user
 - **Request Body:**
   ```json
   {
-    "subject": "string",
+    "subject": "string (max 200 characters)",
     "message": "string (optional)"
   }
   ```
 - **Response:** `SupportTicket`
 
+---
+
 ### GET `/support/tickets`
 
-List current user's support tickets.
+Get all support tickets for the authenticated user.
 
-- **Roles:** Any authenticated
+- **Roles:** Any authenticated user
 - **Response:** `SupportTicket[]`
+
+---
 
 ### GET `/support/tickets/:id`
 
-Get ticket details (owner or admin).
+Get a specific support ticket by ID.
 
-- **Roles:** Any authenticated (owner or admin)
-- **Response:** `SupportTicket` with replies
+- **Roles:** Any authenticated user
+- **Response:** `SupportTicket`
+
+---
 
 ### POST `/support/tickets/:id/reply`
 
-Reply to a ticket (owner or admin).
+Reply to a support ticket.
 
-- **Roles:** Any authenticated (owner or admin)
+- **Roles:** Any authenticated user
 - **Request Body:**
   ```json
   {
@@ -1699,192 +2438,169 @@ Reply to a ticket (owner or admin).
   ```
 - **Response:** `SupportTicketReply`
 
+---
+
 ### GET `/admin/support/tickets`
 
-List all support tickets (admin only).
+Get all support tickets (admin view).
 
 - **Roles:** `ADMIN`
 - **Response:** `SupportTicket[]`
 
+---
+
 ### PATCH `/admin/support/tickets/:id`
 
-Update ticket status (admin only).
+Update support ticket status.
 
 - **Roles:** `ADMIN`
 - **Request Body:**
   ```json
   {
-    "status": "open | in-progress | closed"
+    "status": "'open' | 'in-progress' | 'closed'"
   }
   ```
-- **Response:** `SupportTicket`
+- **Response:** Updated `SupportTicket`
 
 ---
 
-## Fields
+## 27. Fields
 
 ### GET `/fields`
 
-List current user's fields.
+Get all fields for the authenticated user.
 
-- **Roles:** Any authenticated
+- **Roles:** Any authenticated user
 - **Response:** `Field[]`
+
+---
 
 ### POST `/fields`
 
 Create a new field.
 
-- **Roles:** Any authenticated
+- **Roles:** Any authenticated user
 - **Request Body:**
   ```json
   {
-    "name": "string",
+    "name": "string (max 100 characters)",
     "sizeAcres": "number",
     "cropType": "string (optional)",
     "location": "string (optional)"
   }
   ```
-- **Response:** `Field`
-
-### PUT `/fields/:id`
-
-Update a field (owner only).
-
-- **Roles:** Any authenticated (owner)
-- **Request Body:** Same as create, all fields optional
-- **Response:** `Field`
-
-### DELETE `/fields/:id`
-
-Delete a field (owner only).
-
-- **Roles:** Any authenticated (owner)
-- **Response:** `void`
+- **Response:** Created `Field`
 
 ---
 
-## Market Rates
+### PUT `/fields/:id`
+
+Update an existing field.
+
+- **Roles:** Any authenticated user
+- **Request Body:** Same as POST, all fields optional
+- **Response:** Updated `Field`
+
+---
+
+### DELETE `/fields/:id`
+
+Delete a field.
+
+- **Roles:** Any authenticated user
+- **Response:**
+  ```json
+  {
+    "success": true
+  }
+  ```
+
+---
+
+## 28. Market Rates
 
 ### GET `/market-rates`
 
-Get today's/latest rates for all commodities.
+Get all market rates.
 
 - **Roles:** Public
 - **Response:** `MarketRate[]`
+
+---
 
 ### GET `/market-rates/history`
 
-Get historical rates for a commodity.
+Get market rate history.
 
 - **Roles:** Public
-- **Query Params:** `commodity` (required)
+- **Query Params:**
+  - `commodity` (optional) — filter by commodity
 - **Response:** `MarketRate[]`
+
+---
 
 ### POST `/admin/market-rates`
 
-Add or update a market rate (admin only).
+Create a new market rate entry.
 
 - **Roles:** `ADMIN`
 - **Request Body:**
   ```json
   {
-    "commodity": "string",
+    "commodity": "string (max 100 characters)",
     "price": "number",
     "unit": "string",
-    "date": "ISO date (optional)",
+    "date": "string",
     "region": "string (optional)"
   }
   ```
-- **Response:** `MarketRate`
+- **Response:** Created `MarketRate`
 
 ---
 
-## Badges
+## 29. Badges
 
 ### GET `/badges/available`
 
-Get all available badges (public).
+Get all available badges.
 
 - **Roles:** Public
 - **Response:** `Badge[]`
 
+---
+
 ### GET `/badges/me`
 
-Get user's earned badges.
+Get badges earned by the authenticated user.
 
-- **Roles:** Any authenticated
-- **Response:** `UserBadge[]`
-
----
-
-## Block Times
-
-### GET `/doctors/:id/block-times`
-
-List a doctor's blocked time-off ranges.
-
-- **Roles:** Public
-- **Response:** `BlockTime[]`
-
-### POST `/doctors/:id/block-times`
-
-Block a date range (doctor only).
-
-- **Roles:** `DOCTOR`
-- **Request Body:**
-  ```json
-  {
-    "startDate": "ISO date",
-    "endDate": "ISO date",
-    "reason": "TimeOffReason enum",
-    "note": "string (optional)",
-    "force": "boolean (optional, default false)"
-  }
-  ```
-- **Response:** `BlockTime`
-
-### DELETE `/doctors/:id/block-times/:blockId`
-
-Remove a blocked time-off range (doctor only).
-
-- **Roles:** `DOCTOR`
-- **Response:** `void`
-
-### GET `/doctors/:id/block-times/calculate-fee`
-
-Calculate cancellation fee for an appointment.
-
-- **Roles:** Any authenticated
-- **Query Params:** `appointmentId` (required)
-- **Response:**
-  ```json
-  {
-    "cancellationFee": "number",
-    "refundAmount": "number"
-  }
-  ```
+- **Roles:** Any authenticated user
+- **Response:** `Badge[]` (with `earnedAt` timestamp)
 
 ---
 
-## Delivery
+## 30. Delivery
 
 ### GET `/delivery/track/:trackingNumber`
 
-Public tracking of shipment by tracking number.
+Track a delivery by tracking number.
 
-- **Roles:** Public
+- **Roles:** Any authenticated user
 - **Response:** `Delivery`
+
+---
 
 ### GET `/delivery/order/:orderId`
 
-Get shipment tracking details for an order.
+Get delivery info for a specific order.
 
-- **Roles:** Any authenticated
+- **Roles:** Any authenticated user
 - **Response:** `Delivery`
+
+---
 
 ### POST `/delivery/order/:orderId`
 
-Create shipment/courier assignment.
+Create a delivery for an order.
 
 - **Roles:** `ADMIN`
 - **Request Body:**
@@ -1893,87 +2609,121 @@ Create shipment/courier assignment.
     "courierName": "string"
   }
   ```
-- **Response:** `Delivery`
+- **Response:** Created `Delivery`
+
+---
 
 ### PUT `/delivery/order/:orderId`
 
-Update shipment status and timeline event.
+Update delivery status.
 
 - **Roles:** `ADMIN`
 - **Request Body:**
   ```json
   {
-    "status": "PENDING | PICKED_UP | IN_TRANSIT | OUT_FOR_DELIVERY | DELIVERED | FAILED | RETURNED",
+    "status": "DeliveryStatus",
     "location": "string (optional)",
     "description": "string (optional)",
     "deliveryProofUrl": "string (optional)",
     "deliveryNotes": "string (optional)"
   }
   ```
-- **Response:** `Delivery`
+- **Response:** Updated `Delivery`
 
 ---
 
-## Chat
+## 31. Chat
 
 ### GET `/chat/conversations`
 
-List current user's conversations.
+Get all conversations for the authenticated user.
 
-- **Roles:** Any authenticated
+- **Roles:** Any authenticated user
 - **Response:** `Conversation[]`
+
+---
 
 ### GET `/chat/messages`
 
-List messages in a conversation.
+Get chat messages.
 
-- **Roles:** Any authenticated
-- **Query Params:** `conversationId` (required for non-USER roles)
+- **Roles:** Any authenticated user
+- **Query Params:**
+  - `conversationId` (optional) — filter by conversation
 - **Response:** `ChatMessageClientView[]`
+
+---
 
 ### POST `/chat/message`
 
-Send a text chat message.
+Send a text message.
 
-- **Roles:** Any authenticated
+- **Roles:** Any authenticated user
 - **Request Body:**
   ```json
   {
     "text": "string",
-    "conversationId": "number (optional, auto-created for USER)"
+    "conversationId": "number (optional)"
   }
   ```
 - **Response:** `ChatMessageClientView`
 
+---
+
 ### POST `/chat/message/attachment`
 
-Send a chat message with image/document attachment.
+Send an attachment message.
 
-- **Roles:** Any authenticated
-- **Request:** `multipart/form-data` with `file` field and optional `conversationId`, `caption`
+- **Roles:** Any authenticated user
+- **Request:** `multipart/form-data` with `file` field
+- **Query Params:**
+  - `conversationId` (optional) — conversation ID
+  - `caption` (optional) — message caption
 - **Response:** `ChatMessageClientView`
+
+---
 
 ### PATCH `/chat/messages/:id/read`
 
 Mark a message as read.
 
-- **Roles:** Any authenticated (participant only)
-- **Response:** Updated message object
+- **Roles:** Any authenticated user
+- **Response:** Updated message
 
 ---
 
-## Reviews
+### GET `/chat/appointments`
+
+Get appointments for chat (doctor view).
+
+- **Roles:** `DOCTOR`
+- **Query Params:**
+  - `page` (optional) — page number
+  - `limit` (optional) — items per page
+- **Response:**
+  ```json
+  {
+    "data": ["Appointment"],
+    "page": "number",
+    "limit": "number",
+    "total": "number"
+  }
+  ```
+
+---
+
+## 32. Reviews
 
 ### POST `/reviews`
 
-Submit a new review (validates purchase/booking).
+Create a new review.
 
-- **Roles:** Any authenticated
+- **Roles:** Any authenticated user
 - **Request Body:**
   ```json
   {
     "targetType": "PRODUCT | LIVESTOCK | DOCTOR | CLINIC | SERVICE",
-    "targetId": "string",
+    "targetId": "number",
     "rating": "number (1-5)",
     "text": "string",
     "images": "string[] (optional)",
@@ -1982,37 +2732,47 @@ Submit a new review (validates purchase/booking).
   ```
 - **Response:** `Review`
 
+---
+
 ### GET `/reviews/:targetType/:targetId`
 
-List approved reviews for a target.
+Get all reviews for a target.
 
 - **Roles:** Public
 - **Response:** `Review[]`
 
+---
+
 ### POST `/reviews/:id/helpful`
 
-Upvote review helpfulness.
+Mark a review as helpful.
 
-- **Roles:** Public
-- **Response:** `Review`
+- **Roles:** Any authenticated user
+- **Response:** Updated `Review`
+
+---
 
 ### POST `/reviews/:id/report`
 
-Report review as spam or inappropriate.
+Report a review.
 
-- **Roles:** Public
-- **Response:** `Review`
+- **Roles:** Any authenticated user
+- **Response:** Updated `Review`
+
+---
 
 ### GET `/reviews/reported`
 
-List all reported reviews.
+Get all reported reviews.
 
 - **Roles:** `ADMIN`
 - **Response:** `Review[]`
 
+---
+
 ### PATCH `/reviews/:id/moderate`
 
-Approve or reject a review.
+Moderate a review (approve/reject).
 
 - **Roles:** `ADMIN`
 - **Request Body:**
@@ -2021,11 +2781,13 @@ Approve or reject a review.
     "isApproved": "boolean"
   }
   ```
-- **Response:** `Review`
+- **Response:** Updated `Review`
+
+---
 
 ### POST `/reviews/:id/reply`
 
-Submit a reply to a review.
+Reply to a review.
 
 - **Roles:** `DOCTOR`, `ADMIN`
 - **Request Body:**
@@ -2034,24 +2796,32 @@ Submit a reply to a review.
     "replyText": "string"
   }
   ```
-- **Response:** `Review`
+- **Response:** Updated `Review`
 
 ---
 
-## Referrals
+## 33. Referrals
 
 ### GET `/referrals/me`
 
-Get current user's referral code, earnings, and share link.
+Get the authenticated user's referral info.
 
-- **Roles:** Any authenticated
-- **Response:** `Referral` with `shareLink` field
+- **Roles:** Any authenticated user
+- **Response:**
+  ```json
+  {
+    "referral": "Referral",
+    "shareLink": "string"
+  }
+  ```
+
+---
 
 ### POST `/referrals/claim`
 
-Claim another user's referral code. Rate limited: 30/minute.
+Claim a referral code (rate limited: 30/min).
 
-- **Roles:** Any authenticated
+- **Roles:** Any authenticated user
 - **Request Body:**
   ```json
   {
@@ -2062,130 +2832,178 @@ Claim another user's referral code. Rate limited: 30/minute.
 
 ---
 
-## AI Diagnosis
+## 34. AI Diagnosis
 
 ### POST `/ai-diagnosis/upload-image`
 
-Upload a photo for AI diagnosis.
+Upload an image for AI diagnosis.
 
-- **Roles:** Any authenticated
+- **Roles:** Any authenticated user
 - **Request:** `multipart/form-data` with `file` field
-- **Response:** `{ url: string }`
+- **Response:**
+  ```json
+  {
+    "url": "string"
+  }
+  ```
+
+---
 
 ### POST `/ai-diagnosis/analyze`
 
-Submit symptoms and photos for AI diagnosis (processed async).
+Analyze symptoms and images with AI.
 
-- **Roles:** Any authenticated
+- **Roles:** Any authenticated user
 - **Request Body:**
   ```json
   {
-    "images": "string[] (optional, URLs)",
-    "symptoms": "string[] (required, non-empty)"
+    "images": ["string (URL)"],
+    "symptoms": ["string (non-empty array)"]
   }
   ```
 - **Response:** `AiDiagnosis` (status: PENDING)
 
+---
+
 ### GET `/ai-diagnosis/history`
 
-Get current user's diagnostic check history.
+Get AI diagnosis history for the authenticated user.
 
-- **Roles:** Any authenticated
+- **Roles:** Any authenticated user
 - **Response:** `AiDiagnosis[]`
+
+---
 
 ### GET `/ai-diagnosis/:id`
 
-Poll diagnosis by ID for status/result.
+Get a specific AI diagnosis by ID.
 
-- **Roles:** Any authenticated (own only)
+- **Roles:** Any authenticated user
 - **Response:** `AiDiagnosis`
 
 ---
 
-## Medical Records
+## 35. Medical Records
 
 ### POST `/medical-records/upload`
 
-Upload a medical file (PDF/image/DICOM) for processing.
+Upload a medical record attachment.
 
-- **Roles:** Any authenticated
-- **Request:** `multipart/form-data` with `file` field, optional `patientId` (doctors), optional `appointmentId`
+- **Roles:** Any authenticated user
+- **Request:** `multipart/form-data` with `file` field
+- **Query Params:**
+  - `patientId` (optional) — patient ID
+  - `appointmentId` (optional) — appointment ID
 - **Response:** `Attachment` (status: UPLOADED)
+
+---
 
 ### GET `/medical-records`
 
-List medical records. Patients see own; doctors provide `patientId` query.
+Get medical record attachments.
 
-- **Roles:** Any authenticated
-- **Query Params:** `patientId` (required for doctors)
+- **Roles:** Any authenticated user
+- **Query Params:**
+  - `patientId` (optional, required for doctors) — filter by patient
 - **Response:** `Attachment[]`
+
+---
 
 ### GET `/medical-records/:id`
 
-Get single attachment (ownership-checked).
+Get a specific medical record attachment.
 
-- **Roles:** Any authenticated (own/patient records)
+- **Roles:** Any authenticated user
 - **Response:** `Attachment`
 
 ---
 
-## Medical Events
+## 36. Medical Events
 
 ### GET `/animals/:id/medical-events`
 
-List structured clinical records for an animal.
+Get medical events for a specific animal.
 
-- **Roles:** Any authenticated (owner or treating doctor)
-- **Query Params:** `type` (optional: `LAB_TEST | VACCINATION | CONSULTATION`), `page`, `limit`
+- **Roles:** Any authenticated user
+- **Query Params:**
+  - `type` (optional) — `LAB_TEST`, `VACCINATION`, or `CONSULTATION`
+  - `page` (optional) — page number
+  - `limit` (optional) — items per page
 - **Response:** `PaginatedResult<MedicalEvent>`
+
+---
 
 ### GET `/medical-events/:id`
 
-Get a single medical event by ID.
+Get a specific medical event by ID.
 
-- **Roles:** Any authenticated (owner or treating doctor)
+- **Roles:** Any authenticated user
 - **Response:** `MedicalEvent`
+
+---
 
 ### POST `/animals/:id/medical-events`
 
-Create a structured clinical record for an animal.
+Create a new medical event for an animal.
 
 - **Roles:** `DOCTOR`
 - **Request Body:**
   ```json
   {
     "appointmentId": "number (optional)",
-    "type": "LAB_TEST | VACCINATION | CONSULTATION",
-    "data": "object"
+    "type": "string",
+    "data": "object",
+    "nextFollowUpAt": "string (optional)"
   }
   ```
-- **Response:** `MedicalEvent`
+- **Response:** Created `MedicalEvent`
+
+---
 
 ### PATCH `/medical-events/:eventId`
 
-Update a clinical record.
+Update a medical event.
 
-- **Roles:** `DOCTOR` (own records)
-- **Request Body:** Partial `MedicalEvent` fields
-- **Response:** `MedicalEvent`
+- **Roles:** `DOCTOR`
+- **Request Body:**
+  ```json
+  {
+    "status": "string (optional)",
+    "data": "object (optional)"
+  }
+  ```
+- **Response:** Updated `MedicalEvent`
+
+---
 
 ### DELETE `/medical-events/:id`
 
 Delete a medical event.
 
-- **Roles:** `DOCTOR` (own records)
-- **Response:** `{ success: true }`
+- **Roles:** `DOCTOR`
+- **Response:**
+  ```json
+  {
+    "success": true
+  }
+  ```
+
+---
+
+## 37. Lab Tests
 
 ### GET `/lab-tests/animal/:animalId`
 
-Get animal's lab test records.
+Get lab tests for a specific animal.
 
-- **Roles:** Any authenticated (owner or treating doctor)
+- **Roles:** Any authenticated user
 - **Response:** `MedicalEvent[]`
+
+---
 
 ### POST `/lab-tests`
 
-Create a lab test record.
+Create a new lab test.
 
 - **Roles:** `DOCTOR`
 - **Request Body:**
@@ -2196,26 +3014,40 @@ Create a lab test record.
     "data": "object"
   }
   ```
-- **Response:** `MedicalEvent`
+- **Response:** Created `MedicalEvent`
+
+---
 
 ### PUT `/lab-tests/:id`
 
-Update a lab test record.
+Update a lab test.
 
-- **Roles:** `DOCTOR` (own records)
-- **Request Body:** Partial `MedicalEvent` fields
-- **Response:** `MedicalEvent`
+- **Roles:** `DOCTOR`
+- **Request Body:**
+  ```json
+  {
+    "status": "string (optional)",
+    "data": "object (optional)"
+  }
+  ```
+- **Response:** Updated `MedicalEvent`
+
+---
+
+## 38. Vaccinations
 
 ### GET `/vaccinations/animal/:animalId`
 
-Get animal's vaccination records.
+Get vaccinations for a specific animal.
 
-- **Roles:** Any authenticated (owner or treating doctor)
+- **Roles:** Any authenticated user
 - **Response:** `MedicalEvent[]`
+
+---
 
 ### POST `/vaccinations`
 
-Create a vaccination record.
+Create a new vaccination record.
 
 - **Roles:** `DOCTOR`
 - **Request Body:**
@@ -2226,107 +3058,189 @@ Create a vaccination record.
     "data": "object"
   }
   ```
-- **Response:** `MedicalEvent`
+- **Response:** Created `MedicalEvent`
+
+---
 
 ### PUT `/vaccinations/:id`
 
 Update a vaccination record.
 
-- **Roles:** `DOCTOR` (own records)
-- **Request Body:** Partial `MedicalEvent` fields
-- **Response:** `MedicalEvent`
+- **Roles:** `DOCTOR`
+- **Request Body:**
+  ```json
+  {
+    "status": "string (optional)",
+    "data": "object (optional)"
+  }
+  ```
+- **Response:** Updated `MedicalEvent`
+
+---
 
 ### DELETE `/vaccinations/:id`
 
 Delete a vaccination record.
 
-- **Roles:** `DOCTOR` (own records)
-- **Response:** `{ success: true }`
+- **Roles:** `DOCTOR`
+- **Response:**
+  ```json
+  {
+    "success": true
+  }
+  ```
+
+---
+
+## 39. Consultations
 
 ### GET `/consultations/animal/:animalId`
 
-Get animal's consultation records.
+Get consultations for a specific animal.
 
-- **Roles:** Any authenticated (owner or treating doctor)
+- **Roles:** Any authenticated user
 - **Response:** `MedicalEvent[]`
+
+---
 
 ### GET `/consultations/:id`
 
-Get a single consultation record.
+Get a specific consultation by ID.
 
-- **Roles:** Any authenticated (owner or treating doctor)
+- **Roles:** Any authenticated user
 - **Response:** `MedicalEvent`
+
+---
 
 ### PUT `/consultations/:id`
 
-Update a consultation record.
-
-- **Roles:** `DOCTOR` (own records)
-- **Request Body:** Partial `MedicalEvent` fields
-- **Response:** `MedicalEvent`
-
-### POST `/consultations/:id/end`
-
-End a consultation (mark as completed).
+Update a consultation.
 
 - **Roles:** `DOCTOR`
-- **Response:** `MedicalEvent`
-
----
-
-## Alerts
-
-### GET `/alerts`
-
-List active regional crop/disease risk alerts.
-
-- **Roles:** Any authenticated
-- **Query Params:** `severity` (optional)
-- **Response:** `Alert[]`
-
-### POST `/alerts/:id/action`
-
-Dispatch user's chosen action on an alert.
-
-- **Roles:** Any authenticated
 - **Request Body:**
   ```json
   {
-    "actionChoice": "AlertActionType enum"
+    "status": "string (optional)",
+    "data": "object (optional)"
   }
   ```
-- **Response:** `{ success: true }`
+- **Response:** Updated `MedicalEvent`
 
 ---
 
-## Notifications
+### POST `/consultations/:id/end`
+
+End a consultation.
+
+- **Roles:** `DOCTOR`
+- **Response:** Updated `MedicalEvent`
+
+---
+
+## 40. Alerts
+
+### GET `/alerts`
+
+Get all alerts for the authenticated user.
+
+- **Roles:** Any authenticated user
+- **Query Params:**
+  - `severity` (optional) — filter by severity level
+- **Response:** `Alert[]`
+
+---
+
+### POST `/alerts/:id/action`
+
+Take action on an alert.
+
+- **Roles:** Any authenticated user
+- **Request Body:**
+  ```json
+  {
+    "actionChoice": "AlertActionType"
+  }
+  ```
+- **Response:**
+  ```json
+  {
+    "success": true
+  }
+  ```
+
+---
+
+## 41. Notifications
 
 ### GET `/notifications`
 
-Get current user's notifications.
+Get all notifications for the authenticated user.
 
-- **Roles:** Any authenticated
+- **Roles:** Any authenticated user
 - **Response:** `Notification[]`
+
+---
+
+### GET `/notifications/user`
+
+Alias for `GET /notifications`.
+
+- **Roles:** Any authenticated user
+- **Response:** `Notification[]`
+
+---
+
+### GET `/notifications/unread-count`
+
+Get count of unread notifications.
+
+- **Roles:** Any authenticated user
+- **Response:**
+  ```json
+  {
+    "count": "number"
+  }
+  ```
+
+---
+
+### GET `/notifications/:id`
+
+Get a specific notification by ID.
+
+- **Roles:** Any authenticated user
+- **Response:** `Notification`
+
+---
 
 ### PATCH `/notifications/:id/read`
 
 Mark a notification as read.
 
-- **Roles:** Any authenticated
-- **Response:** `Notification`
+- **Roles:** Any authenticated user
+- **Response:** Updated `Notification`
 
-### POST `/notifications/read-all`
+---
 
-Mark all user notifications as read.
+### PATCH `/notifications/read-all`
 
-- **Roles:** Any authenticated
-- **Response:** `{ success: true }`
+Mark all notifications as read.
+
+- **Roles:** Any authenticated user
+- **Response:**
+  ```json
+  {
+    "success": true
+  }
+  ```
+
+---
 
 ### POST `/notifications/push-token`
 
-Register Expo push token for current device.
+Register a push notification token.
 
-- **Roles:** Any authenticated
+- **Roles:** Any authenticated user
 - **Request Body:**
   ```json
   {
@@ -2334,112 +3248,170 @@ Register Expo push token for current device.
     "deviceId": "string (optional)"
   }
   ```
-- **Response:** `{ success: true }`
+- **Response:**
+  ```json
+  {
+    "success": true
+  }
+  ```
+
+---
 
 ### DELETE `/notifications/push-token`
 
-Unregister Expo push token.
+Remove a push notification token.
 
-- **Roles:** Any authenticated
+- **Roles:** Any authenticated user
 - **Request Body:**
   ```json
   {
     "token": "string"
   }
   ```
-- **Response:** `{ success: true }`
-
-### GET `/notifications/preferences`
-
-Get current user's notification preferences.
-
-- **Roles:** Any authenticated
 - **Response:**
   ```json
   {
-    "appointmentReminders": "boolean",
-    "promotions": "boolean",
-    "chatMessages": "boolean",
-    "prescriptionUpdates": "boolean",
-    "labResults": "boolean",
-    "vaccinationReminders": "boolean"
+    "success": true
   }
   ```
+
+---
+
+### GET `/notifications/preferences`
+
+Get notification preferences for the authenticated user.
+
+- **Roles:** Any authenticated user
+- **Response:** `NotificationPreference` with fields:
+  - `appointmentReminders` — boolean
+  - `chatMessages` — boolean
+  - `promotionalOffers` — boolean
+  - `systemUpdates` — boolean
+  - `weatherAlerts` — boolean
+  - `taskReminders` — boolean
+  - `followUpReminders` — boolean
+  - `hygieneReminders` — boolean
+  - `prescriptionUpdates` — boolean
+  - `labResults` — boolean
+  - `vaccinationReminders` — boolean
+
+---
 
 ### PUT `/notifications/preferences`
 
 Update notification preferences.
 
-- **Roles:** Any authenticated
-- **Request Body:** Same as GET response, all fields optional
-- **Response:** Updated preferences
+- **Roles:** Any authenticated user
+- **Request Body:**
+  ```json
+  {
+    "appointmentReminders": "boolean (optional)",
+    "chatMessages": "boolean (optional)",
+    "promotionalOffers": "boolean (optional)",
+    "systemUpdates": "boolean (optional)",
+    "weatherAlerts": "boolean (optional)",
+    "taskReminders": "boolean (optional)",
+    "followUpReminders": "boolean (optional)",
+    "hygieneReminders": "boolean (optional)",
+    "prescriptionUpdates": "boolean (optional)",
+    "labResults": "boolean (optional)",
+    "vaccinationReminders": "boolean (optional)"
+  }
+  ```
+- **Response:** Updated `NotificationPreference`
 
 ---
 
-## Tasks
+## 42. Tasks (rate limited: 30/min)
 
 ### GET `/tasks`
 
-Get current user's tasks for a given day. Rate limited: 30/minute.
+Get tasks for a specific date.
 
-- **Roles:** Any authenticated
-- **Query Params:** `date` (YYYY-MM-DD, required), `category` (optional: `field | animal | appointment | other`), `priority` (optional)
+- **Roles:** Any authenticated user
+- **Query Params:**
+  - `date` (required) — format YYYY-MM-DD
+  - `category` (optional) — `field`, `animal`, `appointment`, or `other`
+  - `priority` (optional) — `low`, `medium`, or `high`
 - **Response:** `Task[]`
+
+---
 
 ### POST `/tasks`
 
-Create a task.
+Create a new task.
 
-- **Roles:** Any authenticated
+- **Roles:** Any authenticated user
 - **Request Body:**
   ```json
   {
     "title": "string",
     "detail": "string (optional)",
-    "scheduledTime": "string (ISO 8601 date)",
-    "category": "field | animal | appointment | other (optional)",
-    "priority": "low | medium | high (optional)",
-    "dueDate": "string (YYYY-MM-DD, optional)"
+    "scheduledTime": "string (ISO date)",
+    "category": "string (optional)",
+    "priority": "'low' | 'medium' | 'high' (optional)",
+    "dueDate": "string (optional)"
   }
   ```
-- **Response:** `Task`
+- **Response:** Created `Task`
+
+---
 
 ### PATCH `/tasks/:id/toggle`
 
-Toggle task done/undone.
+Toggle task completion status.
 
-- **Roles:** Any authenticated (own only)
-- **Response:** `Task`
+- **Roles:** Any authenticated user
+- **Response:** Updated `Task`
+
+---
 
 ### DELETE `/tasks/:id`
 
 Delete a task.
 
-- **Roles:** Any authenticated (own only)
-- **Response:** `{ success: true }`
+- **Roles:** Any authenticated user
+- **Response:**
+  ```json
+  {
+    "success": true
+  }
+  ```
 
 ---
 
-## Search
+## 43. Search
 
 ### GET `/search`
 
-Mixed global search across products, livestock, clinics, and doctors.
+Search across products, livestock, clinics, and doctors.
 
 - **Roles:** Public
-- **Query Params:** `q` (search text)
-- **Response:** Aggregated results object
+- **Query Params:**
+  - `q` (required) — search query
+- **Response:**
+  ```json
+  {
+    "products": ["Product"],
+    "livestock": ["Livestock"],
+    "clinics": ["Clinic"],
+    "doctors": ["Doctor"]
+  }
+  ```
 
 ---
 
-## Weather
+## 44. Weather
 
 ### GET `/weather`
 
-Get current farm weather for a location.
+Get current weather information.
 
 - **Roles:** Public
-- **Query Params:** `lat` (optional), `long` (optional), `district` (optional)
+- **Query Params:**
+  - `lat` (optional) — latitude
+  - `long` (optional) — longitude
+  - `district` (optional) — district name
 - **Response:**
   ```json
   {
@@ -2459,58 +3431,418 @@ Get current farm weather for a location.
 
 ---
 
-## Admin
+## 45. Health
 
-All admin endpoints require `ADMIN` role.
+### GET `/health`
 
-### Admin - Users
+Check API health status.
 
-#### GET `/admin/users`
+- **Roles:** Public
+- **Response (200 OK):**
+  ```json
+  {
+    "status": "healthy",
+    "timestamp": "string",
+    "details": {
+      "database": {
+        "status": "UP"
+      }
+    }
+  }
+  ```
+- **Response (503 Service Unavailable):**
+  ```json
+  {
+    "status": "unhealthy",
+    "timestamp": "string",
+    "details": {
+      "database": {
+        "status": "DOWN"
+      }
+    }
+  }
+  ```
 
-List users with pagination and search.
+---
 
-- **Query Params:** `page`, `limit`, `search`
+## 46. Admin Auth (`/admins`)
+
+### POST `/admins/login`
+
+Login as admin (rate limited: 10/min).
+
+- **Request Body:**
+  ```json
+  {
+    "email": "string",
+    "password": "string"
+  }
+  ```
+- **Response:**
+  ```json
+  {
+    "admin": "Admin",
+    "accessToken": "string",
+    "refreshToken": "string"
+  }
+  ```
+
+---
+
+### POST `/admins/register`
+
+Register a new admin (rate limited: 5/min).
+
+- **Request Body:**
+  ```json
+  {
+    "name": "string (optional)",
+    "email": "string",
+    "password": "string (8-100 characters)",
+    "role": "AdminRole (optional)",
+    "designation": "AdminDesignation",
+    "avatar": "string (optional)",
+    "status": "string (optional)"
+  }
+  ```
+- **Response:** Created `Admin`
+
+---
+
+### POST `/admins/send-otp`
+
+Send OTP for admin verification (rate limited: 5/min).
+
+- **Request Body:**
+  ```json
+  {
+    "email": "string",
+    "purpose": "'verify' | 'reset' (optional)"
+  }
+  ```
+- **Response:**
+  ```json
+  {
+    "success": true
+  }
+  ```
+
+---
+
+### POST `/admins/verify-otp`
+
+Verify admin OTP (rate limited: 10/min).
+
+- **Request Body:**
+  ```json
+  {
+    "email": "string",
+    "code": "string",
+    "purpose": "'verify' | 'reset' (optional)"
+  }
+  ```
+- **Response:**
+  ```json
+  {
+    "success": true
+  }
+  ```
+
+---
+
+### POST `/admins/forgot-password`
+
+Request admin password reset (rate limited: 5/min).
+
+- **Request Body:**
+  ```json
+  {
+    "email": "string"
+  }
+  ```
+- **Response:**
+  ```json
+  {
+    "success": true
+  }
+  ```
+
+---
+
+### POST `/admins/reset-password`
+
+Reset admin password (rate limited: 5/min).
+
+- **Request Body:**
+  ```json
+  {
+    "resetToken": "string",
+    "newPassword": "string (8-100 characters)"
+  }
+  ```
+- **Response:**
+  ```json
+  {
+    "success": true
+  }
+  ```
+
+---
+
+### POST `/admins/refresh`
+
+Refresh admin access token.
+
+- **Request Body:**
+  ```json
+  {
+    "refreshToken": "string"
+  }
+  ```
+- **Response:**
+  ```json
+  {
+    "accessToken": "string",
+    "refreshToken": "string"
+  }
+  ```
+
+---
+
+### POST `/admins/logout`
+
+Logout admin.
+
+- **Request Body:**
+  ```json
+  {
+    "refreshToken": "string"
+  }
+  ```
+- **Response:**
+  ```json
+  {
+    "success": true
+  }
+  ```
+
+---
+
+### GET `/admins/profile`
+
+Get authenticated admin's profile.
+
+- **Roles:** Admin JWT
+- **Response:** `Admin`
+
+---
+
+### PATCH `/admins/profile`
+
+Update authenticated admin's profile.
+
+- **Roles:** Admin JWT
+- **Request Body:**
+  ```json
+  {
+    "name": "string (optional)",
+    "designation": "string (optional)",
+    "password": "string (optional)"
+  }
+  ```
+- **Response:** Updated `Admin`
+
+---
+
+## 47. Admin CRUD (`/admins`) — Roles: SUPER_ADMIN
+
+### GET `/admins`
+
+Get all admins.
+
+- **Roles:** `SUPER_ADMIN`
+- **Query Params:**
+  - `page` (optional) — page number
+  - `limit` (optional) — items per page
+  - `search` (optional) — search term
+- **Response:** `PaginatedResult<Admin>`
+
+---
+
+### POST `/admins`
+
+Create a new admin.
+
+- **Roles:** `SUPER_ADMIN`
+- **Request Body:**
+  ```json
+  {
+    "name": "string (optional)",
+    "email": "string",
+    "password": "string (8-100 characters)",
+    "role": "AdminRole (optional)",
+    "designation": "AdminDesignation",
+    "avatar": "string (optional)",
+    "status": "string (optional)"
+  }
+  ```
+- **Response:** Created `Admin`
+
+---
+
+### GET `/admins/:id`
+
+Get a specific admin by ID.
+
+- **Roles:** `SUPER_ADMIN`
+- **Response:** `Admin`
+
+---
+
+### PUT `/admins/:id`
+
+Update an existing admin.
+
+- **Roles:** `SUPER_ADMIN`
+- **Request Body:**
+  ```json
+  {
+    "name": "string (optional)",
+    "email": "string (optional)",
+    "role": "AdminRole (optional)",
+    "designation": "AdminDesignation (optional)",
+    "avatar": "string (optional)",
+    "status": "string (optional)"
+  }
+  ```
+- **Response:** Updated `Admin`
+
+---
+
+### DELETE `/admins/:id`
+
+Delete an admin.
+
+- **Roles:** `SUPER_ADMIN`
+- **Response:**
+  ```json
+  {
+    "success": "boolean"
+  }
+  ```
+
+---
+
+### PATCH `/admins/:id/deactivate`
+
+Toggle admin active status.
+
+- **Roles:** `SUPER_ADMIN`
+- **Response:** Updated `Admin` (toggled status)
+
+---
+
+## 48. Admin Users (`/admin/users`)
+
+### GET `/admin/users`
+
+Get all users.
+
+- **Roles:** `ADMIN`
+- **Query Params:**
+  - `page` (optional) — page number
+  - `limit` (optional) — items per page
+  - `search` (optional) — search term
 - **Response:** `PaginatedResult<User>`
 
-#### PATCH `/admin/users/:id/role`
+---
+
+### PATCH `/admin/users/:id/role`
 
 Update a user's role.
 
+- **Roles:** `ADMIN`
 - **Request Body:**
   ```json
   {
     "role": "USER | DOCTOR | CLINIC | ADMIN"
   }
   ```
-- **Response:** `User`
+- **Response:** Updated `User`
 
-### Admin - Orders
+---
 
-#### GET `/admin/orders`
+### PUT `/admin/users/:id`
 
-List all orders with pagination and status filter.
+Update a user's profile.
 
-- **Query Params:** `page`, `limit`, `status`
-- **Response:** `Order[]` or `PaginatedResult<Order>`
-
-#### PATCH `/admin/orders/:id/status`
-
-Update order status.
-
+- **Roles:** `ADMIN`
 - **Request Body:**
   ```json
   {
-    "status": "PENDING | CONFIRMED | PREPARING | PACKED | SHIPPED | DELIVERED | COMPLETED | CANCELLED | REFUNDED | RETURNED | FAILED"
+    "name": "string (optional)",
+    "email": "string (optional)",
+    "phone": "string (optional)",
+    "role": "string (optional)",
+    "profilePhoto": "string (optional)",
+    "verified": "boolean (optional)"
   }
   ```
-- **Response:** `Order`
+- **Response:** Updated `User`
 
-### Admin - Alerts
+---
 
-#### POST `/admin/alerts`
+### DELETE `/admin/users/:id`
 
-Create and broadcast an alert.
+Delete a user.
 
+- **Roles:** `ADMIN`
+- **Response:**
+  ```json
+  {
+    "success": true
+  }
+  ```
+
+---
+
+## 49. Admin Orders (`/admin/orders`)
+
+### GET `/admin/orders`
+
+Get all orders.
+
+- **Roles:** `ADMIN`
+- **Query Params:**
+  - `page` (optional) — page number
+  - `limit` (optional) — items per page
+  - `status` (optional) — filter by status
+- **Response:** `Order[]`
+
+---
+
+### PATCH `/admin/orders/:id/status`
+
+Update order status.
+
+- **Roles:** `ADMIN`
+- **Request Body:**
+  ```json
+  {
+    "status": "PENDING | SHIPPED | DELIVERED | CANCELLED"
+  }
+  ```
+- **Response:** Updated `Order`
+
+---
+
+## 50. Admin Alerts (`/admin/alerts`)
+
+### POST `/admin/alerts`
+
+Create a new alert.
+
+- **Roles:** `ADMIN`
 - **Request Body:**
   ```json
   {
@@ -2518,47 +3850,73 @@ Create and broadcast an alert.
     "location": "string",
     "crop": "string",
     "severity": "LOW | MEDIUM | HIGH | CRITICAL",
-    "actionType": "AlertActionType enum"
+    "actionType": "AlertActionType"
   }
   ```
-- **Response:** `Alert`
+- **Response:** Created `Alert`
 
-#### DELETE `/admin/alerts/:id`
+---
 
-Deactivate an alert.
+### DELETE `/admin/alerts/:id`
 
-- **Response:** `{ success: true }`
+Delete an alert.
 
-### Admin - Notifications
+- **Roles:** `ADMIN`
+- **Response:**
+  ```json
+  {
+    "success": true
+  }
+  ```
 
-#### GET `/admin/notifications`
+---
 
-List sent notifications with pagination.
+## 51. Admin Notifications (`/admin/notifications`)
 
-- **Query Params:** `page`, `limit`, `type`, `userId`
+### GET `/admin/notifications`
+
+Get all notifications (admin view).
+
+- **Roles:** `ADMIN`
+- **Query Params:**
+  - `page` (optional) — page number
+  - `limit` (optional) — items per page
+  - `type` (optional) — filter by `NotificationType`
+  - `userId` (optional) — filter by user ID
 - **Response:** `PaginatedResult<Notification>`
 
-#### POST `/admin/notifications/send`
+---
 
-Send notification to specific users.
+### POST `/admin/notifications/send`
 
+Send notifications to specific users.
+
+- **Roles:** `ADMIN`
 - **Request Body:**
   ```json
   {
-    "userIds": "number[]",
+    "userIds": ["number"],
     "title": "string",
     "body": "string",
     "type": "NotificationType (optional)",
     "referenceType": "string (optional)",
-    "referenceId": "string (optional)"
+    "referenceId": "number (optional)"
   }
   ```
-- **Response:** `{ count: number }`
+- **Response:**
+  ```json
+  {
+    "count": "number"
+  }
+  ```
 
-#### POST `/admin/notifications/broadcast`
+---
 
-Broadcast notification to all users or by role.
+### POST `/admin/notifications/broadcast`
 
+Broadcast notifications to all users or a specific role.
+
+- **Roles:** `ADMIN`
 - **Request Body:**
   ```json
   {
@@ -2568,52 +3926,113 @@ Broadcast notification to all users or by role.
     "role": "USER | DOCTOR | CLINIC | ADMIN (optional)"
   }
   ```
-- **Response:** `{ queued: true }`
+- **Response:**
+  ```json
+  {
+    "queued": true
+  }
+  ```
 
-### Admin - Referrals
+---
 
-#### GET `/admin/referrals/pending`
+## 52. Admin Referrals (`/admin/referrals`)
 
-List referrals pending payout.
+### GET `/admin/referrals/pending`
 
+Get all pending referrals.
+
+- **Roles:** `ADMIN`
 - **Response:** `Referral[]`
 
-#### POST `/admin/referrals/:id/approve`
+---
 
-Approve a referral payout.
+### POST `/admin/referrals/:id/approve`
 
+Approve a pending referral.
+
+- **Roles:** `ADMIN`
 - **Request Body:**
   ```json
   {
-    "amount": "number (min 0.01)"
+    "amount": "number (>= 0.01)"
   }
   ```
 - **Response:** `Referral`
 
 ---
 
-## Health
+## 53. Admin Discounts (`/admin/discounts`)
 
-### GET `/health`
+### POST `/admin/discounts`
 
-Check database and Redis connectivity.
+Create a new discount code.
 
-- **Roles:** Public
-- **Response (200):**
+- **Roles:** `ADMIN`
+- **Request Body:**
   ```json
   {
-    "status": "healthy",
-    "timestamp": "ISO 8601",
-    "details": {
-      "database": { "status": "UP" },
-      "redis": { "status": "UP" }
-    }
+    "code": "string (alphanumeric, max 10 characters)",
+    "percent": "number (1-100)",
+    "validFrom": "string (optional)",
+    "validTo": "string (optional)",
+    "usageLimit": "number (optional)",
+    "isActive": "boolean (optional)"
   }
   ```
-- **Response (503):** ServiceUnavailableException with same shape, status "unhealthy"
+- **Response:** `Discount`
 
 ---
 
-## Swagger Docs
+### PATCH `/admin/discounts/:id`
 
-Full interactive API docs available at `/api/docs` when server is running.
+Update an existing discount code.
+
+- **Roles:** `ADMIN`
+- **Request Body:** Same as POST, all fields optional
+- **Response:** Updated `Discount`
+
+---
+
+### DELETE `/admin/discounts/:id`
+
+Delete a discount code.
+
+- **Roles:** `ADMIN`
+- **Response:**
+  ```json
+  {
+    "success": true
+  }
+  ```
+
+---
+
+## 54. WebSocket: ChatGateway
+
+**Transport:** Socket.IO
+**CORS:** `*`
+**Auth:** JWT in `handshake.auth.token`
+
+### Client Events
+
+| Event | Payload | Description |
+|-------|---------|-------------|
+| `joinConversation` | `{ conversationId }` | Join a conversation room |
+| `sendMessage` | `{ conversationId, text }` | Save and broadcast message |
+| `typing` | `{ conversationId, isTyping }` | Typing indicator |
+| `markRead` | `{ messageId }` | Mark message as read |
+
+### Server Events Emitted
+
+| Event | Room | Payload |
+|-------|------|---------|
+| `messageReceived` | conversation room | `ChatMessageClientView` |
+| `messageStatusUpdate` | conversation room | `{ id, status }` |
+| `typingIndicator` | conversation room | `{ userId, isTyping }` |
+| `conversationUpdated` | `user:{userId}` rooms | message payload |
+
+---
+
+## 55. Swagger
+
+Full interactive API documentation available at `/api/docs` when the server is running.
