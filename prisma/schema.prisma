@@ -1,0 +1,1410 @@
+// ============================================================================
+// GOBADI APP — PRISMA SCHEMA REFERENCE
+// ============================================================================
+// DOCUMENTATION/REFERENCE ONLY. NOT for migrations or runtime.
+// Backend uses TypeORM (not Prisma). 52 models, 79 FK relationships fully expressed.
+// NOTE: Some @@map names match TypeORM @Entity names, not Prisma conventions.
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+//   url      = "postgresql://dummy:dummy@localhost:5432/dummy"
+}
+
+// ============================================================================
+// ENUMS
+// ============================================================================
+
+enum UserRole {
+  user
+  doctor
+  clinic
+  admin
+}
+
+enum AdminRole {
+  admin
+  super_admin
+}
+
+enum AdminDesignation {
+  founder
+  co_founder
+  manager
+  developer
+  analyst
+  support
+}
+
+enum AdminStatus {
+  active
+  deactive
+}
+
+enum AiDiagnosisStatus {
+  PENDING
+  READY
+  FAILED
+}
+
+enum AlertSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum AlertActionType {
+  MANAGE
+  SCHEDULE
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  RESCHEDULED
+  CANCELLED
+  COMPLETED
+}
+
+enum ConsultationType {
+  online_video
+  online_voice
+  online_chat
+  physical
+}
+
+enum MessageStatus {
+  SENT
+  DELIVERED
+  READ
+}
+
+enum AttachmentStatus {
+  UPLOADED
+  PROCESSING
+  READY
+  FAILED
+}
+
+enum DeliveryStatus {
+  pending
+  picked_up
+  in_transit
+  out_for_delivery
+  delivered
+  failed
+  returned
+}
+
+enum InventoryMovementType {
+  addition
+  reservation
+  sale
+  return
+  adjustment
+}
+
+enum LivestockStatus {
+  draft
+  published
+  archived
+}
+
+enum OrderStatus {
+  pending
+  confirmed
+  preparing
+  packed
+  shipped
+  delivered
+  completed
+  cancelled
+  refunded
+  returned
+  failed
+}
+
+enum PaymentStatus {
+  pending
+  processing
+  successful
+  failed
+  cancelled
+  expired
+  refunded
+}
+
+enum PaymentMethodType {
+  bkash
+  card
+  cash
+}
+
+enum MedicalEventType {
+  CONSULTATION
+  TREATMENT
+  VACCINATION
+  LAB_TEST
+}
+
+enum MedicalEventStatus {
+  ONGOING
+  COMPLETED
+}
+
+enum NotificationType {
+  order
+  booking
+  payment
+  delivery
+  reminder
+  ai_ready
+  prescription_ready
+  promotion
+  system
+  message
+  referral
+}
+
+enum PayoutStatus {
+  NONE
+  PENDING
+  PAID
+}
+
+enum ProductStatus {
+  draft
+  published
+  archived
+}
+
+enum ReviewTargetType {
+  product
+  livestock
+  doctor
+  clinic
+  service
+}
+
+enum SubscriptionStatus {
+  active
+  cancelled
+  expired
+}
+
+enum TaskPriority {
+  low
+  medium
+  high
+}
+
+enum TimeOffReason {
+  vacation
+  sick_leave
+  conference_training
+  emergency
+  other
+}
+
+enum TicketStatus {
+  open
+  // in_progress @db("in-progress")
+  closed
+}
+
+enum VideoSessionStatus {
+  WAITING
+  ACTIVE
+  ENDED
+}
+
+enum ProviderType {
+  doctor
+  clinic
+  ai
+}
+
+enum ChatAttachmentType {
+  image
+  document
+}
+
+// ============================================================================
+// MODELS — All relationships expressed as @relation
+// ============================================================================
+
+// ── ADMIN ──────────────────────────────────────────────────────────────────
+
+model Admin {
+  id          Int              @id @default(autoincrement())
+  name        String?
+  email       String           @unique
+  password    String           @db.Text
+  role        AdminRole        @default(admin)
+  designation AdminDesignation
+  avatar      String?
+  phone       String?
+  status      AdminStatus      @default(active)
+  verified    Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  refreshTokens AdminRefreshToken[]
+
+  @@map("admins")
+}
+
+model AdminRefreshToken {
+  id        Int       @id @default(autoincrement())
+  adminId   Int
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  admin     Admin     @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@map("admin_refresh_tokens")
+}
+
+// ── USERS ──────────────────────────────────────────────────────────────────
+
+model RefreshToken {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model User {
+  id                    Int       @id @default(autoincrement())
+  phone                 String?   @unique
+  role                  UserRole  @default(user)
+  name                  String?
+  email                 String?   @unique
+  avatar                String?
+  password              String?   @db.Text
+  verified              Boolean   @default(false)
+  profilePhoto          String?
+  dateOfBirth           DateTime? @db.Date
+  bloodGroup            String?
+  allergies             String?   @db.Text
+  emergencyContactName  String?
+  emergencyContactPhone String?
+  language              String    @default("en")
+  isDoctorVerified      Boolean   @default(false)
+  verificationDocuments String[]  @default([])
+  googleId              String?   @unique
+  facebookId            String?   @unique
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  // ── Reverse relations (one-to-one) ──
+  doctor                 Doctor?
+  wallet                 Wallet?
+  referral               Referral?
+  notificationPreference NotificationPreference?
+
+  // ── Reverse relations (one-to-many) ──
+  addresses              Address[]
+  clinics                Clinic[]
+  livestockListings      Livestock[]
+  refreshTokens          RefreshToken[]
+  cartItems              CartItem[]
+  wishlistItems          WishlistItem[]
+  orders                 Order[]
+  transactions           Transaction[]
+  notifications          Notification[]
+  pushTokens             PushToken[]
+  reviews                Review[]
+  aiDiagnoses            AiDiagnosis[]
+  paymentMethods         PaymentMethod[]
+  userSubscriptions      UserSubscription[]
+  supportTickets         SupportTicket[]
+  tasks                  Task[]
+  fields                 Field[]
+  animals                Animal[]
+  badges                 UserBadge[]
+  ticketReplies          SupportTicketReply[]
+
+  // ── Named reverse relations (multiple paths) ──
+  conversationDoctorUser  Conversation[] @relation("ConversationDoctorUser")
+  conversationPatient     Conversation[] @relation("ConversationPatient")
+  chatMessagesSent        ChatMessage[]
+  prescriptionOwners      Prescription[]
+  attachmentUploads       Attachment[]
+  videoSessionDoctor      VideoSession[] @relation("VideoSessionDoctorUser")
+  alertActionLogs         AlertActionLog[]
+  cancelledAppointments   Appointment[]  @relation("AppointmentCancelledBy")
+  appointmentPatients     Appointment[]  @relation("AppointmentPatient")
+
+  @@map("users")
+}
+
+// ── DOCTORS ────────────────────────────────────────────────────────────────
+
+model Doctor {
+  id              Int      @id @default(autoincrement())
+  userId          Int?    @unique
+  name            String
+  specialty       String
+  experience      String
+  rating          Float    @default(4.8)
+  avatar          String
+  bio             String   @db.Text
+  qualifications  String[] @default([])
+  licenseNumber   String?
+  consultationFee Float    @default(500)
+  isVerified      Boolean  @default(false)
+
+  // ── Outgoing FKs ──
+  user            User?    @relation(fields: [userId], references: [id])
+
+  // ── Reverse relations ──
+  availability    Availability[]
+  timeOff         DoctorTimeOff[]
+  conversations   Conversation[]
+  appointments    Appointment[]
+  prescriptions   Prescription[]
+  medicalEvents   MedicalEvent[]
+  patientDiscounts PatientDiscount[]
+  clinics         Clinic[] @relation("ClinicDoctors")
+
+  @@index([userId])
+  @@index([specialty])
+  @@map("doctors")
+}
+
+model Availability {
+  id                  Int       @id @default(autoincrement())
+  doctorId            Int
+  dayOfWeek           Int?
+  startTime           String
+  endTime             String
+  slotDurationMinutes Int       @default(30)
+  bufferMinutes       Int       @default(10)
+  isActive            Boolean   @default(true)
+  specificDate        DateTime? @db.Date
+  isAvailable         Boolean   @default(true)
+  overrideSlots       String[]  @default([])
+
+  doctor              Doctor    @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@index([doctorId])
+  @@map("doctor_availability")
+}
+
+model DoctorTimeOff {
+  id        Int          @id @default(autoincrement())
+  doctorId  Int
+  startDate DateTime     @db.Date
+  endDate   DateTime     @db.Date
+  reason    TimeOffReason
+  note      String?      @db.Text
+  createdAt DateTime     @default(now())
+
+  doctor    Doctor       @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@index([doctorId])
+  @@map("doctor_time_off")
+}
+
+// ── CLINICS ────────────────────────────────────────────────────────────────
+
+model Clinic {
+  id            Int      @id @default(autoincrement())
+  userId        Int
+  name          String
+  location      String
+  businessHours Json?
+  isVerified    Boolean  @default(false)
+  rating        Float    @default(5.0)
+  avatar        String?
+  description   String   @db.Text
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // ── Outgoing FKs ──
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // ── ManyToMany ──
+  // TypeORM join table: clinic_doctors (clinicId, doctorId)
+  doctors       Doctor[] @relation("ClinicDoctors")
+
+  // ── Reverse relations ──
+  appointments  Appointment[]
+
+  @@index([userId])
+  @@map("clinics")
+}
+
+// ── SERVICES (polymorphic — no @relation for providerId) ───────────────────
+
+model Service {
+  id                      Int      @id @default(autoincrement())
+  providerType            ProviderType
+  providerId              Int
+  name                    String
+  description             String   @db.Text
+  durationMinutes         Int
+  price                   Float
+  preparationInstructions String?  @db.Text
+  requirements            String?  @db.Text
+  isOnline                Boolean  @default(true)
+  isOffline               Boolean  @default(false)
+  location                String?
+  cancellationPolicy      String?  @db.Text
+  isActive                Boolean  @default(true)
+  isRecurring             Boolean  @default(false)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  // Polymorphic FK: providerId — cannot have @relation
+
+  @@index([providerId])
+  @@map("services")
+}
+
+// ── ANIMALS ────────────────────────────────────────────────────────────────
+
+model Animal {
+  id     Int    @id @default(autoincrement())
+  userId Int?
+  name   String
+  breed  String
+  weight String
+  age    String
+  color  String
+  image  String?
+
+  // ── Outgoing FKs ──
+  user             User?             @relation(fields: [userId], references: [id])
+
+  // ── Reverse relations ──
+  appointments     Appointment[]
+  medicalEvents    MedicalEvent[]
+  attachments      Attachment[]
+  prescriptions    Prescription[]
+  videoSessions    VideoSession[]    @relation("AnimalVideoSessions")
+  patientDiscounts PatientDiscount[]
+
+  @@index([userId])
+  @@index([name])
+  @@index([breed])
+  @@map("animals")
+}
+
+// ── APPOINTMENTS ───────────────────────────────────────────────────────────
+
+model Appointment {
+  id                    Int               @id @default(autoincrement())
+  doctorId              Int
+  clinicId              Int?
+  serviceId             Int?
+  patientId             Int
+  animalId              Int?
+  startAt               DateTime
+  endAt                 DateTime
+  durationMinutes       Int
+  price                 Float             @default(0)
+  paymentStatus         String            @default("pending")
+  paymentTransactionId  String?
+  prescription          String?           @db.Text
+  notes                 String?           @db.Text
+  consultationType      ConsultationType?
+  reasonForConsultation String?           @db.Text
+  symptoms              String[]          @default([])
+  followUpId            Int?
+  status                AppointmentStatus @default(CONFIRMED)
+  reminder24hSent       Boolean           @default(false)
+  reminder1hSent        Boolean           @default(false)
+  cancelledAt           DateTime?
+  cancelledByUserId     Int?
+  cancellationReason    String?           @db.Text
+  cancellationFee       Decimal           @default(0) @db.Decimal(10, 2)
+  refundAmount          Decimal           @default(0) @db.Decimal(10, 2)
+  walletTransactionId   String?
+  consultationNotes     String?           @db.Text
+  followUpDate          DateTime?         @db.Date
+  originalStartAt       DateTime?
+  rescheduledAt         DateTime?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  // ── Outgoing FKs ──
+  doctor                Doctor            @relation(fields: [doctorId], references: [id])
+  clinic                Clinic?           @relation(fields: [clinicId], references: [id])
+  patient               User              @relation("AppointmentPatient", fields: [patientId], references: [id])
+  animal                Animal?           @relation(fields: [animalId], references: [id])
+  cancelledByUser       User?             @relation("AppointmentCancelledBy", fields: [cancelledByUserId], references: [id])
+
+  // serviceId FK → polymorphic Service (no @relation)
+
+  // ── Reverse relations ──
+  prescriptions         Prescription[]
+  medicalEvents         MedicalEvent[]
+  attachments           Attachment[]
+  videoSessions         VideoSession[]
+  conversations         Conversation[]
+  followUpFor           Appointment?      @relation("AppointmentFollowUp", fields: [followUpId], references: [id])
+  followUpChildren      Appointment[]     @relation("AppointmentFollowUp")
+
+  // NOTE: TypeORM entity uses conditional unique: where status != 'CANCELLED'
+  // Prisma does not support conditional unique indexes — this is unconditional.
+  @@unique([doctorId, startAt], name: "UQ_doctor_startAt")
+  @@index([doctorId])
+  @@index([clinicId])
+  @@index([serviceId])
+  @@index([patientId])
+  @@index([animalId])
+  @@map("appointments")
+}
+
+// ── CHAT ───────────────────────────────────────────────────────────────────
+
+model Conversation {
+  id            Int        @id @default(autoincrement())
+  doctorId      Int
+  doctorUserId  Int?
+  patientId     Int
+  appointmentId Int?
+  lastMessageAt DateTime?
+  createdAt     DateTime   @default(now())
+
+  // ── Outgoing FKs ──
+  doctor        Doctor     @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  doctorUser    User?      @relation("ConversationDoctorUser", fields: [doctorUserId], references: [id])
+  patient       User       @relation("ConversationPatient", fields: [patientId], references: [id])
+  appointment   Appointment? @relation(fields: [appointmentId], references: [id])
+
+  // ── Reverse relations ──
+  messages      ChatMessage[]
+
+  @@unique([doctorId, patientId])
+  @@index([doctorId])
+  @@index([patientId])
+  @@index([appointmentId])
+  @@map("conversations")
+}
+
+model ChatMessage {
+  id                 Int                @id @default(autoincrement())
+  conversationId     Int
+  senderId           Int
+  senderRole         UserRole
+  text               String             @db.Text
+  createdAt          DateTime           @default(now())
+  status             MessageStatus      @default(SENT)
+  deliveredAt        DateTime?
+  readAt             DateTime?
+  attachmentUrl      String?
+  attachmentType     ChatAttachmentType?
+  attachmentMimeType String?
+
+  // ── Outgoing FKs ──
+  conversation       Conversation       @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender             User               @relation(fields: [senderId], references: [id])
+
+  @@index([conversationId])
+  @@index([senderId])
+  @@map("chat_messages")
+}
+
+// ── PRODUCTS ───────────────────────────────────────────────────────────────
+
+model Category {
+  id          Int     @id @default(autoincrement())
+  name        String  @unique
+  slug        String  @unique
+  description String?
+
+  products    Product[]
+
+  @@map("categories")
+}
+
+model Brand {
+  id          Int     @id @default(autoincrement())
+  name        String  @unique
+  slug        String  @unique
+  description String?
+  logo        String?
+  website     String?
+
+  products    Product[]
+
+  @@map("brands")
+}
+
+model Product {
+  id                     Int          @id @default(autoincrement())
+  sku                    String       @unique
+  barcode                String?
+  name                   String
+  description            String       @db.Text
+  price                  Float
+  discount               Float        @default(0)
+  brandId                Int?
+  categoryId             Int?
+  specifications         Json?
+  instructions           String?      @db.Text
+  images                 String[]     @default([])
+  videos                 String[]     @default([])
+  documents              String[]     @default([])
+  seoTitle               String?
+  seoDescription         String?
+  seoKeywords            String?
+  status                 ProductStatus @default(draft)
+  visibility             Boolean      @default(true)
+  isPrescriptionRequired Boolean      @default(false)
+  deletedAt              DateTime?
+  createdAt              DateTime     @default(now())
+  updatedAt              DateTime     @updatedAt
+
+  // ── Outgoing FKs ──
+  brand                  Brand?       @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  category               Category?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  // ── Reverse relations ──
+  cartItems              CartItem[]
+  wishlistItems          WishlistItem[]
+  orderItems             OrderItem[]
+  inventoryLedger        InventoryLedger[]
+
+  @@index([barcode])
+  @@index([brandId])
+  @@index([categoryId])
+  @@map("products")
+}
+
+model InventoryLedger {
+  id           Int                   @id @default(autoincrement())
+  productId    Int
+  movementType InventoryMovementType
+  quantity     Int
+  batchNumber  String?
+  expiryDate   DateTime?             @db.Date
+  referenceId  String?
+  createdAt    DateTime              @default(now())
+
+  product      Product               @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@map("inventory_ledger")
+}
+
+// ── LIVESTOCK ──────────────────────────────────────────────────────────────
+
+model Livestock {
+  id                 Int            @id @default(autoincrement())
+  sellerId           Int
+  species            String
+  breed              String
+  age                String
+  weight             Float
+  gender             String
+  vaccinationHistory Json?
+  medicalHistory     Json?
+  healthStatus       String
+  pregnancyStatus    String?
+  certification      String?
+  farmName           String
+  location           String
+  images             String[]       @default([])
+  videos             String[]       @default([])
+  documents          String[]       @default([])
+  price              Float
+  isNegotiable       Boolean        @default(false)
+  isFeatured         Boolean        @default(false)
+  isReserved         Boolean        @default(false)
+  isSold             Boolean        @default(false)
+  status             LivestockStatus @default(draft)
+  isVerified         Boolean        @default(false)
+  deletedAt          DateTime?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  // ── Outgoing FKs ──
+  seller             User           @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+
+  // ── Reverse relations ──
+  cartItems          CartItem[]
+  wishlistItems      WishlistItem[]
+  orderItems         OrderItem[]
+
+  @@index([sellerId])
+  @@index([species])
+  @@index([breed])
+  @@map("livestock")
+}
+
+// ── CART & WISHLIST ────────────────────────────────────────────────────────
+
+model CartItem {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  productId   Int?
+  livestockId Int?
+  quantity    Int      @default(1)
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product     Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
+  livestock   Livestock? @relation(fields: [livestockId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("cart_items")
+}
+
+model WishlistItem {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  productId   Int?
+  livestockId Int?
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product     Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
+  livestock   Livestock? @relation(fields: [livestockId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("wishlist_items")
+}
+
+// ── ORDERS ─────────────────────────────────────────────────────────────────
+
+model Order {
+  id              String      @id
+  userId          Int
+  totalPrice      Float
+  tax             Float
+  shippingFee     Float
+  discountAmount  Float       @default(0)
+  netAmount       Float
+  deliveryAddress Json
+  deliveryMethod  String
+  trackingNumber  String?
+  eta             DateTime?
+  status          OrderStatus @default(pending)
+  paymentStatus   String      @default("pending")
+  transactionId   String?
+  deliveryNotes   String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  // ── Outgoing FKs ──
+  user            User        @relation(fields: [userId], references: [id])
+
+  // ── Reverse relations ──
+  items           OrderItem[]
+  delivery        Delivery?
+
+  @@index([userId])
+  @@index([status])
+  @@map("orders")
+}
+
+model OrderItem {
+  id          Int      @id @default(autoincrement())
+  orderId     String
+  productId   Int?
+  livestockId Int?
+  quantity    Int
+  price       Float
+  discount    Float    @default(0)
+  name        String
+
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product     Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  livestock   Livestock? @relation(fields: [livestockId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+// ── PAYMENTS ───────────────────────────────────────────────────────────────
+
+model Transaction {
+  id                   String        @id @default(uuid())
+  orderId              String?
+  bookingId            Int?
+  userId               Int
+  amount               Float
+  provider             String
+  status               PaymentStatus @default(pending)
+  gatewayTransactionId String?
+  gatewayMetadata      Json?
+  redirectUrl          String?
+  callbackUrl          String?
+  auditTrail           Json          @default("[]")
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  // ── Outgoing FKs ──
+  user                 User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // NOTE: orderId (String PK) and bookingId (Int PK) cannot have @relation
+  // because Prisma doesn't support cross-type PK references.
+  // Transaction.orderId → Order.id (String PK)
+  // Transaction.bookingId → Appointment.id (Int PK)
+
+  @@index([orderId])
+  @@index([bookingId])
+  @@index([userId])
+  @@map("transactions")
+}
+
+model PaymentMethod {
+  id              Int               @id @default(autoincrement())
+  userId          Int
+  type            PaymentMethodType
+  maskedNumber    String?
+  provider        String?
+  isDefault       Boolean           @default(false)
+  isVerified      Boolean           @default(false)
+  verificationOtp String?
+  createdAt       DateTime          @default(now())
+
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("payment_methods")
+}
+
+// ── DELIVERY ───────────────────────────────────────────────────────────────
+
+model Delivery {
+  id               Int            @id @default(autoincrement())
+  orderId          String         @unique
+  trackingNumber   String         @unique
+  courierName      String
+  status           DeliveryStatus @default(pending)
+  timeline         Json           @default("[]")
+  deliveryProofUrl String?
+  deliveryNotes    String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  order            Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@map("deliveries")
+}
+
+// ── REVIEWS (polymorphic — targetId cannot have @relation) ────────────────
+
+model Review {
+  id           Int              @id @default(autoincrement())
+  userId       Int
+  targetType   ReviewTargetType
+  targetId     String
+  rating       Int
+  text         String           @db.Text
+  images       String[]         @default([])
+  videos       String[]         @default([])
+  reply        String?          @db.Text
+  helpfulCount Int              @default(0)
+  isReported   Boolean          @default(false)
+  isApproved   Boolean          @default(true)
+  isVerified   Boolean          @default(false)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([targetType, targetId, isApproved])
+  @@map("reviews")
+}
+
+// ── AI DIAGNOSIS ───────────────────────────────────────────────────────────
+
+model AiDiagnosis {
+  id                   Int              @id @default(autoincrement())
+  userId               Int
+  images               String[]         @default([])
+  symptoms             String[]         @default([])
+  status               AiDiagnosisStatus @default(PENDING)
+  failureReason        String?
+  analysisResult       String?          @db.Text
+  confidenceScore      Float?
+  recommendations      String[]         @default([])
+  recommendedDoctorIds Int[]            @default([])
+  prescriptionId       Int?
+  createdAt            DateTime         @default(now())
+
+  user                 User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  prescription         Prescription?    @relation(fields: [prescriptionId], references: [id])
+
+  @@index([userId])
+  @@index([prescriptionId])
+  @@map("ai_diagnoses")
+}
+
+// ── MEDICAL EVENTS & ATTACHMENTS ───────────────────────────────────────────
+
+model MedicalEvent {
+  id             Int                @id @default(autoincrement())
+  patientId      Int
+  appointmentId  Int
+  doctorId       Int
+  type           MedicalEventType
+  status         MedicalEventStatus @default(ONGOING)
+  data           Json
+  nextFollowUpAt DateTime?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  // Polymorphic: patientId references Animal (fixed FK), type discriminator
+
+  animal         Animal             @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  appointment    Appointment        @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  doctor         Doctor             @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+  @@index([appointmentId])
+  @@index([doctorId])
+  @@map("medical_events")
+}
+
+model Attachment {
+  id               Int              @id @default(autoincrement())
+  patientId        Int
+  appointmentId    Int?
+  uploadedByUserId Int
+  originalFileName String
+  mimeType         String
+  fileSizeBytes    Int
+  storageUrl       String?
+  storagePublicId  String?
+  status           AttachmentStatus @default(UPLOADED)
+  failureReason    String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  animal           Animal           @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  appointment      Appointment?     @relation(fields: [appointmentId], references: [id])
+  uploadedByUser   User             @relation(fields: [uploadedByUserId], references: [id])
+
+  @@index([patientId])
+  @@index([appointmentId])
+  @@index([uploadedByUserId])
+  @@map("attachments")
+}
+
+// ── PRESCRIPTIONS ──────────────────────────────────────────────────────────
+
+model Prescription {
+  id            Int      @id @default(autoincrement())
+  appointmentId Int
+  doctorId      Int
+  animalId      Int
+  ownerId       Int
+  medicines     Json?
+  attachmentUrl String?
+  sentAt        DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  doctor        Doctor      @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  animal        Animal      @relation(fields: [animalId], references: [id], onDelete: Cascade)
+  owner         User        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  aiDiagnoses   AiDiagnosis[]
+
+  @@index([appointmentId])
+  @@index([doctorId])
+  @@index([animalId])
+  @@index([ownerId])
+  @@map("prescriptions")
+}
+
+// ── NOTIFICATIONS ──────────────────────────────────────────────────────────
+
+model Notification {
+  id            Int              @id @default(autoincrement())
+  userId        Int
+  title         String
+  body          String           @db.Text
+  type          NotificationType @default(system)
+  referenceType String?
+  referenceId   String?
+  isRead        Boolean          @default(false)
+  createdAt     DateTime         @default(now())
+
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Polymorphic: referenceId — cannot have @relation
+
+  @@index([userId])
+  @@map("notifications")
+}
+
+model NotificationPreference {
+  id                   Int      @id @default(autoincrement())
+  userId               Int      @unique
+  appointmentReminders Boolean  @default(true)
+  promotions           Boolean  @default(true)
+  chatMessages         Boolean  @default(true)
+  prescriptionUpdates  Boolean  @default(true)
+  labResults           Boolean  @default(true)
+  vaccinationReminders Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notification_preferences")
+}
+
+model PushToken {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  token     String   @unique
+  deviceId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("push_tokens")
+}
+
+// ── VIDEO CALL ─────────────────────────────────────────────────────────────
+
+model VideoSession {
+  id            Int               @id @default(autoincrement())
+  appointmentId Int
+  channelName   String
+  status        VideoSessionStatus @default(WAITING)
+  doctorUserId  Int?
+  patientId     Int?
+  startedAt     DateTime?
+  endedAt       DateTime?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  appointment   Appointment       @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  doctorUser    User?             @relation("VideoSessionDoctorUser", fields: [doctorUserId], references: [id])
+  animal        Animal?           @relation("AnimalVideoSessions", fields: [patientId], references: [id])
+
+  @@index([appointmentId])
+  @@index([doctorUserId])
+  @@index([patientId])
+  @@map("video_sessions")
+}
+
+// ── WALLET ─────────────────────────────────────────────────────────────────
+
+model Wallet {
+  id      Int     @id @default(autoincrement())
+  userId  Int     @unique
+  balance Float   @default(0)
+  coins   Int     @default(0)
+
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions  WalletTransaction[]
+
+  @@map("wallets")
+}
+
+model WalletTransaction {
+  id            Int      @id @default(autoincrement())
+  walletId      Int
+  amount        Float
+  reason        String
+  referenceType String?
+  referenceId   String?
+  createdAt     DateTime @default(now())
+
+  wallet        Wallet   @relation(fields: [walletId], references: [id])
+
+  @@index([walletId])
+  @@map("wallet_transactions")
+}
+
+// ── ADDRESSES ──────────────────────────────────────────────────────────────
+
+model Address {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  label       String
+  contactName String
+  phone       String
+  division    String
+  district    String
+  upazila     String
+  postalCode  String
+  latitude    Float?
+  longitude   Float?
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("addresses")
+}
+
+// ── ALERTS ─────────────────────────────────────────────────────────────────
+
+model Alert {
+  id         Int             @id @default(autoincrement())
+  title      String
+  location   String
+  crop       String
+  severity   AlertSeverity
+  actionType AlertActionType
+  isActive   Boolean         @default(true)
+  createdAt  DateTime        @default(now())
+
+  actionLogs AlertActionLog[]
+
+  @@index([isActive])
+  @@map("alerts")
+}
+
+model AlertActionLog {
+  id           Int             @id @default(autoincrement())
+  alertId      Int
+  userId       Int
+  actionChoice AlertActionType
+  createdAt    DateTime        @default(now())
+
+  alert        Alert           @relation(fields: [alertId], references: [id], onDelete: Cascade)
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([alertId])
+  @@index([userId])
+  @@map("alert_action_logs")
+}
+
+// ── REFERRALS ──────────────────────────────────────────────────────────────
+
+model Referral {
+  id                   Int        @id @default(autoincrement())
+  userId               Int        @unique
+  referralCode         String     @unique
+  totalEarned          Float      @default(0)
+  pendingAmount        Float      @default(0)
+  payoutStatus         PayoutStatus @default(NONE)
+  referralCount        Int        @default(0)
+  redeemedReferralCode String?
+  createdAt            DateTime   @default(now())
+
+  user                 User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("referrals")
+}
+
+// ── SUBSCRIPTIONS ──────────────────────────────────────────────────────────
+
+model SubscriptionPlan {
+  id           Int      @id @default(autoincrement())
+  name         String
+  price        Decimal  @db.Decimal(10, 2)
+  durationDays Int
+  features     Json?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  userSubscriptions UserSubscription[]
+
+  @@map("subscription_plans")
+}
+
+model UserSubscription {
+  id        Int                @id @default(autoincrement())
+  userId    Int
+  planId    Int
+  startDate DateTime
+  endDate   DateTime
+  status    SubscriptionStatus @default(active)
+  createdAt DateTime           @default(now())
+
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan      SubscriptionPlan   @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([planId])
+  @@map("user_subscriptions")
+}
+
+// ── MARKET RATES ───────────────────────────────────────────────────────────
+
+model MarketRate {
+  id        Int      @id @default(autoincrement())
+  commodity String
+  price     Decimal  @db.Decimal(10, 2)
+  unit      String
+  date      DateTime @db.Date
+  region    String?
+  createdAt DateTime @default(now())
+
+  @@index([commodity])
+  @@map("market_rates")
+}
+
+// ── DISCOUNTS ──────────────────────────────────────────────────────────────
+
+model Discount {
+  id         Int       @id @default(autoincrement())
+  code       String    @unique
+  percent    Float
+  validFrom  DateTime? @db.Date
+  validTo    DateTime? @db.Date
+  usageLimit Int?
+  usageCount Int       @default(0)
+  isActive   Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@map("discounts")
+}
+
+model PatientDiscount {
+  id        Int      @id @default(autoincrement())
+  doctorId  Int
+  patientId Int
+  percent   Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  doctor    Doctor   @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  animal    Animal   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@unique([doctorId, patientId])
+  @@index([doctorId])
+  @@index([patientId])
+  @@map("patient_discounts")
+}
+
+// ── FIELDS ─────────────────────────────────────────────────────────────────
+
+model Field {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  name      String
+  sizeAcres Decimal  @db.Decimal(10, 2)
+  cropType  String?
+  location  String?
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("fields")
+}
+
+// ── TASKS ──────────────────────────────────────────────────────────────────
+
+model Task {
+  id            Int          @id @default(autoincrement())
+  userId        Int
+  title         String
+  detail        String?      @db.Text
+  scheduledTime DateTime
+  isDone        Boolean      @default(false)
+  category      String?
+  priority      TaskPriority @default(medium)
+  dueDate       DateTime?    @db.Date
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([scheduledTime])
+  @@map("tasks")
+}
+
+// ── FAQs ───────────────────────────────────────────────────────────────────
+
+model Faq {
+  id        Int      @id @default(autoincrement())
+  question  String   @db.Text
+  answer    String   @db.Text
+  category  String?
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@map("faqs")
+}
+
+// ── BADGES ─────────────────────────────────────────────────────────────────
+
+model Badge {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String   @db.Text
+  icon        String?
+  criteria    Json
+  createdAt   DateTime @default(now())
+
+  userBadges  UserBadge[]
+
+  @@map("badges")
+}
+
+model UserBadge {
+  id       Int      @id @default(autoincrement())
+  userId   Int
+  badgeId  Int
+  earnedAt DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge    Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([badgeId])
+  @@map("user_badges")
+}
+
+// ── SUPPORT ────────────────────────────────────────────────────────────────
+
+model SupportTicket {
+  id        Int          @id @default(autoincrement())
+  userId    Int
+  subject   String
+  message   String?      @db.Text
+  status    TicketStatus @default(open)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  replies   SupportTicketReply[]
+
+  @@index([userId])
+  @@map("support_tickets")
+}
+
+model SupportTicketReply {
+  id        Int      @id @default(autoincrement())
+  ticketId  Int
+  authorId  Int
+  message   String   @db.Text
+  createdAt DateTime @default(now())
+
+  ticket    SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  author    User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+  @@index([authorId])
+  @@map("support_ticket_replies")
+}
