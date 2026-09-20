@@ -12,6 +12,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { RtcSurfaceView, RenderModeType } from 'react-native-agora';
 import { useAgora } from '@/hooks/use-agora';
+import { agoraManager } from '@/lib/agora-manager';
 import { CallControls } from '@/components/CallControls';
 import {
   useJoinSessionQuery,
@@ -70,6 +71,7 @@ export default function VideoCallScreen() {
 
   const handleEndCall = async () => {
     try {
+      await agoraManager.leave();
       await endSession(appointmentId).unwrap();
     } catch {
       // ignore

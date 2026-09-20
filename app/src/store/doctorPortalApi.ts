@@ -13,6 +13,7 @@ export interface DoctorProfile {
   qualifications: string[];
   specializations?: string[];
   experiences?: DoctorExperience[];
+  licenseNumber?: string;
 }
 
 export interface DoctorExperience {
