@@ -32,10 +32,28 @@ export interface Conversation {
   createdAt: string;
 }
 
+export interface ChatAppointment {
+  id: number;
+  doctorId: number;
+  patientId: number;
+  patientName?: string;
+  animalName?: string;
+  startAt: string;
+  endAt: string;
+  status: string;
+}
+
+export interface ChatAppointmentsResponse {
+  data: ChatAppointment[];
+  page: number;
+  limit: number;
+  total: number;
+}
+
 export const chatApi = createApi({
   reducerPath: 'chatApi',
   baseQuery: baseQueryWithReauth,
-  tagTypes: ['ChatMessage', 'Conversation'],
+  tagTypes: ['ChatMessage', 'Conversation', 'ChatAppointment'],
   endpoints: (builder) => ({
     getConversations: builder.query<Conversation[], void>({
       query: () => '/chat/conversations',
@@ -45,6 +63,19 @@ export const chatApi = createApi({
       query: (conversationId) =>
         conversationId ? `/chat/messages?conversationId=${conversationId}` : '/chat/messages',
       providesTags: ['ChatMessage'],
+    }),
+    getDoctorAppointments: builder.query<
+      ChatAppointmentsResponse,
+      { page?: number; limit?: number }
+    >({
+      query: (params) => {
+        const query = new URLSearchParams();
+        if (params.page) query.set('page', String(params.page));
+        if (params.limit) query.set('limit', String(params.limit));
+        const qs = query.toString();
+        return `/chat/appointments${qs ? `?${qs}` : ''}`;
+      },
+      providesTags: ['ChatAppointment'],
     }),
     sendMessage: builder.mutation<ChatMessage, { text: string; conversationId?: number }>({
       query: ({ text, conversationId }) => ({
@@ -57,7 +88,6 @@ export const chatApi = createApi({
     sendAttachmentMessage: builder.mutation<ChatMessage, SendAttachmentInput>({
       query: ({ conversationId, caption, file }) => {
         const formData = new FormData();
-        // React Native's FormData accepts { uri, name, type } file objects directly.
         formData.append('file', file as unknown as Blob);
         if (conversationId) formData.append('conversationId', String(conversationId));
         if (caption) formData.append('caption', caption);
@@ -75,6 +105,7 @@ export const chatApi = createApi({
 export const {
   useGetConversationsQuery,
   useGetMessagesQuery,
+  useGetDoctorAppointmentsQuery,
   useSendMessageMutation,
   useSendAttachmentMessageMutation,
 } = chatApi;

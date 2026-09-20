@@ -10,6 +10,11 @@ export interface NotificationPreference {
   systemUpdates: boolean;
   weatherAlerts: boolean;
   taskReminders: boolean;
+  followUpReminders: boolean;
+  hygieneReminders: boolean;
+  prescriptionUpdates: boolean;
+  labResults: boolean;
+  vaccinationReminders: boolean;
   createdAt: string;
   updatedAt: string;
 }

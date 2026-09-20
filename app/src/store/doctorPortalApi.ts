@@ -11,6 +11,15 @@ export interface DoctorProfile {
   avatar: string;
   bio: string;
   qualifications: string[];
+  specializations?: string[];
+  experiences?: DoctorExperience[];
+}
+
+export interface DoctorExperience {
+  title: string;
+  organization: string;
+  duration: string;
+  description?: string;
 }
 
 export type AppointmentStatus =
@@ -32,10 +41,42 @@ export interface DoctorAppointment {
   animalAge?: string;
   animalImage?: string;
   symptoms?: string;
+  consultationType?: string;
+  consultationNotes?: string;
   startAt: string;
   endAt: string;
   status: AppointmentStatus;
   createdAt: string;
+}
+
+export interface TodayStats {
+  totalToday: number;
+  completedToday: number;
+}
+
+export interface DashboardStats {
+  totalPatients: number;
+  totalConsultations: number;
+  yearsOfExperience: string;
+  specializations: string[];
+  qualifications: string[];
+  consultationFee: number;
+  rating: number;
+}
+
+export interface DoctorSchedule {
+  appointments: DoctorAppointment[];
+  blockTimes: BlockTime[];
+}
+
+export interface BlockTime {
+  id: number;
+  doctorId: number;
+  startDate: string;
+  endDate: string;
+  reason?: string;
+  note?: string;
+  isAllDay: boolean;
 }
 
 export interface AvailabilityEntry {
@@ -55,7 +96,7 @@ export interface Availability extends AvailabilityEntry {
 export const doctorPortalApi = createApi({
   reducerPath: 'doctorPortalApi',
   baseQuery: baseQueryWithReauth,
-  tagTypes: ['DoctorBookings', 'Availability'],
+  tagTypes: ['DoctorBookings', 'Availability', 'Dashboard'],
   endpoints: (builder) => ({
     getMyDoctorProfile: builder.query<DoctorProfile, void>({
       query: () => '/doctors/me',
@@ -64,8 +105,47 @@ export const doctorPortalApi = createApi({
       query: () => '/doctors/bookings/all',
       providesTags: ['DoctorBookings'],
     }),
+    getBookingById: builder.query<DoctorAppointment, string>({
+      query: (id) => `/doctors/bookings/${id}`,
+      providesTags: (_result, _error, id) => [{ type: 'DoctorBookings', id }],
+    }),
+    getTodayStats: builder.query<TodayStats, void>({
+      query: () => '/doctors/bookings/stats/today',
+      providesTags: ['DoctorBookings'],
+    }),
+    searchBookings: builder.query<
+      DoctorAppointment[],
+      { search?: string; date?: string; consultationType?: string; page?: number; limit?: number }
+    >({
+      query: (params) => {
+        const query = new URLSearchParams();
+        if (params.search) query.set('search', params.search);
+        if (params.date) query.set('date', params.date);
+        if (params.consultationType) query.set('consultationType', params.consultationType);
+        if (params.page) query.set('page', String(params.page));
+        if (params.limit) query.set('limit', String(params.limit));
+        const qs = query.toString();
+        return `/doctors/bookings/search${qs ? `?${qs}` : ''}`;
+      },
+      providesTags: ['DoctorBookings'],
+    }),
+    getRecentCompleted: builder.query<DoctorAppointment[], number>({
+      query: (days = 2) => `/doctors/bookings/recent-completed?days=${days}`,
+      providesTags: ['DoctorBookings'],
+    }),
     completeBooking: builder.mutation<DoctorAppointment, string>({
       query: (id) => ({ url: `/doctors/bookings/${id}/complete`, method: 'PATCH' }),
+      invalidatesTags: ['DoctorBookings'],
+    }),
+    startConsultation: builder.mutation<
+      DoctorAppointment,
+      { id: string; consultationNotes?: string }
+    >({
+      query: ({ id, consultationNotes }) => ({
+        url: `/doctors/bookings/${id}/start-consultation`,
+        method: 'PATCH',
+        body: { consultationNotes },
+      }),
       invalidatesTags: ['DoctorBookings'],
     }),
     cancelBooking: builder.mutation<DoctorAppointment, string>({
@@ -82,6 +162,61 @@ export const doctorPortalApi = createApi({
         body: { date, time },
       }),
       invalidatesTags: ['DoctorBookings'],
+    }),
+    getDoctorSchedule: builder.query<
+      DoctorSchedule,
+      { doctorId: number; date?: string; consultationType?: string; status?: string; month?: number; year?: number }
+    >({
+      query: ({ doctorId, ...params }) => {
+        const query = new URLSearchParams();
+        if (params.date) query.set('date', params.date);
+        if (params.consultationType) query.set('consultationType', params.consultationType);
+        if (params.status) query.set('status', params.status);
+        if (params.month) query.set('month', String(params.month));
+        if (params.year) query.set('year', String(params.year));
+        const qs = query.toString();
+        return `/doctors/${doctorId}/schedule${qs ? `?${qs}` : ''}`;
+      },
+    }),
+    getDoctorScheduleList: builder.query<
+      DoctorAppointment[],
+      { doctorId: number; month?: number; year?: number }
+    >({
+      query: ({ doctorId, ...params }) => {
+        const query = new URLSearchParams();
+        if (params.month) query.set('month', String(params.month));
+        if (params.year) query.set('year', String(params.year));
+        const qs = query.toString();
+        return `/doctors/${doctorId}/schedule/list${qs ? `?${qs}` : ''}`;
+      },
+    }),
+    getDashboardStats: builder.query<DashboardStats, void>({
+      query: () => '/doctors/me/dashboard-stats',
+      providesTags: ['Dashboard'],
+    }),
+    updateQualifications: builder.mutation<DoctorProfile, string[]>({
+      query: (qualifications) => ({
+        url: '/doctors/me/qualifications',
+        method: 'PATCH',
+        body: { qualifications },
+      }),
+      invalidatesTags: ['Dashboard'],
+    }),
+    updateSpecializations: builder.mutation<DoctorProfile, string[]>({
+      query: (specializations) => ({
+        url: '/doctors/me/specializations',
+        method: 'PATCH',
+        body: { specializations },
+      }),
+      invalidatesTags: ['Dashboard'],
+    }),
+    updateExperiences: builder.mutation<DoctorProfile, DoctorExperience[]>({
+      query: (experiences) => ({
+        url: '/doctors/me/experiences',
+        method: 'PATCH',
+        body: { experiences },
+      }),
+      invalidatesTags: ['Dashboard'],
     }),
     getAvailability: builder.query<Availability[], number>({
       query: (doctorId) => `/doctors/${doctorId}/availability`,
@@ -104,9 +239,20 @@ export const doctorPortalApi = createApi({
 export const {
   useGetMyDoctorProfileQuery,
   useGetDoctorBookingsQuery,
+  useGetBookingByIdQuery,
+  useGetTodayStatsQuery,
+  useSearchBookingsQuery,
+  useGetRecentCompletedQuery,
   useCompleteBookingMutation,
+  useStartConsultationMutation,
   useCancelBookingMutation,
   useRescheduleBookingMutation,
+  useGetDoctorScheduleQuery,
+  useGetDoctorScheduleListQuery,
+  useGetDashboardStatsQuery,
+  useUpdateQualificationsMutation,
+  useUpdateSpecializationsMutation,
+  useUpdateExperiencesMutation,
   useGetAvailabilityQuery,
   useSetAvailabilityMutation,
 } = doctorPortalApi;
