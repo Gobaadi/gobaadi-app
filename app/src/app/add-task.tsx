@@ -58,11 +58,32 @@ export default function AddTaskScreen() {
     if (repeat !== 'none') detailParts.push(`Repeat: ${repeat.charAt(0).toUpperCase() + repeat.slice(1)}`);
     if (instruction.trim()) detailParts.push(`Instruction: ${instruction.trim()}`);
 
+    // Construct proper scheduled time from selected date pill + time
+    const now = new Date();
+    const selectedDateNum = parseInt(selectedDate, 10);
+    const scheduledDate = new Date(now.getFullYear(), now.getMonth(), selectedDateNum);
+
+    const timeParts = startTime.match(/(\d+):(\d+)\s*(AM|PM)/i);
+    if (timeParts) {
+      let hours = parseInt(timeParts[1], 10);
+      const minutes = parseInt(timeParts[2], 10);
+      const period = timeParts[3].toUpperCase();
+      if (period === 'PM' && hours !== 12) hours += 12;
+      if (period === 'AM' && hours === 12) hours = 0;
+      scheduledDate.setHours(hours, minutes, 0, 0);
+    }
+
+    // TC-057: reject past dates
+    if (scheduledDate.getTime() < Date.now()) {
+      Alert.alert('Invalid date', 'Please select a future date and time.');
+      return;
+    }
+
     try {
       await createTask({
         title,
         detail: detailParts.join(' | '),
-        scheduledTime: new Date().toISOString(),
+        scheduledTime: scheduledDate.toISOString(),
       }).unwrap();
 
       router.back();

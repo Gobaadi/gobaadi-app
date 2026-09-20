@@ -7,33 +7,56 @@ import {
   TouchableOpacity,
   ScrollView,
   Image,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useGetMyProfileQuery, useUpdateMyProfileMutation } from '@/store/usersApi';
+import * as ImagePicker from 'expo-image-picker';
 
 export default function EditProfileScreen() {
   const router = useRouter();
   const { data: profile } = useGetMyProfileQuery();
-  const [updateProfile] = useUpdateMyProfileMutation();
+  const [updateProfile, { isLoading: isSaving }] = useUpdateMyProfileMutation();
 
   const [name, setName] = useState(profile?.name || '');
   const [phone, setPhone] = useState(profile?.phone || '');
   const [location, setLocation] = useState('');
+  const [profileImage, setProfileImage] = useState<string | null>(null);
 
   useEffect(() => {
     if (profile?.name) setName(profile.name);
     if (profile?.phone) setPhone(profile.phone);
   }, [profile]);
 
-  async function handleSaveField(fields: { name?: string }) {
-    try {
-      await updateProfile(fields).unwrap();
-    } catch (err) {
-      console.log('Error updating profile:', err);
+  const handlePickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission needed', 'Please grant camera roll permissions to change your profile photo.');
+      return;
     }
-  }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets[0]) {
+      setProfileImage(result.assets[0].uri);
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      await updateProfile({ name, phone, location }).unwrap();
+      Alert.alert('Success', 'Profile updated successfully.');
+      router.back();
+    } catch (err) {
+      Alert.alert('Error', 'Failed to update profile. Please try again.');
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -58,10 +81,10 @@ export default function EditProfileScreen() {
           {/* Avatar with Camera Icon Overlay */}
           <View style={styles.avatarWrapper}>
             <Image
-              source={require('@/assets/images/user_profile.png')}
+              source={profileImage ? { uri: profileImage } : require('@/assets/images/user_profile.png')}
               style={styles.avatarImage}
             />
-            <TouchableOpacity style={styles.cameraIconContainer} activeOpacity={0.85}>
+            <TouchableOpacity style={styles.cameraIconContainer} activeOpacity={0.85} onPress={handlePickImage}>
               <Ionicons name="camera-outline" size={20} color="#BD632F" />
             </TouchableOpacity>
           </View>
@@ -76,7 +99,6 @@ export default function EditProfileScreen() {
                 onChangeText={setName}
                 placeholder="Enter name"
                 placeholderTextColor="#A39E99"
-                onBlur={() => handleSaveField({ name })}
               />
               <TouchableOpacity style={styles.inputActionBtn} activeOpacity={0.7}>
                 <Ionicons name="mic-outline" size={20} color="#BD632F" />
@@ -91,8 +113,8 @@ export default function EditProfileScreen() {
                 style={styles.textInput}
                 value={phone}
                 onChangeText={setPhone}
-                editable={false}
-                placeholder='Enter Phone'
+                editable={true}
+                placeholder="Enter Phone"
                 placeholderTextColor="#A39E99"
                 keyboardType="phone-pad"
               />
@@ -117,6 +139,22 @@ export default function EditProfileScreen() {
           </View>
         </View>
       </ScrollView>
+
+      {/* Save Button */}
+      <View style={styles.bottomBar}>
+        <TouchableOpacity
+          style={[styles.saveButton, isSaving && { opacity: 0.6 }]}
+          onPress={handleSave}
+          disabled={isSaving}
+          activeOpacity={0.85}
+        >
+          {isSaving ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <Text style={styles.saveButtonText}>Save Changes</Text>
+          )}
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 }
@@ -128,7 +166,7 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     paddingHorizontal: 24,
-    paddingBottom: 40,
+    paddingBottom: 100,
   },
   header: {
     flexDirection: 'row',
@@ -228,5 +266,34 @@ const styles = StyleSheet.create({
   },
   inputActionBtn: {
     padding: 4,
+  },
+  bottomBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#FAF9F6',
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    paddingBottom: 30,
+    borderTopWidth: 1,
+    borderTopColor: '#E9E5DF',
+  },
+  saveButton: {
+    backgroundColor: '#BD632F',
+    height: 52,
+    borderRadius: 26,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#BD632F',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  saveButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
   },
 });

@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Image,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -68,7 +69,7 @@ export default function BookAnimalScreen() {
 
         <Text style={styles.headerTitle}>Book Animal</Text>
 
-        <TouchableOpacity style={styles.circleButton} activeOpacity={0.8}>
+        <TouchableOpacity style={styles.circleButton} activeOpacity={0.8} onPress={() => router.push('/notifications')}>
           <Text style={styles.buttonText}>🔔</Text>
         </TouchableOpacity>
       </View>
@@ -141,8 +142,9 @@ export default function BookAnimalScreen() {
               await reserveListing({ id: livestockId, isReserved: true }).unwrap();
               const option = options.find((o) => o.id === selectedOption)!;
               router.push({ pathname: '/booking-payment', params: { id: String(livestockId), cost: option.cost } });
-            } catch (err) {
+            } catch (err: any) {
               console.log('Error reserving listing:', err);
+              Alert.alert('Booking Failed', err?.data?.message || 'Could not book this animal. Please try again.');
             }
           }}
           activeOpacity={0.85}
@@ -151,7 +153,7 @@ export default function BookAnimalScreen() {
           <Text style={styles.proceedText}>Proceed Booking</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.tcButton} activeOpacity={0.7}>
+        <TouchableOpacity style={styles.tcButton} activeOpacity={0.7} onPress={() => router.push('/terms-of-service')}>
           <Text style={styles.tcText}>Terms & Conditions applicable</Text>
         </TouchableOpacity>
       </ScrollView>

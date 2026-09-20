@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Image,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -74,8 +75,9 @@ export default function CheckoutScreen() {
 
       await simulateSuccess(intent.transactionId).unwrap();
       router.push({ pathname: '/order-success', params: { orderId: order.id } });
-    } catch (err) {
+    } catch (err: any) {
       console.log('Error placing order:', err);
+      Alert.alert('Order Failed', err?.data?.message || 'Could not place your order. Please try again.');
     }
   };
 
@@ -93,7 +95,7 @@ export default function CheckoutScreen() {
 
         <Text style={styles.headerTitle}>Checkout</Text>
 
-        <TouchableOpacity style={styles.circleButton} activeOpacity={0.8}>
+        <TouchableOpacity style={styles.circleButton} activeOpacity={0.8} onPress={() => router.push('/notifications')}>
           <Text style={styles.buttonText}>🔔</Text>
         </TouchableOpacity>
       </View>
@@ -122,7 +124,7 @@ export default function CheckoutScreen() {
         {/* Delivery Details Section */}
         <View style={styles.sectionHeaderRow}>
           <Text style={styles.sectionTitle}>Delivery Details</Text>
-          <TouchableOpacity style={styles.changeAddressBtn} activeOpacity={0.7}>
+          <TouchableOpacity style={styles.changeAddressBtn} activeOpacity={0.7} onPress={() => Alert.alert('Change Address', 'Address selection feature coming soon.')}>
             <Text style={styles.changeAddressText}>Change Address</Text>
           </TouchableOpacity>
         </View>

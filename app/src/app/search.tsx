@@ -64,7 +64,7 @@ export default function SearchScreen() {
         {query.trim().length < 2 ? (
           <Text style={styles.hintText}>Type at least 2 characters to search.</Text>
         ) : !isLoading && !hasAnyResults ? (
-          <Text style={styles.hintText}>No results for "{query}".</Text>
+          <Text style={styles.hintText}>No "{query}" found. Try searching for another pet or browse the marketplace.</Text>
         ) : null}
 
         {results.animals && results.animals.length > 0 ? (

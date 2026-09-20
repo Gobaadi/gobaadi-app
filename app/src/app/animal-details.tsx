@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Image,
   Dimensions,
+  Share,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -56,7 +57,17 @@ export default function AnimalDetailsScreen() {
             >
               <Text style={styles.buttonText}>←</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.circleButton} activeOpacity={0.8}>
+            <TouchableOpacity
+              style={styles.circleButton}
+              activeOpacity={0.8}
+              onPress={async () => {
+                try {
+                  await Share.share({
+                    message: `Check out this animal listing: ${animalName} - ৳${animalPrice}`,
+                  });
+                } catch {}
+              }}
+            >
               <Text style={styles.buttonText}>📤</Text>
             </TouchableOpacity>
           </View>

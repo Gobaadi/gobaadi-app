@@ -23,6 +23,7 @@ import {
   useAddAnimalMutation,
   useUpdateAnimalMutation,
 } from '@/store/animalsApi';
+import { uploadImageToCloudinary } from '@/lib/cloudinary-upload';
 
 // Custom Calendar Modal Component
 interface CalendarModalProps {
@@ -159,6 +160,7 @@ export default function AddAnimalScreen() {
   // Form State - Step 3: Visual
   const [photos, setPhotos] = useState<string[]>([]);
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
 
   // Form State - Step 4: Pricing
   const [photoCost, setPhotoCost] = useState('');
@@ -215,7 +217,17 @@ export default function AddAnimalScreen() {
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        const newUris = result.assets.map((asset) => asset.uri);
+        const validTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+        const validAssets = result.assets.filter((asset) => {
+          if (asset.mimeType && !validTypes.includes(asset.mimeType)) {
+            return false;
+          }
+          return true;
+        });
+        if (validAssets.length < result.assets.length) {
+          Alert.alert('Invalid file type', 'Only JPEG and PNG images are allowed.');
+        }
+        const newUris = validAssets.map((asset) => asset.uri);
         setPhotos((prev) => [...prev, ...newUris]);
         if (photos.length === 0) {
           setActivePhotoIndex(0);
@@ -255,8 +267,17 @@ export default function AddAnimalScreen() {
         Alert.alert('Required field', 'Please enter animal name.');
         return;
       }
+      const nameRegex = /^[a-zA-Z0-9\s.,'-]+$/;
+      if (name.trim() && !nameRegex.test(name.trim())) {
+        Alert.alert('Invalid input', 'Name can only contain letters, numbers, spaces, and basic punctuation.');
+        return;
+      }
       if (!description.trim()) {
         Alert.alert('Required field', 'Please enter description.');
+        return;
+      }
+      if (description.trim() && !nameRegex.test(description.trim())) {
+        Alert.alert('Invalid input', 'Description can only contain letters, numbers, spaces, and basic punctuation.');
         return;
       }
       if (!gender) {
@@ -290,13 +311,26 @@ export default function AddAnimalScreen() {
         return;
       }
       try {
+        setIsUploading(true);
+        let uploadedUrls: string[] = [];
+        try {
+          uploadedUrls = await Promise.all(
+            photos.map((uri) => uploadImageToCloudinary(uri))
+          );
+        } catch (uploadErr: any) {
+          setIsUploading(false);
+          Alert.alert('Upload failed', uploadErr?.message || 'Failed to upload photos. Please try again.');
+          return;
+        }
+        setIsUploading(false);
+
         const payload = {
           name: name,
           breed: breed,
           weight: weight,
           age: age,
           color: color,
-          image: photos[0] || undefined,
+          image: uploadedUrls[0] || undefined,
           description: description,
           dob: dob,
           gender: gender,
@@ -304,7 +338,7 @@ export default function AddAnimalScreen() {
           joinedFarm: joinedFarm,
           liveWeight: liveWeight,
           reproStatus: reproStatus,
-          photos: photos,
+          photos: uploadedUrls,
           photoCost: photoCost,
           sellingPrice: sellingPrice,
           liveWeightPrice: liveWeightPrice,
@@ -692,8 +726,15 @@ export default function AddAnimalScreen() {
               </TouchableOpacity>
             ) : null}
 
-            <TouchableOpacity style={styles.nextButton} onPress={handleNext} activeOpacity={0.8}>
-              <Text style={styles.nextButtonText}>{step === 4 ? 'Add Animal' : 'Next'}</Text>
+            <TouchableOpacity
+              style={[styles.nextButton, isUploading && { opacity: 0.6 }]}
+              onPress={handleNext}
+              activeOpacity={0.8}
+              disabled={isUploading}
+            >
+              <Text style={styles.nextButtonText}>
+                {isUploading ? 'Uploading...' : step === 4 ? 'Add Animal' : 'Next'}
+              </Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
