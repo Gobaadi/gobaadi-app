@@ -152,7 +152,7 @@ export default function HomeDashboard() {
             <Image
               source={require('@/assets/images/farm_barn.png')}
               style={styles.barnImage}
-              resizeMode="cover"
+              contentFit="cover"
             />
           </View>
 
@@ -422,7 +422,7 @@ export default function HomeDashboard() {
           <Image
             source={require('@/assets/images/referral_badge.png')}
             style={styles.referImage}
-            resizeMode="contain"
+            contentFit="contain"
           />
         </View>
 

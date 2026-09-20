@@ -9,8 +9,11 @@ import {
 
 export interface Medicine {
   name: string;
-  dosage: string;
-  duration: string;
+  dosage?: string;
+  quantity?: string;
+  frequency?: string;
+  duration?: string;
+  instructions?: string;
   notes?: string;
 }
 

@@ -121,6 +121,92 @@ export class AppointmentsController {
     });
   }
 
+  @Get('bookings/:id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get a single appointment details by ID' })
+  @ApiParam({ name: 'id', example: '1' })
+  @ApiResponse({ status: 200, description: 'Appointment details' })
+  @ApiResponse({ status: 404, description: 'Appointment not found' })
+  async getBookingById(
+    @Param('id') id: string,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<AppointmentWithPatient> {
+    return this.appointmentsService.getAppointmentById(
+      parseInt(id, 10),
+      user.sub,
+      user.role,
+    );
+  }
+
+  @Get('bookings/stats/today')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.DOCTOR)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "Get today's appointment stats for the current doctor",
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns totalToday and completedToday counts',
+  })
+  async getTodayStats(@CurrentUser() user: JwtPayload) {
+    return this.appointmentsService.getDoctorStats(user.sub);
+  }
+
+  @Get('bookings/recent-completed')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.DOCTOR)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get recently completed appointments (last N days)',
+  })
+  @ApiQuery({
+    name: 'days',
+    required: false,
+    description: 'Number of days to look back (default 2)',
+  })
+  @ApiResponse({ status: 200, description: 'List of recent completed appointments' })
+  async getRecentCompleted(
+    @CurrentUser() user: JwtPayload,
+    @Query('days') days?: string,
+  ): Promise<AppointmentWithPatient[]> {
+    return this.appointmentsService.getRecentCompleted(
+      user.sub,
+      days ? parseInt(days, 10) : 2,
+    );
+  }
+
+  @Get('bookings/search')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.DOCTOR)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "Search/filter the current doctor's appointments",
+  })
+  @ApiQuery({ name: 'search', required: false, description: 'Search by patient or animal name' })
+  @ApiQuery({ name: 'date', required: false, description: 'Filter by date (YYYY-MM-DD)' })
+  @ApiQuery({ name: 'consultationType', required: false, enum: ConsultationType })
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  @ApiResponse({ status: 200, description: 'Filtered appointments' })
+  async searchBookings(
+    @CurrentUser() user: JwtPayload,
+    @Query('search') search?: string,
+    @Query('date') date?: string,
+    @Query('consultationType') consultationType?: ConsultationType,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ): Promise<AppointmentWithPatient[] | PaginatedResult<AppointmentWithPatient>> {
+    return this.appointmentsService.searchDoctorAppointments(user.sub, {
+      search,
+      date,
+      consultationType,
+      page: page ? parseInt(page, 10) : undefined,
+      limit: limit ? parseInt(limit, 10) : undefined,
+    });
+  }
+
   @Patch('bookings/:id/reschedule')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -192,6 +278,25 @@ export class AppointmentsController {
       parseInt(id, 10),
       user.sub,
       user.role,
+    );
+  }
+
+  @Patch('bookings/:id/start-consultation')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.DOCTOR)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Start a consultation for an appointment (doctor-only)' })
+  @ApiParam({ name: 'id', example: '1' })
+  @ApiResponse({ status: 200, description: 'Consultation started' })
+  async startConsultation(
+    @Param('id') id: string,
+    @CurrentUser() user: JwtPayload,
+    @Body('consultationNotes') consultationNotes?: string,
+  ): Promise<Appointment> {
+    return this.appointmentsService.startConsultation(
+      parseInt(id, 10),
+      user.sub,
+      consultationNotes,
     );
   }
 }

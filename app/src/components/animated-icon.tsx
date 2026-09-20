@@ -104,7 +104,7 @@ export function AnimatedIcon() {
 
       <Animated.View entering={keyframe.duration(DURATION)} style={styles.background} />
       <Animated.View style={styles.imageContainer} entering={logoKeyframe.duration(DURATION)}>
-        <Image style={styles.image} source={require('@/assets/images/splash-icon.png')} />
+        <Image style={styles.image} source={require('@/assets/images/splash-icon.png')} contentFit="contain" />
       </Animated.View>
     </View>
   );
@@ -130,7 +130,6 @@ const styles = StyleSheet.create({
   image: {
     width: 120,
     height: 120,
-    resizeMode: 'contain',
   },
   background: {
     borderRadius: 40,

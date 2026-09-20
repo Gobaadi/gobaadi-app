@@ -15,17 +15,32 @@ export class MedicineDto {
   @IsNotEmpty()
   name: string;
 
-  @ApiProperty({ example: '500mg twice daily' })
+  @ApiPropertyOptional({ example: '500mg twice daily' })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  dosage: string;
+  dosage?: string;
 
-  @ApiProperty({ example: '7 days' })
+  @ApiPropertyOptional({ example: '2 tablets' })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  duration: string;
+  quantity?: string;
+
+  @ApiPropertyOptional({ example: 'Twice daily' })
+  @IsOptional()
+  @IsString()
+  frequency?: string;
+
+  @ApiPropertyOptional({ example: '7 days' })
+  @IsOptional()
+  @IsString()
+  duration?: string;
 
   @ApiPropertyOptional({ example: 'Take with food' })
+  @IsOptional()
+  @IsString()
+  instructions?: string;
+
+  @ApiPropertyOptional({ example: 'Avoid dairy products' })
   @IsOptional()
   @IsString()
   notes?: string;

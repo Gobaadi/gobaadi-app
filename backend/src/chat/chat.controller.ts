@@ -29,11 +29,17 @@ import { ChatGateway } from './chat.gateway';
 import { SendMessageDto } from './dto/send-message.dto';
 import { SendAttachmentMessageDto } from './dto/send-attachment-message.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { UserRole } from '../users/user.entity';
 import type { JwtPayload } from '../auth/jwt-payload.interface';
 import { Conversation } from './conversation.entity';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Appointment } from '../appointments/appointment.entity';
+import { Doctor } from '../doctors/doctor.entity';
 
 const IMAGE_MIME_PREFIX = 'image/';
 
@@ -45,6 +51,10 @@ export class ChatController {
     private readonly conversationService: ConversationService,
     private readonly chatGateway: ChatGateway,
     private readonly cloudinaryService: CloudinaryService,
+    @InjectRepository(Appointment)
+    private readonly appointmentRepository: Repository<Appointment>,
+    @InjectRepository(Doctor)
+    private readonly doctorRepository: Repository<Doctor>,
   ) {}
 
   @Get('conversations')
@@ -178,6 +188,43 @@ export class ChatController {
       },
     );
     return updated;
+  }
+
+  @Get('appointments')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.DOCTOR)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "List the current doctor's appointments available for chat",
+  })
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  @ApiResponse({ status: 200, description: 'List of appointments for chat' })
+  async getDoctorAppointments(
+    @CurrentUser() user: JwtPayload,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const doctor = await this.doctorRepository.findOneBy({
+      userId: user.sub,
+    });
+    if (!doctor) {
+      throw new ForbiddenException('No doctor profile linked to this account');
+    }
+
+    const currentPage = page ? parseInt(page, 10) : 1;
+    const pageSize = limit ? parseInt(limit, 10) : 20;
+
+    const [appointments, total] = await this.appointmentRepository
+      .createQueryBuilder('a')
+      .where('a.doctorId = :doctorId', { doctorId: doctor.id })
+      .andWhere("a.status IN ('CONFIRMED', 'RESCHEDULED', 'COMPLETED')")
+      .orderBy('a.startAt', 'DESC')
+      .skip((currentPage - 1) * pageSize)
+      .take(pageSize)
+      .getManyAndCount();
+
+    return { data: appointments, page: currentPage, limit: pageSize, total };
   }
 
   private async resolveConversationId(

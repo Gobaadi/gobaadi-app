@@ -21,6 +21,8 @@ import { useSocialAuth } from '@/hooks/use-social-auth';
 import { PasswordField } from '@/components/password-field';
 import { IdentifierTabs, IdentifierMode } from '@/components/identifier-tabs';
 import { store } from '@/store/store';
+import { setCredentials } from '@/store/authSlice';
+import { jwtToAuthUser } from '@/store/decode-jwt';
 
 const BD_PHONE_REGEX = /^01[3-9]\d{8}$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -59,7 +61,13 @@ export default function LoginScreen() {
       return;
     }
     try {
-      await login({ identifier, password, rememberMe }).unwrap();
+      const data = await login({ identifier, password, rememberMe }).unwrap();
+      const user = (data.user as any) ?? jwtToAuthUser(data.accessToken);
+      store.dispatch(setCredentials({
+        user,
+        token: data.accessToken,
+        refreshToken: data.refreshToken,
+      }));
       goToTabs();
     } catch (err: any) {
       setErrorMessage(err?.data?.message || 'Invalid credentials. Please try again.');
