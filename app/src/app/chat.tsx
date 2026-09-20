@@ -17,8 +17,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import PrescriptionBottomSheet from '@/components/PrescriptionBottomSheet';
-import { useGetMessagesQuery, useSendMessageMutation } from '@/store/chatApi';
+import { useGetMessagesQuery, useSendMessageMutation, useSendAttachmentMessageMutation } from '@/store/chatApi';
 import {
   useGetByIdQuery as useGetConsultationQuery,
   useStartConsultationMutation,
@@ -76,6 +77,7 @@ export default function ChatScreen() {
   const [endConsultation, { isLoading: ending }] = useEndConsultationMutation();
   const [createPrescription] = useCreatePrescriptionMutation();
   const [sendPrescriptionApi] = useSendPrescriptionMutation();
+  const [sendAttachment, { isLoading: sendingAttachment }] = useSendAttachmentMessageMutation();
 
   useChatSocket(conversationId);
 
@@ -84,6 +86,7 @@ export default function ChatScreen() {
   const [remainingTime, setRemainingTime] = useState(CONSULTATION_DURATION_SECONDS);
   const flatListRef = useRef<FlatList>(null);
   const [showPrescriptionSheet, setShowPrescriptionSheet] = useState(false);
+  const [showActionsMenu, setShowActionsMenu] = useState(false);
   const [localMessages, setLocalMessages] = useState<ChatMessageUI[]>([]);
 
   useEffect(() => {
@@ -170,36 +173,93 @@ export default function ChatScreen() {
   };
 
   const handlePrescriptionSent = useCallback(async (data: { medications: any[]; instructions: string; note: string }) => {
-    setConsultationState('prescription_sent');
     setShowPrescriptionSheet(false);
 
-    if (appointmentId && animalId) {
-      try {
-        const medicines = data.medications.map((m) => ({
-          name: m.name,
-          dosage: `${m.dosage} ${m.dosageUnit} ${m.frequency}`,
-          duration: `${m.duration} ${m.durationUnit}`,
-          notes: data.instructions || undefined,
-        }));
+    if (!appointmentId || !animalId) {
+      Alert.alert('Error', 'Missing appointment or patient information. Please try again.');
+      return;
+    }
 
-        const prescription = await createPrescription({
-          appointmentId: parseInt(appointmentId, 10),
-          animalId: parseInt(animalId, 10),
-          medicines,
-        }).unwrap();
+    try {
+      const medicines = data.medications.map((m) => ({
+        name: m.name,
+        dosage: `${m.dosage} ${m.dosageUnit} ${m.frequency}`,
+        duration: `${m.duration} ${m.durationUnit}`,
+        notes: data.instructions || undefined,
+      }));
 
-        await sendPrescriptionApi(prescription.id).unwrap();
+      const prescription = await createPrescription({
+        appointmentId: parseInt(appointmentId, 10),
+        animalId: parseInt(animalId, 10),
+        medicines,
+      }).unwrap();
 
-        const summary = `Prescription - ${new Date().toLocaleDateString()}`;
-        await sendMessage({
-          text: summary,
-          conversationId,
-        }).unwrap();
-      } catch {
-        Alert.alert('Error', 'Failed to send prescription. Please try again.');
-      }
+      await sendPrescriptionApi(prescription.id).unwrap();
+
+      const summary = `Prescription - ${new Date().toLocaleDateString()}`;
+      await sendMessage({
+        text: summary,
+        conversationId,
+      }).unwrap();
+
+      const prescriptionMessage: ChatMessageUI = {
+        id: `presc-${Date.now()}`,
+        sender: 'doctor',
+        text: summary,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        isPrescription: true,
+        prescriptionDate: new Date().toLocaleDateString(),
+        prescriptionSize: `${data.medications.length} medication${data.medications.length > 1 ? 's' : ''}`,
+      };
+      setLocalMessages((prev) => [...prev, prescriptionMessage]);
+
+      setConsultationState('prescription_sent');
+    } catch {
+      Alert.alert('Error', 'Failed to send prescription. Please try again.');
+      setConsultationState('active');
     }
   }, [appointmentId, animalId, conversationId, createPrescription, sendPrescriptionApi, sendMessage]);
+
+  const textInputRef = useRef<TextInput>(null);
+
+  const handleSendNote = () => {
+    if (Platform.OS === 'ios') {
+      Alert.prompt('Send Note', 'Enter a note for the patient', (text) => {
+        if (text && text.trim()) {
+          setInputText(text.trim());
+        }
+      });
+    } else {
+      textInputRef.current?.focus();
+    }
+  };
+
+  const handleSendAttachment = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Permission Required', 'Please allow access to your photo library to send images.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.8,
+    });
+
+    if (result.canceled || !result.assets[0]) return;
+
+    const asset = result.assets[0];
+    const fileName = asset.fileName || `photo-${Date.now()}.jpg`;
+
+    try {
+      await sendAttachment({
+        conversationId,
+        file: { uri: asset.uri, name: fileName, type: asset.mimeType || 'image/jpeg' },
+      }).unwrap();
+    } catch {
+      Alert.alert('Error', 'Failed to send attachment. Please try again.');
+    }
+  };
 
   const handleSendMessage = async () => {
     if (!inputText.trim() || sending) return;
@@ -317,11 +377,41 @@ export default function ChatScreen() {
           >
             <Ionicons name="videocam" size={18} color="#FFFFFF" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.headerActionBtn} activeOpacity={0.7} onPress={() => Alert.alert('Options', 'More options coming soon.')}>
+          <TouchableOpacity style={styles.headerActionBtn} activeOpacity={0.7} onPress={() => setShowActionsMenu((prev) => !prev)}>
             <Ionicons name="ellipsis-vertical" size={18} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
       </View>
+
+      {showActionsMenu && (
+        <>
+          <TouchableOpacity style={styles.actionsMenuBackdrop} activeOpacity={1} onPress={() => setShowActionsMenu(false)} />
+          <View style={styles.actionsMenuContainer}>
+            <TouchableOpacity
+              style={styles.actionsMenuItem}
+              activeOpacity={0.7}
+              onPress={() => {
+                setShowActionsMenu(false);
+                setShowPrescriptionSheet(true);
+              }}
+            >
+              <Ionicons name="document-text-outline" size={18} color="#BD632F" />
+              <Text style={styles.actionsMenuItemText}>Send Recommendation</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.actionsMenuItem}
+              activeOpacity={0.7}
+              onPress={() => {
+                setShowActionsMenu(false);
+                handleSendNote();
+              }}
+            >
+              <Ionicons name="chatbubble-outline" size={18} color="#BD632F" />
+              <Text style={styles.actionsMenuItemText}>Send Note</Text>
+            </TouchableOpacity>
+          </View>
+        </>
+      )}
 
       {(consultationState === 'idle' || consultationState === 'active') && consultation && (
         <View style={styles.upcomingBanner}>
@@ -415,6 +505,7 @@ export default function ChatScreen() {
       ) : (
         <FlatList
           ref={flatListRef}
+          style={{ flex: 1 }}
           data={localMessages}
           keyExtractor={(item) => item.id}
           renderItem={renderMessage}
@@ -441,7 +532,7 @@ export default function ChatScreen() {
             <TouchableOpacity style={styles.quickActionBtn} activeOpacity={0.8} onPress={() => setShowPrescriptionSheet(true)}>
               <Text style={styles.quickActionText}>Send prescription</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.quickActionBtn} activeOpacity={0.8} onPress={handleSendPrescription}>
+            <TouchableOpacity style={styles.quickActionBtn} activeOpacity={0.8} onPress={() => setShowPrescriptionSheet(true)}>
               <Text style={styles.quickActionText}>Send recommendation</Text>
             </TouchableOpacity>
           </ScrollView>
@@ -467,13 +558,14 @@ export default function ChatScreen() {
         >
           <View style={styles.inputBar}>
             <TextInput
+              ref={textInputRef}
               style={styles.textInput}
               placeholder="Type a message..."
               placeholderTextColor="#A39E99"
               value={inputText}
               onChangeText={setInputText}
             />
-            <TouchableOpacity style={styles.plusBtn} activeOpacity={0.8} onPress={() => Alert.alert('Attachments', 'File attachment feature coming soon.')}>
+            <TouchableOpacity style={[styles.plusBtn, sendingAttachment && { opacity: 0.5 }]} activeOpacity={0.8} onPress={handleSendAttachment} disabled={sendingAttachment}>
               <Ionicons name="add" size={22} color="#BD632F" />
             </TouchableOpacity>
             <TouchableOpacity
@@ -563,4 +655,30 @@ const styles = StyleSheet.create({
   plusBtn: { width: 32, height: 32, borderRadius: 16, borderWidth: 1.5, borderColor: '#BD632F', justifyContent: 'center', alignItems: 'center' },
   micBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#BD632F', justifyContent: 'center', alignItems: 'center' },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  actionsMenuBackdrop: { ...StyleSheet.absoluteFillObject, zIndex: 100 },
+  actionsMenuContainer: {
+    position: 'absolute',
+    top: 56,
+    right: 20,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#E6E1DC',
+    paddingVertical: 4,
+    minWidth: 190,
+    zIndex: 101,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  actionsMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  actionsMenuItemText: { fontSize: 14, fontWeight: '600', color: '#1A1817' },
 });

@@ -61,6 +61,9 @@ export default function ProfileEditScreen() {
   const [specializations, setSpecializations] = useState<string[]>([]);
   const [newSpecialization, setNewSpecialization] = useState('');
 
+  // License
+  const [licenseNumber, setLicenseNumber] = useState('');
+
   // Pre-fill fields from API
   useEffect(() => {
     if (doctorProfile) {
@@ -70,6 +73,7 @@ export default function ProfileEditScreen() {
       setExperience(doctorProfile.experience || '');
       setQualifications(doctorProfile.qualifications || []);
       setSpecializations(doctorProfile.specializations || []);
+      setLicenseNumber(doctorProfile.licenseNumber || '');
 
       // Pre-fill first experience if exists
       if (doctorProfile.experiences && doctorProfile.experiences.length > 0) {
@@ -94,75 +98,69 @@ export default function ProfileEditScreen() {
   const isSaving = savingProfile || savingExperiences || savingQualifications || savingSpecializations;
 
   const handleSaveAbout = async () => {
-    try {
-      await updateProfile({
-        name,
-        bio,
-        specialty,
-        experience,
-      }).unwrap();
-      Alert.alert('Success', 'Profile updated successfully');
-      router.back();
-    } catch {
-      Alert.alert('Error', 'Failed to update profile. Please try again.');
-    }
+    await updateProfile({
+      name,
+      bio,
+      specialty,
+      experience,
+    }).unwrap();
   };
 
   const handleSaveExperience = async () => {
-    try {
-      const experiences = [];
-      if (expTitle || expInstitute) {
-        experiences.push({
-          title: expTitle,
-          organization: expInstitute,
-          duration: expDuration,
-          description: expDescription,
-        });
-      }
-      // Keep existing experiences beyond the first one
-      if (doctorProfile?.experiences && doctorProfile.experiences.length > 1) {
-        experiences.push(...doctorProfile.experiences.slice(1));
-      }
-      await updateExperiences(experiences).unwrap();
-      Alert.alert('Success', 'Experience updated successfully');
-      router.back();
-    } catch {
-      Alert.alert('Error', 'Failed to update experience. Please try again.');
+    const experiences = [];
+    if (expTitle || expInstitute) {
+      experiences.push({
+        title: expTitle,
+        organization: expInstitute,
+        duration: expDuration,
+        description: expDescription,
+      });
     }
+    if (doctorProfile?.experiences && doctorProfile.experiences.length > 1) {
+      experiences.push(...doctorProfile.experiences.slice(1));
+    }
+    await updateExperiences(experiences).unwrap();
   };
 
   const handleSaveQualifications = async () => {
     try {
       await updateQualifications(qualifications).unwrap();
-      Alert.alert('Success', 'Qualifications updated successfully');
-      router.back();
     } catch {
-      Alert.alert('Error', 'Failed to update qualifications. Please try again.');
+      throw new Error('Failed to update qualifications');
     }
   };
 
   const handleSaveSpecializations = async () => {
     try {
       await updateSpecializations(specializations).unwrap();
-      Alert.alert('Success', 'Specializations updated successfully');
-      router.back();
     } catch {
-      Alert.alert('Error', 'Failed to update specializations. Please try again.');
+      throw new Error('Failed to update specializations');
     }
   };
 
-  const handleSave = () => {
-    switch (activeTab) {
-      case 'about':
-        handleSaveAbout();
-        break;
-      case 'experience':
-        handleSaveExperience();
-        break;
-      case 'credentials':
-        handleSaveQualifications();
-        handleSaveSpecializations();
-        break;
+  const handleSave = async () => {
+    try {
+      switch (activeTab) {
+        case 'about':
+          await handleSaveAbout();
+          break;
+        case 'experience':
+          await handleSaveExperience();
+          break;
+        case 'credentials':
+          await Promise.all([
+            handleSaveQualifications(),
+            handleSaveSpecializations(),
+          ]);
+          if (licenseNumber !== (doctorProfile?.licenseNumber || '')) {
+            await updateProfile({ licenseNumber }).unwrap();
+          }
+          break;
+      }
+      Alert.alert('Success', 'Changes saved successfully');
+      router.back();
+    } catch {
+      Alert.alert('Error', 'Failed to save changes. Please try again.');
     }
   };
 
@@ -432,6 +430,21 @@ export default function ProfileEditScreen() {
               <TouchableOpacity style={styles.addBtn} onPress={addSpecialization} activeOpacity={0.8}>
                 <Ionicons name="add" size={20} color="#FFFFFF" />
               </TouchableOpacity>
+            </View>
+
+            {/* License Number */}
+            <View style={[styles.sectionHeader, { marginTop: 24 }]}>
+              <Text style={styles.sectionTitle}>License Number</Text>
+            </View>
+
+            <View style={styles.addRow}>
+              <TextInput
+                style={[styles.input, { flex: 1 }]}
+                value={licenseNumber}
+                onChangeText={setLicenseNumber}
+                placeholder="Enter license number..."
+                placeholderTextColor="#A39E99"
+              />
             </View>
           </View>
         )}

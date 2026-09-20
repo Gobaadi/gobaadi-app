@@ -9,11 +9,13 @@ import {
   TouchableOpacity,
   ScrollView,
   Image,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useGetDoctorBookingsQuery, useGetMyDoctorProfileQuery } from '@/store/doctorPortalApi';
+import * as ImagePicker from 'expo-image-picker';
+import { useGetDoctorBookingsQuery, useGetMyDoctorProfileQuery, useUpdateQualificationsMutation, useUpdateSpecializationsMutation } from '@/store/doctorPortalApi';
 import { useGetMyProfileQuery } from '@/store/usersApi';
 import { useGetReviewsQuery } from '@/store/reviewsApi';
 
@@ -34,7 +36,69 @@ export default function ProfileDetailsScreen() {
     { skip: !isDoctor || !doctorProfile?.id }
   );
 
+  const [updateQualifications] = useUpdateQualificationsMutation();
+  const [updateSpecializations] = useUpdateSpecializationsMutation();
+
   const doctorPhone = userProfile?.phone || 'Not provided';
+
+  const [isCurrentlyStudying, setIsCurrentlyStudying] = useState(false);
+  const [startMonth, setStartMonth] = useState('August');
+  const [startYear, setStartYear] = useState('2024');
+  const [endMonth, setEndMonth] = useState('August');
+  const [endYear, setEndYear] = useState('2026');
+  const [uploadedFiles, setUploadedFiles] = useState<{ uri: string; name: string }[]>([]);
+
+  const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const YEARS = ['2020', '2021', '2022', '2023', '2024', '2025', '2026', '2027', '2028'];
+
+  const handleDeleteCredentials = () => {
+    Alert.alert(
+      'Delete Credentials',
+      'Are you sure you want to delete all professional credentials?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await updateQualifications([]).unwrap();
+              await updateSpecializations([]).unwrap();
+              Alert.alert('Success', 'Credentials deleted successfully');
+            } catch {
+              Alert.alert('Error', 'Failed to delete credentials. Please try again.');
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const handleUploadDocument = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Permission Required', 'Please allow access to your photo library to upload documents.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.8,
+    });
+
+    if (result.canceled || !result.assets[0]) return;
+
+    const asset = result.assets[0];
+    setUploadedFiles((prev) => [...prev, { uri: asset.uri, name: asset.fileName || `document-${Date.now()}.jpg` }]);
+  };
+
+  const showMonthPicker = (onSelect: (month: string) => void) => {
+    Alert.alert('Select Month', '', MONTHS.map((m) => ({ text: m, onPress: () => onSelect(m) })));
+  };
+
+  const showYearPicker = (onSelect: (year: string) => void) => {
+    Alert.alert('Select Year', '', YEARS.map((y) => ({ text: y, onPress: () => onSelect(y) })));
+  };
 
   const uniquePatients = useMemo(() => {
     const patientIds = new Set(doctorBookings.map((b) => b.patientId));
@@ -268,7 +332,18 @@ export default function ProfileDetailsScreen() {
             {/* Patient Reviews */}
             <View style={[styles.sectionHeader, { marginTop: 20 }]}>
               <Text style={styles.sectionTitle}>Patient Reviews</Text>
-              <TouchableOpacity activeOpacity={0.7}>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() =>
+                  router.push({
+                    pathname: '/all-reviews',
+                    params: {
+                      doctorId: String(doctorProfile?.id),
+                      doctorName: doctorProfile?.name ?? '',
+                    },
+                  })
+                }
+              >
                 <Text style={styles.seeAllText}>See All</Text>
               </TouchableOpacity>
             </View>
@@ -319,10 +394,10 @@ export default function ProfileDetailsScreen() {
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Professional Credentials</Text>
               <View style={styles.sectionActions}>
-                <TouchableOpacity activeOpacity={0.7}>
+                <TouchableOpacity activeOpacity={0.7} onPress={handleDeleteCredentials}>
                   <Ionicons name="trash-outline" size={20} color="#E53935" />
                 </TouchableOpacity>
-                <TouchableOpacity activeOpacity={0.7}>
+                <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/profile-edit' as any)}>
                   <Ionicons name="pencil-outline" size={20} color="#7C7672" />
                 </TouchableOpacity>
               </View>
@@ -359,34 +434,40 @@ export default function ProfileDetailsScreen() {
             <View style={styles.halfRow}>
               <View style={styles.halfField}>
                 <Text style={styles.fieldLabel}>Start year</Text>
-                <View style={styles.dropdownField}>
-                  <Text style={styles.fieldText}>August</Text>
+                <TouchableOpacity style={styles.dropdownField} onPress={() => showMonthPicker(setStartMonth)} activeOpacity={0.7}>
+                  <Text style={styles.fieldText}>{startMonth}</Text>
                   <Ionicons name="chevron-down" size={16} color="#9C9690" />
-                </View>
+                </TouchableOpacity>
               </View>
               <View style={styles.halfField}>
                 <Text style={styles.fieldLabel}>End year</Text>
-                <View style={styles.dropdownField}>
-                  <Text style={styles.fieldText}>2026</Text>
+                <TouchableOpacity style={styles.dropdownField} onPress={() => showYearPicker(setEndYear)} activeOpacity={0.7}>
+                  <Text style={styles.fieldText}>{endYear}</Text>
                   <Ionicons name="chevron-down" size={16} color="#9C9690" />
-                </View>
+                </TouchableOpacity>
               </View>
             </View>
 
-            <View style={styles.checkboxRow}>
+            <TouchableOpacity style={styles.checkboxRow} activeOpacity={0.7} onPress={() => setIsCurrentlyStudying((prev) => !prev)}>
               <View style={styles.checkbox}>
-                <View style={styles.checkboxInner} />
+                {isCurrentlyStudying && <View style={[styles.checkboxInner, { backgroundColor: '#BD632F' }]} />}
               </View>
               <Text style={styles.checkboxLabel}>I'm currently studying here</Text>
-            </View>
-
-            <Text style={[styles.fieldLabel, { marginTop: 16, marginBottom: 8 }]}>Academic Credentials*</Text>
-            <TouchableOpacity style={styles.uploadArea} activeOpacity={0.7}>
-              <Ionicons name="camera-outline" size={36} color="#D1CCC7" />
-              <Text style={styles.uploadText}>Tap to upload photo</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.addMoreBtn} activeOpacity={0.8}>
+            <Text style={[styles.fieldLabel, { marginTop: 16, marginBottom: 8 }]}>Academic Credentials*</Text>
+            <TouchableOpacity style={styles.uploadArea} activeOpacity={0.7} onPress={handleUploadDocument}>
+              {uploadedFiles.length > 0 ? (
+                <Image source={{ uri: uploadedFiles[uploadedFiles.length - 1].uri }} style={{ width: '100%', height: '100%', borderRadius: 14 }} resizeMode="cover" />
+              ) : (
+                <>
+                  <Ionicons name="camera-outline" size={36} color="#D1CCC7" />
+                  <Text style={styles.uploadText}>Tap to upload photo</Text>
+                </>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.addMoreBtn} activeOpacity={0.8} onPress={handleUploadDocument}>
               <Ionicons name="image-outline" size={18} color="#7C7672" />
               <Text style={styles.addMoreBtnText}>Add More</Text>
             </TouchableOpacity>

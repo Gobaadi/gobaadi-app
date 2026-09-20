@@ -34,7 +34,7 @@ export class VideoCallController {
     return { sessionId: session.id, channelName: session.channelName };
   }
 
-  @Post('join/:appointmentId')
+  @Get('join/:appointmentId')
   @ApiOperation({ summary: 'Join a video call session' })
   @ApiParam({ name: 'appointmentId', example: '1' })
   @ApiResponse({ status: 200, description: 'Token + channel info' })
