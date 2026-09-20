@@ -209,7 +209,7 @@ export default function AddAnimalScreen() {
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
         allowsMultipleSelection: true,
         quality: 0.8,
       });
@@ -296,6 +296,7 @@ export default function AddAnimalScreen() {
           weight: weight,
           age: age,
           color: color,
+          image: photos[0] || undefined,
           description: description,
           dob: dob,
           gender: gender,

@@ -7,6 +7,7 @@ import {
 } from '../appointments/appointment.entity';
 import { Task } from '../tasks/task.entity';
 import { DoctorTimeOff } from '../time-off/doctor-time-off.entity';
+import { Availability } from '../doctors/availability.entity';
 
 export interface CalendarDay {
   date: string;
@@ -24,6 +25,8 @@ export class CalendarService {
     private readonly taskRepository: Repository<Task>,
     @InjectRepository(DoctorTimeOff)
     private readonly timeOffRepository: Repository<DoctorTimeOff>,
+    @InjectRepository(Availability)
+    private readonly availabilityRepository: Repository<Availability>,
   ) {}
 
   async getDoctorMonthlyCalendar(
@@ -141,17 +144,31 @@ export class CalendarService {
     doctorId: number,
     month: number,
     year: number,
-  ): Promise<Record<string, number>> {
+  ) {
     const startDate = new Date(year, month - 1, 1);
     const endDate = new Date(year, month, 0, 23, 59, 59);
 
-    const appointments = await this.appointmentRepository.find({
-      where: {
-        doctorId,
-        startAt: MoreThanOrEqual(startDate),
-        endAt: LessThanOrEqual(endDate),
-      },
-    });
+    const [appointments, blockTimes, availabilities] = await Promise.all([
+      this.appointmentRepository.find({
+        where: {
+          doctorId,
+          startAt: MoreThanOrEqual(startDate),
+          endAt: LessThanOrEqual(endDate),
+        },
+      }),
+      this.timeOffRepository.find({
+        where: {
+          doctorId,
+          startDate: Between(
+            startDate.toISOString().split('T')[0],
+            endDate.toISOString().split('T')[0],
+          ),
+        },
+      }),
+      this.availabilityRepository.find({
+        where: { doctorId, isActive: true },
+      }),
+    ]);
 
     const badges: Record<string, number> = {};
     for (const apt of appointments) {
@@ -159,7 +176,40 @@ export class CalendarService {
       badges[dateStr] = (badges[dateStr] || 0) + 1;
     }
 
-    return badges;
+    const totalAppointments = appointments.length;
+
+    // Count blocked days from doctor_time_off
+    const blockedDays = new Set<string>();
+    for (const bt of blockTimes) {
+      const btStart = new Date(bt.startDate);
+      const btEnd = new Date(bt.endDate);
+      const cursor = new Date(btStart);
+      while (cursor <= btEnd) {
+        blockedDays.add(cursor.toISOString().split('T')[0]);
+        cursor.setDate(cursor.getDate() + 1);
+      }
+    }
+
+    // Count open days: days in month where doctor has availability and is not blocked
+    const daysInMonth = new Date(year, month, 0).getDate();
+    let openDays = 0;
+    for (let d = 1; d <= daysInMonth; d++) {
+      const date = new Date(year, month - 1, d);
+      const dateStr = date.toISOString().split('T')[0];
+      if (blockedDays.has(dateStr)) continue;
+      const dayOfWeek = date.getDay();
+      const hasAvailability = availabilities.some(
+        (a) => a.dayOfWeek === dayOfWeek && !a.specificDate,
+      );
+      if (hasAvailability) openDays++;
+    }
+
+    return {
+      badges,
+      totalAppointments,
+      openDays,
+      blockedDays: blockedDays.size,
+    };
   }
 
   private buildCalendarDays(

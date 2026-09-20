@@ -55,6 +55,7 @@ import { MarketRatesModule } from './market-rates/market-rates.module';
 import { BadgesModule } from './badges/badges.module';
 import { VideoCallModule } from './video-call/video-call.module';
 import { AiModule } from './ai/ai.module';
+import { PatientsModule } from './patients/patients.module';
 
 @Module({
   imports: [
@@ -139,6 +140,7 @@ import { AiModule } from './ai/ai.module';
     BadgesModule,
     VideoCallModule,
     AiModule,
+    PatientsModule,
   ],
   controllers: [AppController, HealthController],
   providers: [

@@ -11,6 +11,9 @@ import {
   isFacebookConfigured,
 } from '@/constants/oauth';
 import { useGoogleAuthMutation, useFacebookAuthMutation } from '@/store/authApi';
+import { store } from '@/store/store';
+import { setCredentials } from '@/store/authSlice';
+import { jwtToAuthUser } from '@/store/decode-jwt';
 
 const FACEBOOK_DISCOVERY = {
   authorizationEndpoint: 'https://www.facebook.com/v19.0/dialog/oauth',
@@ -54,7 +57,13 @@ export function useSocialAuth(onSuccess: () => void) {
       return;
     }
     try {
-      await googleAuth({ idToken: result.params.id_token }).unwrap();
+      const data = await googleAuth({ idToken: result.params.id_token }).unwrap();
+      const user = (data.user as any) ?? jwtToAuthUser(data.accessToken);
+      store.dispatch(setCredentials({
+        user,
+        token: data.accessToken,
+        refreshToken: data.refreshToken,
+      }));
       onSuccess();
     } catch {
       setError('Google sign-in failed. Please try again.');
@@ -76,7 +85,13 @@ export function useSocialAuth(onSuccess: () => void) {
       return;
     }
     try {
-      await facebookAuth({ accessToken: result.params.access_token }).unwrap();
+      const data = await facebookAuth({ accessToken: result.params.access_token }).unwrap();
+      const user = (data.user as any) ?? jwtToAuthUser(data.accessToken);
+      store.dispatch(setCredentials({
+        user,
+        token: data.accessToken,
+        refreshToken: data.refreshToken,
+      }));
       onSuccess();
     } catch {
       setError('Facebook sign-in failed. Please try again.');
