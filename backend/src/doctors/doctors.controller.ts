@@ -21,6 +21,7 @@ import {
 import { DoctorsService, Doctor, Availability } from './doctors.service';
 import { SetAvailabilityDto } from './dto/set-availability.dto';
 import { UpdateSingleDayDto } from './dto/update-single-day.dto';
+import { UpdateDoctorProfileDto } from './dto/update-doctor-profile.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -74,6 +75,19 @@ export class DoctorsController {
       throw new ForbiddenException('No doctor profile linked to this account');
     }
     return doctor;
+  }
+
+  @Patch('me')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.DOCTOR)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Update the current doctor's core profile fields" })
+  @ApiResponse({ status: 200, description: 'Profile updated' })
+  async updateMyProfile(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: UpdateDoctorProfileDto,
+  ): Promise<Doctor> {
+    return this.doctorsService.updateProfile(user.sub, dto);
   }
 
   @Get(':id')

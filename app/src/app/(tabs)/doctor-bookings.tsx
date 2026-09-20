@@ -332,16 +332,17 @@ export default function DoctorBookingsScreen() {
     const year = today.getFullYear();
     const month = today.getMonth();
     const daysInMonth = getDaysInMonth(year, month);
-    const monthStart = new Date(year, month, 1);
-    const monthEnd = new Date(year, month + 1, 0);
-    const blockedDays = blockTimes.filter((bt) => {
-      const btStart = new Date(bt.startDate);
-      const btEnd = new Date(bt.endDate);
-      return btStart <= monthEnd && btEnd >= monthStart;
-    }).length;
+    const monthStartStr = formatDateKey(new Date(year, month, 1));
+    const monthEndStr = formatDateKey(new Date(year, month + 1, 0));
+    let blockedDays = 0;
+    for (const dateStr of blockedDates) {
+      if (dateStr >= monthStartStr && dateStr <= monthEndStr) {
+        blockedDays++;
+      }
+    }
     const openDays = daysInMonth - blockedDays;
     return { openDays, blockedDays, totalAppointments: bookings.length };
-  }, [bookings.length, blockTimes]);
+  }, [bookings.length, blockedDates]);
 
   const upcomingAppointments = useMemo(() => {
     const now = new Date();

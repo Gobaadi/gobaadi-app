@@ -11,6 +11,8 @@ import {
   Platform,
   ActivityIndicator,
   Image,
+  Linking,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -38,6 +40,7 @@ interface ChatMessageUI {
   isPrescription?: boolean;
   prescriptionDate?: string;
   prescriptionSize?: string;
+  attachmentUrl?: string;
 }
 
 const CONSULTATION_DURATION_SECONDS = 30 * 60;
@@ -123,6 +126,7 @@ export default function ChatScreen() {
         isPrescription: msg.attachmentType === 'document',
         prescriptionDate: msg.attachmentUrl ? new Date(msg.createdAt).toLocaleDateString() : undefined,
         prescriptionSize: msg.attachmentType === 'document' ? (msg.attachmentMimeType?.includes('pdf') ? 'PDF' : 'File') : undefined,
+        attachmentUrl: msg.attachmentUrl || undefined,
       }));
       setLocalMessages(mapped);
     }
@@ -135,7 +139,7 @@ export default function ChatScreen() {
       setConsultationState('active');
       setRemainingTime(CONSULTATION_DURATION_SECONDS);
     } catch {
-      setConsultationState('active');
+      Alert.alert('Error', 'Failed to start consultation. Please try again.');
     }
   };
 
@@ -143,7 +147,9 @@ export default function ChatScreen() {
     if (consultationId) {
       try {
         await endConsultation(consultationId).unwrap();
-      } catch {}
+      } catch {
+        Alert.alert('Error', 'Failed to end consultation. Please try again.');
+      }
     }
     setConsultationState('ended');
     router.push({
@@ -189,7 +195,9 @@ export default function ChatScreen() {
           text: summary,
           conversationId,
         }).unwrap();
-      } catch {}
+      } catch {
+        Alert.alert('Error', 'Failed to send prescription. Please try again.');
+      }
     }
   }, [appointmentId, animalId, conversationId, createPrescription, sendPrescriptionApi, sendMessage]);
 
@@ -208,6 +216,7 @@ export default function ChatScreen() {
       await sendMessage({ text, conversationId }).unwrap();
     } catch {
       setLocalMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
+      Alert.alert('Error', 'Failed to send message. Please try again.');
     }
   };
 
@@ -227,7 +236,14 @@ export default function ChatScreen() {
             </Text>
             <View style={styles.prescriptionFooter}>
               <Text style={styles.prescriptionTime}>{item.time}</Text>
-              <TouchableOpacity activeOpacity={0.7}>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => {
+                  if (item.attachmentUrl) {
+                    Linking.openURL(item.attachmentUrl);
+                  }
+                }}
+              >
                 <Ionicons name="download-outline" size={18} color="#FFFFFF" />
               </TouchableOpacity>
             </View>
@@ -267,10 +283,38 @@ export default function ChatScreen() {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{patientName}</Text>
         <View style={styles.headerActions}>
-          <TouchableOpacity style={styles.headerActionBtn} activeOpacity={0.7} onPress={() => router.push('/video-call')}>
+          <TouchableOpacity
+            style={styles.headerActionBtn}
+            activeOpacity={0.7}
+            onPress={() =>
+              router.push({
+                pathname: '/video-call',
+                params: {
+                  appointmentId,
+                  conversationId: conversationId ? String(conversationId) : '',
+                  patientName,
+                  animalImage,
+                },
+              })
+            }
+          >
             <Ionicons name="call" size={18} color="#FFFFFF" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.headerActionBtn} activeOpacity={0.7} onPress={() => router.push('/video-call')}>
+          <TouchableOpacity
+            style={styles.headerActionBtn}
+            activeOpacity={0.7}
+            onPress={() =>
+              router.push({
+                pathname: '/video-call',
+                params: {
+                  appointmentId,
+                  conversationId: conversationId ? String(conversationId) : '',
+                  patientName,
+                  animalImage,
+                },
+              })
+            }
+          >
             <Ionicons name="videocam" size={18} color="#FFFFFF" />
           </TouchableOpacity>
           <TouchableOpacity style={styles.headerActionBtn} activeOpacity={0.7}>
@@ -296,7 +340,21 @@ export default function ChatScreen() {
               <Text style={styles.upcomingBannerName}>{patientName}</Text>
             </View>
           </View>
-          <TouchableOpacity style={styles.upcomingBannerJoin} activeOpacity={0.85}>
+          <TouchableOpacity
+            style={styles.upcomingBannerJoin}
+            activeOpacity={0.85}
+            onPress={() =>
+              router.push({
+                pathname: '/video-call',
+                params: {
+                  appointmentId,
+                  conversationId: conversationId ? String(conversationId) : '',
+                  patientName,
+                  animalImage,
+                },
+              })
+            }
+          >
             <Text style={styles.upcomingBannerJoinText}>Join</Text>
           </TouchableOpacity>
         </View>
@@ -365,7 +423,13 @@ export default function ChatScreen() {
           onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
           ListHeaderComponent={
             <View style={styles.dateSeparator}>
-              <Text style={styles.dateSeparatorText}>Today</Text>
+              <Text style={styles.dateSeparatorText}>
+                {new Date().toLocaleDateString('en-US', {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                })}
+              </Text>
             </View>
           }
         />
@@ -421,7 +485,7 @@ export default function ChatScreen() {
               {sending ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
-                <Ionicons name="mic" size={18} color="#FFFFFF" />
+                <Ionicons name={inputText.trim() ? 'send' : 'mic'} size={18} color="#FFFFFF" />
               )}
             </TouchableOpacity>
           </View>

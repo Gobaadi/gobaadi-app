@@ -311,6 +311,34 @@ export class DoctorsService {
     return this.doctorRepository.save(doctor);
   }
 
+  async updateProfile(
+    doctorUserId: number,
+    dto: {
+      name?: string;
+      specialty?: string;
+      experience?: string;
+      avatar?: string;
+      bio?: string;
+      consultationFee?: number;
+      licenseNumber?: string;
+    },
+  ): Promise<Doctor> {
+    const doctor = await this.doctorRepository.findOneBy({
+      userId: doctorUserId,
+    });
+    if (!doctor) {
+      throw new ForbiddenException('No doctor profile linked to this account');
+    }
+    if (dto.name !== undefined) doctor.name = dto.name;
+    if (dto.specialty !== undefined) doctor.specialty = dto.specialty;
+    if (dto.experience !== undefined) doctor.experience = dto.experience;
+    if (dto.avatar !== undefined) doctor.avatar = dto.avatar;
+    if (dto.bio !== undefined) doctor.bio = dto.bio;
+    if (dto.consultationFee !== undefined) doctor.consultationFee = dto.consultationFee;
+    if (dto.licenseNumber !== undefined) doctor.licenseNumber = dto.licenseNumber;
+    return this.doctorRepository.save(doctor);
+  }
+
   async getDashboardStats(doctorUserId: number) {
     const doctor = await this.doctorRepository.findOneBy({
       userId: doctorUserId,

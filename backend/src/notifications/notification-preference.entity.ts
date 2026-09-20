@@ -35,7 +35,6 @@ export class NotificationPreference {
   vaccinationReminders: boolean;
 
   @Column({ default: true })
-<<<<<<< HEAD
   systemUpdates: boolean;
 
   @Column({ default: true })
@@ -44,16 +43,12 @@ export class NotificationPreference {
   @Column({ default: true })
   taskReminders: boolean;
 
-=======
+  @Column({ default: true })
   followUpReminders: boolean;
 
   @Column({ default: true })
   hygieneReminders: boolean;
 
-  @Column({ default: true })
-  systemUpdates: boolean;
-
->>>>>>> c8a87f083e5fd0fa5268adad86abd2873d42dce3
   @CreateDateColumn()
   createdAt: Date;
 

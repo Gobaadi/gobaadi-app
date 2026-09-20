@@ -16,7 +16,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSelector } from 'react-redux';
 import type { RootState } from '@/store/store';
-import { useGetDoctorBookingsQuery } from '@/store/doctorPortalApi';
+import { useGetDoctorBookingsQuery, useGetTodayStatsQuery } from '@/store/doctorPortalApi';
 import { useLanguage } from '@/hooks/use-language';
 
 function getGreeting(): string {
@@ -45,6 +45,7 @@ export default function DoctorHomeScreen() {
   const { languageCode } = useLanguage();
 
   const { data: bookings = [], isLoading } = useGetDoctorBookingsQuery();
+  const { data: todayStats } = useGetTodayStatsQuery();
 
   if (!isDoctor) return null;
 
@@ -52,22 +53,12 @@ export default function DoctorHomeScreen() {
     (b) => b.status === 'CONFIRMED' || b.status === 'RESCHEDULED'
   );
 
-  // Use mock data if API returns empty to match Figma design
-  const ongoingPatients = realOngoing.length > 0 ? realOngoing : [
-    {
-      id: 'mock-1',
-      startAt: new Date().setHours(8, 0, 0, 0).toString(),
-      endAt: new Date().setHours(8, 30, 0, 0).toString(),
-      patientName: 'Zhafira Azalea',
-      patientPhone: 'Backache',
-      patientId: '123'
-    }
-  ];
+  const ongoingPatients = realOngoing;
 
-  const totalConsults = bookings.length;
-  const completedToday = totalConsults > 0 ? bookings.filter((b) => b.status === 'COMPLETED').length : 5;
-  const pendingCount = totalConsults > 0 ? bookings.filter((b) => b.status === 'PENDING').length : 4;
-  const displayTotalConsults = totalConsults > 0 ? totalConsults : 9;
+  const totalConsults = todayStats?.totalToday ?? 0;
+  const completedToday = todayStats?.completedToday ?? 0;
+  const pendingCount = totalConsults - completedToday;
+  const displayTotalConsults = totalConsults;
 
   return (
     <View style={styles.container}>

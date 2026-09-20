@@ -99,6 +99,14 @@ export const chatApi = createApi({
       },
       invalidatesTags: ['ChatMessage', 'Conversation'],
     }),
+    createConversation: builder.mutation<Conversation, { patientId: number }>({
+      query: ({ patientId }) => ({
+        url: '/chat/conversations',
+        method: 'POST',
+        body: { patientId },
+      }),
+      invalidatesTags: ['Conversation'],
+    }),
   }),
 });
 
@@ -108,4 +116,5 @@ export const {
   useGetDoctorAppointmentsQuery,
   useSendMessageMutation,
   useSendAttachmentMessageMutation,
+  useCreateConversationMutation,
 } = chatApi;

@@ -101,8 +101,15 @@ export const doctorPortalApi = createApi({
     getMyDoctorProfile: builder.query<DoctorProfile, void>({
       query: () => '/doctors/me',
     }),
-    getDoctorBookings: builder.query<DoctorAppointment[], void>({
-      query: () => '/doctors/bookings/all',
+    getDoctorBookings: builder.query<DoctorAppointment[], { filter?: string; consultationType?: string; search?: string } | void>({
+      query: (params) => {
+        const query = new URLSearchParams();
+        if (params && 'filter' in params && params.filter) query.set('filter', params.filter);
+        if (params && 'consultationType' in params && params.consultationType) query.set('consultationType', params.consultationType);
+        if (params && 'search' in params && params.search) query.set('search', params.search);
+        const qs = query.toString();
+        return `/doctors/bookings/all${qs ? `?${qs}` : ''}`;
+      },
       providesTags: ['DoctorBookings'],
     }),
     getBookingById: builder.query<DoctorAppointment, string>({
@@ -218,6 +225,25 @@ export const doctorPortalApi = createApi({
       }),
       invalidatesTags: ['Dashboard'],
     }),
+    updateProfile: builder.mutation<
+      DoctorProfile,
+      {
+        name?: string;
+        specialty?: string;
+        experience?: string;
+        avatar?: string;
+        bio?: string;
+        consultationFee?: number;
+        licenseNumber?: string;
+      }
+    >({
+      query: (dto) => ({
+        url: '/doctors/me',
+        method: 'PATCH',
+        body: dto,
+      }),
+      invalidatesTags: ['Dashboard'],
+    }),
     getAvailability: builder.query<Availability[], number>({
       query: (doctorId) => `/doctors/${doctorId}/availability`,
       providesTags: ['Availability'],
@@ -253,6 +279,7 @@ export const {
   useUpdateQualificationsMutation,
   useUpdateSpecializationsMutation,
   useUpdateExperiencesMutation,
+  useUpdateProfileMutation,
   useGetAvailabilityQuery,
   useSetAvailabilityMutation,
 } = doctorPortalApi;

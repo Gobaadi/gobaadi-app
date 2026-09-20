@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -24,17 +24,6 @@ export default function DoctorPatientsScreen() {
   const { data: patients = [], isLoading } = useGetMyPatientsQuery({
     search: searchQuery || undefined,
   });
-
-  const filteredPatients = useMemo(() => {
-    if (!searchQuery.trim()) return patients;
-    const q = searchQuery.toLowerCase();
-    return patients.filter(
-      (p) =>
-        p.name.toLowerCase().includes(q) ||
-        (p.ownerName && p.ownerName.toLowerCase().includes(q)) ||
-        p.breed.toLowerCase().includes(q)
-    );
-  }, [patients, searchQuery]);
 
   if (!isDoctor) return null;
 
@@ -79,7 +68,7 @@ export default function DoctorPatientsScreen() {
             <MediaCardSkeleton imageSize={80} />
             <MediaCardSkeleton imageSize={80} />
           </>
-        ) : filteredPatients.length === 0 ? (
+        ) : patients.length === 0 ? (
           <EmptyState
             title={searchQuery ? 'No patients found' : 'No patients yet'}
             description={
@@ -89,7 +78,7 @@ export default function DoctorPatientsScreen() {
             }
           />
         ) : (
-          filteredPatients.map((patient) => (
+          patients.map((patient) => (
             <TouchableOpacity
               key={patient.id}
               style={styles.patientCard}
