@@ -16,6 +16,7 @@ import { logout } from '@/store/authApi';
 import { useGetMyProfileQuery } from '@/store/usersApi';
 import { useGetMyDoctorProfileQuery, useGetDoctorBookingsQuery } from '@/store/doctorPortalApi';
 import { useGetAnimalsQuery } from '@/store/animalsApi';
+import { useGetBalanceQuery } from '@/store/walletApi';
 import type { RootState, AppDispatch } from '@/store/store';
 
 export default function ProfileScreen() {
@@ -31,6 +32,9 @@ export default function ProfileScreen() {
   // Doctor data
   const { data: doctorProfile } = useGetMyDoctorProfileQuery(undefined, { skip: !isDoctor });
   const { data: doctorBookings = [] } = useGetDoctorBookingsQuery(undefined, { skip: !isDoctor });
+
+  // Wallet data
+  const { data: walletBalance } = useGetBalanceQuery();
 
   const uniquePatients = useMemo(() => {
     const patientIds = new Set(doctorBookings.map((b) => b.patientId));
@@ -135,7 +139,7 @@ export default function ProfileScreen() {
                 <Text style={styles.walletLabel}>Total Earnings</Text>
               </View>
               <View style={styles.walletRight}>
-                <Text style={styles.walletAmount}>$99.00</Text>
+                <Text style={styles.walletAmount}>${(walletBalance?.balance ?? 0).toFixed(2)}</Text>
                 <Ionicons name="chevron-forward" size={18} color="#9C9690" />
               </View>
             </TouchableOpacity>

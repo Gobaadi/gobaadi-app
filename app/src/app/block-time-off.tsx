@@ -9,6 +9,7 @@ import {
   TextInput,
   Modal,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -17,6 +18,7 @@ import { useGetMyDoctorProfileQuery } from '@/store/doctorPortalApi';
 import {
   useGetBlockTimesQuery,
   useCreateBlockTimeMutation,
+  useRemoveBlockTimeMutation,
 } from '@/store/blockTimesApi';
 import type { BlockTime } from '@/store/blockTimesApi';
 
@@ -28,6 +30,14 @@ const REASON_MAP: Record<string, string> = {
   'Conference/Training': 'conference_training',
   'Emergency': 'emergency',
   'Other': 'other',
+};
+
+const REVERSE_REASON_MAP: Record<string, string> = {
+  vacation: 'Vacation',
+  sick_leave: 'Sick Leave',
+  conference_training: 'Conference/Training',
+  emergency: 'Emergency',
+  other: 'Other',
 };
 
 type Step = 'form' | 'warning' | 'confirmation' | 'confirmed';
@@ -104,6 +114,7 @@ export default function BlockTimeOffScreen() {
   );
 
   const [createBlockTime, { isLoading: creating }] = useCreateBlockTimeMutation();
+  const [removeBlockTime, { isLoading: removing }] = useRemoveBlockTimeMutation();
 
   const [step, setStep] = useState<Step>('form');
   const [startDate, setStartDate] = useState('');
@@ -112,6 +123,8 @@ export default function BlockTimeOffScreen() {
   const [note, setNote] = useState('');
   const [showStartCalendar, setShowStartCalendar] = useState(false);
   const [showEndCalendar, setShowEndCalendar] = useState(false);
+  const [conflicts, setConflicts] = useState<Array<{ id: number; startAt: string; patientId: number; price: number }>>([]);
+  const [estimatedDeduction, setEstimatedDeduction] = useState(0);
 
   const today = useMemo(() => {
     const now = new Date();
@@ -258,9 +271,27 @@ export default function BlockTimeOffScreen() {
     );
   };
 
-  const handleContinue = () => {
-    if (startDate && endDate && selectedReason) {
-      setStep('warning');
+  const handleContinue = async () => {
+    if (!doctorId || !startDate || !endDate || !selectedReason) return;
+
+    try {
+      const result = await createBlockTime({
+        id: doctorId,
+        data: {
+          startDate,
+          endDate,
+          reason: REASON_MAP[selectedReason] as any,
+          note: note || undefined,
+          force: false,
+        },
+      }).unwrap();
+      setStep('confirmed');
+    } catch (err: any) {
+      if (err?.status === 409 && err?.data?.conflicts) {
+        setConflicts(err.data.conflicts);
+        setEstimatedDeduction(err.data.estimatedWalletDeduction ?? 0);
+        setStep('warning');
+      }
     }
   };
 
@@ -284,10 +315,27 @@ export default function BlockTimeOffScreen() {
       }).unwrap();
       setStep('confirmed');
     } catch (err: any) {
-      if (err?.status === 409) {
-        setStep('confirmation');
+      if (err?.status === 409 && err?.data?.conflicts) {
+        setConflicts(err.data.conflicts);
+        setEstimatedDeduction(err.data.estimatedWalletDeduction ?? 0);
       }
     }
+  };
+
+  const handleRemoveBlock = async (blockId: number) => {
+    if (!doctorId) return;
+    Alert.alert('Remove Block', 'Are you sure you want to remove this blocked period?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await removeBlockTime({ id: doctorId, blockId }).unwrap();
+          } catch {}
+        },
+      },
+    ]);
   };
 
   if (step === 'confirmed') {
@@ -346,33 +394,37 @@ export default function BlockTimeOffScreen() {
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <Text style={styles.sectionTitle}>Cancelled Appointments</Text>
 
-          {[
-            { name: 'Clara Bennett', owner: 'Sophia Rodriguez', date: '24 Aug 2026', time: '10:00 AM' },
-            { name: 'Clara Bennett', owner: 'Sophia Rodriguez', date: '24 Aug 2026', time: '12:00 PM' },
-          ].map((appt, i) => (
-            <View key={i} style={styles.cancelledCard}>
-              <View style={styles.cancelledAvatar}>
-                <Ionicons name="paw" size={20} color="#BD632F" />
+          {conflicts.map((appt) => {
+            const apptDate = new Date(appt.startAt);
+            const dateStr = apptDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+            const timeStr = apptDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+            return (
+              <View key={appt.id} style={styles.cancelledCard}>
+                <View style={styles.cancelledAvatar}>
+                  <Ionicons name="paw" size={20} color="#BD632F" />
+                </View>
+                <View style={styles.cancelledInfo}>
+                  <Text style={styles.cancelledName}>Appointment #{appt.id}</Text>
+                  <Text style={styles.cancelledDateTime}>
+                    <Ionicons name="calendar-outline" size={12} color="#9C9690" /> {dateStr} · {timeStr}
+                  </Text>
+                  {appt.price > 0 && (
+                    <Text style={styles.cancelledOwner}>৳ {appt.price.toFixed(2)}</Text>
+                  )}
+                </View>
+                <View style={styles.cancelledBadge}>
+                  <Text style={styles.cancelledBadgeText}>Cancelled</Text>
+                </View>
               </View>
-              <View style={styles.cancelledInfo}>
-                <Text style={styles.cancelledName}>{appt.name}</Text>
-                <Text style={styles.cancelledOwner}>Owner: {appt.owner}</Text>
-                <Text style={styles.cancelledDateTime}>
-                  <Ionicons name="calendar-outline" size={12} color="#9C9690" /> {appt.date} · {appt.time}
-                </Text>
-              </View>
-              <View style={styles.cancelledBadge}>
-                <Text style={styles.cancelledBadgeText}>Cancelled</Text>
-              </View>
-            </View>
-          ))}
+            );
+          })}
 
           <View style={styles.walletSection}>
             <View style={styles.walletHeader}>
               <Ionicons name="wallet-outline" size={18} color="#BD632F" />
               <Text style={styles.walletLabel}>Estimated Wallet Deduction</Text>
             </View>
-            <Text style={styles.walletAmount}>৳ 1,250</Text>
+            <Text style={styles.walletAmount}>৳ {estimatedDeduction.toFixed(2)}</Text>
           </View>
 
           <View style={styles.infoBanner}>
@@ -418,7 +470,7 @@ export default function BlockTimeOffScreen() {
               </TouchableOpacity>
               <Text style={styles.modalTitle}>You have existing appointments</Text>
               <Text style={styles.modalDescription}>
-                Blocking this time will cancel 2 appointments. Their booking amounts will be refunded, and applicable cancellation fees will be deducted from your wallet.
+                Blocking this time will cancel {conflicts.length} appointment{conflicts.length !== 1 ? 's' : ''}. Their booking amounts will be refunded, and applicable cancellation fees will be deducted from your wallet.
               </Text>
               <View style={styles.modalButtons}>
                 <TouchableOpacity style={styles.modalBackBtn} onPress={() => setStep('form')} activeOpacity={0.85}>
@@ -509,6 +561,37 @@ export default function BlockTimeOffScreen() {
           onChangeText={setNote}
           multiline
         />
+
+        {blockTimes.length > 0 && (
+          <View style={{ marginTop: 24 }}>
+            <Text style={styles.sectionTitle}>Blocked Periods</Text>
+            {blockTimes.map((bt) => {
+              const reasonLabel = REVERSE_REASON_MAP[bt.reason ?? ''] ?? bt.reason ?? 'Other';
+              return (
+                <View key={bt.id} style={styles.blockTimeCard}>
+                  <View style={styles.blockTimeInfo}>
+                    <Ionicons name="time-outline" size={18} color="#BD632F" />
+                    <View style={{ marginLeft: 10, flex: 1 }}>
+                      <Text style={styles.blockTimeDate}>
+                        {formatDateDisplay(bt.startDate)} - {formatDateDisplay(bt.endDate)}
+                      </Text>
+                      <Text style={styles.blockTimeReason}>{reasonLabel}</Text>
+                      {bt.note ? <Text style={styles.blockTimeNote}>{bt.note}</Text> : null}
+                    </View>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => handleRemoveBlock(bt.id)}
+                    disabled={removing}
+                    activeOpacity={0.7}
+                    style={styles.removeBlockBtn}
+                  >
+                    <Ionicons name="trash-outline" size={18} color="#C62828" />
+                  </TouchableOpacity>
+                </View>
+              );
+            })}
+          </View>
+        )}
 
         <View style={styles.infoBanner}>
           <Ionicons name="information-circle-outline" size={20} color="#BD632F" />
@@ -621,4 +704,10 @@ const styles = StyleSheet.create({
   viewCalendarBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
   doneBtn: { height: 52, borderRadius: 26, borderWidth: 1.5, borderColor: '#E6E1DC', justifyContent: 'center', alignItems: 'center' },
   doneBtnText: { color: '#7C7672', fontSize: 16, fontWeight: '600' },
+  blockTimeCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 14, borderWidth: 1, borderColor: '#E6E1DC', padding: 14, marginBottom: 10, gap: 12 },
+  blockTimeInfo: { flex: 1, flexDirection: 'row', alignItems: 'center' },
+  blockTimeDate: { fontSize: 14, fontWeight: '600', color: '#1A1817' },
+  blockTimeReason: { fontSize: 12, color: '#7C7672', fontWeight: '500', marginTop: 2 },
+  blockTimeNote: { fontSize: 12, color: '#9C9690', fontWeight: '400', marginTop: 2 },
+  removeBlockBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#FFEBEE', justifyContent: 'center', alignItems: 'center' },
 });

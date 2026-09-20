@@ -77,7 +77,9 @@ export default function ProfileDetailsScreen() {
                 <Ionicons name="star" size={14} color="#F59E0B" />
                 <Text style={styles.ratingText}>{doctorProfile?.rating} ({doctorBookings?.length} reviews)</Text>
               </View>
-              <Text style={styles.doctorLocation}>Cardiology Center, USA</Text>
+              <Text style={[styles.doctorLocation, !doctorProfile?.specialty && styles.noDataText]}>
+                {doctorProfile?.specialty || 'No location added'}
+              </Text>
             </View>
           </View>
           <View style={styles.statsRow}>
@@ -143,15 +145,14 @@ export default function ProfileDetailsScreen() {
             <View style={styles.fieldCard}>
               <Text style={styles.fieldLabel}>Location (Village/District)</Text>
               <View style={styles.fieldValue}>
-                <Text style={styles.fieldText}>Bhuj Kutch Gujarat 370001</Text>
+                <Text style={[styles.fieldText, styles.noDataText]}>No data</Text>
                 <Ionicons name="location-outline" size={18} color="#BD632F" />
               </View>
             </View>
 
             <Text style={[styles.sectionTitle, { marginTop: 16, marginBottom: 8 }]}>About</Text>
-            <Text style={styles.aboutText}>
-              {doctorProfile?.bio || "Hi, I'm Dr. Johnny Williams. I became a doctor to help people. I have been given much and I want to give back. Primary area to help is family medicine, geriatrics..."}
-              <Text style={styles.readMore}>Read More</Text>
+            <Text style={[styles.aboutText, !doctorProfile?.bio && styles.noDataText]}>
+              {doctorProfile?.bio || 'No data'}
             </Text>
           </View>
         )}
@@ -163,7 +164,7 @@ export default function ProfileDetailsScreen() {
               <Text style={styles.sectionTitle}>Experiences</Text>
               <View style={styles.sectionActions}>
                 <TouchableOpacity activeOpacity={0.7}>
-                  <Ionicons name="trash-outline" size={20} color="#E53935" />
+                  <Ionicons name="add-circle-outline" size={22} color="#7C7672" />
                 </TouchableOpacity>
                 <TouchableOpacity activeOpacity={0.7}>
                   <Ionicons name="pencil-outline" size={20} color="#7C7672" />
@@ -171,32 +172,36 @@ export default function ProfileDetailsScreen() {
               </View>
             </View>
 
-            <View style={styles.experienceCard}>
-              <View style={styles.expHeader}>
-                <View style={styles.expIcon}>
-                  <Ionicons name="business-outline" size={20} color="#BD632F" />
+            {doctorProfile?.experiences && doctorProfile.experiences.length > 0 ? (
+              doctorProfile.experiences.map((exp, i) => (
+                <View key={i} style={[styles.experienceCard, i > 0 && { marginTop: 10 }]}>
+                  <View style={styles.expHeader}>
+                    <View style={styles.expIcon}>
+                      <Ionicons name="business-outline" size={20} color="#BD632F" />
+                    </View>
+                    <View style={styles.expInfo}>
+                      <Text style={styles.expTitle}>{exp.organization}</Text>
+                      <Text style={styles.expRole}>{exp.title}</Text>
+                    </View>
+                  </View>
+                  <View style={styles.expMeta}>
+                    <View style={styles.expDateBadge}>
+                      <Ionicons name="calendar-outline" size={12} color="#7C7672" />
+                      <Text style={styles.expDateText}>{exp.duration}</Text>
+                    </View>
+                  </View>
+                  {exp.description ? (
+                    <Text style={styles.expDescription} numberOfLines={3}>
+                      {exp.description}
+                    </Text>
+                  ) : null}
                 </View>
-                <View style={styles.expInfo}>
-                  <Text style={styles.expTitle}>Vet Clinic</Text>
-                  <Text style={styles.expRole}>Senior Veterinary Surgeon</Text>
-                </View>
+              ))
+            ) : (
+              <View style={styles.experienceCard}>
+                <Text style={[styles.expDescription, styles.noDataText]}>No experiences added</Text>
               </View>
-              <View style={styles.expMeta}>
-                <View style={styles.expDateBadge}>
-                  <Ionicons name="calendar-outline" size={12} color="#7C7672" />
-                  <Text style={styles.expDateText}>May 2026 - Present</Text>
-                </View>
-                <Text style={styles.expCurrent}>Currently Working Here</Text>
-              </View>
-              <View style={styles.expLocation}>
-                <Ionicons name="location-outline" size={14} color="#9C9690" />
-                <Text style={styles.expLocationText}>Dhanmondi, Dhaka</Text>
-              </View>
-              <Text style={styles.expDescription} numberOfLines={3}>
-                Hi, I'm Dr. Johnny Williams. I became a doctor to help people. I have been given much and I want to give back. Primary area to help is family medicine, geriatrics...
-              </Text>
-              <Text style={styles.readMore}>Read More</Text>
-            </View>
+            )}
 
             {/* Qualifications */}
             <View style={[styles.sectionHeader, { marginTop: 20 }]}>
@@ -244,12 +249,16 @@ export default function ProfileDetailsScreen() {
             </View>
 
             <View style={styles.tagsContainer}>
-              {['Livestock Medicine', 'Veterinary Surgery', 'Animal Nutrition'].map((tag) => (
-                <View key={tag} style={styles.tagItem}>
-                  <Ionicons name={tag === 'Livestock Medicine' ? 'medal-outline' : tag === 'Veterinary Surgery' ? 'ribbon-outline' : 'heart-outline'} size={16} color="#BD632F" />
-                  <Text style={styles.tagText}>{tag}</Text>
-                </View>
-              ))}
+              {doctorProfile?.specializations && doctorProfile.specializations.length > 0 ? (
+                doctorProfile.specializations.map((tag) => (
+                  <View key={tag} style={styles.tagItem}>
+                    <Ionicons name="ribbon-outline" size={16} color="#BD632F" />
+                    <Text style={styles.tagText}>{tag}</Text>
+                  </View>
+                ))
+              ) : (
+                <Text style={[styles.tagText, styles.noDataText]}>No specializations added</Text>
+              )}
               <TouchableOpacity style={styles.addMoreTag} activeOpacity={0.8}>
                 <Ionicons name="add" size={16} color="#BD632F" />
                 <Text style={styles.addMoreTagText}>Add more..</Text>
@@ -322,7 +331,9 @@ export default function ProfileDetailsScreen() {
             <View style={styles.fieldCard}>
               <Text style={styles.fieldLabel}>Certifications</Text>
               <View style={styles.fieldValue}>
-                <Text style={styles.fieldText}>Veterinary Surgeon</Text>
+                <Text style={[styles.fieldText, doctorProfile?.qualifications?.[0] ? undefined : styles.noDataText]}>
+                  {doctorProfile?.qualifications?.[0] || 'No data'}
+                </Text>
                 <Ionicons name="mic-outline" size={18} color="#BD632F" />
               </View>
             </View>
@@ -330,7 +341,9 @@ export default function ProfileDetailsScreen() {
             <View style={styles.fieldCard}>
               <Text style={styles.fieldLabel}>Institute Name</Text>
               <View style={styles.fieldValue}>
-                <Text style={styles.fieldText}>Gobaadi Veterinary College</Text>
+                <Text style={[styles.fieldText, doctorProfile?.qualifications?.[1] ? undefined : styles.noDataText]}>
+                  {doctorProfile?.qualifications?.[1] || 'No data'}
+                </Text>
                 <Ionicons name="checkmark-circle" size={18} color="#4CAF50" />
               </View>
             </View>
@@ -338,7 +351,7 @@ export default function ProfileDetailsScreen() {
             <View style={styles.fieldCard}>
               <Text style={styles.fieldLabel}>Location (Village/District)</Text>
               <View style={styles.fieldValue}>
-                <Text style={styles.fieldText}>Bhuj Kutch Gujarat 370001</Text>
+                <Text style={[styles.fieldText, styles.noDataText]}>No data</Text>
                 <Ionicons name="location-outline" size={18} color="#BD632F" />
               </View>
             </View>
@@ -426,6 +439,7 @@ const styles = StyleSheet.create({
   fieldLabel: { fontSize: 12, fontWeight: '500', color: '#9C9690', marginBottom: 6 },
   fieldValue: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   fieldText: { fontSize: 14, fontWeight: '600', color: '#1A1817' },
+  noDataText: { color: '#9C9690', fontWeight: '500' },
 
   // About
   aboutText: { fontSize: 13, fontWeight: '500', color: '#7C7672', lineHeight: 20 },

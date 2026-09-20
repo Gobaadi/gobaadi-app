@@ -18,10 +18,10 @@ import {
 } from '@/store/notificationPreferencesApi';
 import type { NotificationPreference } from '@/store/notificationPreferencesApi';
 
-type FilterTab = 'all' | 'tasks' | 'hygiene' | 'health' | 'help';
+type FilterTab = 'all' | 'appointments' | 'patients' | 'messages';
 
 interface PreferenceItem {
-  key: keyof Pick<NotificationPreference, 'weatherAlerts' | 'taskReminders' | 'chatMessages' | 'promotionalOffers' | 'systemUpdates'>;
+  key: keyof Pick<NotificationPreference, 'appointmentReminders' | 'chatMessages' | 'followUpReminders' | 'hygieneReminders' | 'systemUpdates'>;
   title: string;
   description: string;
   icon: string;
@@ -31,11 +31,11 @@ interface PreferenceItem {
 }
 
 const PREFERENCES: PreferenceItem[] = [
-  { key: 'weatherAlerts', title: 'Weather', description: 'Rain, Heat, Wind Updates', icon: 'cloudy', iconBg: '#E3F2FD', iconColor: '#2196F3', tab: 'health' },
-  { key: 'chatMessages', title: 'Animal Health', description: 'Health alerts and updates', icon: 'paw', iconBg: '#E8F5E9', iconColor: '#4CAF50', tab: 'health' },
-  { key: 'taskReminders', title: 'Task Reminder', description: 'Reminder For Schedule Task', icon: 'clipboard', iconBg: '#E8F5E9', iconColor: '#4CAF50', tab: 'tasks' },
-  { key: 'systemUpdates', title: 'Hygiene Reminder', description: 'Hygiene and safety reminders', icon: 'medkit', iconBg: '#E8F5E9', iconColor: '#4CAF50', tab: 'hygiene' },
-  { key: 'promotionalOffers', title: 'Promotions', description: 'Deals and promotional offers', icon: 'help-circle', iconBg: '#E8F5E9', iconColor: '#4CAF50', tab: 'help' },
+  { key: 'appointmentReminders', title: 'Appointments Reminders', description: 'Get notified about upcoming appointments', icon: 'calendar', iconBg: '#FFF2EB', iconColor: '#BD632F', tab: 'appointments' },
+  { key: 'chatMessages', title: 'Patient Messages', description: 'Get notified when patients send messages', icon: 'chatbubble-ellipses', iconBg: '#FFF2EB', iconColor: '#BD632F', tab: 'patients' },
+  { key: 'followUpReminders', title: 'Follow-up Reminders', description: 'Reminders for scheduled follow-ups', icon: 'notifications', iconBg: '#E8F5E9', iconColor: '#4CAF50', tab: 'appointments' },
+  { key: 'hygieneReminders', title: 'Hygiene Reminder', description: 'Get notified about consultation payments', icon: 'medical', iconBg: '#E8F5E9', iconColor: '#4CAF50', tab: 'patients' },
+  { key: 'systemUpdates', title: 'System Updates', description: 'Important updates from the platform', icon: 'volume-high', iconBg: '#F3E5F5', iconColor: '#9C27B0', tab: 'messages' },
 ];
 
 export default function NotificationPreferencesScreen() {
@@ -107,7 +107,7 @@ export default function NotificationPreferencesScreen() {
       </View>
 
       <View style={styles.tabRow}>
-        {(['all', 'tasks', 'hygiene', 'health', 'help'] as FilterTab[]).map((tab) => (
+        {(['all', 'appointments', 'patients', 'messages'] as FilterTab[]).map((tab) => (
           <TouchableOpacity
             key={tab}
             style={[styles.tab, activeTab === tab && styles.tabActive]}
@@ -115,7 +115,7 @@ export default function NotificationPreferencesScreen() {
             activeOpacity={0.7}
           >
             <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              {tab === 'all' ? 'All' : tab === 'appointments' ? 'Appointments' : tab === 'patients' ? 'Patients' : 'Messages'}
             </Text>
           </TouchableOpacity>
         ))}

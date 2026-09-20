@@ -35,7 +35,7 @@ export const notificationsApi = createApi({
     markAllNotificationsRead: builder.mutation<any, void>({
       query: () => ({
         url: '/notifications/read-all',
-        method: 'POST',
+        method: 'PATCH',
       }),
       invalidatesTags: [{ type: 'Notification', id: 'LIST' }],
     }),

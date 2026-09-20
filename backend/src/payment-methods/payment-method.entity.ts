@@ -8,6 +8,7 @@ import {
 
 export enum PaymentMethodType {
   BKASH = 'bkash',
+  MOBILE_BANKING = 'mobile_banking',
   CARD = 'card',
   CASH = 'cash',
 }

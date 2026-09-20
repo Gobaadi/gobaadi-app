@@ -29,7 +29,7 @@ export default function ReportIssuesScreen() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [createTicket, { isLoading }] = useCreateTicketMutation();
 
-  function handleSubmit() {
+  async function handleSubmit() {
     if (!description.trim()) {
       Alert.alert('Missing Info', 'Please describe the issue in detail.');
       return;
@@ -38,16 +38,14 @@ export default function ReportIssuesScreen() {
       Alert.alert('Missing Info', 'Please select an issue type.');
       return;
     }
-    createTicket({ subject: selectedIssue, message: description })
-      .unwrap()
-      .then(() => {
-        Alert.alert('Report Submitted', 'Thank you for reporting. Our team will inspect it promptly.', [
-          { text: 'OK', onPress: () => router.back() },
-        ]);
-      })
-      .catch(() => {
-        Alert.alert('Error', 'Failed to submit report. Please try again.');
-      });
+    try {
+      await createTicket({ subject: selectedIssue, message: description }).unwrap();
+      Alert.alert('Report Submitted', 'Thank you for reporting. Our team will inspect it promptly.', [
+        { text: 'OK', onPress: () => router.back() },
+      ]);
+    } catch {
+      Alert.alert('Error', 'Failed to submit report. Please try again.');
+    }
   }
 
   return (

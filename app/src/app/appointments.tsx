@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -154,49 +154,67 @@ export default function AppointmentsScreen() {
 
   const [activeTab, setActiveTab] = useState<Tab>('today');
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
 
-  const { data: bookings = [] } = useGetDoctorBookingsQuery();
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const consultationTypeMap: Record<string, string> = {
+    video: 'online_video',
+    voice: 'online_voice',
+    chat: 'online_chat',
+    physical: 'physical',
+  };
+
+  const apiFilter = useMemo(() => {
+    if (params.filterDate === 'today') return 'today';
+    if (params.filterStatus === 'COMPLETED') return 'completed';
+    if (params.filterStatus === 'CANCELLED') return 'cancelled';
+    return undefined;
+  }, [params.filterDate, params.filterStatus]);
+
+  const apiConsultationType = useMemo(() => {
+    if (params.filterConsultationType && params.filterConsultationType !== 'all') {
+      return consultationTypeMap[params.filterConsultationType] ?? params.filterConsultationType;
+    }
+    return undefined;
+  }, [params.filterConsultationType]);
+
+  const { data: bookings = [] } = useGetDoctorBookingsQuery({
+    filter: apiFilter,
+    consultationType: apiConsultationType,
+    search: debouncedSearch || undefined,
+  });
 
   const filteredBookings = useMemo(() => {
     let result = [...bookings];
 
-    if (params.filterDate) {
+    if (params.filterDate === 'tomorrow') {
+      const tmr = new Date();
+      tmr.setDate(tmr.getDate() + 1);
+      result = result.filter((b) => isSameDay(new Date(b.startAt), tmr));
+    } else if (params.filterDate === 'this_week') {
       const now = new Date();
-      if (params.filterDate === 'today') {
-        result = result.filter((b) => isSameDay(new Date(b.startAt), now));
-      } else if (params.filterDate === 'tomorrow') {
-        const tmr = new Date();
-        tmr.setDate(tmr.getDate() + 1);
-        result = result.filter((b) => isSameDay(new Date(b.startAt), tmr));
-      } else if (params.filterDate === 'this_week') {
-        const startOfWeek = new Date(now);
-        startOfWeek.setDate(now.getDate() - now.getDay());
-        startOfWeek.setHours(0, 0, 0, 0);
-        const endOfWeek = new Date(startOfWeek);
-        endOfWeek.setDate(startOfWeek.getDate() + 6);
-        endOfWeek.setHours(23, 59, 59, 999);
-        result = result.filter((b) => {
-          const d = new Date(b.startAt);
-          return d >= startOfWeek && d <= endOfWeek;
-        });
-      }
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(now.getDate() - now.getDay());
+      startOfWeek.setHours(0, 0, 0, 0);
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 6);
+      endOfWeek.setHours(23, 59, 59, 999);
+      result = result.filter((b) => {
+        const d = new Date(b.startAt);
+        return d >= startOfWeek && d <= endOfWeek;
+      });
     }
 
-    if (params.filterStatus && params.filterStatus !== 'all') {
-      result = result.filter((b) => b.status === params.filterStatus);
-    }
-
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      result = result.filter(
-        (b) =>
-          (b.animalName && b.animalName.toLowerCase().includes(q)) ||
-          (b.patientName && b.patientName.toLowerCase().includes(q))
-      );
+    if (params.filterStatus === 'CONFIRMED') {
+      result = result.filter((b) => b.status === 'CONFIRMED');
     }
 
     return result;
-  }, [bookings, searchQuery, params.filterDate, params.filterStatus]);
+  }, [bookings, params.filterDate, params.filterStatus]);
 
   const { todayAppointments, previousAppointments } = useMemo(() => {
     const today: DoctorAppointment[] = [];

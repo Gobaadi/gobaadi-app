@@ -13,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useGetNotificationsQuery, useMarkNotificationReadMutation } from '@/store/notificationsApi';
 import type { Notification } from '@/store/notificationsApi';
 
-type FilterTab = 'all' | 'tasks' | 'hygiene' | 'health' | 'help';
+type FilterTab = 'all' | 'appointments' | 'patients' | 'messages';
 
 const TYPE_CONFIG: Record<string, { icon: string; iconBg: string; iconColor: string }> = {
   order: { icon: 'cart', iconBg: '#E3F2FD', iconColor: '#2196F3' },
@@ -31,10 +31,9 @@ const TYPE_CONFIG: Record<string, { icon: string; iconBg: string; iconColor: str
 
 const TAB_FILTER_MAP: Record<FilterTab, string[]> = {
   all: [],
-  tasks: ['reminder'],
-  hygiene: ['system'],
-  health: ['ai_ready', 'prescription_ready'],
-  help: ['system', 'promotion'],
+  appointments: ['booking', 'reminder'],
+  patients: ['message'],
+  messages: ['message'],
 };
 
 function isToday(dateStr: string): boolean {
@@ -157,7 +156,7 @@ export default function NotificationsScreen() {
     );
   }
 
-  const hasNotifications = filteredNotifications.today.length > 0 || filteredNotifications.thisWeek.length > 0 || filteredNotifications.older.length > 0;
+  const hasNotifications = filteredNotifications.today.length > 0 || filteredNotifications.thisWeek.length > 0;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -172,7 +171,7 @@ export default function NotificationsScreen() {
       </View>
 
       <View style={styles.tabRow}>
-        {(['all', 'tasks', 'hygiene', 'health', 'help'] as FilterTab[]).map((tab) => (
+        {(['all', 'appointments', 'patients', 'messages'] as FilterTab[]).map((tab) => (
           <TouchableOpacity
             key={tab}
             style={[styles.tab, activeTab === tab && styles.tabActive]}
@@ -180,7 +179,7 @@ export default function NotificationsScreen() {
             activeOpacity={0.7}
           >
             <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              {tab === 'all' ? 'All' : tab === 'appointments' ? 'Appointments' : tab === 'patients' ? 'Patients' : 'Messages'}
             </Text>
           </TouchableOpacity>
         ))}
@@ -205,13 +204,6 @@ export default function NotificationsScreen() {
           <>
             <Text style={[styles.sectionTitle, { marginTop: 20 }]}>This Week</Text>
             {filteredNotifications.thisWeek.map(renderNotification)}
-          </>
-        )}
-
-        {filteredNotifications.older.length > 0 && (
-          <>
-            <Text style={[styles.sectionTitle, { marginTop: 20 }]}>Earlier</Text>
-            {filteredNotifications.older.map(renderNotification)}
           </>
         )}
       </ScrollView>

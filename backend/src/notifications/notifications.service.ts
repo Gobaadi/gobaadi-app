@@ -234,13 +234,16 @@ export class NotificationsService {
 
     if (data.appointmentReminders !== undefined)
       pref.appointmentReminders = data.appointmentReminders;
-    if (data.promotions !== undefined) pref.promotions = data.promotions;
+    if (data.promotionalOffers !== undefined) pref.promotionalOffers = data.promotionalOffers;
     if (data.chatMessages !== undefined) pref.chatMessages = data.chatMessages;
     if (data.prescriptionUpdates !== undefined)
       pref.prescriptionUpdates = data.prescriptionUpdates;
     if (data.labResults !== undefined) pref.labResults = data.labResults;
     if (data.vaccinationReminders !== undefined)
       pref.vaccinationReminders = data.vaccinationReminders;
+    if (data.systemUpdates !== undefined) pref.systemUpdates = data.systemUpdates;
+    if (data.weatherAlerts !== undefined) pref.weatherAlerts = data.weatherAlerts;
+    if (data.taskReminders !== undefined) pref.taskReminders = data.taskReminders;
 
     return this.preferenceRepository.save(pref);
   }

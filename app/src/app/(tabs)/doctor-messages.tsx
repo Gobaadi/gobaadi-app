@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useRequireDoctor } from '@/hooks/use-require-doctor';
 import {
   StyleSheet,
@@ -7,11 +7,12 @@ import {
   TouchableOpacity,
   ScrollView,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useGetConversationsQuery } from '@/store/chatApi';
+import { useGetConversationsQuery, useCreateConversationMutation } from '@/store/chatApi';
 import {
   useGetDoctorBookingsQuery,
   type DoctorAppointment,
@@ -25,6 +26,12 @@ interface EnrichedChat {
   unreadCount: number;
   isPending: boolean;
   animalImage?: string;
+  patientId: number;
+  conversationId?: number;
+  appointmentId?: number;
+  appointmentStatus?: string;
+  consultationType?: string;
+  startAt?: string;
 }
 
 function formatChatTime(iso?: string | null): string {
@@ -40,13 +47,29 @@ function formatChatTime(iso?: string | null): string {
   return d.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
 }
 
+function formatAppointmentTime(iso?: string): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
 export default function DoctorMessagesScreen() {
   const router = useRouter();
   const isDoctor = useRequireDoctor();
   const [searchQuery] = useState('');
+  const [creatingId, setCreatingId] = useState<number | null>(null);
 
   const { data: conversations = [] } = useGetConversationsQuery();
   const { data: bookings = [] } = useGetDoctorBookingsQuery();
+  const [createConversation] = useCreateConversationMutation();
+
+  const conversationByPatientId = useMemo(() => {
+    const map = new Map<number, number>();
+    conversations.forEach((conv) => {
+      map.set(conv.patientId, conv.id);
+    });
+    return map;
+  }, [conversations]);
 
   const patientLookup = useMemo(() => {
     const map = new Map<number, DoctorAppointment>();
@@ -59,19 +82,44 @@ export default function DoctorMessagesScreen() {
   }, [bookings]);
 
   const enrichedChats = useMemo<EnrichedChat[]>(() => {
-    return conversations.map((conv) => {
+    const chatMap = new Map<number, EnrichedChat>();
+
+    conversations.forEach((conv) => {
       const appointment = patientLookup.get(conv.patientId);
-      return {
+      chatMap.set(conv.patientId, {
         id: String(conv.id),
         name: appointment?.patientName || `Patient #${conv.patientId}`,
-        lastMessage: conv.lastMessageText || '',
+        lastMessage: conv.lastMessageText || 'Start a conversation',
         time: formatChatTime(conv.lastMessageAt),
         unreadCount: conv.unreadCount || 0,
         isPending: false,
         animalImage: appointment?.animalImage,
-      };
+        patientId: conv.patientId,
+        conversationId: conv.id,
+      });
     });
-  }, [conversations, patientLookup]);
+
+    bookings.forEach((b) => {
+      if (!chatMap.has(b.patientId)) {
+        chatMap.set(b.patientId, {
+          id: `apt-${b.patientId}`,
+          name: b.patientName || `Patient #${b.patientId}`,
+          lastMessage: '',
+          time: formatAppointmentTime(b.startAt),
+          unreadCount: 0,
+          isPending: true,
+          animalImage: b.animalImage,
+          patientId: b.patientId,
+          appointmentId: Number(b.id),
+          appointmentStatus: b.status,
+          consultationType: b.consultationType,
+          startAt: b.startAt,
+        });
+      }
+    });
+
+    return Array.from(chatMap.values());
+  }, [conversations, bookings, patientLookup]);
 
   const filteredChats = useMemo(() => {
     if (!searchQuery.trim()) return enrichedChats;
@@ -86,6 +134,57 @@ export default function DoctorMessagesScreen() {
       .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime())[0];
   }, [bookings]);
 
+  const handleChatPress = useCallback(
+    async (chat: EnrichedChat) => {
+      if (chat.conversationId) {
+        router.push({
+          pathname: '/chat',
+          params: {
+            conversationId: String(chat.conversationId),
+            patientName: chat.name,
+            animalImage: chat.animalImage || '',
+          },
+        });
+        return;
+      }
+
+      setCreatingId(chat.patientId);
+      try {
+        const result = await createConversation({ patientId: chat.patientId }).unwrap();
+        router.push({
+          pathname: '/chat',
+          params: {
+            conversationId: String(result.id),
+            patientName: chat.name,
+            animalImage: chat.animalImage || '',
+          },
+        });
+      } catch {}
+      setCreatingId(null);
+    },
+    [createConversation, router]
+  );
+
+  const handleJoinAppointment = useCallback(
+    async (appointment: DoctorAppointment) => {
+      setCreatingId(Number(appointment.patientId));
+      try {
+        const result = await createConversation({ patientId: Number(appointment.patientId) }).unwrap();
+        router.push({
+          pathname: '/chat',
+          params: {
+            conversationId: String(result.id),
+            patientName: appointment.patientName || `Patient #${appointment.patientId}`,
+            animalImage: appointment.animalImage || '',
+            appointmentId: String(appointment.id),
+          },
+        });
+      } catch {}
+      setCreatingId(null);
+    },
+    [createConversation, router]
+  );
+
   if (!isDoctor) return null;
 
   return (
@@ -99,12 +198,16 @@ export default function DoctorMessagesScreen() {
 
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         {nextAppointment && (
-          <TouchableOpacity style={styles.upcomingCard} activeOpacity={0.85}>
+          <TouchableOpacity
+            style={styles.upcomingCard}
+            activeOpacity={0.85}
+            onPress={() => handleJoinAppointment(nextAppointment)}
+          >
             <View style={styles.upcomingContent}>
               <View style={styles.upcomingLeft}>
                 <Text style={styles.upcomingLabel}>Upcoming appointment</Text>
                 <Text style={styles.upcomingTime}>
-                  {new Date(nextAppointment.startAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · Today
+                  {formatAppointmentTime(nextAppointment.startAt)} · Today
                 </Text>
                 <Text style={styles.upcomingPetName}>{nextAppointment.animalName || 'Pet'}</Text>
                 <Text style={styles.upcomingOwner}>Owner   {nextAppointment.patientName || `Patient #${nextAppointment.patientId}`}</Text>
@@ -117,7 +220,7 @@ export default function DoctorMessagesScreen() {
                     <Ionicons name="paw" size={28} color="#BD632F" />
                   )}
                 </View>
-                <TouchableOpacity style={styles.joinBtn} activeOpacity={0.85} onPress={() => router.push('/video-call')}>
+                <TouchableOpacity style={styles.joinBtn} activeOpacity={0.85}>
                   <Text style={styles.joinBtnText}>Join</Text>
                 </TouchableOpacity>
               </View>
@@ -132,16 +235,8 @@ export default function DoctorMessagesScreen() {
             key={chat.id}
             style={styles.chatItem}
             activeOpacity={0.7}
-            onPress={() =>
-              router.push({
-                pathname: '/chat',
-                params: {
-                  conversationId: chat.id,
-                  patientName: chat.name,
-                  animalImage: chat.animalImage || '',
-                },
-              })
-            }
+            onPress={() => handleChatPress(chat)}
+            disabled={creatingId === chat.patientId}
           >
             <View style={styles.chatAvatar}>
               {chat.animalImage ? (
@@ -156,9 +251,11 @@ export default function DoctorMessagesScreen() {
                 <Text style={styles.chatTime}>{chat.time}</Text>
               </View>
               <View style={styles.chatBottomRow}>
-                {chat.isPending ? (
+                {creatingId === chat.patientId ? (
+                  <ActivityIndicator size="small" color="#BD632F" />
+                ) : chat.isPending ? (
                   <Text style={styles.pendingText}>
-                    Pending: <Text style={styles.chatLastMessage}>{chat.lastMessage}</Text>
+                    Tap to start chatting
                   </Text>
                 ) : (
                   <Text style={styles.chatLastMessage} numberOfLines={1}>{chat.lastMessage}</Text>

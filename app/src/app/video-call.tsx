@@ -28,9 +28,15 @@ export default function VideoCallScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{
     appointmentId?: string;
+    conversationId?: string;
+    patientName?: string;
+    animalImage?: string;
   }>();
 
   const appointmentId = params.appointmentId ? parseInt(params.appointmentId, 10) : 0;
+  const conversationId = params.conversationId || '';
+  const patientName = params.patientName || 'Patient';
+  const animalImage = params.animalImage || '';
 
   const { data: callData, isLoading: isJoining } = useJoinSessionQuery(appointmentId, {
     skip: !appointmentId,
@@ -140,11 +146,29 @@ export default function VideoCallScreen() {
             <Text style={styles.modalTitle}>Consultation ended!</Text>
             <Text style={styles.modalSubtitle}>Your consultation has ended successfully.</Text>
             <TouchableOpacity
-              style={styles.modalHomeBtn}
+              style={styles.modalBtn}
+              onPress={() => {
+                router.replace({
+                  pathname: '/chat',
+                  params: {
+                    consultationId: '',
+                    conversationId,
+                    patientName,
+                    animalImage,
+                    appointmentId: String(appointmentId),
+                  },
+                });
+              }}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.modalBtnText}>Back to Chat</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.modalBtn, styles.modalBtnSecondary]}
               onPress={() => router.replace('/(tabs)/doctor-home')}
               activeOpacity={0.85}
             >
-              <Text style={styles.modalHomeBtnText}>Back to home</Text>
+              <Text style={[styles.modalBtnText, styles.modalBtnSecondaryText]}>Back to home</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -170,6 +194,8 @@ const styles = StyleSheet.create({
   modalCheckCircle: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#4CAF50', justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
   modalTitle: { fontSize: 22, fontWeight: '800', color: '#1A1817', marginBottom: 8, textAlign: 'center' },
   modalSubtitle: { fontSize: 14, fontWeight: '500', color: '#7C7672', textAlign: 'center', marginBottom: 24, lineHeight: 20 },
-  modalHomeBtn: { backgroundColor: '#BD632F', borderRadius: 26, paddingHorizontal: 24, paddingVertical: 16, alignItems: 'center' },
-  modalHomeBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
+  modalBtn: { backgroundColor: '#BD632F', borderRadius: 26, paddingHorizontal: 24, paddingVertical: 16, alignItems: 'center', marginBottom: 12 },
+  modalBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
+  modalBtnSecondary: { backgroundColor: 'transparent', borderWidth: 1, borderColor: '#E6E1DC' },
+  modalBtnSecondaryText: { color: '#1A1817' },
 });

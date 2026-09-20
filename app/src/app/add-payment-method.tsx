@@ -15,7 +15,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useCreatePaymentMethodMutation } from '@/store/paymentMethodsApi';
 
-type Step = 'select' | 'mobile_banking';
+type Step = 'select' | 'mobile_banking' | 'debit_card' | 'credit_card' | 'bank_account';
 
 interface PaymentOption {
   id: string;
@@ -49,14 +49,27 @@ const PROVIDERS: Provider[] = [
 export default function AddPaymentMethodScreen() {
   const router = useRouter();
   const isDoctor = useRequireDoctor();
-  if (!isDoctor) return null;
   const [step, setStep] = useState<Step>('select');
   const [selectedProvider, setSelectedProvider] = useState('bkash');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [pin, setPin] = useState('');
   const [showPin, setShowPin] = useState(false);
 
+  // Card form state
+  const [cardNumber, setCardNumber] = useState('');
+  const [cardHolder, setCardHolder] = useState('');
+  const [expiryDate, setExpiryDate] = useState('');
+  const [cvv, setCvv] = useState('');
+  const [showCvv, setShowCvv] = useState(false);
+
+  // Bank account form state
+  const [accountNumber, setAccountNumber] = useState('');
+  const [routingNumber, setRoutingNumber] = useState('');
+  const [bankName, setBankName] = useState('');
+
   const [createPaymentMethod, { isLoading }] = useCreatePaymentMethodMutation();
+
+  if (!isDoctor) return null;
 
   const handleContinue = async () => {
     if (!phoneNumber.trim()) {
@@ -67,16 +80,69 @@ export default function AddPaymentMethodScreen() {
     const providerName = PROVIDERS.find((p) => p.id === selectedProvider)?.name || selectedProvider;
 
     try {
-      await createPaymentMethod({
+      const result = await createPaymentMethod({
         type: 'mobile_banking',
         provider: providerName,
         maskedNumber: phoneNumber.replace(/(\d{2})\d+(\d{2})/, '$1•••••$2'),
       }).unwrap();
-      Alert.alert('Success', 'Payment method added successfully', [
+
+      router.push({
+        pathname: '/otp-verification',
+        params: {
+          paymentMethodId: result.id.toString(),
+          phone: phoneNumber,
+          provider: providerName,
+        },
+      });
+    } catch {
+      Alert.alert('Error', 'Failed to add payment method');
+    }
+  };
+
+  const handleCardSubmit = async (cardType: 'debit' | 'credit') => {
+    if (!cardNumber.trim() || !cardHolder.trim() || !expiryDate.trim() || !cvv.trim()) {
+      Alert.alert('Error', 'Please fill in all card details');
+      return;
+    }
+
+    const maskedCard = cardNumber.replace(/\d(?=\d{4})/g, '•');
+    const providerName = cardType === 'debit' ? 'Visa' : 'Mastercard';
+
+    try {
+      await createPaymentMethod({
+        type: 'card',
+        provider: providerName,
+        maskedNumber: maskedCard,
+      }).unwrap();
+
+      Alert.alert('Success', `${cardType === 'debit' ? 'Debit' : 'Credit'} card added successfully`, [
         { text: 'OK', onPress: () => router.back() },
       ]);
     } catch {
-      Alert.alert('Error', 'Failed to add payment method');
+      Alert.alert('Error', 'Failed to add card');
+    }
+  };
+
+  const handleBankAccountSubmit = async () => {
+    if (!accountNumber.trim() || !routingNumber.trim() || !bankName.trim()) {
+      Alert.alert('Error', 'Please fill in all bank account details');
+      return;
+    }
+
+    const maskedAccount = accountNumber.replace(/\d(?=\d{4})/g, '•');
+
+    try {
+      await createPaymentMethod({
+        type: 'cash',
+        provider: bankName,
+        maskedNumber: maskedAccount,
+      }).unwrap();
+
+      Alert.alert('Success', 'Bank account added successfully', [
+        { text: 'OK', onPress: () => router.back() },
+      ]);
+    } catch {
+      Alert.alert('Error', 'Failed to add bank account');
     }
   };
 
@@ -165,6 +231,168 @@ export default function AddPaymentMethodScreen() {
     );
   }
 
+  if (step === 'debit_card' || step === 'credit_card') {
+    const isDebit = step === 'debit_card';
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => setStep('select')} style={styles.backBtn} activeOpacity={0.7}>
+            <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Add {isDebit ? 'Debit' : 'Credit'} Card</Text>
+          <View style={{ width: 40 }} />
+        </View>
+
+        <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+          <Text style={styles.fieldLabel}>Card Number</Text>
+          <TextInput
+            style={styles.textInput}
+            placeholder="1234 5678 9012 3456"
+            placeholderTextColor="#A39E99"
+            keyboardType="numeric"
+            value={cardNumber}
+            onChangeText={(text) => setCardNumber(text.replace(/\s/g, '').replace(/(.{4})/g, '$1 ').trim())}
+            maxLength={19}
+          />
+
+          <Text style={styles.fieldLabel}>Card Holder Name</Text>
+          <TextInput
+            style={styles.textInput}
+            placeholder="John Doe"
+            placeholderTextColor="#A39E99"
+            value={cardHolder}
+            onChangeText={setCardHolder}
+          />
+
+          <View style={styles.row}>
+            <View style={styles.halfField}>
+              <Text style={styles.fieldLabel}>Expiry Date</Text>
+              <TextInput
+                style={styles.textInput}
+                placeholder="MM/YY"
+                placeholderTextColor="#A39E99"
+                keyboardType="numeric"
+                value={expiryDate}
+                onChangeText={(text) => {
+                  const cleaned = text.replace(/\D/g, '');
+                  if (cleaned.length >= 2) {
+                    setExpiryDate(cleaned.slice(0, 2) + '/' + cleaned.slice(2, 4));
+                  } else {
+                    setExpiryDate(cleaned);
+                  }
+                }}
+                maxLength={5}
+              />
+            </View>
+            <View style={styles.halfField}>
+              <Text style={styles.fieldLabel}>CVV</Text>
+              <View style={styles.pinRow}>
+                <TextInput
+                  style={styles.pinInput}
+                  placeholder="•••"
+                  placeholderTextColor="#A39E99"
+                  secureTextEntry={!showCvv}
+                  keyboardType="numeric"
+                  value={cvv}
+                  onChangeText={setCvv}
+                  maxLength={4}
+                />
+                <TouchableOpacity style={styles.eyeBtn} onPress={() => setShowCvv(!showCvv)} activeOpacity={0.7}>
+                  <Ionicons name={showCvv ? 'eye-outline' : 'eye-off-outline'} size={18} color="#9C9690" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.securityNotice}>
+            <Ionicons name="shield-checkmark-outline" size={18} color="#BD632F" />
+            <Text style={styles.securityText}>
+              Your card information is encrypted and secure. We never store your full card number.
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            style={[styles.continueBtn, isLoading && styles.continueBtnDisabled]}
+            activeOpacity={0.85}
+            onPress={() => handleCardSubmit(isDebit ? 'debit' : 'credit')}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Text style={styles.continueBtnText}>Add Card</Text>
+            )}
+          </TouchableOpacity>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  if (step === 'bank_account') {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => setStep('select')} style={styles.backBtn} activeOpacity={0.7}>
+            <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Add Bank Account</Text>
+          <View style={{ width: 40 }} />
+        </View>
+
+        <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+          <Text style={styles.fieldLabel}>Bank Name</Text>
+          <TextInput
+            style={styles.textInput}
+            placeholder="e.g. Dutch-Bangla Bank"
+            placeholderTextColor="#A39E99"
+            value={bankName}
+            onChangeText={setBankName}
+          />
+
+          <Text style={styles.fieldLabel}>Account Number</Text>
+          <TextInput
+            style={styles.textInput}
+            placeholder="Enter account number"
+            placeholderTextColor="#A39E99"
+            keyboardType="numeric"
+            value={accountNumber}
+            onChangeText={setAccountNumber}
+          />
+
+          <Text style={styles.fieldLabel}>Routing Number</Text>
+          <TextInput
+            style={styles.textInput}
+            placeholder="Enter routing number"
+            placeholderTextColor="#A39E99"
+            keyboardType="numeric"
+            value={routingNumber}
+            onChangeText={setRoutingNumber}
+          />
+
+          <View style={styles.securityNotice}>
+            <Ionicons name="shield-checkmark-outline" size={18} color="#BD632F" />
+            <Text style={styles.securityText}>
+              Your bank account information is encrypted and secure. We use industry-standard security protocols.
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            style={[styles.continueBtn, isLoading && styles.continueBtnDisabled]}
+            activeOpacity={0.85}
+            onPress={handleBankAccountSubmit}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Text style={styles.continueBtnText}>Add Bank Account</Text>
+            )}
+          </TouchableOpacity>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -180,7 +408,12 @@ export default function AddPaymentMethodScreen() {
           <TouchableOpacity
             key={option.id}
             style={styles.optionCard}
-            onPress={() => option.id === 'mobile' && setStep('mobile_banking')}
+            onPress={() => {
+              if (option.id === 'mobile') setStep('mobile_banking');
+              else if (option.id === 'debit') setStep('debit_card');
+              else if (option.id === 'credit') setStep('credit_card');
+              else if (option.id === 'bank') setStep('bank_account');
+            }}
             activeOpacity={0.7}
           >
             <View style={styles.optionLeft}>
@@ -240,4 +473,7 @@ const styles = StyleSheet.create({
   continueBtn: { backgroundColor: '#BD632F', borderRadius: 26, paddingVertical: 16, alignItems: 'center' },
   continueBtnDisabled: { opacity: 0.6 },
   continueBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
+  textInput: { backgroundColor: '#FFFFFF', borderRadius: 12, borderWidth: 1, borderColor: '#E6E1DC', paddingHorizontal: 14, fontSize: 14, color: '#1A1817', height: 48, marginBottom: 16 },
+  row: { flexDirection: 'row', gap: 12 },
+  halfField: { flex: 1 },
 });

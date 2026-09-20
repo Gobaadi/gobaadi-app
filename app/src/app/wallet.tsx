@@ -6,13 +6,14 @@ import {
   Text,
   TouchableOpacity,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useGetBalanceQuery, useGetTransactionsQuery } from '@/store/walletApi';
 
 const MAX_BAR_HEIGHT = 120;
-const DAYS_OF_WEEK = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
 
 const MOCK_WEEKLY_DATA = [
   { day: 'MON', value: 0.35 },
@@ -24,37 +25,60 @@ const MOCK_WEEKLY_DATA = [
   { day: 'SUN', value: 0.5 },
 ];
 
-const MOCK_TRANSACTIONS = [
-  {
-    id: 1,
-    name: 'Zhafira Azalea',
-    type: 'Consultation',
-    date: 'Oct 24, 2023',
-    amount: 45.0,
-    icon: 'medkit' as const,
-  },
-  {
-    id: 2,
-    name: 'Maximus',
-    type: 'Vaccination',
-    date: 'Oct 23, 2023',
-    amount: 35.0,
-    icon: 'shield-checkmark' as const,
-  },
-  {
-    id: 3,
-    name: 'Bella',
-    type: 'Checkup',
-    date: 'Oct 22, 2023',
-    amount: 60.0,
-    icon: 'clipboard' as const,
-  },
-];
+function formatDate(dateStr: string) {
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function getTransactionIcon(type: string): 'medkit' | 'shield-checkmark' | 'clipboard' | 'wallet' {
+  switch (type) {
+    case 'consultation': return 'medkit';
+    case 'vaccination': return 'shield-checkmark';
+    case 'checkup': return 'clipboard';
+    default: return 'wallet';
+  }
+}
 
 export default function WalletScreen() {
   const router = useRouter();
   const isDoctor = useRequireDoctor();
+
+  const { data: balanceData, isLoading: balanceLoading } = useGetBalanceQuery();
+  const { data: transactionsData, isLoading: txLoading } = useGetTransactionsQuery({ page: '1', limit: '10' });
+
+  const totalEarnings = balanceData?.balance ?? 0;
+  const thisMonthEarnings = useMemo(() => {
+    if (!transactionsData) return 0;
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    return transactionsData
+      .filter((tx) => new Date(tx.createdAt) >= startOfMonth && tx.type === 'credit')
+      .reduce((sum, tx) => sum + tx.amount, 0);
+  }, [transactionsData]);
+
+  const lastTransactionAmount = useMemo(() => {
+    if (!transactionsData || transactionsData.length === 0) return 0;
+    return transactionsData[0].amount;
+  }, [transactionsData]);
+
   if (!isDoctor) return null;
+
+  if (balanceLoading || txLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
+            <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Wallet</Text>
+          <View style={{ width: 40 }} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#BD632F" />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -70,19 +94,19 @@ export default function WalletScreen() {
         {/* Earnings Card */}
         <View style={styles.earningsCard}>
           <Text style={styles.totalLabel}>Total Earnings</Text>
-          <Text style={styles.totalAmount}>$999</Text>
+          <Text style={styles.totalAmount}>${totalEarnings.toFixed(2)}</Text>
 
           <View style={styles.earningsRow}>
             <View>
               <Text style={styles.earningsLabel}>This Month</Text>
               <View style={styles.earningsValue}>
                 <Ionicons name="arrow-up" size={14} color="#4CAF50" />
-                <Text style={styles.earningsGreen}>$450</Text>
+                <Text style={styles.earningsGreen}>${thisMonthEarnings.toFixed(2)}</Text>
               </View>
             </View>
             <View>
               <Text style={styles.earningsLabel}>Last Transactions</Text>
-              <Text style={styles.earningsValueText}>$150</Text>
+              <Text style={styles.earningsValueText}>${lastTransactionAmount.toFixed(2)}</Text>
             </View>
           </View>
         </View>
@@ -143,20 +167,29 @@ export default function WalletScreen() {
 
         {/* Recent Transactions */}
         <Text style={styles.sectionTitle}>Recent Transactions</Text>
-        {MOCK_TRANSACTIONS.map((tx) => (
-          <View key={tx.id} style={styles.transactionCard}>
-            <View style={styles.transactionLeft}>
-              <View style={styles.transactionAvatar}>
-                <Ionicons name={tx.icon} size={18} color="#BD632F" />
-              </View>
-              <View>
-                <Text style={styles.transactionName}>{tx.name}</Text>
-                <Text style={styles.transactionDate}>{tx.type} · {tx.date}</Text>
-              </View>
-            </View>
-            <Text style={styles.transactionAmount}>+${tx.amount.toFixed(2)}</Text>
+        {!transactionsData || transactionsData.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Ionicons name="receipt-outline" size={48} color="#9C9690" />
+            <Text style={styles.emptyText}>No transactions yet</Text>
           </View>
-        ))}
+        ) : (
+          transactionsData.slice(0, 5).map((tx) => (
+            <View key={tx.id} style={styles.transactionCard}>
+              <View style={styles.transactionLeft}>
+                <View style={styles.transactionAvatar}>
+                  <Ionicons name={getTransactionIcon(tx.type)} size={18} color="#BD632F" />
+                </View>
+                <View>
+                  <Text style={styles.transactionName}>{tx.description || tx.type}</Text>
+                  <Text style={styles.transactionDate}>{formatDate(tx.createdAt)}</Text>
+                </View>
+              </View>
+              <Text style={[styles.transactionAmount, tx.type === 'debit' && styles.transactionAmountDebit]}>
+                {tx.type === 'debit' ? '-' : '+'}${tx.amount.toFixed(2)}
+              </Text>
+            </View>
+          ))
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -168,6 +201,7 @@ const styles = StyleSheet.create({
   backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#BD632F', justifyContent: 'center', alignItems: 'center' },
   headerTitle: { fontSize: 20, fontWeight: '800', color: '#1A1817' },
   scrollContainer: { paddingHorizontal: 20, paddingBottom: 100 },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   totalLabel: { fontSize: 14, fontWeight: '500', color: '#7C7672', marginBottom: 4 },
   totalAmount: { fontSize: 36, fontWeight: '800', color: '#BD632F', marginBottom: 12 },
   earningsCard: { backgroundColor: '#FFFFFF', borderRadius: 16, borderWidth: 1, borderColor: '#E6E1DC', padding: 16, marginBottom: 20 },
@@ -198,4 +232,7 @@ const styles = StyleSheet.create({
   transactionName: { fontSize: 14, fontWeight: '700', color: '#1A1817' },
   transactionDate: { fontSize: 11, fontWeight: '500', color: '#9C9690' },
   transactionAmount: { fontSize: 15, fontWeight: '800', color: '#4CAF50' },
+  transactionAmountDebit: { color: '#DC2626' },
+  emptyContainer: { alignItems: 'center', paddingVertical: 40, gap: 12 },
+  emptyText: { fontSize: 14, fontWeight: '500', color: '#9C9690' },
 });
