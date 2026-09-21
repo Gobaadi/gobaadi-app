@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useGetDoctorByIdQuery, useBookSlotMutation } from '@/store/doctorsApi';
+import { useGetDoctorByIdQuery } from '@/store/doctorsApi';
 
 function pad(n: number): string {
   return String(n).padStart(2, '0');
@@ -25,7 +25,6 @@ export default function ConfirmBookingScreen() {
   const bookingReason = params.reason ? String(params.reason) : '';
 
   const { data: doctorData } = useGetDoctorByIdQuery(doctorId, { skip: !doctorId });
-  const [bookSlot, { isLoading }] = useBookSlotMutation();
 
   const doctor = useMemo(() => {
     if (!doctorData) {
@@ -61,17 +60,7 @@ export default function ConfirmBookingScreen() {
   const dateObj = new Date(today.getFullYear(), today.getMonth(), Number(selectedDay));
   const fullDateDisplay = `${dayNames[dateObj.getDay()]}, ${pad(Number(selectedDay))} ${monthNames[today.getMonth()]} ${today.getFullYear()}`;
 
-  const handleConfirmPayment = async () => {
-    try {
-      const dateStr = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(Number(selectedDay))}`;
-      await bookSlot({
-        doctorId: doctor.id,
-        date: dateStr,
-        time: selectedTime,
-      }).unwrap();
-    } catch (err) {
-      console.log('Error booking slot:', err);
-    }
+  const handleConfirmPayment = () => {
     router.push({
       pathname: '/booking-details',
       params: {
@@ -153,9 +142,8 @@ export default function ConfirmBookingScreen() {
       {/* Bottom Confirm Payment Button */}
       <View style={styles.bottomBar}>
         <TouchableOpacity
-          style={[styles.confirmButton, isLoading && { opacity: 0.6 }]}
+          style={styles.confirmButton}
           onPress={handleConfirmPayment}
-          disabled={isLoading}
           activeOpacity={0.85}
         >
           <Text style={styles.confirmButtonIcon}>💵</Text>
