@@ -28,18 +28,65 @@ const TASK_TYPES = [
   { id: 'health', name: 'Health Check', icon: '🩺' },
 ];
 
+function parseExistingTask(title?: string, detail?: string) {
+  let shedId = 'cow';
+  let typeId = 'hygiene';
+  let customName = title || '';
+  let repeat: 'none' | 'daily' | 'weekly' = 'none';
+  let instruction = '';
+  let start = '07:00 PM';
+  let end = '08:00 PM';
+
+  if (detail) {
+    const farmMatch = detail.match(/^(.+?)\s*•/);
+    if (farmMatch) {
+      const farmName = farmMatch[1].trim();
+      const found = SHEDS.find((s) => s.name === farmName);
+      if (found) shedId = found.id;
+    }
+
+    const timeMatch = detail.match(/•\s*(\d{1,2}:\d{2}\s*(?:AM|PM))\s*-\s*(\d{1,2}:\d{2}\s*(?:AM|PM))/i);
+    if (timeMatch) {
+      start = timeMatch[1].trim();
+      end = timeMatch[2].trim();
+    }
+
+    const repeatMatch = detail.match(/Repeat:\s*(Daily|Weekly)/i);
+    if (repeatMatch) {
+      repeat = repeatMatch[1].toLowerCase() as 'daily' | 'weekly';
+    }
+
+    const instrMatch = detail.match(/Instruction:\s*(.+)$/i);
+    if (instrMatch) {
+      instruction = instrMatch[1].trim();
+    }
+  }
+
+  if (title) {
+    const typeMatch = TASK_TYPES.find((t) => title.startsWith(t.name));
+    if (typeMatch && title.includes(' - ')) {
+      typeId = typeMatch.id;
+      customName = '';
+    }
+  }
+
+  return { shedId, typeId, customName, repeat, instruction, start, end };
+}
+
 export default function EditTaskScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ id?: string; title?: string; detail?: string; scheduledTime?: string }>();
   const [updateTask, { isLoading: isSubmitting }] = useUpdateTaskMutation();
 
-  const [selectedShed, setSelectedShed] = useState('cow');
-  const [selectedType, setSelectedType] = useState('hygiene');
-  const [customTask, setCustomTask] = useState(params.title || '');
-  const [repeat, setRepeat] = useState<'none' | 'daily' | 'weekly'>('none');
-  const [instruction, setInstruction] = useState('');
-  const [startTime, setStartTime] = useState('07:00 PM');
-  const [endTime, setEndTime] = useState('08:00 PM');
+  const parsed = parseExistingTask(params.title, params.detail);
+
+  const [selectedShed, setSelectedShed] = useState(parsed.shedId);
+  const [selectedType, setSelectedType] = useState(parsed.typeId);
+  const [customTask, setCustomTask] = useState(parsed.customName);
+  const [repeat, setRepeat] = useState<'none' | 'daily' | 'weekly'>(parsed.repeat);
+  const [instruction, setInstruction] = useState(parsed.instruction);
+  const [startTime, setStartTime] = useState(parsed.start);
+  const [endTime, setEndTime] = useState(parsed.end);
 
   async function handleUpdate() {
     if (!params.id) return;
