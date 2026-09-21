@@ -10,6 +10,8 @@ import {
 } from '@nestjs/websockets';
 import { Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { Server, Socket } from 'socket.io';
 import { ChatService } from './chat.service';
 import { ConversationService } from './conversation.service';
@@ -17,6 +19,8 @@ import { JwtPayload } from '../auth/jwt-payload.interface';
 import { getRequiredJwtSecret } from '../auth/jwt-secret.util';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/notification.entity';
+import { Appointment } from '../appointments/appointment.entity';
+import { VideoSession } from '../video-call/video-call.entity';
 
 @WebSocketGateway({
   cors: {
@@ -36,6 +40,10 @@ export class ChatGateway
     private readonly conversationService: ConversationService,
     private readonly jwtService: JwtService,
     private readonly notificationsService: NotificationsService,
+    @InjectRepository(Appointment)
+    private readonly appointmentRepo: Repository<Appointment>,
+    @InjectRepository(VideoSession)
+    private readonly sessionRepo: Repository<VideoSession>,
   ) {}
 
   afterInit() {
@@ -197,6 +205,114 @@ export class ChatGateway
     this.notifyConversation(updated.conversationId, 'messageStatusUpdate', {
       id: updated.id,
       status: updated.status,
+    });
+  }
+
+  // ──────────────────────────────────────────────
+  //  Video-call signaling handlers
+  // ──────────────────────────────────────────────
+
+  @SubscribeMessage('callStarted')
+  async handleCallStarted(
+    @ConnectedSocket() client: Socket,
+    @MessageBody()
+    data: {
+      appointmentId: number;
+      callerId: number;
+      callerName: string;
+      callerRole: 'FARMER' | 'PATIENT' | 'DOCTOR';
+      channelName: string;
+    },
+  ) {
+    const user: JwtPayload = client.data.user;
+    if (!user) return;
+
+    const appointment = await this.appointmentRepo.findOneBy({
+      id: data.appointmentId,
+    });
+    if (!appointment) return;
+
+    if (appointment.doctorId !== user.sub && appointment.patientId !== user.sub) {
+      return;
+    }
+
+    const targetUserId =
+      user.sub === appointment.doctorId
+        ? appointment.patientId
+        : appointment.doctorId;
+
+    this.notifyUser(targetUserId, 'callStarted', {
+      appointmentId: data.appointmentId,
+      callerId: data.callerId,
+      callerName: data.callerName,
+      callerRole: data.callerRole,
+      channelName: data.channelName,
+    });
+  }
+
+  @SubscribeMessage('callResponse')
+  async handleCallResponse(
+    @ConnectedSocket() client: Socket,
+    @MessageBody()
+    data: {
+      appointmentId: number;
+      accepted: boolean;
+      responderId: number;
+    },
+  ) {
+    const user: JwtPayload = client.data.user;
+    if (!user) return;
+
+    const appointment = await this.appointmentRepo.findOneBy({
+      id: data.appointmentId,
+    });
+    if (!appointment) return;
+
+    if (appointment.doctorId !== user.sub && appointment.patientId !== user.sub) {
+      return;
+    }
+
+    const targetUserId =
+      user.sub === appointment.doctorId
+        ? appointment.patientId
+        : appointment.doctorId;
+
+    this.notifyUser(targetUserId, 'callResponse', {
+      appointmentId: data.appointmentId,
+      accepted: data.accepted,
+      responderId: data.responderId,
+    });
+  }
+
+  @SubscribeMessage('callEnded')
+  async handleCallEnded(
+    @ConnectedSocket() client: Socket,
+    @MessageBody()
+    data: {
+      appointmentId: number;
+      endedBy: number;
+    },
+  ) {
+    const user: JwtPayload = client.data.user;
+    if (!user) return;
+
+    const appointment = await this.appointmentRepo.findOneBy({
+      id: data.appointmentId,
+    });
+    if (!appointment) return;
+
+    if (appointment.doctorId !== user.sub && appointment.patientId !== user.sub) {
+      return;
+    }
+
+    const targetUserId =
+      user.sub === appointment.doctorId
+        ? appointment.patientId
+        : appointment.doctorId;
+
+    this.notifyUser(targetUserId, 'callEnded', {
+      appointmentId: data.appointmentId,
+      endedBy: data.endedBy,
     });
   }
 

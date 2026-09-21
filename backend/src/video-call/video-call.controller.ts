@@ -7,31 +7,32 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { UserRole } from '../users/user.entity';
 import type { JwtPayload } from '../auth/jwt-payload.interface';
 import { VideoCallService } from './video-call.service';
 import { CreateSessionDto } from './dto/create-session.dto';
 
 @ApiTags('video-call')
 @Controller('video-call')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class VideoCallController {
   constructor(private readonly videoCallService: VideoCallService) {}
 
   @Post('create')
-  @Roles(UserRole.DOCTOR)
-  @ApiOperation({ summary: 'Create a video call session (doctor only)' })
+  @ApiOperation({ summary: 'Create a video call session (farmer or doctor)' })
   @ApiResponse({ status: 201, description: 'Session created' })
   async create(@CurrentUser() user: JwtPayload, @Body() dto: CreateSessionDto) {
     const session = await this.videoCallService.createSession(
       dto.appointmentId,
       user.sub,
     );
-    return { sessionId: session.id, channelName: session.channelName };
+    return {
+      sessionId: session.id,
+      channelName: session.channelName,
+      doctorUserId: session.doctorUserId,
+      patientId: session.patientId,
+    };
   }
 
   @Get('join/:appointmentId')

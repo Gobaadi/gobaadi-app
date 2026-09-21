@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -8,18 +8,26 @@ import {
   ScrollView,
   Image,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { useSelector } from 'react-redux';
+import type { RootState } from '@/store/store';
 import { useGetDoctorsQuery } from '@/store/doctorsApi';
 import {
   useGetDoctorBookingsQuery,
   useCancelBookingMutation,
+  type DoctorAppointment,
   type AppointmentStatus,
 } from '@/store/doctorPortalApi';
+import { useCreateSessionMutation } from '@/store/videoCallApi';
+import { useCallSignalingContext } from '@/components/IncomingCallProvider';
 
 interface Treatment {
   id: string;
+  appointmentId: number;
   doctorId: number;
   name: string;
   specialty: string;
@@ -29,6 +37,9 @@ interface Treatment {
   bookedOn: string;
   status: AppointmentStatus;
   consultationType: string;
+  startAt: string;
+  endAt: string;
+  raw: DoctorAppointment;
 }
 
 function formatDate(iso: string): string {
@@ -46,13 +57,17 @@ function isUpcoming(status: AppointmentStatus): boolean {
 
 export default function MyTreatmentScreen() {
   const router = useRouter();
+  const user = useSelector((state: RootState) => state.auth.user);
+  const { startCall, outgoingState, resetOutgoingState } = useCallSignalingContext();
   const [activeFilter, setActiveFilter] = useState<'All' | 'Upcoming'>('All');
   const [activeVisitTab, setActiveVisitTab] = useState<'online' | 'physical'>('online');
   const [searchQuery, setSearchQuery] = useState('');
+  const [callingAppointmentId, setCallingAppointmentId] = useState<number | null>(null);
 
   const { data: appointments = [] } = useGetDoctorBookingsQuery();
   const { data: doctors = [] } = useGetDoctorsQuery();
   const [cancelBookingMutation] = useCancelBookingMutation();
+  const [createSession] = useCreateSessionMutation();
 
   const doctorsById = useMemo(
     () => Object.fromEntries(doctors.map((d) => [d.id, d])),
@@ -67,12 +82,52 @@ export default function MyTreatmentScreen() {
     }
   }
 
+  const handleStartCall = useCallback(
+    async (appointment: DoctorAppointment) => {
+      if (!user) return;
+
+      try {
+        setCallingAppointmentId(appointment.id);
+        const session = await createSession(appointment.id).unwrap();
+        const doctor = doctorsById[appointment.doctorId];
+        const callerRole = user.role === 'doctor' ? 'DOCTOR' as const : 'FARMER' as const;
+
+        startCall(
+          appointment.id,
+          user.id,
+          user.name || (callerRole === 'DOCTOR' ? 'Doctor' : 'Patient'),
+          callerRole,
+          session.channelName,
+        );
+      } catch (err: any) {
+        setCallingAppointmentId(null);
+        const message = err?.data?.message || 'Could not start the call. Please try again.';
+        Alert.alert('Call Failed', Array.isArray(message) ? message[0] : message);
+      }
+    },
+    [user, doctorsById, createSession, startCall],
+  );
+
+  useEffect(() => {
+    if (outgoingState === 'idle' || outgoingState === 'calling') return;
+    setCallingAppointmentId(null);
+    if (outgoingState === 'rejected') {
+      Alert.alert('Call Declined', 'The doctor declined the call.');
+    } else if (outgoingState === 'timeout') {
+      Alert.alert('No Response', 'The doctor did not respond. Please try again later.');
+    } else if (outgoingState === 'error') {
+      Alert.alert('Call Failed', 'Something went wrong. Please try again.');
+    }
+    resetOutgoingState();
+  }, [outgoingState, resetOutgoingState]);
+
   const treatments: Treatment[] = useMemo(
     () =>
       appointments.map((a) => {
         const doctor = doctorsById[a.doctorId];
         return {
           id: String(a.id),
+          appointmentId: a.id,
           doctorId: a.doctorId,
           name: doctor?.name || 'Doctor',
           specialty: doctor?.specialty || '',
@@ -82,6 +137,9 @@ export default function MyTreatmentScreen() {
           bookedOn: formatDate(a.createdAt),
           status: a.status,
           consultationType: a.consultationType || 'online_video',
+          startAt: a.startAt,
+          endAt: a.endAt,
+          raw: a,
         };
       }),
     [appointments, doctorsById],
@@ -245,10 +303,36 @@ export default function MyTreatmentScreen() {
                       {isUpcoming(item.status) ? 'Upcoming' : 'Completed'}
                     </Text>
                   </View>
-                  <View style={styles.priceContainer}>
-                    <Text style={styles.currencySymbol}>৳</Text>
-                    <Text style={styles.priceAmount}> 120 </Text>
-                    <Text style={styles.paidBadge}>(Paid)</Text>
+                  <View style={styles.cardFooterRight}>
+                    <View style={styles.priceContainer}>
+                      <Text style={styles.currencySymbol}>৳</Text>
+                      <Text style={styles.priceAmount}> 120 </Text>
+                      <Text style={styles.paidBadge}>(Paid)</Text>
+                    </View>
+                    {isUpcoming(item.status) &&
+                      item.consultationType?.startsWith('online_') && (
+                        <TouchableOpacity
+                          style={[
+                            styles.videoCallBtn,
+                            callingAppointmentId === item.appointmentId &&
+                              styles.videoCallBtnLoading,
+                          ]}
+                          activeOpacity={0.8}
+                          disabled={callingAppointmentId !== null}
+                          onPress={() => handleStartCall(item.raw)}
+                        >
+                          {callingAppointmentId === item.appointmentId ? (
+                            <ActivityIndicator size="small" color="#FFFFFF" />
+                          ) : (
+                            <Ionicons name="videocam" size={16} color="#FFFFFF" />
+                          )}
+                          <Text style={styles.videoCallBtnText}>
+                            {callingAppointmentId === item.appointmentId
+                              ? 'Calling...'
+                              : 'Video Call'}
+                          </Text>
+                        </TouchableOpacity>
+                      )}
                   </View>
                 </View>
               </TouchableOpacity>
@@ -593,5 +677,26 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: '#BD632F',
+  },
+  cardFooterRight: {
+    alignItems: 'flex-end',
+    gap: 8,
+  },
+  videoCallBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#BD632F',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 6,
+  },
+  videoCallBtnLoading: {
+    opacity: 0.7,
+  },
+  videoCallBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
 });

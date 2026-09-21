@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   StyleSheet,
   View,
@@ -6,11 +6,16 @@ import {
   TouchableOpacity,
   Modal,
   ActivityIndicator,
+  Alert,
+  Platform,
+  PermissionsAndroid,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { RtcSurfaceView, RenderModeType } from 'react-native-agora';
+import { useSelector } from 'react-redux';
+import type { RootState } from '@/store/store';
 import { useAgora } from '@/hooks/use-agora';
 import { agoraManager } from '@/lib/agora-manager';
 import { CallControls } from '@/components/CallControls';
@@ -18,6 +23,7 @@ import {
   useJoinSessionQuery,
   useEndSessionMutation,
 } from '@/store/videoCallApi';
+import { socketManager } from '@/lib/socket-manager';
 
 function formatTimer(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -25,27 +31,41 @@ function formatTimer(seconds: number): string {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
+async function requestPermissions(): Promise<boolean> {
+  if (Platform.OS === 'android') {
+    const result = await PermissionsAndroid.requestMultiple([
+      PermissionsAndroid.PERMISSIONS.CAMERA,
+      PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+    ]);
+    return (
+      result['android.permission.CAMERA'] === PermissionsAndroid.RESULTS.GRANTED &&
+      result['android.permission.RECORD_AUDIO'] === PermissionsAndroid.RESULTS.GRANTED
+    );
+  }
+  return true;
+}
+
 export default function VideoCallScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{
     appointmentId?: string;
-    conversationId?: string;
-    patientName?: string;
-    animalImage?: string;
   }>();
+  const user = useSelector((state: RootState) => state.auth.user);
 
   const appointmentId = params.appointmentId ? parseInt(params.appointmentId, 10) : 0;
-  const conversationId = params.conversationId || '';
-  const patientName = params.patientName || 'Patient';
-  const animalImage = params.animalImage || '';
 
-  const { data: callData, isLoading: isJoining } = useJoinSessionQuery(appointmentId, {
+  const { data: callData, isLoading: isJoining, error: joinError } = useJoinSessionQuery(appointmentId, {
     skip: !appointmentId,
   });
   const [endSession] = useEndSessionMutation();
 
   const [callEnded, setCallEnded] = useState(false);
   const [elapsed, setElapsed] = useState(0);
+  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [permissionsRequested, setPermissionsRequested] = useState(false);
+  const endedRef = useRef(false);
+
+  const uid = user?.id ?? 0;
 
   const {
     localUid,
@@ -60,24 +80,75 @@ export default function VideoCallScreen() {
     callData?.token || '',
     callData?.channelName || '',
     callData?.appId || '',
-    appointmentId,
+    uid,
   );
 
   useEffect(() => {
+    if (permissionsRequested) return;
+    setPermissionsRequested(true);
+    requestPermissions().then((granted) => {
+      setHasPermission(granted);
+      if (!granted) {
+        Alert.alert(
+          'Permissions Required',
+          'Camera and microphone permissions are needed for video calls. Please enable them in your device settings.',
+          [{ text: 'OK', onPress: () => router.back() }],
+        );
+      }
+    });
+  }, [permissionsRequested, router]);
+
+  useEffect(() => {
     if (!isConnected) return;
-    const interval = setInterval(() => setElapsed(prev => prev + 1), 1000);
+    const interval = setInterval(() => setElapsed((prev) => prev + 1), 1000);
     return () => clearInterval(interval);
   }, [isConnected]);
 
-  const handleEndCall = async () => {
+  useEffect(() => {
+    const handleCallEnded = (payload: { appointmentId: number; endedBy: number }) => {
+      if (payload.appointmentId === appointmentId && payload.endedBy !== uid) {
+        setCallEnded(true);
+        agoraManager.leave();
+      }
+    };
+    socketManager.on('callEnded', handleCallEnded);
+    return () => {
+      socketManager.off('callEnded', handleCallEnded);
+    };
+  }, [appointmentId, uid]);
+
+  useEffect(() => {
+    return () => {
+      if (!endedRef.current) {
+        endedRef.current = true;
+        agoraManager.leave();
+        endSession(appointmentId).unwrap().catch(() => {});
+        socketManager.emit('callEnded', { appointmentId, endedBy: uid });
+      }
+    };
+  }, [appointmentId, uid, endSession]);
+
+  const handleEndCall = useCallback(async () => {
+    if (endedRef.current) return;
+    endedRef.current = true;
     try {
       await agoraManager.leave();
       await endSession(appointmentId).unwrap();
+      socketManager.emit('callEnded', { appointmentId, endedBy: uid });
     } catch {
-      // ignore
+      // ignore cleanup errors
     }
     setCallEnded(true);
-  };
+  }, [appointmentId, uid, endSession]);
+
+  if (hasPermission === false) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Ionicons name="videocam-off" size={48} color="#E53935" />
+        <Text style={styles.loadingText}>Permissions denied</Text>
+      </View>
+    );
+  }
 
   if (isJoining) {
     return (
@@ -88,9 +159,23 @@ export default function VideoCallScreen() {
     );
   }
 
+  if (joinError) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Ionicons name="warning-outline" size={48} color="#E53935" />
+        <Text style={styles.loadingText}>Failed to join call</Text>
+        <TouchableOpacity
+          style={{ marginTop: 16, padding: 12, backgroundColor: '#BD632F', borderRadius: 12 }}
+          onPress={() => router.back()}
+        >
+          <Text style={{ color: '#FFF', fontWeight: '600' }}>Go Back</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
-      {/* Remote Video (full screen) */}
       {remoteUids.length > 0 && (
         <RtcSurfaceView
           style={styles.videoBackground}
@@ -101,7 +186,6 @@ export default function VideoCallScreen() {
         />
       )}
 
-      {/* Local Video (PiP) */}
       {localUid !== null && (
         <View style={styles.pipContainer}>
           <RtcSurfaceView
@@ -114,21 +198,24 @@ export default function VideoCallScreen() {
         </View>
       )}
 
-      {/* Status Bar */}
       <SafeAreaView style={styles.statusBar} />
 
-      {/* Top Controls */}
-      <TouchableOpacity style={styles.backBtnTop} onPress={() => router.back()} activeOpacity={0.7}>
+      <TouchableOpacity
+        style={styles.backBtnTop}
+        onPress={handleEndCall}
+        activeOpacity={0.7}
+      >
         <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
       </TouchableOpacity>
 
-      {/* Timer */}
       <View style={styles.callInfoOverlay}>
         <Text style={styles.callTimer}>{formatTimer(elapsed)}</Text>
         {!isConnected && <Text style={styles.connectingText}>Connecting...</Text>}
+        {isConnected && remoteUids.length === 0 && (
+          <Text style={styles.connectingText}>Waiting for participant...</Text>
+        )}
       </View>
 
-      {/* Bottom Control Bar */}
       <CallControls
         isMuted={isMuted}
         isCameraOff={isCameraOff}
@@ -138,7 +225,6 @@ export default function VideoCallScreen() {
         onEndCall={handleEndCall}
       />
 
-      {/* Call Ended Modal */}
       <Modal visible={callEnded} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
@@ -146,31 +232,21 @@ export default function VideoCallScreen() {
               <Ionicons name="checkmark" size={40} color="#FFFFFF" />
             </View>
             <Text style={styles.modalTitle}>Consultation ended!</Text>
-            <Text style={styles.modalSubtitle}>Your consultation has ended successfully.</Text>
+            <Text style={styles.modalSubtitle}>
+              Your consultation has ended successfully.
+            </Text>
             <TouchableOpacity
               style={styles.modalBtn}
               onPress={() => {
-                router.replace({
-                  pathname: '/chat',
-                  params: {
-                    consultationId: '',
-                    conversationId,
-                    patientName,
-                    animalImage,
-                    appointmentId: String(appointmentId),
-                  },
-                });
+                if (user?.role === 'doctor') {
+                  router.replace('/(tabs)/doctor-home');
+                } else {
+                  router.replace('/(tabs)/doctors');
+                }
               }}
               activeOpacity={0.85}
             >
-              <Text style={styles.modalBtnText}>Back to Chat</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.modalBtn, styles.modalBtnSecondary]}
-              onPress={() => router.replace('/(tabs)/doctor-home')}
-              activeOpacity={0.85}
-            >
-              <Text style={[styles.modalBtnText, styles.modalBtnSecondaryText]}>Back to home</Text>
+              <Text style={styles.modalBtnText}>Back to Home</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -181,23 +257,90 @@ export default function VideoCallScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000000' },
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#000' },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#000',
+  },
   loadingText: { color: '#FFF', marginTop: 12, fontSize: 16 },
   videoBackground: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   statusBar: { position: 'absolute', top: 0, left: 0, right: 0 },
-  backBtnTop: { position: 'absolute', top: 50, left: 20, width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' },
+  backBtnTop: {
+    position: 'absolute',
+    top: 50,
+    left: 20,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   pipContainer: { position: 'absolute', top: 50, right: 20 },
-  pipBox: { width: 100, height: 140, borderRadius: 12, overflow: 'hidden', borderWidth: 2, borderColor: '#FFFFFF' },
-  callInfoOverlay: { position: 'absolute', bottom: 160, left: 0, right: 0, alignItems: 'center' },
+  pipBox: {
+    width: 100,
+    height: 140,
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  callInfoOverlay: {
+    position: 'absolute',
+    bottom: 160,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
   callTimer: { fontSize: 14, fontWeight: '500', color: 'rgba(255,255,255,0.7)' },
   connectingText: { fontSize: 12, color: '#FFC107', marginTop: 4 },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 40 },
-  modalCard: { backgroundColor: '#FFFFFF', borderRadius: 24, padding: 32, alignItems: 'center', width: '100%' },
-  modalCheckCircle: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#4CAF50', justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
-  modalTitle: { fontSize: 22, fontWeight: '800', color: '#1A1817', marginBottom: 8, textAlign: 'center' },
-  modalSubtitle: { fontSize: 14, fontWeight: '500', color: '#7C7672', textAlign: 'center', marginBottom: 24, lineHeight: 20 },
-  modalBtn: { backgroundColor: '#BD632F', borderRadius: 26, paddingHorizontal: 24, paddingVertical: 16, alignItems: 'center', marginBottom: 12 },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  modalCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 32,
+    alignItems: 'center',
+    width: '100%',
+  },
+  modalCheckCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#4CAF50',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#1A1817',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#7C7672',
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 20,
+  },
+  modalBtn: {
+    backgroundColor: '#BD632F',
+    borderRadius: 26,
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginBottom: 12,
+    width: '100%',
+  },
   modalBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
-  modalBtnSecondary: { backgroundColor: 'transparent', borderWidth: 1, borderColor: '#E6E1DC' },
-  modalBtnSecondaryText: { color: '#1A1817' },
 });

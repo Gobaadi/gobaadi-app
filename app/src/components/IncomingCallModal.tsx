@@ -4,14 +4,14 @@ import { Ionicons } from '@expo/vector-icons';
 
 interface IncomingCallModalProps {
   visible: boolean;
-  doctorName: string;
+  callerName: string;
   onAccept: () => void;
   onReject: () => void;
 }
 
 export function IncomingCallModal({
   visible,
-  doctorName,
+  callerName,
   onAccept,
   onReject,
 }: IncomingCallModalProps) {
@@ -20,10 +20,10 @@ export function IncomingCallModal({
       <View style={styles.overlay}>
         <View style={styles.card}>
           <View style={styles.avatarContainer}>
-            <Ionicons name="person" size={40} color="#FFFFFF" />
+            <Ionicons name="videocam" size={36} color="#FFFFFF" />
           </View>
-          <Text style={styles.title}>Incoming Call</Text>
-          <Text style={styles.subtitle}>{doctorName}</Text>
+          <Text style={styles.title}>Incoming Video Call</Text>
+          <Text style={styles.subtitle}>{callerName}</Text>
 
           <View style={styles.buttonRow}>
             <TouchableOpacity style={styles.rejectBtn} onPress={onReject} activeOpacity={0.8}>

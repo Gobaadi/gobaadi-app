@@ -123,6 +123,10 @@ class SocketManager {
     this.socket?.emit('markRead', { messageId });
   }
 
+  emit(event: string, data?: Record<string, unknown>): void {
+    this.socket?.emit(event, data);
+  }
+
   disconnect(): void {
     this.socket?.disconnect();
     this.socket = null;
