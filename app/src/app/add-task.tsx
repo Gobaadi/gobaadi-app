@@ -43,6 +43,30 @@ function generateDatePills() {
   return pills;
 }
 
+function getDefaultTimes(): { dateOffset: number; startTime: string; endTime: string } {
+  const now = new Date();
+  const start = new Date(now);
+  start.setMinutes(0, 0, 0);
+  start.setHours(start.getHours() + 1);
+
+  const end = new Date(start);
+  end.setHours(end.getHours() + 1);
+
+  function fmt(d: Date): string {
+    let h = d.getHours();
+    const p = h >= 12 ? 'PM' : 'AM';
+    if (h === 0) h = 12;
+    else if (h > 12) h -= 12;
+    return `${h}:00 ${p}`;
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const dateOffset = Math.round((start.getTime() - today.getTime()) / 86400000);
+
+  return { dateOffset, startTime: fmt(start), endTime: fmt(end) };
+}
+
 function DatePillItem({ pill, isSelected, onSelect }: {
   pill: { day: string; date: string; fullDate: string };
   isSelected: boolean;
@@ -71,14 +95,15 @@ export default function AddTaskScreen() {
   const [createTask, { isLoading: isSubmitting }] = useCreateTaskMutation();
 
   const datePills = useMemo(() => generateDatePills(), []);
-  const [selectedDate, setSelectedDate] = useState(datePills[0].fullDate);
+  const defaults = useMemo(() => getDefaultTimes(), []);
+  const [selectedDate, setSelectedDate] = useState(datePills[defaults.dateOffset]?.fullDate || datePills[0].fullDate);
   const [selectedShed, setSelectedShed] = useState('cow');
   const [selectedType, setSelectedType] = useState('hygiene');
   const [customTask, setCustomTask] = useState('');
   const [repeat, setRepeat] = useState<'none' | 'daily' | 'weekly'>('none');
   const [instruction, setInstruction] = useState('');
-  const [startTime, setStartTime] = useState('07:00 PM');
-  const [endTime, setEndTime] = useState('08:00 PM');
+  const [startTime, setStartTime] = useState(defaults.startTime);
+  const [endTime, setEndTime] = useState(defaults.endTime);
 
   async function handleSubmit() {
     const typeObj = TASK_TYPES.find((t) => t.id === selectedType);
