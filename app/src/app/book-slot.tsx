@@ -8,6 +8,7 @@ import {
   Image,
   TextInput,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -51,22 +52,12 @@ export default function BookSlotScreen() {
     }
   }, [availableSlots]);
 
-  const { data: doctorData } = useGetDoctorByIdQuery(doctorId, { skip: !doctorId });
+  const { data: doctorData, isLoading: doctorLoading, isError: doctorError } = useGetDoctorByIdQuery(doctorId, { skip: !doctorId });
   const [bookSlot] = useBookSlotMutation();
   const [rescheduleBooking] = useRescheduleBookingMutation();
 
   const doctor = useMemo(() => {
-    if (!doctorData) {
-      return {
-        id: doctorId || '1',
-        name: 'Dr. David Patel',
-        specialty: 'Veterinary Surgery',
-        location: 'Cardiology Center, USA',
-        rating: 5,
-        reviews: 1872,
-        image: require('@/assets/images/doctor.png'),
-      };
-    }
+    if (!doctorData) return null;
     return {
       id: String(doctorData.id),
       name: doctorData.name,
@@ -78,10 +69,10 @@ export default function BookSlotScreen() {
         ? require('@/assets/images/jessica_doctor.png')
         : require('@/assets/images/michael_doctor.png'),
     };
-  }, [doctorData, doctorId]);
+  }, [doctorData]);
 
   const handleConfirmSlot = async () => {
-    if (!selectedTimeSlot) return;
+    if (!selectedTimeSlot || !doctor) return;
 
     // Require booking reason
     if (!bookingReason.trim()) {
@@ -103,6 +94,7 @@ export default function BookSlotScreen() {
         doctorId: doctor.id,
         date: selectedDateStr,
         time: selectedTimeSlot,
+        consultationType: selectedVisitType === 'Online' ? 'online_video' : 'physical',
       }).unwrap();
     } catch (err) {
       console.log('Error booking slot:', err);
@@ -160,6 +152,27 @@ export default function BookSlotScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* Loading State */}
+      {doctorLoading && (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#BD632F" />
+          <Text style={styles.loadingText}>Loading doctor info...</Text>
+        </View>
+      )}
+
+      {/* Error State */}
+      {doctorError && !doctorLoading && (
+        <View style={styles.loadingContainer}>
+          <Text style={styles.errorIcon}>⚠️</Text>
+          <Text style={styles.loadingText}>Doctor not found</Text>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Text style={styles.backButtonText}>Go Back</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {doctor && (
+        <>
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         {/* Doctor Summary Card */}
         <View style={styles.doctorCard}>
@@ -289,9 +302,9 @@ export default function BookSlotScreen() {
       {/* Floating Bottom Confirm Button */}
       <View style={styles.bottomBar}>
         <TouchableOpacity
-          style={[styles.confirmButton, (!selectedTimeSlot || !bookingReason.trim()) && { opacity: 0.5 }]}
+          style={[styles.confirmButton, (!selectedTimeSlot || !bookingReason.trim() || !doctor) && { opacity: 0.5 }]}
           onPress={handleConfirmSlot}
-          disabled={!selectedTimeSlot || !bookingReason.trim()}
+          disabled={!selectedTimeSlot || !bookingReason.trim() || !doctor}
           activeOpacity={0.85}
         >
           <Text style={styles.confirmButtonText}>
@@ -299,6 +312,8 @@ export default function BookSlotScreen() {
           </Text>
         </TouchableOpacity>
       </View>
+        </>
+      )}
     </SafeAreaView>
   );
 }
@@ -307,6 +322,33 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FAF9F6',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: '#7C7672',
+    marginTop: 12,
+  },
+  errorIcon: {
+    fontSize: 40,
+    marginBottom: 8,
+  },
+  backButton: {
+    marginTop: 16,
+    backgroundColor: '#BD632F',
+    borderRadius: 12,
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+  },
+  backButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
   },
   scrollContainer: {
     paddingHorizontal: 24,
