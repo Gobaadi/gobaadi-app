@@ -32,6 +32,27 @@ function formatTaskTime(scheduledTime?: string): string {
   }
 }
 
+function parseEndTime(detail?: string): string {
+  if (!detail) return '—';
+  const match = detail.match(/-\s*(\d{1,2}:\d{2}\s*(?:AM|PM))/i);
+  return match ? match[1] : '—';
+}
+
+function parseInstruction(detail?: string): string {
+  if (!detail) return '';
+  const match = detail.match(/Instruction:\s*(.+)$/i);
+  return match ? match[1].trim() : '';
+}
+
+function formatTodayDate(): string {
+  return new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
 export default function MyTaskScreen() {
   const router = useRouter();
   const { data: tasks = [], isLoading: isTasksLoading } = useGetTasksQuery(todayDateKey());
@@ -100,11 +121,11 @@ export default function MyTaskScreen() {
             <View style={styles.calendarCircle}>
               <Ionicons name="calendar-outline" size={18} color="#2B6CB0" />
             </View>
-            <Text style={styles.dateText}>Thursday, 10 Sep 2025</Text>
+            <Text style={styles.dateText}>{formatTodayDate()}</Text>
           </View>
           <View style={styles.weatherRight}>
             <Text style={styles.weatherIcon}>⛅</Text>
-            <Text style={styles.tempText}>29°C</Text>
+            <Text style={styles.tempText}>—°C</Text>
           </View>
         </View>
 
@@ -244,14 +265,16 @@ export default function MyTaskScreen() {
                 <View style={styles.timeCol}>
                   <Ionicons name="calendar-outline" size={14} color="#BD7D5B" />
                   <Text style={styles.timeLabel}>Work End </Text>
-                  <Text style={styles.timeVal}>08:00 PM</Text>
+                  <Text style={styles.timeVal}>{parseEndTime(task.detail)}</Text>
                 </View>
               </View>
 
               {/* Description */}
-              <Text style={styles.taskDescription}>
-                Feed livestock according to the planned diet.
-              </Text>
+              {parseInstruction(task.detail) ? (
+                <Text style={styles.taskDescription}>
+                  {parseInstruction(task.detail)}
+                </Text>
+              ) : null}
 
               {/* Card Action Buttons for Pending Task */}
               {!task.isDone && (

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   StyleSheet,
   View,
@@ -11,7 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useCreateTaskMutation } from '@/store/tasksApi';
+import { useCreateTaskMutation, useGetTasksQuery } from '@/store/tasksApi';
 
 const SHEDS = [
   { id: 'cow', name: 'Cow Shed', icon: '🐮' },
@@ -28,19 +28,50 @@ const TASK_TYPES = [
   { id: 'health', name: 'Health Check', icon: '🩺' },
 ];
 
-const DATE_PILLS = [
-  { day: 'Mon', date: '18', count: '(3)' },
-  { day: 'Tue', date: '19', count: '(1)' },
-  { day: 'Wed', date: '20', count: '(2)' },
-  { day: 'Thu', date: '21', count: '(-)' },
-  { day: 'Fri', date: '22', count: '(3)' },
-];
+function generateDatePills() {
+  const pills = [];
+  const today = new Date();
+  for (let i = 0; i < 5; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    pills.push({
+      day: d.toLocaleDateString('en-US', { weekday: 'short' }).slice(0, 3),
+      date: String(d.getDate()).padStart(2, '0'),
+      fullDate: d.toISOString().slice(0, 10),
+    });
+  }
+  return pills;
+}
+
+function DatePillItem({ pill, isSelected, onSelect }: {
+  pill: { day: string; date: string; fullDate: string };
+  isSelected: boolean;
+  onSelect: () => void;
+}) {
+  const { data: tasks = [] } = useGetTasksQuery(pill.fullDate);
+  const count = tasks.length;
+
+  return (
+    <TouchableOpacity
+      style={[styles.datePillCard, isSelected && styles.datePillCardSelected]}
+      onPress={onSelect}
+      activeOpacity={0.7}
+    >
+      <Text style={[styles.datePillDay, isSelected && styles.datePillTextSelected]}>{pill.day}</Text>
+      <Text style={[styles.datePillNum, isSelected && styles.datePillTextSelected]}>{pill.date}</Text>
+      <Text style={[styles.datePillCount, isSelected && styles.datePillTextSelected]}>
+        {count > 0 ? `(${count})` : '(-)'}
+      </Text>
+    </TouchableOpacity>
+  );
+}
 
 export default function AddTaskScreen() {
   const router = useRouter();
   const [createTask, { isLoading: isSubmitting }] = useCreateTaskMutation();
 
-  const [selectedDate, setSelectedDate] = useState('18');
+  const datePills = useMemo(() => generateDatePills(), []);
+  const [selectedDate, setSelectedDate] = useState(datePills[0].fullDate);
   const [selectedShed, setSelectedShed] = useState('cow');
   const [selectedType, setSelectedType] = useState('hygiene');
   const [customTask, setCustomTask] = useState('');
@@ -58,10 +89,8 @@ export default function AddTaskScreen() {
     if (repeat !== 'none') detailParts.push(`Repeat: ${repeat.charAt(0).toUpperCase() + repeat.slice(1)}`);
     if (instruction.trim()) detailParts.push(`Instruction: ${instruction.trim()}`);
 
-    // Construct proper scheduled time from selected date pill + time
-    const now = new Date();
-    const selectedDateNum = parseInt(selectedDate, 10);
-    const scheduledDate = new Date(now.getFullYear(), now.getMonth(), selectedDateNum);
+    // Use selected full date string directly
+    const scheduledDate = new Date(selectedDate);
 
     const timeParts = startTime.match(/(\d+):(\d+)\s*(AM|PM)/i);
     if (timeParts) {
@@ -115,21 +144,14 @@ export default function AddTaskScreen() {
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         {/* Date Selector Pills */}
         <View style={styles.datePillsRow}>
-          {DATE_PILLS.map((p) => {
-            const isSel = p.date === selectedDate;
-            return (
-              <TouchableOpacity
-                key={p.date}
-                style={[styles.datePillCard, isSel && styles.datePillCardSelected]}
-                onPress={() => setSelectedDate(p.date)}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.datePillDay, isSel && styles.datePillTextSelected]}>{p.day}</Text>
-                <Text style={[styles.datePillNum, isSel && styles.datePillTextSelected]}>{p.date}</Text>
-                <Text style={[styles.datePillCount, isSel && styles.datePillTextSelected]}>{p.count}</Text>
-              </TouchableOpacity>
-            );
-          })}
+          {datePills.map((p) => (
+            <DatePillItem
+              key={p.fullDate}
+              pill={p}
+              isSelected={p.fullDate === selectedDate}
+              onSelect={() => setSelectedDate(p.fullDate)}
+            />
+          ))}
         </View>
 
         {/* Recommended Banner */}
