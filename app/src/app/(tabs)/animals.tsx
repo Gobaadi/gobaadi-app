@@ -105,6 +105,7 @@ export default function AnimalsListScreen() {
       </ScrollView>
 
       {/* Animals Cards List */}
+      <View style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={styles.listContainer} showsVerticalScrollIndicator={false}>
         {isLoading ? (
           <>
@@ -182,6 +183,7 @@ export default function AnimalsListScreen() {
           ));
           })()}
       </ScrollView>
+      </View>
 
       {/* Floating Add Animal Button */}
       <TouchableOpacity
@@ -331,7 +333,7 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     paddingHorizontal: 24,
-    paddingBottom: 120, // Leave room for floating tab bar and FAB
+    paddingBottom: 120,
   },
   card: {
     flexDirection: 'row',
