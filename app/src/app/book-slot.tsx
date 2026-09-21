@@ -106,6 +106,7 @@ export default function BookSlotScreen() {
       }).unwrap();
     } catch (err) {
       console.log('Error booking slot:', err);
+      return;
     }
     router.push({
       pathname: '/confirm-booking',
@@ -288,9 +289,9 @@ export default function BookSlotScreen() {
       {/* Floating Bottom Confirm Button */}
       <View style={styles.bottomBar}>
         <TouchableOpacity
-          style={[styles.confirmButton, !selectedTimeSlot && { opacity: 0.5 }]}
+          style={[styles.confirmButton, (!selectedTimeSlot || !bookingReason.trim()) && { opacity: 0.5 }]}
           onPress={handleConfirmSlot}
-          disabled={!selectedTimeSlot}
+          disabled={!selectedTimeSlot || !bookingReason.trim()}
           activeOpacity={0.85}
         >
           <Text style={styles.confirmButtonText}>
