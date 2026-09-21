@@ -64,9 +64,15 @@ export function useAgora(
           }));
         }
       },
+      onTokenPrivilegeWillExpire: () => {
+        // Token will expire — the parent component should handle refresh
+        // via the video-call screen's re-join flow or token refresh endpoint
+      },
     };
 
     const setup = async () => {
+      if (!token || !appId || !channelName || uid <= 0) return;
+
       await agoraManager.init(appId);
       const engine = agoraManager.getEngine();
       if (!engine || !mounted) return;

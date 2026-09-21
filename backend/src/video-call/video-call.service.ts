@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -7,7 +8,12 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RtcTokenBuilder, RtcRole } from 'agora-token';
 import { VideoSession, VideoSessionStatus } from './video-call.entity';
-import { Appointment } from '../appointments/appointment.entity';
+import {
+  Appointment,
+  AppointmentStatus,
+} from '../appointments/appointment.entity';
+
+const CALL_GRACE_PERIOD_MS = 30 * 60 * 1000; // 30 minutes before/after slot
 
 @Injectable()
 export class VideoCallService {
@@ -48,7 +54,7 @@ export class VideoCallService {
 
   async createSession(
     appointmentId: number,
-    doctorUserId: number,
+    userId: number,
   ): Promise<VideoSession> {
     const appointment = await this.appointmentRepo.findOneBy({
       id: appointmentId,
@@ -57,9 +63,34 @@ export class VideoCallService {
       throw new NotFoundException('Appointment not found');
     }
 
-    if (appointment.doctorId !== doctorUserId) {
+    const isDoctor = appointment.doctorId === userId;
+    const isPatient = appointment.patientId === userId;
+
+    if (!isDoctor && !isPatient) {
+      throw new ForbiddenException(
+        'You are not a participant of this consultation',
+      );
+    }
+
+    if (appointment.status === AppointmentStatus.CANCELLED) {
+      throw new BadRequestException('Cannot start a call for a cancelled appointment');
+    }
+
+    if (appointment.status === AppointmentStatus.COMPLETED) {
+      throw new BadRequestException('Cannot start a call for a completed appointment');
+    }
+
+    const now = new Date();
+    const callWindowStart = new Date(
+      appointment.startAt.getTime() - CALL_GRACE_PERIOD_MS,
+    );
+    const callWindowEnd = new Date(
+      appointment.endAt.getTime() + CALL_GRACE_PERIOD_MS,
+    );
+
+    if (now < callWindowStart || now > callWindowEnd) {
       throw new BadRequestException(
-        'Only the assigned doctor can start this call',
+        'Call is only allowed within the consultation time window',
       );
     }
 
@@ -75,7 +106,7 @@ export class VideoCallService {
     const session = this.sessionRepo.create({
       appointmentId,
       channelName,
-      doctorUserId,
+      doctorUserId: appointment.doctorId,
       patientId: appointment.patientId,
       status: VideoSessionStatus.WAITING,
     });
@@ -109,7 +140,7 @@ export class VideoCallService {
     const isPatient = appointment.patientId === userId;
 
     if (!isDoctor && !isPatient) {
-      throw new BadRequestException('You are not part of this consultation');
+      throw new ForbiddenException('You are not part of this consultation');
     }
 
     if (session.status === VideoSessionStatus.WAITING) {
@@ -136,7 +167,7 @@ export class VideoCallService {
     }
 
     if (session.doctorUserId !== userId && session.patientId !== userId) {
-      throw new BadRequestException('You are not part of this consultation');
+      throw new ForbiddenException('You are not part of this consultation');
     }
 
     session.status = VideoSessionStatus.ENDED;

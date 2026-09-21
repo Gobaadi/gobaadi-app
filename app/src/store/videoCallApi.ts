@@ -10,6 +10,8 @@ export interface JoinSessionResponse {
 export interface CreateSessionResponse {
   sessionId: number;
   channelName: string;
+  doctorUserId: number;
+  patientId: number;
 }
 
 export const videoCallApi = createApi({

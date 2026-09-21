@@ -254,11 +254,22 @@ export default function AddAnimalScreen() {
 
   useEffect(() => {
     if (!existingAnimal) return;
-    setName(existingAnimal.name);
-    setBreed(existingAnimal.breed);
-    setWeight(existingAnimal.weight);
-    setAge(existingAnimal.age);
-    setColor(existingAnimal.color);
+    setName(existingAnimal.name || '');
+    setDescription(existingAnimal.description || '');
+    setDob(existingAnimal.dob || '');
+    setGender(existingAnimal.gender || '');
+    setSource(existingAnimal.source || '');
+    setBreed(existingAnimal.breed || '');
+    setAge(existingAnimal.age || '');
+    setJoinedFarm(existingAnimal.joinedFarm || '');
+    setWeight(existingAnimal.weight || '');
+    setLiveWeight(existingAnimal.liveWeight || '');
+    setReproStatus(existingAnimal.reproStatus || '');
+    setColor(existingAnimal.color || '');
+    setPhotos(existingAnimal.photos || (existingAnimal.image ? [existingAnimal.image] : []));
+    setPhotoCost(existingAnimal.photoCost || '');
+    setSellingPrice(existingAnimal.sellingPrice || '');
+    setLiveWeightPrice(existingAnimal.liveWeightPrice || '');
   }, [existingAnimal]);
 
   const handleNext = async () => {

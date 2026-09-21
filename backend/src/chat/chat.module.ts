@@ -8,12 +8,19 @@ import { ChatGateway } from './chat.gateway';
 import { ConversationService } from './conversation.service';
 import { Appointment } from '../appointments/appointment.entity';
 import { Doctor } from '../doctors/doctor.entity';
+import { VideoSession } from '../video-call/video-call.entity';
 import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([ChatMessage, Conversation, Appointment, Doctor]),
+    TypeOrmModule.forFeature([
+      ChatMessage,
+      Conversation,
+      Appointment,
+      Doctor,
+      VideoSession,
+    ]),
     CloudinaryModule,
     NotificationsModule,
   ],

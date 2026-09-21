@@ -283,6 +283,9 @@ export default function ProfileScreen() {
               </View>
             </View>
 
+            {/* Subscription Section */}
+            <Text style={styles.sectionTitle}>Subscription</Text>
+
             {/* Current Plan Card */}
             <TouchableOpacity
               style={styles.planCard}
@@ -375,6 +378,22 @@ export default function ProfileScreen() {
                     <MaterialCommunityIcons name="chat-question-outline" size={20} color="#BD632F" />
                   </View>
                   <Text style={styles.menuLabel}>Help & Support</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="#9C9690" />
+              </TouchableOpacity>
+
+              <View style={styles.divider} />
+
+              <TouchableOpacity
+                style={styles.menuItem}
+                activeOpacity={0.7}
+                onPress={() => router.push('/privacy-policy')}
+              >
+                <View style={styles.menuLeft}>
+                  <View style={styles.iconCircle}>
+                    <Ionicons name="shield-outline" size={20} color="#BD632F" />
+                  </View>
+                  <Text style={styles.menuLabel}>Privacy Policy</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color="#9C9690" />
               </TouchableOpacity>
