@@ -30,6 +30,7 @@ import {
   useSendPrescriptionMutation,
 } from '@/store/prescriptionsApi';
 import { useChatSocket } from '@/hooks/use-chat-socket';
+import { sendPrescriptionPdf, savePdfToTempFile } from '@/lib/pdf-service';
 
 type ConsultationState = 'idle' | 'active' | 'ended' | 'prescription_sent';
 
@@ -42,6 +43,8 @@ interface ChatMessageUI {
   prescriptionDate?: string;
   prescriptionSize?: string;
   attachmentUrl?: string;
+  isPdf?: boolean;
+  pdfUri?: string;
 }
 
 const CONSULTATION_DURATION_SECONDS = 30 * 60;
@@ -126,9 +129,10 @@ export default function ChatScreen() {
         sender: msg.sender === 'doctor' ? 'doctor' : 'patient',
         text: msg.text,
         time: new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        isPrescription: msg.attachmentType === 'document',
+        isPrescription: !!(msg.attachmentType === 'document' || (msg.text?.startsWith('Prescription -') && msg.attachmentUrl)),
+        isPdf: msg.attachmentType === 'document' && msg.attachmentMimeType?.includes('pdf') ? true : undefined,
         prescriptionDate: msg.attachmentUrl ? new Date(msg.createdAt).toLocaleDateString() : undefined,
-        prescriptionSize: msg.attachmentType === 'document' ? (msg.attachmentMimeType?.includes('pdf') ? 'PDF' : 'File') : undefined,
+        prescriptionSize: msg.attachmentType === 'document' ? (msg.attachmentMimeType?.includes('pdf') ? `PDF` : 'File') : undefined,
         attachmentUrl: msg.attachmentUrl || undefined,
       }));
       setLocalMessages(mapped);
@@ -181,6 +185,7 @@ export default function ChatScreen() {
     }
 
     try {
+      // 1. Create prescription record in backend
       const medicines = data.medications.map((m) => ({
         name: m.name,
         dosage: `${m.dosage} ${m.dosageUnit} ${m.frequency}`,
@@ -196,20 +201,80 @@ export default function ChatScreen() {
 
       await sendPrescriptionApi(prescription.id).unwrap();
 
+      // 2. Generate branded PDF + send email via PDF service
+      let pdfUri: string | null = null;
+      let pdfSizeKB = 0;
+      let emailSent = false;
+
+      try {
+        const pdfResult = await sendPrescriptionPdf({
+          patientName,
+          userEmail: '',
+          medications: data.medications.map((m) => ({
+            name: m.name,
+            type: m.type,
+            dosage: m.dosage,
+            dosageUnit: m.dosageUnit,
+            frequency: m.frequency,
+            duration: m.duration,
+            durationUnit: m.durationUnit,
+            quantity: m.quantity,
+            quantityUnit: m.quantityUnit,
+          })),
+          instructions: data.instructions,
+          note: data.note,
+        });
+
+        if (pdfResult.data?.pdfBase64) {
+          const fileName = `Prescription_${new Date().toISOString().split('T')[0]}.pdf`;
+          pdfUri = await savePdfToTempFile(pdfResult.data.pdfBase64, fileName);
+          pdfSizeKB = pdfResult.data.pdfSizeKB;
+        }
+
+        emailSent = pdfResult.data?.messageId !== 'no-email';
+      } catch (pdfError) {
+        console.warn('PDF generation failed, continuing without PDF:', pdfError);
+      }
+
+      // 3. Send prescription message to chat
       const summary = `Prescription - ${new Date().toLocaleDateString()}`;
       await sendMessage({
         text: summary,
         conversationId,
       }).unwrap();
 
+      // 4. If PDF was generated, send it as document attachment
+      if (pdfUri) {
+        const fileName = `Prescription_${new Date().toISOString().split('T')[0]}.pdf`;
+        await sendAttachment({
+          conversationId,
+          caption: summary,
+          file: {
+            uri: pdfUri,
+            name: fileName,
+            type: 'application/pdf',
+          },
+        }).unwrap();
+      }
+
+      // 5. If email was sent successfully, notify the patient in chat
+      if (emailSent) {
+        await sendMessage({
+          text: 'I have sent you an email with the prescription PDF. Please check your inbox for the medicine details.',
+          conversationId,
+        }).unwrap();
+      }
+
+      // 6. Add optimistic prescription bubble
       const prescriptionMessage: ChatMessageUI = {
         id: `presc-${Date.now()}`,
         sender: 'doctor',
         text: summary,
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         isPrescription: true,
+        isPdf: pdfUri !== null,
         prescriptionDate: new Date().toLocaleDateString(),
-        prescriptionSize: `${data.medications.length} medication${data.medications.length > 1 ? 's' : ''}`,
+        prescriptionSize: pdfSizeKB > 0 ? `PDF · ${pdfSizeKB} KB` : `${data.medications.length} medication${data.medications.length > 1 ? 's' : ''}`,
       };
       setLocalMessages((prev) => [...prev, prescriptionMessage]);
 
@@ -218,7 +283,7 @@ export default function ChatScreen() {
       Alert.alert('Error', 'Failed to send prescription. Please try again.');
       setConsultationState('active');
     }
-  }, [appointmentId, animalId, conversationId, createPrescription, sendPrescriptionApi, sendMessage]);
+  }, [appointmentId, animalId, conversationId, patientName, createPrescription, sendPrescriptionApi, sendMessage, sendAttachment]);
 
   const textInputRef = useRef<TextInput>(null);
 
