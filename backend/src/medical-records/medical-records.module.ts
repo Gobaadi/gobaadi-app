@@ -6,7 +6,7 @@ import { MedicalRecordsService } from './medical-records.service';
 import { MedicalRecordsController } from './medical-records.controller';
 import { FileProcessingProcessor } from './file-processing.processor';
 import { Attachment } from './attachment.entity';
-import { CloudinaryModule } from '../cloudinary/cloudinary.module';
+import { S3Module } from '../s3/s3.module';
 import { ChatModule } from '../chat/chat.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 
@@ -15,7 +15,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
     TypeOrmModule.forFeature([Attachment]),
     BullModule.registerQueue({ name: 'file-processing-queue' }),
     MulterModule.register({ limits: { fileSize: 20 * 1024 * 1024 } }),
-    CloudinaryModule,
+    S3Module,
     ChatModule,
     NotificationsModule,
   ],

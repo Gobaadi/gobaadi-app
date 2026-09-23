@@ -9,7 +9,7 @@ import { AiDiagnosisProcessor } from './ai-diagnosis.processor';
 import { AiDiagnosisController } from './ai-diagnosis.controller';
 import { Doctor } from '../doctors/doctor.entity';
 import { NotificationsModule } from '../notifications/notifications.module';
-import { CloudinaryModule } from '../cloudinary/cloudinary.module';
+import { S3Module } from '../s3/s3.module';
 import { ChatModule } from '../chat/chat.module';
 
 @Module({
@@ -18,7 +18,7 @@ import { ChatModule } from '../chat/chat.module';
     BullModule.registerQueue({ name: 'ai-diagnosis-queue' }),
     MulterModule.register({ limits: { fileSize: 10 * 1024 * 1024 } }),
     NotificationsModule,
-    CloudinaryModule,
+    S3Module,
     ChatModule,
   ],
   providers: [

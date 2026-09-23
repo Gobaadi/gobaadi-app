@@ -4,7 +4,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Repository } from 'typeorm';
 import { Queue } from 'bullmq';
 import { Attachment, AttachmentStatus } from './attachment.entity';
-import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import { S3Service } from '../s3/s3.service';
 
 const ALLOWED_MIME_TYPES = [
   'application/pdf',
@@ -19,7 +19,7 @@ export class MedicalRecordsService {
   constructor(
     @InjectRepository(Attachment)
     private readonly attachmentRepository: Repository<Attachment>,
-    private readonly cloudinaryService: CloudinaryService,
+    private readonly s3Service: S3Service,
     @InjectQueue('file-processing-queue')
     private readonly fileProcessingQueue: Queue,
   ) {}
@@ -30,8 +30,9 @@ export class MedicalRecordsService {
     uploadedByUserId: number,
     appointmentId?: number,
   ): Promise<Attachment> {
-    const uploadResult = await this.cloudinaryService.uploadFile(file.buffer, {
-      resourceType: 'raw',
+    const uploadResult = await this.s3Service.uploadFile(file.buffer, {
+      folder: 'medical-records',
+      contentType: file.mimetype,
     });
 
     const attachment = this.attachmentRepository.create({
@@ -42,7 +43,7 @@ export class MedicalRecordsService {
       mimeType: file.mimetype,
       fileSizeBytes: file.size,
       storageUrl: uploadResult.url,
-      storagePublicId: uploadResult.publicId,
+      storagePublicId: uploadResult.key,
       status: AttachmentStatus.UPLOADED,
     });
     const saved = await this.attachmentRepository.save(attachment);

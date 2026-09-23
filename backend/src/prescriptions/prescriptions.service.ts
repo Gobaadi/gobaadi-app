@@ -11,7 +11,7 @@ import { CreatePrescriptionDto } from './dto/create-prescription.dto';
 import { UpdatePrescriptionDto } from './dto/update-prescription.dto';
 import { Appointment } from '../appointments/appointment.entity';
 import { Animal } from '../animals/animal.entity';
-import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import { S3Service } from '../s3/s3.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/notification.entity';
 export { Prescription } from './prescription.entity';
@@ -25,7 +25,7 @@ export class PrescriptionsService {
     private readonly appointmentRepository: Repository<Appointment>,
     @InjectRepository(Animal)
     private readonly animalRepository: Repository<Animal>,
-    private readonly cloudinaryService: CloudinaryService,
+    private readonly s3Service: S3Service,
     private readonly notificationsService: NotificationsService,
   ) {}
 
@@ -140,8 +140,9 @@ export class PrescriptionsService {
       );
     }
 
-    const uploadResult = await this.cloudinaryService.uploadFile(file.buffer, {
+    const uploadResult = await this.s3Service.uploadFile(file.buffer, {
       folder: 'prescriptions',
+      contentType: file.mimetype,
     });
     prescription.attachmentUrl = uploadResult.url;
 

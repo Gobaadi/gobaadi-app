@@ -9,7 +9,7 @@ import { ConversationService } from './conversation.service';
 import { Appointment } from '../appointments/appointment.entity';
 import { Doctor } from '../doctors/doctor.entity';
 import { VideoSession } from '../video-call/video-call.entity';
-import { CloudinaryModule } from '../cloudinary/cloudinary.module';
+import { S3Module } from '../s3/s3.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
@@ -21,7 +21,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
       Doctor,
       VideoSession,
     ]),
-    CloudinaryModule,
+    S3Module,
     NotificationsModule,
   ],
   controllers: [ChatController],

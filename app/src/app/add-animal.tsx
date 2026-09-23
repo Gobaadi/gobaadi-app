@@ -22,8 +22,8 @@ import {
   useGetAnimalByIdQuery,
   useAddAnimalMutation,
   useUpdateAnimalMutation,
+  useUploadAnimalPhotoMutation,
 } from '@/store/animalsApi';
-import { uploadImageToCloudinary } from '@/lib/cloudinary-upload';
 
 // Custom Calendar Modal Component
 interface CalendarModalProps {
@@ -251,6 +251,7 @@ export default function AddAnimalScreen() {
   const { data: existingAnimal } = useGetAnimalByIdQuery(editId, { skip: !editId });
   const [addAnimal] = useAddAnimalMutation();
   const [updateAnimal] = useUpdateAnimalMutation();
+  const [uploadAnimalPhoto] = useUploadAnimalPhotoMutation();
 
   useEffect(() => {
     if (!existingAnimal) return;
@@ -326,11 +327,21 @@ export default function AddAnimalScreen() {
         let uploadedUrls: string[] = [];
         try {
           uploadedUrls = await Promise.all(
-            photos.map((uri) => uploadImageToCloudinary(uri))
+            photos.map(async (uri) => {
+              const fileName = uri.split('/').pop() || `animal-${Date.now()}.jpg`;
+              const formData = new FormData();
+              formData.append('file', {
+                uri,
+                name: fileName,
+                type: 'image/jpeg',
+              } as any);
+              const result = await uploadAnimalPhoto(formData).unwrap();
+              return result.url;
+            })
           );
         } catch (uploadErr: any) {
           setIsUploading(false);
-          Alert.alert('Upload failed', uploadErr?.message || 'Failed to upload photos. Please try again.');
+          Alert.alert('Upload failed', uploadErr?.data?.message || uploadErr?.message || 'Failed to upload photos. Please try again.');
           return;
         }
         setIsUploading(false);

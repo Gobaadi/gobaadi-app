@@ -14,7 +14,7 @@ import { DoctorsModule } from './doctors/doctors.module';
 import { AppointmentsModule } from './appointments/appointments.module';
 import { ChatModule } from './chat/chat.module';
 import { SeedModule } from './seed/seed.module';
-import { CloudinaryModule } from './cloudinary/cloudinary.module';
+import { S3Module } from './s3/s3.module';
 import { HealthController } from './health/health.controller';
 import { MailModule } from './mail/mail.module';
 import { MedicalRecordsModule } from './medical-records/medical-records.module';
@@ -101,7 +101,7 @@ import { PatientsModule } from './patients/patients.module';
     AppointmentsModule,
     ChatModule,
     SeedModule,
-    CloudinaryModule,
+    S3Module,
     MailModule,
     MedicalRecordsModule,
     RemindersModule,
