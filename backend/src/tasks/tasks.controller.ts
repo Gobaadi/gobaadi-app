@@ -19,6 +19,7 @@ import {
 } from '@nestjs/swagger';
 import { TasksService, Task } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
+import { UpdateTaskDto } from './dto/update-task.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { JwtPayload } from '../auth/jwt-payload.interface';
@@ -69,6 +70,17 @@ export class TasksController {
     @CurrentUser() user: JwtPayload,
   ): Promise<Task> {
     return this.tasksService.toggleTask(user.sub, parseInt(id, 10));
+  }
+
+  @Patch(':id')
+  @ApiOperation({ summary: 'Update a task' })
+  @ApiResponse({ status: 200, description: 'Task updated' })
+  async updateTask(
+    @Param('id') id: string,
+    @Body() body: UpdateTaskDto,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<Task> {
+    return this.tasksService.updateTask(user.sub, parseInt(id, 10), body);
   }
 
   @Delete(':id')

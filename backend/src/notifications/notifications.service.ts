@@ -244,6 +244,10 @@ export class NotificationsService {
     if (data.systemUpdates !== undefined) pref.systemUpdates = data.systemUpdates;
     if (data.weatherAlerts !== undefined) pref.weatherAlerts = data.weatherAlerts;
     if (data.taskReminders !== undefined) pref.taskReminders = data.taskReminders;
+    if (data.followUpReminders !== undefined)
+      pref.followUpReminders = data.followUpReminders;
+    if (data.hygieneReminders !== undefined)
+      pref.hygieneReminders = data.hygieneReminders;
 
     return this.preferenceRepository.save(pref);
   }

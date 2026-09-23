@@ -61,22 +61,27 @@ export const tasksApi = createApi({
       ],
     }),
     updateTask: builder.mutation<Task, { id: number; title: string; detail?: string; scheduledTime?: string }>({
-      query: ({ id, ...body }) => ({ url: `/tasks/${id}`, method: 'DELETE' }),
+      query: ({ id, ...body }) => ({ url: `/tasks/${id}`, method: 'PATCH', body }),
       async onQueryStarted({ id, title, detail, scheduledTime }, { dispatch, queryFulfilled, getState }) {
+        const patches: { undo: () => void }[] = [];
+        const state = getState() as any;
+        for (const key of tasksApi.util.selectCachedArgsForQuery(state, 'getTasks')) {
+          const patch = dispatch(
+            tasksApi.util.updateQueryData('getTasks', key, (draft) => {
+              const task = draft.find((t) => t.id === id);
+              if (task) {
+                task.title = title;
+                if (detail !== undefined) task.detail = detail;
+                if (scheduledTime !== undefined) task.scheduledTime = scheduledTime;
+              }
+            }),
+          );
+          patches.push(patch);
+        }
         try {
           await queryFulfilled;
-          // After deleting, create a new task with the updated data
-          const result = await dispatch(
-            tasksApi.endpoints.createTask.initiate({
-              title,
-              detail,
-              scheduledTime: scheduledTime || new Date().toISOString(),
-            })
-          ).unwrap();
-          return result;
-        } catch (err) {
-          console.log('Error updating task:', err);
-          throw err;
+        } catch {
+          patches.forEach((patch) => patch.undo());
         }
       },
       invalidatesTags: (_result, _error, { id }) => [

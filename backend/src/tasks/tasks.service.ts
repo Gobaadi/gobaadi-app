@@ -8,6 +8,7 @@ import { Between, Repository } from 'typeorm';
 import { Task } from './task.entity';
 import { RedisService } from '../redis/redis.service';
 import { CreateTaskDto } from './dto/create-task.dto';
+import { UpdateTaskDto } from './dto/update-task.dto';
 export { Task } from './task.entity';
 
 @Injectable()
@@ -74,6 +75,19 @@ export class TasksService {
   async toggleTask(userId: number, id: number): Promise<Task> {
     const task = await this.getOwnedTask(userId, id);
     task.isDone = !task.isDone;
+    const saved = await this.taskRepository.save(task);
+    await this.invalidateCacheForTask(saved);
+    return saved;
+  }
+
+  async updateTask(userId: number, id: number, dto: UpdateTaskDto): Promise<Task> {
+    const task = await this.getOwnedTask(userId, id);
+    if (dto.title !== undefined) task.title = dto.title;
+    if (dto.detail !== undefined) task.detail = dto.detail;
+    if (dto.scheduledTime !== undefined) task.scheduledTime = new Date(dto.scheduledTime);
+    if (dto.category !== undefined) task.category = dto.category;
+    if (dto.priority !== undefined) task.priority = dto.priority;
+    if (dto.dueDate !== undefined) task.dueDate = dto.dueDate ? new Date(dto.dueDate) : undefined;
     const saved = await this.taskRepository.save(task);
     await this.invalidateCacheForTask(saved);
     return saved;

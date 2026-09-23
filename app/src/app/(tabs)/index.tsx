@@ -18,6 +18,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useGetAnimalsQuery } from '@/store/animalsApi';
 import { useGetTasksQuery, useToggleTaskMutation } from '@/store/tasksApi';
+import { useGetDoctorBookingsQuery } from '@/store/doctorPortalApi';
 import { useGetWeatherQuery } from '@/store/weatherApi';
 import { useGetAlertsQuery, useActOnAlertMutation } from '@/store/alertsApi';
 import { useGetMyReferralQuery, useClaimReferralMutation } from '@/store/referralsApi';
@@ -66,6 +67,15 @@ export default function HomeDashboard() {
   const [claimCode, setClaimCode] = useState('');
 
   const animals = (allAnimals || []).slice(0, 3);
+
+  const { data: allBookings = [] } = useGetDoctorBookingsQuery();
+  const upcomingAppointments = allBookings
+    .filter((b) => {
+      const start = new Date(b.startAt);
+      return b.status !== 'CANCELLED' && start >= new Date();
+    })
+    .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime())
+    .slice(0, 3);
 
   async function shareReferral() {
     if (!referral) return;
@@ -280,6 +290,55 @@ export default function HomeDashboard() {
                   <View>
                     <Text style={styles.animalName}>{item.name}</Text>
                     <Text style={styles.animalBreed}>{item.breed}</Text>
+                  </View>
+                </View>
+                <Text style={styles.arrowIcon}>→</Text>
+              </TouchableOpacity>
+            ))
+          )}
+        </View>
+
+        {/* My Appointments Section */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>My Appointments</Text>
+          <TouchableOpacity onPress={() => router.push('/my-appointments')}>
+            <Text style={styles.viewAllText}>View all</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.listCard}>
+          {upcomingAppointments.length === 0 ? (
+            <EmptyState
+              compact
+              title="No upcoming appointments"
+              actionLabel="Book a consultation"
+              onAction={() => router.push('/(tabs)/doctors')}
+            />
+          ) : (
+            upcomingAppointments.map((appt, idx) => (
+              <TouchableOpacity
+                key={appt.id}
+                style={[
+                  styles.listItem,
+                  idx < upcomingAppointments.length - 1 && styles.listItemBorderDashed,
+                ]}
+                activeOpacity={0.7}
+                onPress={() => router.push({
+                  pathname: '/appointment-details',
+                  params: { id: String(appt.id) },
+                })}
+              >
+                <View style={styles.listItemLeft}>
+                  <View style={styles.checkeredIcon}>
+                    <View style={styles.checkeredGrid} />
+                  </View>
+                  <View>
+                    <Text style={styles.animalName}>
+                      {appt.doctorName || `Doctor #${appt.doctorId}`}
+                    </Text>
+                    <Text style={styles.animalBreed}>
+                      {appt.animalName || 'Consultation'} · {new Date(appt.startAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </Text>
                   </View>
                 </View>
                 <Text style={styles.arrowIcon}>→</Text>
