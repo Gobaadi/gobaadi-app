@@ -14,7 +14,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useGetMyProfileQuery, useUpdateMyProfileMutation } from '@/store/usersApi';
-import * as ImagePicker from 'expo-image-picker';
 
 export default function EditProfileScreen() {
   const router = useRouter();
@@ -23,34 +22,15 @@ export default function EditProfileScreen() {
 
   const [name, setName] = useState(profile?.name || '');
   const [phone, setPhone] = useState(profile?.phone || '');
-  const [location, setLocation] = useState('');
-  const [profileImage, setProfileImage] = useState<string | null>(null);
 
   useEffect(() => {
     if (profile?.name) setName(profile.name);
     if (profile?.phone) setPhone(profile.phone);
   }, [profile]);
 
-  const handlePickImage = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission needed', 'Please grant camera roll permissions to change your profile photo.');
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
-    if (!result.canceled && result.assets[0]) {
-      setProfileImage(result.assets[0].uri);
-    }
-  };
-
   const handleSave = async () => {
     try {
-      await updateProfile({ name, phone, location }).unwrap();
+      await updateProfile({ name, phone }).unwrap();
       Alert.alert('Success', 'Profile updated successfully.');
       router.back();
     } catch (err) {
@@ -78,15 +58,12 @@ export default function EditProfileScreen() {
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         {/* Profile Card Container */}
         <View style={styles.profileCard}>
-          {/* Avatar with Camera Icon Overlay */}
+          {/* Avatar */}
           <View style={styles.avatarWrapper}>
             <Image
-              source={profileImage ? { uri: profileImage } : require('@/assets/images/user_profile.png')}
+              source={require('@/assets/images/user_profile.png')}
               style={styles.avatarImage}
             />
-            <TouchableOpacity style={styles.cameraIconContainer} activeOpacity={0.85} onPress={handlePickImage}>
-              <Ionicons name="camera-outline" size={20} color="#BD632F" />
-            </TouchableOpacity>
           </View>
 
           {/* Form Fields */}
@@ -119,22 +96,6 @@ export default function EditProfileScreen() {
                 keyboardType="phone-pad"
               />
               <Ionicons name="checkmark-circle" size={22} color="#4CAF50" />
-            </View>
-          </View>
-
-          <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Location (Village/District)</Text>
-            <View style={styles.inputWrapper}>
-              <TextInput
-                style={styles.textInput}
-                value={location}
-                onChangeText={setLocation}
-                placeholder="Enter location"
-                placeholderTextColor="#A39E99"
-              />
-              <TouchableOpacity style={styles.inputActionBtn} activeOpacity={0.7}>
-                <Ionicons name="locate-outline" size={20} color="#BD632F" />
-              </TouchableOpacity>
             </View>
           </View>
         </View>
@@ -218,24 +179,6 @@ const styles = StyleSheet.create({
     borderRadius: 70,
     borderWidth: 2,
     borderColor: '#E6E1DC',
-  },
-  cameraIconContainer: {
-    position: 'absolute',
-    bottom: 2,
-    right: 2,
-    backgroundColor: '#FFFFFF',
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: '#E6E1DC',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   fieldContainer: {
     width: '100%',

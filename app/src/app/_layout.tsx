@@ -105,6 +105,7 @@ function RootNavigator() {
         <Stack.Screen name="doctor-notifications" />
         <Stack.Screen name="doctor-notification-preferences" />
         <Stack.Screen name="book-animal" />
+        <Stack.Screen name="my-appointments" />
         {/* <Stack.Screen name="booking-payment" /> */}
         {/* <Stack.Screen name="booking-bkash-number" /> */}
         <Stack.Screen name="edit-profile" />

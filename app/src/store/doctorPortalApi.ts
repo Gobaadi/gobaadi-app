@@ -34,6 +34,7 @@ export interface DoctorAppointment {
   id: number;
   doctorId: number;
   patientId: number;
+  animalId?: number;
   patientName?: string;
   patientPhone?: string;
   animalName?: string;
@@ -48,6 +49,9 @@ export interface DoctorAppointment {
   endAt: string;
   status: AppointmentStatus;
   createdAt: string;
+  doctorName?: string;
+  doctorSpecialty?: string;
+  doctorAvatar?: string;
 }
 
 export interface TodayStats {

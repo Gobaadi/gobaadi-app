@@ -324,10 +324,12 @@ export default function AddAnimalScreen() {
       }
       try {
         setIsUploading(true);
-        let uploadedUrls: string[] = [];
+        const existingUrls = photos.filter((p) => p.startsWith('http'));
+        const newLocalUris = photos.filter((p) => !p.startsWith('http'));
+        let uploadedNewUrls: string[] = [];
         try {
-          uploadedUrls = await Promise.all(
-            photos.map(async (uri) => {
+          uploadedNewUrls = await Promise.all(
+            newLocalUris.map(async (uri) => {
               const fileName = uri.split('/').pop() || `animal-${Date.now()}.jpg`;
               const formData = new FormData();
               formData.append('file', {
@@ -346,13 +348,14 @@ export default function AddAnimalScreen() {
         }
         setIsUploading(false);
 
+        const allPhotoUrls = [...existingUrls, ...uploadedNewUrls];
         const payload = {
           name: name,
           breed: breed,
           weight: weight,
           age: age,
           color: color,
-          image: uploadedUrls[0] || undefined,
+          image: allPhotoUrls[0] || undefined,
           description: description,
           dob: dob,
           gender: gender,
@@ -360,7 +363,7 @@ export default function AddAnimalScreen() {
           joinedFarm: joinedFarm,
           liveWeight: liveWeight,
           reproStatus: reproStatus,
-          photos: uploadedUrls,
+          photos: allPhotoUrls,
           photoCost: photoCost,
           sellingPrice: sellingPrice,
           liveWeightPrice: liveWeightPrice,

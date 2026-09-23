@@ -44,6 +44,9 @@ export interface AppointmentWithPatient extends Appointment {
   patientPhone?: string;
   animalName?: string;
   animalImage?: string;
+  doctorName?: string;
+  doctorSpecialty?: string;
+  doctorAvatar?: string;
 }
 
 export type AppointmentListFilter =
@@ -757,6 +760,18 @@ export class AppointmentsService {
     const animalsById = new Map(animals.map((a) => [a.id, a]));
 
     if (role !== UserRole.DOCTOR) {
+      const distinctDoctorIds = [
+        ...new Set(appointments.map((a) => a.doctorId)),
+      ];
+      const doctors = await Promise.all(
+        distinctDoctorIds.map((id) =>
+          this.doctorsService.getDoctorById(id).catch(() => null),
+        ),
+      );
+      const doctorsById = new Map(
+        doctors.filter(Boolean).map((d) => [d!.id, d!]),
+      );
+
       return appointments.map((appointment) => ({
         ...appointment,
         animalName: appointment.animalId
@@ -765,6 +780,9 @@ export class AppointmentsService {
         animalImage: appointment.animalId
           ? animalsById.get(appointment.animalId)?.image
           : undefined,
+        doctorName: doctorsById.get(appointment.doctorId)?.name,
+        doctorSpecialty: doctorsById.get(appointment.doctorId)?.specialty,
+        doctorAvatar: doctorsById.get(appointment.doctorId)?.avatar,
       }));
     }
 
