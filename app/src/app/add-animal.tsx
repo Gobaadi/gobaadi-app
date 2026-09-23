@@ -329,17 +329,16 @@ export default function AddAnimalScreen() {
           uploadedUrls = await Promise.all(
             photos.map(async (uri) => {
               const fileName = uri.split('/').pop() || `animal-${Date.now()}.jpg`;
+              const blobRes = await fetch(uri);
+              const blob = await blobRes.blob();
               const formData = new FormData();
-              formData.append('file', {
-                uri,
-                name: fileName,
-                type: 'image/jpeg',
-              } as any);
+              formData.append('file', blob, fileName);
               const result = await uploadAnimalPhoto(formData).unwrap();
               return result.url;
             })
           );
         } catch (uploadErr: any) {
+          console.log("Error uploading photos:", uploadErr);
           setIsUploading(false);
           Alert.alert('Upload failed', uploadErr?.data?.message || uploadErr?.message || 'Failed to upload photos. Please try again.');
           return;
