@@ -39,8 +39,8 @@ export default function SubscriptionScreen() {
             try {
               await cancelSubscription().unwrap();
               Alert.alert('Cancelled', 'Subscription auto-renewal has been cancelled.');
-            } catch {
-              Alert.alert('Error', 'Failed to cancel subscription');
+            } catch (err: any) {
+              Alert.alert('Error', err?.data?.message ?? 'Failed to cancel subscription');
             }
           },
         },
@@ -121,10 +121,10 @@ export default function SubscriptionScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.cancelBtn, cancelling && { opacity: 0.5 }]}
+          style={[styles.cancelBtn, (cancelling || !mySubscription) && { opacity: 0.5 }]}
           onPress={handleCancelSubscription}
           activeOpacity={0.85}
-          disabled={cancelling}
+          disabled={cancelling || !mySubscription}
         >
           {cancelling ? (
             <ActivityIndicator size="small" color="#E53935" />
