@@ -41,6 +41,13 @@ export const animalsApi = createApi({
       query: (id) => `/animals/${id}`,
       providesTags: (_result, _error, id) => [{ type: 'Animal', id }],
     }),
+    uploadAnimalPhoto: builder.mutation<{ url: string }, FormData>({
+      query: (formData) => ({
+        url: '/animals/upload-photo',
+        method: 'POST',
+        body: formData,
+      }),
+    }),
     addAnimal: builder.mutation<Animal, NewAnimal>({
       query: (body) => ({ url: '/animals', method: 'POST', body }),
       invalidatesTags: [{ type: 'Animal', id: 'LIST' }],
@@ -65,6 +72,7 @@ export const animalsApi = createApi({
 export const {
   useGetAnimalsQuery,
   useGetAnimalByIdQuery,
+  useUploadAnimalPhotoMutation,
   useAddAnimalMutation,
   useUpdateAnimalMutation,
   useDeleteAnimalMutation,

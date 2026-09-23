@@ -35,7 +35,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { UserRole } from '../users/user.entity';
 import type { JwtPayload } from '../auth/jwt-payload.interface';
 import { Conversation } from './conversation.entity';
-import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import { S3Service } from '../s3/s3.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Appointment } from '../appointments/appointment.entity';
@@ -50,7 +50,7 @@ export class ChatController {
     private readonly chatService: ChatService,
     private readonly conversationService: ConversationService,
     private readonly chatGateway: ChatGateway,
-    private readonly cloudinaryService: CloudinaryService,
+    private readonly s3Service: S3Service,
     @InjectRepository(Appointment)
     private readonly appointmentRepository: Repository<Appointment>,
     @InjectRepository(Doctor)
@@ -158,9 +158,9 @@ export class ChatController {
     );
 
     const isImage = file.mimetype.startsWith(IMAGE_MIME_PREFIX);
-    const uploadResult = await this.cloudinaryService.uploadFile(file.buffer, {
+    const uploadResult = await this.s3Service.uploadFile(file.buffer, {
       folder: 'gobadi/chat',
-      resourceType: isImage ? 'image' : 'raw',
+      contentType: file.mimetype,
     });
 
     const saved = await this.chatService.sendMessage(
