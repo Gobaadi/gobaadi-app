@@ -27,7 +27,7 @@ import type { JwtPayload } from '../auth/jwt-payload.interface';
 @ApiTags('tasks')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
-@Throttle({ default: { limit: 30, ttl: 60000 } })
+@Throttle({ default: { limit: 120, ttl: 60000 } })
 @Controller('tasks')
 export class TasksController {
   constructor(private readonly tasksService: TasksService) {}
@@ -35,20 +35,25 @@ export class TasksController {
   @Get()
   @ApiOperation({ summary: "Get the current user's tasks for a given day" })
   @ApiQuery({ name: 'date', required: true, example: '2026-07-27' })
+  @ApiQuery({ name: 'tzOffset', required: false, example: '-360' })
   @ApiQuery({ name: 'category', required: false, example: 'field' })
   @ApiQuery({ name: 'priority', required: false, example: 'high' })
   @ApiResponse({ status: 200, description: 'List of tasks for the date' })
   async getTasks(
     @Query('date') date: string,
     @CurrentUser() user: JwtPayload,
+    @Query('tzOffset') tzOffset?: string,
     @Query('category') category?: string,
     @Query('priority') priority?: string,
   ): Promise<Task[]> {
+    const parsedTz = tzOffset !== undefined && tzOffset !== '' ? Number(tzOffset) : 0;
+    const tzOffsetMinutes = Number.isFinite(parsedTz) ? parsedTz : 0;
     return this.tasksService.getTasksForDate(
       user.sub,
       date,
       category,
       priority,
+      tzOffsetMinutes,
     );
   }
 

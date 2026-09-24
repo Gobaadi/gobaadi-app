@@ -12,6 +12,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useCreateTaskMutation, useGetTasksQuery } from '@/store/tasksApi';
+import { localDateKey } from '@/utils/date';
+import { apiErrorMessage } from '@/utils/api-error';
 
 const SHEDS = [
   { id: 'cow', name: 'Cow Shed', icon: '🐮' },
@@ -37,7 +39,7 @@ function generateDatePills() {
     pills.push({
       day: d.toLocaleDateString('en-US', { weekday: 'short' }).slice(0, 3),
       date: String(d.getDate()).padStart(2, '0'),
-      fullDate: d.toISOString().slice(0, 10),
+      fullDate: localDateKey(d),
     });
   }
   return pills;
@@ -114,8 +116,17 @@ export default function AddTaskScreen() {
     if (repeat !== 'none') detailParts.push(`Repeat: ${repeat.charAt(0).toUpperCase() + repeat.slice(1)}`);
     if (instruction.trim()) detailParts.push(`Instruction: ${instruction.trim()}`);
 
-    // Use selected full date string directly
-    const scheduledDate = new Date(selectedDate);
+    // Parse selected local calendar date (YYYY-MM-DD), not UTC midnight
+    const dateParts = selectedDate.split('-').map((p) => parseInt(p, 10));
+    const scheduledDate = new Date(
+      dateParts[0],
+      (dateParts[1] || 1) - 1,
+      dateParts[2] || 1,
+      0,
+      0,
+      0,
+      0,
+    );
 
     const timeParts = startTime.match(/(\d+):(\d+)\s*(AM|PM)/i);
     if (timeParts) {
@@ -140,10 +151,13 @@ export default function AddTaskScreen() {
         scheduledTime: scheduledDate.toISOString(),
       }).unwrap();
 
-      router.back();
+      router.replace({
+        pathname: '/my-task',
+        params: { date: selectedDate },
+      });
     } catch (err) {
       console.log('Error adding task:', err);
-      Alert.alert('Could not add task', 'Please try again.');
+      Alert.alert('Could not add task', apiErrorMessage(err, 'Please try again.'));
     }
   }
 

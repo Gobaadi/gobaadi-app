@@ -9,7 +9,7 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import {
   useGetTasksQuery,
@@ -18,10 +18,8 @@ import {
   Task,
 } from '@/store/tasksApi';
 import { RowSkeleton } from '@/components/ui/skeleton';
-
-function todayDateKey(): string {
-  return new Date().toISOString().slice(0, 10);
-}
+import { formatLocalDateKey, localDateKey } from '@/utils/date';
+import { apiErrorMessage } from '@/utils/api-error';
 
 function formatTaskTime(scheduledTime?: string): string {
   if (!scheduledTime) return '07:00 PM';
@@ -44,23 +42,22 @@ function parseInstruction(detail?: string): string {
   return match ? match[1].trim() : '';
 }
 
-function formatTodayDate(): string {
-  return new Date().toLocaleDateString('en-US', {
-    weekday: 'long',
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
+function formatTodayDate(dateKey: string): string {
+  return formatLocalDateKey(dateKey);
 }
 
 export default function MyTaskScreen() {
   const router = useRouter();
-  const { data: tasks = [], isLoading: isTasksLoading } = useGetTasksQuery(todayDateKey());
+  const params = useLocalSearchParams<{ date?: string | string[] }>();
+  const rawDate = Array.isArray(params.date) ? params.date[0] : params.date;
+  const listDate = rawDate && /^\d{4}-\d{2}-\d{2}$/.test(rawDate) ? rawDate : localDateKey();
+  const { data: tasks = [], isLoading: isTasksLoading } = useGetTasksQuery(listDate);
   const [toggleTaskMutation] = useToggleTaskMutation();
   const [deleteTaskMutation] = useDeleteTaskMutation();
 
   const [activeFilter, setActiveFilter] = useState<'all' | 'pending' | 'completed'>('all');
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const pendingTasks = tasks.filter((t) => !t.isDone);
   const completedTasks = tasks.filter((t) => t.isDone);
@@ -77,17 +74,21 @@ export default function MyTaskScreen() {
       await toggleTaskMutation(String(id)).unwrap();
     } catch (err) {
       console.log('Error toggling task:', err);
+      Alert.alert('Could not update task', apiErrorMessage(err, 'Please try again.'));
     }
   }
 
   async function confirmDelete() {
-    if (!taskToDelete) return;
+    if (!taskToDelete || isDeleting) return;
+    setIsDeleting(true);
     try {
       await deleteTaskMutation(String(taskToDelete.id)).unwrap();
+      setTaskToDelete(null);
     } catch (err) {
       console.log('Error deleting task:', err);
+      Alert.alert('Could not delete task', apiErrorMessage(err, 'Please try again.'));
     } finally {
-      setTaskToDelete(null);
+      setIsDeleting(false);
     }
   }
 
@@ -121,7 +122,7 @@ export default function MyTaskScreen() {
             <View style={styles.calendarCircle}>
               <Ionicons name="calendar-outline" size={18} color="#2B6CB0" />
             </View>
-            <Text style={styles.dateText}>{formatTodayDate()}</Text>
+            <Text style={styles.dateText}>{formatTodayDate(listDate)}</Text>
           </View>
           <View style={styles.weatherRight}>
             <Text style={styles.weatherIcon}>⛅</Text>
@@ -193,7 +194,9 @@ export default function MyTaskScreen() {
               <Ionicons name="calendar-outline" size={32} color="#BD632F" />
             </View>
             <Text style={styles.emptyTitle}>Schedule New Task</Text>
-            <Text style={styles.emptySubtitle}>You have no Task for Today</Text>
+            <Text style={styles.emptySubtitle}>
+              You have no Task for {listDate === localDateKey() ? 'Today' : formatLocalDateKey(listDate)}
+            </Text>
 
             <TouchableOpacity
               style={styles.emptyAddBtn}
@@ -333,11 +336,14 @@ export default function MyTaskScreen() {
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.modalConfirmBtn}
+                style={[styles.modalConfirmBtn, isDeleting && { opacity: 0.6 }]}
                 onPress={confirmDelete}
+                disabled={isDeleting}
                 activeOpacity={0.8}
               >
-                <Text style={styles.modalConfirmText}>Yes, Delete</Text>
+                <Text style={styles.modalConfirmText}>
+                  {isDeleting ? 'Deleting…' : 'Yes, Delete'}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
