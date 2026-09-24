@@ -22,7 +22,8 @@ export const tasksApi = createApi({
   tagTypes: ['Task'],
   endpoints: (builder) => ({
     getTasks: builder.query<Task[], string>({
-      query: (date) => `/tasks?date=${date}`,
+      query: (date) =>
+        `/tasks?date=${date}&tzOffset=${new Date().getTimezoneOffset()}`,
       providesTags: (result) =>
         result
           ? [...result.map((t) => ({ type: 'Task' as const, id: t.id })), { type: 'Task', id: 'LIST' }]

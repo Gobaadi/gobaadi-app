@@ -56,4 +56,25 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       console.error('Failed to delete key in Redis', err);
     }
   }
+
+  async delPattern(pattern: string): Promise<void> {
+    try {
+      let cursor = '0';
+      do {
+        const [next, keys] = await this.client.scan(
+          cursor,
+          'MATCH',
+          pattern,
+          'COUNT',
+          100,
+        );
+        cursor = next;
+        if (keys.length) {
+          await this.client.del(...keys);
+        }
+      } while (cursor !== '0');
+    } catch (err) {
+      console.error('Failed to delete keys by pattern in Redis', err);
+    }
+  }
 }

@@ -27,11 +27,12 @@ import LanguageBottomSheet from '@/components/LanguageBottomSheet';
 import Svg, { Path } from 'react-native-svg';
 import { EmptyState } from '@/components/ui/empty-state';
 import { RowSkeleton, AlertCardSkeleton, SkeletonBox } from '@/components/ui/skeleton';
+import { localDateKey } from '@/utils/date';
 
 const { width } = Dimensions.get('window');
 
 function todayDateKey(): string {
-  return new Date().toISOString().slice(0, 10);
+  return localDateKey();
 }
 
 function formatFullDate(): string {
