@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -6,19 +6,20 @@ import {
   TextInput,
   ScrollView,
   TouchableOpacity,
-  Dimensions,
   StatusBar,
+  Modal,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useGetAnimalsQuery } from '@/store/animalsApi';
+import { useGetAnimalsQuery, type Animal } from '@/store/animalsApi';
 import { EmptyState } from '@/components/ui/empty-state';
 import { MediaCardSkeleton } from '@/components/ui/skeleton';
 import { useLanguage } from '@/hooks/use-language';
+import { useDebounce } from '@/hooks/use-debounce';
 
-const { width } = Dimensions.get('window');
+type Chip = 'All' | 'Calf' | 'Bull';
 
 function animalImage(breed: string) {
   return breed.toLowerCase().includes('buffalo')
@@ -30,11 +31,131 @@ function animalStatus(id: number): 'Healthy' | 'Under Treatment' {
   return id % 2 === 0 ? 'Under Treatment' : 'Healthy';
 }
 
+function isCalf(a: Animal): boolean {
+  const text = `${a.name || ''} ${a.breed || ''} ${a.age || ''}`.toLowerCase();
+  return /calf|baby|young|juvenile/.test(text);
+}
+
+function isBull(a: Animal): boolean {
+  const gender = (a.gender || '').toLowerCase();
+  const text = `${a.name || ''} ${a.breed || ''}`.toLowerCase();
+  return gender === 'male' || /bull|ox|steer/.test(text);
+}
+
+function parseDate(value?: string | null): Date | null {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  const dmy = trimmed.match(/^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{4})$/);
+  if (dmy) {
+    const first = Number(dmy[1]);
+    const second = Number(dmy[2]);
+    const year = Number(dmy[3]);
+    // Prefer day/month/year when ambiguous (app data uses DD/MM/YYYY).
+    if (first > 12) return new Date(year, second - 1, first);
+    if (second > 12) return new Date(year, first - 1, second);
+    return new Date(year, second - 1, first);
+  }
+
+  const parsed = new Date(trimmed);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function monthsSince(from: Date, to: Date = new Date()): number {
+  let months = (to.getFullYear() - from.getFullYear()) * 12 + (to.getMonth() - from.getMonth());
+  if (to.getDate() < from.getDate()) months -= 1;
+  return Math.max(0, months);
+}
+
+function formatAge(age?: string, dob?: string): string {
+  const fromDob = parseDate(dob);
+  if (fromDob) {
+    const m = monthsSince(fromDob);
+    return `${m} month${m === 1 ? '' : 's'}`;
+  }
+
+  if (!age) return 'N/A';
+
+  const fromDate = parseDate(age);
+  if (fromDate) {
+    const m = monthsSince(fromDate);
+    return `${m} month${m === 1 ? '' : 's'}`;
+  }
+
+  const years = age.match(/^(\d+)\s*years?$/i);
+  if (years) {
+    const m = Number(years[1]) * 12;
+    return `${m} month${m === 1 ? '' : 's'}`;
+  }
+
+  const months = age.match(/^(\d+)\s*months?$/i);
+  if (months) return `${months[1]} month${Number(months[1]) === 1 ? '' : 's'}`;
+
+  return age;
+}
+
+function formatWeight(weight?: string): string {
+  if (!weight) return 'N/A';
+  const w = weight.trim();
+  if (!w) return 'N/A';
+  if (/[a-z]/i.test(w)) return w;
+  return `${w} Kg`;
+}
+
+function cardDescription(a: Animal): string {
+  if (a.description) return a.description;
+  if (a.color) return `${a.color} colored coat and characteristics`;
+  return 'cream-colored coat and tuft of blond hair';
+}
+
 export default function AnimalsListScreen() {
   const router = useRouter();
-  const [activeFilter, setActiveFilter] = useState('All');
+  const [activeFilter, setActiveFilter] = useState<Chip>('All');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
+  const [genderFilter, setGenderFilter] = useState<'All' | 'Male' | 'Female'>('All');
+  const [statusFilter, setStatusFilter] = useState<'All' | 'Healthy' | 'Under Treatment'>('All');
+  const debouncedSearch = useDebounce(searchQuery, 300);
   const { data: animals = [], isLoading } = useGetAnimalsQuery();
   const { languageCode } = useLanguage();
+
+  const counts = useMemo(
+    () => ({
+      all: animals.length,
+      calf: animals.filter(isCalf).length,
+      bull: animals.filter(isBull).length,
+    }),
+    [animals],
+  );
+
+  const displayAnimals = useMemo(() => {
+    const q = debouncedSearch.trim().toLowerCase();
+    return animals.filter((a) => {
+      if (q) {
+        const haystack = `${a.name || ''} ${a.breed || ''} ${a.color || ''} ${a.description || ''}`.toLowerCase();
+        if (!haystack.includes(q)) return false;
+      }
+      if (activeFilter === 'Calf' && !isCalf(a)) return false;
+      if (activeFilter === 'Bull' && !isBull(a)) return false;
+      if (genderFilter !== 'All' && (a.gender || '').toLowerCase() !== genderFilter.toLowerCase()) return false;
+      if (statusFilter !== 'All' && animalStatus(a.id) !== statusFilter) return false;
+      return true;
+    });
+  }, [animals, debouncedSearch, activeFilter, genderFilter, statusFilter]);
+
+  const hasQuery =
+    debouncedSearch.trim().length > 0 ||
+    activeFilter !== 'All' ||
+    genderFilter !== 'All' ||
+    statusFilter !== 'All';
+
+  const resetAdvancedFilters = () => {
+    setGenderFilter('All');
+    setStatusFilter('All');
+    setActiveFilter('All');
+    setSearchQuery('');
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -63,126 +184,162 @@ export default function AnimalsListScreen() {
 
       {/* Search Input */}
       <View style={styles.searchContainer}>
-        <Text style={styles.searchIcon}>🔍</Text>
+        <Ionicons name="search" size={18} color="#7C7672" style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
           placeholder="Search animals..."
           placeholderTextColor="#A39E99"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          autoCorrect={false}
+          returnKeyType="search"
         />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity onPress={() => setSearchQuery('')} activeOpacity={0.7} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Ionicons name="close-circle" size={18} color="#A39E99" />
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Filters Row */}
       <ScrollView
         horizontal
-        showsHorizontalScrollIndicator={false}
+        style={styles.filtersScroll}
         contentContainerStyle={styles.filtersContainer}
+        showsHorizontalScrollIndicator={false}
       >
-        <TouchableOpacity style={styles.filterIconButton}>
-          <Text style={styles.filterIcon}>⚙️</Text>
+        <TouchableOpacity
+          style={styles.filterIconButton}
+          activeOpacity={0.8}
+          onPress={() => setFilterModalVisible(true)}
+        >
+          <Ionicons name="options-outline" size={16} color="#7C7672" style={{ marginRight: 6 }} />
           <Text style={styles.filterIconText}>Filter</Text>
+          {(genderFilter !== 'All' || statusFilter !== 'All') && <View style={styles.filterDot} />}
         </TouchableOpacity>
 
         <TouchableOpacity
           style={[styles.filterTab, activeFilter === 'All' && styles.filterTabActive]}
           onPress={() => setActiveFilter('All')}
         >
-          <Text style={[styles.filterTabText, activeFilter === 'All' && styles.filterTabTextActive]}>All ({animals.length})</Text>
+          <Text style={[styles.filterTabText, activeFilter === 'All' && styles.filterTabTextActive]}>
+            All ({counts.all})
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={[styles.filterTab, activeFilter === 'Calf' && styles.filterTabActive]}
           onPress={() => setActiveFilter('Calf')}
         >
-          <Text style={[styles.filterTabText, activeFilter === 'Calf' && styles.filterTabTextActive]}>Calf ({animals.filter(a => (a.age || '').toLowerCase().includes('calf') || (a.name || '').toLowerCase().includes('calf')).length})</Text>
+          <Text style={[styles.filterTabText, activeFilter === 'Calf' && styles.filterTabTextActive]}>
+            Calf ({counts.calf})
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={[styles.filterTab, activeFilter === 'Bull' && styles.filterTabActive]}
           onPress={() => setActiveFilter('Bull')}
         >
-          <Text style={[styles.filterTabText, activeFilter === 'Bull' && styles.filterTabTextActive]}>Bull ({animals.filter(a => (a.gender || '').toLowerCase() === 'male').length})</Text>
+          <Text style={[styles.filterTabText, activeFilter === 'Bull' && styles.filterTabTextActive]}>
+            Bull ({counts.bull})
+          </Text>
         </TouchableOpacity>
       </ScrollView>
 
       {/* Animals Cards List */}
-      <View style={{ flex: 1 }}>
-      <ScrollView contentContainerStyle={styles.listContainer} showsVerticalScrollIndicator={false}>
-        {isLoading ? (
-          <>
-            <MediaCardSkeleton imageSize={100} />
-            <MediaCardSkeleton imageSize={100} />
-            <MediaCardSkeleton imageSize={100} />
-          </>
-        ) : animals.length === 0 ? (
-          <EmptyState
-            title="No animals yet"
-            description="Add your livestock to start tracking health, tasks, and records."
-            actionLabel="Add Animal"
-            onAction={() => router.push('/add-animal')}
-          />
-        ) : (() => {
-          const displayAnimals = animals.filter((a) => {
-            if (activeFilter === 'All') return true;
-            if (activeFilter === 'Calf') return (a.age || '').toLowerCase().includes('calf') || (a.name || '').toLowerCase().includes('calf');
-            if (activeFilter === 'Bull') return (a.gender || '').toLowerCase() === 'male';
-            return true;
-          });
-          return displayAnimals.map((item) => (
-            <TouchableOpacity
-              key={item.id}
-              style={styles.card}
-              activeOpacity={0.9}
-              onPress={() => router.push({
-                pathname: '/my-animal-detail',
-                params: { id: item.id }
-              })}
-            >
-              <Image source={item.image ? { uri: item.image } : animalImage(item.breed)} style={styles.cardImage} contentFit="cover" />
+      <View style={styles.listWrapper}>
+        <ScrollView
+          style={styles.listScroll}
+          contentContainerStyle={styles.listContainer}
+          showsVerticalScrollIndicator={false}
+        >
+          {isLoading ? (
+            <>
+              <MediaCardSkeleton imageSize={100} />
+              <MediaCardSkeleton imageSize={100} />
+              <MediaCardSkeleton imageSize={100} />
+            </>
+          ) : animals.length === 0 ? (
+            <EmptyState
+              title="No animals yet"
+              description="Add your livestock to start tracking health, tasks, and records."
+              actionLabel="Add Animal"
+              onAction={() => router.push('/add-animal')}
+            />
+          ) : displayAnimals.length === 0 ? (
+            <EmptyState
+              title="No animals found"
+              description="Try a different search or clear your filters."
+              actionLabel={hasQuery ? 'Clear filters' : 'Add Animal'}
+              onAction={hasQuery ? resetAdvancedFilters : () => router.push('/add-animal')}
+            />
+          ) : (
+            displayAnimals.map((item) => (
+              <TouchableOpacity
+                key={item.id}
+                style={styles.card}
+                activeOpacity={0.9}
+                onPress={() =>
+                  router.push({
+                    pathname: '/my-animal-detail',
+                    params: { id: item.id },
+                  })
+                }
+              >
+                <Image
+                  source={item.image ? { uri: item.image } : animalImage(item.breed)}
+                  style={styles.cardImage}
+                  contentFit="cover"
+                />
 
-              <View style={styles.cardContent}>
-                <View style={styles.cardHeader}>
-                  <Text style={styles.cardName}>{item.name}</Text>
-                  <View
-                    style={[
-                      styles.statusBadge,
-                      animalStatus(item.id) === 'Healthy' ? styles.statusHealthy : styles.statusTreatment,
-                    ]}
-                  >
-                    <Text
+                <View style={styles.cardContent}>
+                  <View style={styles.cardHeader}>
+                    <Text style={styles.cardName} numberOfLines={1}>
+                      {item.name || item.breed || 'Unnamed Animal'}
+                    </Text>
+                    <View
                       style={[
-                        styles.statusText,
-                        animalStatus(item.id) === 'Healthy' ? styles.statusTextHealthy : styles.statusTextTreatment,
+                        styles.statusBadge,
+                        animalStatus(item.id) === 'Healthy' ? styles.statusHealthy : styles.statusTreatment,
                       ]}
                     >
-                      {animalStatus(item.id)}
-                    </Text>
+                      <Text
+                        style={[
+                          styles.statusText,
+                          animalStatus(item.id) === 'Healthy' ? styles.statusTextHealthy : styles.statusTextTreatment,
+                        ]}
+                      >
+                        {animalStatus(item.id)}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <Text style={styles.cardDesc} numberOfLines={1}>
+                    {cardDescription(item)}
+                  </Text>
+
+                  {/* Specs Row */}
+                  <View style={styles.specsRow}>
+                    <View style={styles.specItem}>
+                      <Text style={styles.specLabel}>Species</Text>
+                      <Text style={styles.specValue} numberOfLines={1}>
+                        {item.breed || 'N/A'}
+                      </Text>
+                    </View>
+                    <View style={styles.specItem}>
+                      <Text style={styles.specLabel}>Age</Text>
+                      <Text style={styles.specValue}>{formatAge(item.age, item.dob)}</Text>
+                    </View>
+                    <View style={styles.specItem}>
+                      <Text style={styles.specLabel}>Weight</Text>
+                      <Text style={styles.specValue}>{formatWeight(item.weight)}</Text>
+                    </View>
                   </View>
                 </View>
-
-                <Text style={styles.cardDesc} numberOfLines={1}>
-                  {item.color ? `${item.color} colored coat and characteristics` : 'cream-colored coat and tuft of blond hair'}
-                </Text>
-
-                {/* Specs Row */}
-                <View style={styles.specsRow}>
-                  <View style={styles.specItem}>
-                    <Text style={styles.specLabel}>Species</Text>
-                    <Text style={styles.specValue}>{item.breed}</Text>
-                  </View>
-                  <View style={styles.specItem}>
-                    <Text style={styles.specLabel}>Age</Text>
-                    <Text style={styles.specValue}>{item.age}</Text>
-                  </View>
-                  <View style={styles.specItem}>
-                    <Text style={styles.specLabel}>Weight</Text>
-                    <Text style={styles.specValue}>{item.weight}</Text>
-                  </View>
-                </View>
-              </View>
-            </TouchableOpacity>
-          ));
-          })()}
-      </ScrollView>
+              </TouchableOpacity>
+            ))
+          )}
+        </ScrollView>
       </View>
 
       {/* Floating Add Animal Button */}
@@ -196,6 +353,74 @@ export default function AnimalsListScreen() {
         </View>
         <Text style={styles.fabText}>Add Animal</Text>
       </TouchableOpacity>
+
+      {/* Advanced Filter Modal */}
+      <Modal
+        visible={filterModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setFilterModalVisible(false)}
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={() => setFilterModalVisible(false)} activeOpacity={0.7}>
+              <Ionicons name="close" size={24} color="#1A1817" />
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Filters</Text>
+            <TouchableOpacity onPress={resetAdvancedFilters} activeOpacity={0.7}>
+              <Text style={styles.modalClearBtn}>Reset</Text>
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView contentContainerStyle={styles.modalBodyContent}>
+            <Text style={styles.modalSectionTitle}>Gender</Text>
+            <View style={styles.modalChipRow}>
+              {(['All', 'Male', 'Female'] as const).map((g) => {
+                const isActive = genderFilter === g;
+                return (
+                  <TouchableOpacity
+                    key={g}
+                    style={[styles.modalChip, isActive && styles.modalChipActive]}
+                    onPress={() => setGenderFilter(g)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.modalChipText, isActive && styles.modalChipTextActive]}>{g}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <Text style={[styles.modalSectionTitle, { marginTop: 24 }]}>Status</Text>
+            <View style={styles.modalChipRow}>
+              {(['All', 'Healthy', 'Under Treatment'] as const).map((s) => {
+                const isActive = statusFilter === s;
+                return (
+                  <TouchableOpacity
+                    key={s}
+                    style={[styles.modalChip, isActive && styles.modalChipActive]}
+                    onPress={() => setStatusFilter(s)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.modalChipText, isActive && styles.modalChipTextActive]}>{s}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </ScrollView>
+
+          <View style={styles.modalFooter}>
+            <TouchableOpacity
+              style={styles.modalApplyBtn}
+              activeOpacity={0.85}
+              onPress={() => setFilterModalVisible(false)}
+            >
+              <Text style={styles.modalApplyText}>
+                Show {displayAnimals.length} animal{displayAnimals.length === 1 ? '' : 's'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -234,9 +459,6 @@ const styles = StyleSheet.create({
     height: 40,
     gap: 6,
   },
-  langGlobe: {
-    fontSize: 14,
-  },
   langText: {
     fontSize: 13,
     fontWeight: '700',
@@ -255,10 +477,6 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  bellIcon: {
-    fontSize: 18,
-    color: '#FFFFFF',
-  },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -272,21 +490,24 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   searchIcon: {
-    fontSize: 16,
     marginRight: 10,
-    color: '#7C7672',
   },
   searchInput: {
     flex: 1,
     height: '100%',
     fontSize: 15,
     color: '#1A1817',
+    padding: 0,
+  },
+  filtersScroll: {
+    flexGrow: 0,
+    height: 40,
+    marginBottom: 16,
   },
   filtersContainer: {
     paddingHorizontal: 24,
-    height: 40,
-    marginBottom: 20,
     gap: 8,
+    alignItems: 'center',
   },
   filterIconButton: {
     flexDirection: 'row',
@@ -298,15 +519,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     height: 36,
   },
-  filterIcon: {
-    fontSize: 14,
-    marginRight: 6,
-    color: '#7C7672',
-  },
   filterIconText: {
     fontSize: 13,
     color: '#1A1817',
     fontWeight: '600',
+  },
+  filterDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#BD632F',
+    marginLeft: 6,
   },
   filterTab: {
     justifyContent: 'center',
@@ -331,9 +554,16 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '700',
   },
+  listWrapper: {
+    flex: 1,
+  },
+  listScroll: {
+    flex: 1,
+  },
   listContainer: {
     paddingHorizontal: 24,
     paddingBottom: 120,
+    flexGrow: 1,
   },
   card: {
     flexDirection: 'row',
@@ -351,8 +581,8 @@ const styles = StyleSheet.create({
     borderColor: '#E6E1DC',
   },
   cardImage: {
-    width: 84,
-    height: 84,
+    width: 100,
+    height: 100,
     borderRadius: 16,
   },
   cardContent: {
@@ -364,6 +594,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    minHeight: 24,
   },
   cardName: {
     fontSize: 18,
@@ -406,6 +637,7 @@ const styles = StyleSheet.create({
   },
   specItem: {
     alignItems: 'flex-start',
+    flexShrink: 1,
   },
   specLabel: {
     fontSize: 12,
@@ -420,7 +652,7 @@ const styles = StyleSheet.create({
   },
   fab: {
     position: 'absolute',
-    bottom: 85,
+    bottom: 105,
     alignSelf: 'center',
     flexDirection: 'row',
     alignItems: 'center',
@@ -451,6 +683,84 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   fabText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: '#FAF9F6',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E6E1DC',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1A1817',
+  },
+  modalClearBtn: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#BD632F',
+  },
+  modalBodyContent: {
+    padding: 24,
+  },
+  modalSectionTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1A1817',
+    marginBottom: 12,
+  },
+  modalChipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  modalChip: {
+    paddingHorizontal: 16,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E6E1DC',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalChipActive: {
+    backgroundColor: '#BD632F',
+    borderColor: '#BD632F',
+  },
+  modalChipText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#1A1817',
+  },
+  modalChipTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  modalFooter: {
+    paddingHorizontal: 24,
+    paddingBottom: 16,
+    paddingTop: 8,
+  },
+  modalApplyBtn: {
+    backgroundColor: '#BD632F',
+    borderRadius: 28,
+    height: 52,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalApplyText: {
     color: '#FFFFFF',
     fontSize: 15,
     fontWeight: '700',

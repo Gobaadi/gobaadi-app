@@ -43,8 +43,18 @@ export default function WalletScreen() {
   const router = useRouter();
   const isDoctor = useRequireDoctor();
 
-  const { data: balanceData, isLoading: balanceLoading } = useGetBalanceQuery();
-  const { data: transactionsData, isLoading: txLoading } = useGetTransactionsQuery({ page: '1', limit: '10' });
+  const {
+    data: balanceData,
+    isLoading: balanceLoading,
+    isError: balanceError,
+    refetch: refetchBalance,
+  } = useGetBalanceQuery();
+  const {
+    data: transactionsData,
+    isLoading: txLoading,
+    isError: txError,
+    refetch: refetchTransactions,
+  } = useGetTransactionsQuery({ page: '1', limit: '10' });
 
   const totalEarnings = balanceData?.balance ?? 0;
   const thisMonthEarnings = useMemo(() => {
@@ -75,6 +85,34 @@ export default function WalletScreen() {
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#BD632F" />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (balanceError || txError) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
+            <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Wallet</Text>
+          <View style={{ width: 40 }} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <Ionicons name="alert-circle-outline" size={48} color="#DC2626" />
+          <Text style={styles.errorText}>Failed to load wallet</Text>
+          <TouchableOpacity
+            style={styles.retryBtn}
+            activeOpacity={0.8}
+            onPress={() => {
+              if (balanceError) refetchBalance();
+              if (txError) refetchTransactions();
+            }}
+          >
+            <Text style={styles.retryBtnText}>Try Again</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -177,7 +215,7 @@ export default function WalletScreen() {
             <View key={tx.id} style={styles.transactionCard}>
               <View style={styles.transactionLeft}>
                 <View style={styles.transactionAvatar}>
-                  <Ionicons name={getTransactionIcon(tx.type)} size={18} color="#BD632F" />
+                  <Ionicons name={getTransactionIcon(tx.description)} size={18} color="#BD632F" />
                 </View>
                 <View>
                   <Text style={styles.transactionName}>{tx.description || tx.type}</Text>
@@ -201,7 +239,10 @@ const styles = StyleSheet.create({
   backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#BD632F', justifyContent: 'center', alignItems: 'center' },
   headerTitle: { fontSize: 20, fontWeight: '800', color: '#1A1817' },
   scrollContainer: { paddingHorizontal: 20, paddingBottom: 100 },
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
+  errorText: { fontSize: 14, fontWeight: '500', color: '#DC2626', marginTop: 8 },
+  retryBtn: { backgroundColor: '#BD632F', paddingVertical: 12, paddingHorizontal: 28, borderRadius: 24, marginTop: 8 },
+  retryBtnText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
   totalLabel: { fontSize: 14, fontWeight: '500', color: '#7C7672', marginBottom: 4 },
   totalAmount: { fontSize: 36, fontWeight: '800', color: '#BD632F', marginBottom: 12 },
   earningsCard: { backgroundColor: '#FFFFFF', borderRadius: 16, borderWidth: 1, borderColor: '#E6E1DC', padding: 16, marginBottom: 20 },

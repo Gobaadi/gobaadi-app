@@ -1058,11 +1058,16 @@ model NotificationPreference {
   id                   Int      @id @default(autoincrement())
   userId               Int      @unique
   appointmentReminders Boolean  @default(true)
-  promotions           Boolean  @default(true)
+  promotionalOffers    Boolean  @default(true)
   chatMessages         Boolean  @default(true)
   prescriptionUpdates  Boolean  @default(true)
   labResults           Boolean  @default(true)
   vaccinationReminders Boolean  @default(true)
+  systemUpdates        Boolean  @default(true)
+  weatherAlerts        Boolean  @default(true)
+  taskReminders        Boolean  @default(true)
+  followUpReminders    Boolean  @default(true)
+  hygieneReminders     Boolean  @default(true)
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 

@@ -22,6 +22,10 @@ import { IncomingCallProvider } from '@/components/IncomingCallProvider';
 
 SplashScreen.preventAutoHideAsync();
 
+export const unstable_settings = {
+  initialRouteName: '(tabs)',
+};
+
 function RootNavigator() {
   const { user, isBootstrapping } = useSelector((state: RootState) => state.auth);
   const router = useRouter();
@@ -65,14 +69,14 @@ function RootNavigator() {
           <Stack.Screen name="password-setup" />
         </Stack.Protected>
 
+        <Stack.Protected guard={!!user}>
+          <Stack.Screen name="(tabs)" />
+        </Stack.Protected>
+
         {/* Onboarding success screens: accessible after OTP stores tokens */}
         <Stack.Screen name="congo" />
         <Stack.Screen name="doctor-registration-success" />
         <Stack.Screen name="account-details" />
-
-        <Stack.Protected guard={!!user}>
-          <Stack.Screen name="(tabs)" />
-        </Stack.Protected>
 
         <Stack.Screen name="animal-details" />
         <Stack.Screen name="my-animal-detail" />
