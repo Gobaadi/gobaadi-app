@@ -334,8 +334,10 @@ export class DoctorsService {
     if (dto.experience !== undefined) doctor.experience = dto.experience;
     if (dto.avatar !== undefined) doctor.avatar = dto.avatar;
     if (dto.bio !== undefined) doctor.bio = dto.bio;
-    if (dto.consultationFee !== undefined) doctor.consultationFee = dto.consultationFee;
-    if (dto.licenseNumber !== undefined) doctor.licenseNumber = dto.licenseNumber;
+    if (dto.consultationFee !== undefined)
+      doctor.consultationFee = dto.consultationFee;
+    if (dto.licenseNumber !== undefined)
+      doctor.licenseNumber = dto.licenseNumber;
     return this.doctorRepository.save(doctor);
   }
 

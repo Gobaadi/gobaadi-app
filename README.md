@@ -104,10 +104,24 @@ gobadi-app/
 │       ├── prescriptions/        # Prescription management
 │       ├── clinics/              # Veterinary clinics
 │       ├── search/               # Full-text search (Meilisearch)
+│       ├── dashboard/            # DashboardModule — admin web API (/dashboard/*)
 │       └── seed/                 # Database seeder
 │
 └── docker-compose.yml            # Development services
 ```
+
+### One backend, two frontends
+
+This NestJS backend is the **single API** for both frontends:
+
+| Frontend | Consumer | API surface |
+|---|---|---|
+| Expo mobile app (`app/`) | farmers, doctors, clinics | app modules (`/auth`, `/animals`, `/appointments`, `/search`, …) |
+| Admin dashboard web (`gobadi-dashboard-jidan/frontend`) | admins, super admins | `DashboardModule` — all routes under `/dashboard/*` |
+
+`DashboardModule` (`src/dashboard/`) exposes 58 admin APIs: user/admin auth, admin CRUD, user lists, analytics (17), animals, notifications, and search — guarded by type-agnostic JWT guards (`DashboardAuthGuard`, `DashboardAdminGuard` = `admin`/`super_admin`, `DashboardSuperAdminGuard` = `super_admin`).
+
+**Kept routes:** legacy `/admin/*` and `GET /search` routes remain in the app modules for Expo and other existing clients — they were not deleted during the dashboard migration.
 
 ---
 

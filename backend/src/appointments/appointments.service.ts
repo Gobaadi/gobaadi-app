@@ -592,7 +592,9 @@ export class AppointmentsService {
       page?: number;
       limit?: number;
     },
-  ): Promise<AppointmentWithPatient[] | PaginatedResult<AppointmentWithPatient>> {
+  ): Promise<
+    AppointmentWithPatient[] | PaginatedResult<AppointmentWithPatient>
+  > {
     const doctor = await this.doctorsService.getDoctorByUserId(doctorUserId);
     if (!doctor) {
       throw new ForbiddenException('No doctor profile linked to this account');

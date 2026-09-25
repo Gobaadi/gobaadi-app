@@ -12,7 +12,12 @@ import {
 
 const LOGO_PATH = path.join(__dirname, 'assets/logo.png');
 
-let LOGO_ATTACHMENT: { filename: string; content: Buffer; contentType: string; contentId: string } | null = null;
+let LOGO_ATTACHMENT: {
+  filename: string;
+  content: Buffer;
+  contentType: string;
+  contentId: string;
+} | null = null;
 try {
   LOGO_ATTACHMENT = {
     filename: 'gobadi-logo.png',
@@ -47,7 +52,13 @@ export class MailProcessor extends WorkerHost {
         bodyHtml: `<p>Hello,</p><p>Use the code below to verify your Gobadi account. It's valid for 5 minutes.</p>${renderOtpCode(otp)}<p>If you didn't request this, you can safely ignore this email.</p>`,
       });
 
-      const sent = await this.mailService.sendMail(email, subject, text, html, attachments);
+      const sent = await this.mailService.sendMail(
+        email,
+        subject,
+        text,
+        html,
+        attachments,
+      );
       if (!sent) throw new Error(`Failed to send OTP email to ${email}`);
       return { success: true, email };
     }
@@ -62,8 +73,17 @@ export class MailProcessor extends WorkerHost {
         bodyHtml: `<p>Hello,</p><p>Your appointment with <strong>${doctorName}</strong> has been successfully scheduled:</p><ul><li><strong>Date:</strong> ${date}</li><li><strong>Time:</strong> ${time}</li></ul><p>Thank you for choosing Gobadi!</p>`,
       });
 
-      const sent = await this.mailService.sendMail(email, subject, text, html, attachments);
-      if (!sent) throw new Error(`Failed to send booking confirmation email to ${email}`);
+      const sent = await this.mailService.sendMail(
+        email,
+        subject,
+        text,
+        html,
+        attachments,
+      );
+      if (!sent)
+        throw new Error(
+          `Failed to send booking confirmation email to ${email}`,
+        );
       return { success: true, email };
     }
 
@@ -77,8 +97,17 @@ export class MailProcessor extends WorkerHost {
         bodyHtml: `<p>Hello,</p><p>This is a reminder that your appointment with <strong>${doctorName}</strong> is coming up:</p><ul><li><strong>Date:</strong> ${date}</li><li><strong>Time:</strong> ${time}</li></ul>`,
       });
 
-      const sent = await this.mailService.sendMail(email, subject, text, html, attachments);
-      if (!sent) throw new Error(`Failed to send appointment reminder email to ${email}`);
+      const sent = await this.mailService.sendMail(
+        email,
+        subject,
+        text,
+        html,
+        attachments,
+      );
+      if (!sent)
+        throw new Error(
+          `Failed to send appointment reminder email to ${email}`,
+        );
       return { success: true, email };
     }
 
@@ -92,8 +121,17 @@ export class MailProcessor extends WorkerHost {
         bodyHtml: `<p>Hello,</p><p>Payment for your order <strong>${orderId}</strong> has been successfully verified!</p><ul><li><strong>Amount:</strong> BDT ${totalPrice}</li><li><strong>Transaction ID:</strong> ${transactionId}</li></ul><p>Thank you for shopping on Gobadi!</p>`,
       });
 
-      const sent = await this.mailService.sendMail(email, subject, text, html, attachments);
-      if (!sent) throw new Error(`Failed to send payment confirmation email to ${email}`);
+      const sent = await this.mailService.sendMail(
+        email,
+        subject,
+        text,
+        html,
+        attachments,
+      );
+      if (!sent)
+        throw new Error(
+          `Failed to send payment confirmation email to ${email}`,
+        );
       return { success: true, email };
     }
   }

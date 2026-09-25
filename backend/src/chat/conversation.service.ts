@@ -109,7 +109,9 @@ export class ConversationService {
     const update: any = { lastMessageAt: new Date() };
     if (messageText !== undefined) {
       update.lastMessageText =
-        messageText.length > 200 ? `${messageText.slice(0, 200)}…` : messageText;
+        messageText.length > 200
+          ? `${messageText.slice(0, 200)}…`
+          : messageText;
     }
     await this.conversationRepository.update(conversationId, update);
   }

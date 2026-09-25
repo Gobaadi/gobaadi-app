@@ -9,7 +9,10 @@ import { ApiResponse } from '../response.interface';
 import { PaginatedResult } from '../paginated-result.interface';
 
 @Injectable()
-export class ResponseInterceptor<T> implements NestInterceptor<T, ApiResponse<T>> {
+export class ResponseInterceptor<T> implements NestInterceptor<
+  T,
+  ApiResponse<T>
+> {
   intercept(
     context: ExecutionContext,
     next: CallHandler,
@@ -30,7 +33,13 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, ApiResponse<T>
         }
 
         // Handle PaginatedResult
-        if (data && typeof data === 'object' && 'data' in data && 'page' in data && 'total' in data) {
+        if (
+          data &&
+          typeof data === 'object' &&
+          'data' in data &&
+          'page' in data &&
+          'total' in data
+        ) {
           const paginated = data as PaginatedResult<any>;
           const totalPage = Math.ceil(paginated.total / paginated.limit);
           return {

@@ -232,7 +232,10 @@ export class ChatGateway
     });
     if (!appointment) return;
 
-    if (appointment.doctorId !== user.sub && appointment.patientId !== user.sub) {
+    if (
+      appointment.doctorId !== user.sub &&
+      appointment.patientId !== user.sub
+    ) {
       return;
     }
 
@@ -268,7 +271,10 @@ export class ChatGateway
     });
     if (!appointment) return;
 
-    if (appointment.doctorId !== user.sub && appointment.patientId !== user.sub) {
+    if (
+      appointment.doctorId !== user.sub &&
+      appointment.patientId !== user.sub
+    ) {
       return;
     }
 
@@ -301,7 +307,10 @@ export class ChatGateway
     });
     if (!appointment) return;
 
-    if (appointment.doctorId !== user.sub && appointment.patientId !== user.sub) {
+    if (
+      appointment.doctorId !== user.sub &&
+      appointment.patientId !== user.sub
+    ) {
       return;
     }
 

@@ -20,9 +20,12 @@ export class AdminJwtAuthGuard implements CanActivate {
     }
 
     try {
-      const payload = await this.jwtService.verifyAsync<AdminJwtPayload>(token, {
-        secret: getRequiredJwtSecret(),
-      });
+      const payload = await this.jwtService.verifyAsync<AdminJwtPayload>(
+        token,
+        {
+          secret: getRequiredJwtSecret(),
+        },
+      );
       if (payload.type !== 'admin') {
         throw new UnauthorizedException('Invalid token type');
       }

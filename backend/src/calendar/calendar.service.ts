@@ -140,11 +140,7 @@ export class CalendarService {
     });
   }
 
-  async getBadges(
-    doctorId: number,
-    month: number,
-    year: number,
-  ) {
+  async getBadges(doctorId: number, month: number, year: number) {
     const startDate = new Date(year, month - 1, 1);
     const endDate = new Date(year, month, 0, 23, 59, 59);
 
