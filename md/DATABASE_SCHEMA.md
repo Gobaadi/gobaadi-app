@@ -320,11 +320,16 @@ All tables use **TypeORM** with **PostgreSQL**.
 | `id` | `int` | PK, auto-increment | |
 | `userId` | `int` | unique, indexed | |
 | `appointmentReminders` | `boolean` | default: `true` | |
-| `promotions` | `boolean` | default: `true` | |
+| `promotionalOffers` | `boolean` | default: `true` | |
 | `chatMessages` | `boolean` | default: `true` | |
 | `prescriptionUpdates` | `boolean` | default: `true` | |
 | `labResults` | `boolean` | default: `true` | |
 | `vaccinationReminders` | `boolean` | default: `true` | |
+| `systemUpdates` | `boolean` | default: `true` | |
+| `weatherAlerts` | `boolean` | default: `true` | |
+| `taskReminders` | `boolean` | default: `true` | |
+| `followUpReminders` | `boolean` | default: `true` | |
+| `hygieneReminders` | `boolean` | default: `true` | |
 | `createdAt` | `timestamptz` | auto | |
 | `updatedAt` | `timestamptz` | auto | |
 

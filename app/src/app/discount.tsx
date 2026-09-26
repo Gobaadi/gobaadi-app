@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import {
   useGetDiscountForPatientQuery,
   useEditDiscountMutation,
+  useRemoveDiscountMutation,
 } from '@/store/discountsApi';
 
 const QUICK_DISCOUNTS = [5, 10, 15, 20];
@@ -40,6 +41,7 @@ export default function DiscountScreen() {
     { skip: !patientId }
   );
   const [editDiscount, { isLoading: saving }] = useEditDiscountMutation();
+  const [removeDiscount, { isLoading: removing }] = useRemoveDiscountMutation();
 
   const initialPercent = existingDiscount?.percent || 0;
   const [selectedDiscount, setSelectedDiscount] = useState<number>(
@@ -83,6 +85,29 @@ export default function DiscountScreen() {
     } catch {
       Alert.alert('Error', 'Failed to update discount');
     }
+  };
+
+  const handleRemove = () => {
+    if (!existingDiscount) return;
+    Alert.alert(
+      'Remove Discount',
+      'Are you sure you want to remove this patient\'s discount?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await removeDiscount(existingDiscount.id).unwrap();
+              router.push('/apply-discount');
+            } catch {
+              Alert.alert('Error', 'Failed to remove discount');
+            }
+          },
+        },
+      ]
+    );
   };
 
   if (discountLoading) {
@@ -208,6 +233,20 @@ export default function DiscountScreen() {
             <Text style={styles.continueBtnText}>Continue</Text>
           )}
         </TouchableOpacity>
+        {existingDiscount && (
+          <TouchableOpacity
+            style={[styles.removeBtn, removing && { opacity: 0.6 }]}
+            onPress={handleRemove}
+            activeOpacity={0.85}
+            disabled={removing}
+          >
+            {removing ? (
+              <ActivityIndicator size="small" color="#E74C3C" />
+            ) : (
+              <Text style={styles.removeBtnText}>Remove Discount</Text>
+            )}
+          </TouchableOpacity>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -413,6 +452,20 @@ const styles = StyleSheet.create({
   },
   continueBtnText: {
     color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  removeBtn: {
+    height: 52,
+    borderRadius: 26,
+    borderWidth: 1.5,
+    borderColor: '#E74C3C',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  removeBtnText: {
+    color: '#E74C3C',
     fontSize: 16,
     fontWeight: '700',
   },

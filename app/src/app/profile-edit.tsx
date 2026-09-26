@@ -13,7 +13,7 @@ import {
   Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import {
   useGetMyDoctorProfileQuery,
@@ -26,8 +26,13 @@ import {
 
 type Tab = 'about' | 'experience' | 'credentials';
 
+function parseTab(tab?: string): Tab {
+  return tab === 'experience' || tab === 'credentials' ? tab : 'about';
+}
+
 export default function ProfileEditScreen() {
   const router = useRouter();
+  const { tab } = useLocalSearchParams<{ tab?: string }>();
   const isDoctor = useRequireDoctor();
   if (!isDoctor) return null;
 
@@ -39,7 +44,7 @@ export default function ProfileEditScreen() {
   const [updateQualifications, { isLoading: savingQualifications }] = useUpdateQualificationsMutation();
   const [updateSpecializations, { isLoading: savingSpecializations }] = useUpdateSpecializationsMutation();
 
-  const [activeTab, setActiveTab] = useState<Tab>('about');
+  const [activeTab, setActiveTab] = useState<Tab>(() => parseTab(tab));
 
   // About fields
   const [name, setName] = useState('');
@@ -213,7 +218,7 @@ export default function ProfileEditScreen() {
           {isSaving ? (
             <ActivityIndicator size="small" color="#FFFFFF" />
           ) : (
-            <Text style={styles.saveBtnText}>Save</Text>
+            <Text style={styles.saveBtnText}>Save Changes</Text>
           )}
         </TouchableOpacity>
       </View>

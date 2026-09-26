@@ -179,8 +179,8 @@ export default function AppTabs() {
         name="market"
         options={{
           title: 'Market',
-          href: isDoctor ? null : undefined,
-          tabBarItemStyle: isDoctor ? { display: 'none' } : undefined,
+          href: null,
+          tabBarItemStyle: { display: 'none' },
         }}
       />
 

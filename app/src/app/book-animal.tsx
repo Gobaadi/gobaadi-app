@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -77,7 +77,7 @@ export default function BookAnimalScreen() {
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         {/* Animal Details */}
         <Text style={styles.sectionTitle}>Animal Details</Text>
-        
+
         <View style={styles.animalCard}>
           <Image
             source={animal?.images?.[0] ? { uri: animal.images[0] } : require('@/assets/images/albino_buffalo.png')}

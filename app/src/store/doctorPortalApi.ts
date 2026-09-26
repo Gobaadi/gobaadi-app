@@ -34,6 +34,7 @@ export interface DoctorAppointment {
   id: number;
   doctorId: number;
   patientId: number;
+  animalId?: number;
   patientName?: string;
   patientPhone?: string;
   animalName?: string;
@@ -48,6 +49,9 @@ export interface DoctorAppointment {
   endAt: string;
   status: AppointmentStatus;
   createdAt: string;
+  doctorName?: string;
+  doctorSpecialty?: string;
+  doctorAvatar?: string;
 }
 
 export interface TodayStats {
@@ -97,10 +101,11 @@ export interface Availability extends AvailabilityEntry {
 export const doctorPortalApi = createApi({
   reducerPath: 'doctorPortalApi',
   baseQuery: baseQueryWithReauth,
-  tagTypes: ['DoctorBookings', 'Availability', 'Dashboard'],
+  tagTypes: ['DoctorBookings', 'Availability', 'Dashboard', 'DoctorProfile'],
   endpoints: (builder) => ({
     getMyDoctorProfile: builder.query<DoctorProfile, void>({
       query: () => '/doctors/me',
+      providesTags: ['DoctorProfile'],
     }),
     getDoctorBookings: builder.query<DoctorAppointment[], { filter?: string; consultationType?: string; search?: string } | void>({
       query: (params) => {
@@ -208,7 +213,7 @@ export const doctorPortalApi = createApi({
         method: 'PATCH',
         body: { qualifications },
       }),
-      invalidatesTags: ['Dashboard'],
+      invalidatesTags: ['Dashboard', 'DoctorProfile'],
     }),
     updateSpecializations: builder.mutation<DoctorProfile, string[]>({
       query: (specializations) => ({
@@ -216,7 +221,7 @@ export const doctorPortalApi = createApi({
         method: 'PATCH',
         body: { specializations },
       }),
-      invalidatesTags: ['Dashboard'],
+      invalidatesTags: ['Dashboard', 'DoctorProfile'],
     }),
     updateExperiences: builder.mutation<DoctorProfile, DoctorExperience[]>({
       query: (experiences) => ({
@@ -224,7 +229,7 @@ export const doctorPortalApi = createApi({
         method: 'PATCH',
         body: { experiences },
       }),
-      invalidatesTags: ['Dashboard'],
+      invalidatesTags: ['Dashboard', 'DoctorProfile'],
     }),
     updateProfile: builder.mutation<
       DoctorProfile,
@@ -243,7 +248,7 @@ export const doctorPortalApi = createApi({
         method: 'PATCH',
         body: dto,
       }),
-      invalidatesTags: ['Dashboard'],
+      invalidatesTags: ['Dashboard', 'DoctorProfile'],
     }),
     getAvailability: builder.query<Availability[], number>({
       query: (doctorId) => `/doctors/${doctorId}/availability`,

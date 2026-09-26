@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -8,12 +9,18 @@ import {
   Alert,
   Dimensions,
   Share,
+  FlatList,
+  ImageSourcePropType,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useGetAnimalByIdQuery, useDeleteAnimalMutation } from '@/store/animalsApi';
 
 const { width } = Dimensions.get('window');
+const AUTO_SCROLL_MS = 3000;
+const SLIDE_HEIGHT = 320;
 
 export default function MyAnimalDetailScreen() {
   const router = useRouter();
@@ -22,6 +29,59 @@ export default function MyAnimalDetailScreen() {
 
   const { data: animal } = useGetAnimalByIdQuery(id, { skip: !id });
   const [deleteAnimal] = useDeleteAnimalMutation();
+  const [activeIndex, setActiveIndex] = useState(0);
+  const listRef = useRef<FlatList<ImageSourcePropType>>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const fallbackImage = animal?.breed?.toLowerCase().includes('buffalo')
+    ? require('@/assets/images/albino_buffalo.png')
+    : require('@/assets/images/bangladeshi_cow.png');
+
+  const photos: ImageSourcePropType[] = (() => {
+    const fromPhotos = (animal?.photos || []).filter(Boolean).map((uri) => ({ uri }));
+    if (fromPhotos.length > 0) return fromPhotos;
+    if (animal?.image) return [{ uri: animal.image }];
+    return [fallbackImage];
+  })();
+
+  const photoCount = photos.length;
+  const dotIndex = photoCount > 0 ? activeIndex % photoCount : 0;
+
+  const startAutoScroll = useCallback(() => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    intervalRef.current = setInterval(() => {
+      setActiveIndex((prev) => {
+        const next = (prev + 1) % photoCount;
+        listRef.current?.scrollToIndex({ index: next, animated: true });
+        return next;
+      });
+    }, AUTO_SCROLL_MS);
+  }, [photoCount]);
+
+  useEffect(() => {
+    if (photoCount <= 1) return;
+
+    startAutoScroll();
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, [photoCount, startAutoScroll]);
+
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const index = Math.round(event.nativeEvent.contentOffset.x / width);
+    if (index !== activeIndex && index >= 0 && index < photoCount) {
+      setActiveIndex(index);
+    }
+  };
+
+  const handleMomentumEnd = () => {
+    if (photoCount <= 1) return;
+    startAutoScroll();
+  };
 
   function confirmDelete() {
     Alert.alert('Delete Animal', `Remove ${animal?.name || 'this animal'} from your farm?`, [
@@ -55,12 +115,6 @@ export default function MyAnimalDetailScreen() {
     Alert.alert('Added to Marketplace', `${animal?.name || 'Animal'} has been listed in the Gobadi marketplace.`);
   }
 
-  const image = animal?.image
-    ? { uri: animal.image }
-    : animal?.breed?.toLowerCase().includes('buffalo')
-      ? require('@/assets/images/albino_buffalo.png')
-      : require('@/assets/images/bangladeshi_cow.png');
-
   const basicInfo = [
     { label: 'Date Of Birth', value: animal?.dob || 'N/A' },
     { label: 'Gender', value: animal?.gender || 'N/A' },
@@ -79,17 +133,31 @@ export default function MyAnimalDetailScreen() {
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         {/* Header Image Area */}
         <View style={styles.imageContainer}>
-          <Image source={image} style={styles.mainImage} resizeMode="cover" />
+          <FlatList
+            ref={listRef}
+            key={id}
+            data={photos}
+            keyExtractor={(_, index) => `photo-${index}`}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
+            onScroll={handleScroll}
+            onMomentumScrollEnd={handleMomentumEnd}
+            scrollEventThrottle={16}
+            renderItem={({ item }) => (
+              <Image source={item} style={styles.mainImage} resizeMode="cover" />
+            )}
+          />
 
           {/* Carousel Pagination Dots */}
-          <View style={styles.paginationRow}>
-            {[0, 1, 2, 3, 4, 5, 6].map((i) => (
-              <View
-                key={i}
-                style={[styles.dot, i === 1 && styles.dotActive]}
-              />
-            ))}
-          </View>
+          {photoCount > 1 && (
+            <View style={styles.paginationRow}>
+              {photos.map((_, i) => (
+                <View key={i} style={[styles.dot, i === dotIndex && styles.dotActive]} />
+              ))}
+            </View>
+          )}
 
           {/* Header Action Buttons */}
           <SafeAreaView edges={['top']} style={styles.imageHeaderSafeArea}>
@@ -190,7 +258,7 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     width: '100%',
-    height: 320,
+    height: SLIDE_HEIGHT,
     position: 'relative',
     backgroundColor: '#EBE5DF',
   },

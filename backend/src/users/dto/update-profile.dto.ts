@@ -7,6 +7,11 @@ export class UpdateProfileDto {
   @IsString()
   name?: string;
 
+  @ApiPropertyOptional({ example: '+8801712345678' })
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
   @ApiPropertyOptional({ example: 'ramesh@example.com' })
   @IsOptional()
   @IsEmail()

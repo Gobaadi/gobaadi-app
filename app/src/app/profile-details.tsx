@@ -227,10 +227,10 @@ export default function ProfileDetailsScreen() {
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Experiences</Text>
               <View style={styles.sectionActions}>
-                <TouchableOpacity activeOpacity={0.7}>
+                <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/profile-edit' as any)}>
                   <Ionicons name="add-circle-outline" size={22} color="#7C7672" />
                 </TouchableOpacity>
-                <TouchableOpacity activeOpacity={0.7}>
+                <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/profile-edit' as any)}>
                   <Ionicons name="pencil-outline" size={20} color="#7C7672" />
                 </TouchableOpacity>
               </View>
@@ -271,10 +271,10 @@ export default function ProfileDetailsScreen() {
             <View style={[styles.sectionHeader, { marginTop: 20 }]}>
               <Text style={styles.sectionTitle}>Qualifications</Text>
               <View style={styles.sectionActions}>
-                <TouchableOpacity activeOpacity={0.7}>
+                <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/profile-edit' as any)}>
                   <Ionicons name="add-circle-outline" size={22} color="#7C7672" />
                 </TouchableOpacity>
-                <TouchableOpacity activeOpacity={0.7}>
+                <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/profile-edit' as any)}>
                   <Ionicons name="pencil-outline" size={20} color="#7C7672" />
                 </TouchableOpacity>
               </View>
@@ -307,7 +307,10 @@ export default function ProfileDetailsScreen() {
             {/* Specialization */}
             <View style={[styles.sectionHeader, { marginTop: 20 }]}>
               <Text style={styles.sectionTitle}>Specialization</Text>
-              <TouchableOpacity activeOpacity={0.7}>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => router.push({ pathname: '/profile-edit', params: { tab: 'credentials' } } as any)}
+              >
                 <Ionicons name="pencil-outline" size={20} color="#7C7672" />
               </TouchableOpacity>
             </View>
@@ -323,7 +326,11 @@ export default function ProfileDetailsScreen() {
               ) : (
                 <Text style={[styles.tagText, styles.noDataText]}>No specializations added</Text>
               )}
-              <TouchableOpacity style={styles.addMoreTag} activeOpacity={0.8}>
+              <TouchableOpacity
+                style={styles.addMoreTag}
+                activeOpacity={0.8}
+                onPress={() => router.push({ pathname: '/profile-edit', params: { tab: 'credentials' } } as any)}
+              >
                 <Ionicons name="add" size={16} color="#BD632F" />
                 <Text style={styles.addMoreTagText}>Add more..</Text>
               </TouchableOpacity>

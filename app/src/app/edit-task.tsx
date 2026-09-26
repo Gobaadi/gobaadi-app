@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useUpdateTaskMutation } from '@/store/tasksApi';
+import { apiErrorMessage } from '@/utils/api-error';
 
 const SHEDS = [
   { id: 'cow', name: 'Cow Shed', icon: '🐮' },
@@ -89,7 +90,23 @@ export default function EditTaskScreen() {
   const [endTime, setEndTime] = useState(parsed.end);
 
   async function handleUpdate() {
-    if (!params.id) return;
+    if (!params.id) {
+      Alert.alert(
+        'Could not update task',
+        'Missing task ID. Go back to the task list and try again.',
+      );
+      return;
+    }
+
+    const taskId = Number(params.id);
+    if (!Number.isFinite(taskId) || taskId <= 0) {
+      Alert.alert(
+        'Could not update task',
+        'Invalid task ID. Go back to the task list and try again.',
+      );
+      return;
+    }
+
     const typeObj = TASK_TYPES.find((t) => t.id === selectedType);
     const shedObj = SHEDS.find((s) => s.id === selectedShed);
     const title = customTask.trim() || `${typeObj?.name || 'Task'} - ${shedObj?.name || 'Farm'}`;
@@ -103,7 +120,7 @@ export default function EditTaskScreen() {
 
     try {
       await updateTask({
-        id: Number(params.id),
+        id: taskId,
         title,
         detail: detailParts.join(' | '),
         scheduledTime,
@@ -112,7 +129,7 @@ export default function EditTaskScreen() {
       router.back();
     } catch (err) {
       console.log('Error updating task:', err);
-      Alert.alert('Could not update task', 'Please try again.');
+      Alert.alert('Could not update task', apiErrorMessage(err, 'Please try again.'));
     }
   }
 

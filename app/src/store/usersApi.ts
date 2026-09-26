@@ -15,7 +15,6 @@ export interface UpdateProfileInput {
   name?: string;
   email?: string;
   phone?: string;
-  location?: string;
 }
 
 export const usersApi = createApi({
