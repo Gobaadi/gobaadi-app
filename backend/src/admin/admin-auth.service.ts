@@ -60,10 +60,12 @@ export class AdminAuthService {
       id: admin.id,
       name: admin.name,
       email: admin.email,
+      phone: admin.phone,
       avatar: admin.avatar,
       role: admin.role,
       designation: admin.designation,
       status: admin.status,
+      verified: admin.verified,
       createdAt: admin.createdAt,
       updatedAt: admin.updatedAt,
     };
@@ -103,10 +105,11 @@ export class AdminAuthService {
     email: string,
     password: string,
   ): Promise<AdminTokenPair & { admin: Partial<Admin> }> {
+    const normalizedEmail = email.trim().toLowerCase();
     const admin = await this.adminRepository
       .createQueryBuilder('admin')
       .addSelect('admin.password')
-      .where('admin.email = :email', { email })
+      .where('admin.email = :email', { email: normalizedEmail })
       .getOne();
 
     if (!admin || !admin.password) {
@@ -116,6 +119,12 @@ export class AdminAuthService {
     const matches = await bcrypt.compare(password, admin.password);
     if (!matches) {
       throw new UnauthorizedException('Invalid credentials.');
+    }
+
+    if (!admin.verified) {
+      throw new ForbiddenException(
+        'Please verify your account before signing in.',
+      );
     }
 
     if (admin.status === AdminStatus.DEACTIVE) {
@@ -350,9 +359,7 @@ export class AdminAuthService {
     return { success: true, message: 'Password reset successfully.' };
   }
 
-  async refreshTokens(
-    rawRefreshToken: string,
-  ): Promise<AdminTokenPair> {
+  async refreshTokens(rawRefreshToken: string): Promise<AdminTokenPair> {
     if (!rawRefreshToken) {
       throw new UnauthorizedException('Refresh token is required');
     }
@@ -381,9 +388,7 @@ export class AdminAuthService {
     return this.issueTokenPair(admin);
   }
 
-  async logout(
-    rawRefreshToken: string,
-  ): Promise<{ success: boolean }> {
+  async logout(rawRefreshToken: string): Promise<{ success: boolean }> {
     if (!rawRefreshToken) {
       return { success: true };
     }
@@ -414,7 +419,13 @@ export class AdminAuthService {
 
   async updateProfile(
     adminId: number,
-    dto: { name?: string; designation?: AdminDesignation; password?: string },
+    dto: {
+      name?: string;
+      designation?: AdminDesignation;
+      password?: string;
+      avatar?: string;
+      phone?: string;
+    },
   ): Promise<Partial<Admin>> {
     const admin = await this.adminRepository.findOneBy({ id: adminId });
     if (!admin) {
@@ -423,6 +434,8 @@ export class AdminAuthService {
 
     if (dto.name) admin.name = dto.name;
     if (dto.designation) admin.designation = dto.designation;
+    if (dto.avatar !== undefined) admin.avatar = dto.avatar;
+    if (dto.phone !== undefined) admin.phone = dto.phone;
     if (dto.password) {
       admin.password = await bcrypt.hash(dto.password, 10);
     }

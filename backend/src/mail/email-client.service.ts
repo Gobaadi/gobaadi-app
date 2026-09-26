@@ -65,7 +65,8 @@ export class EmailClientService {
         message: 'Email service not configured',
         error: {
           code: 'SERVICE_NOT_CONFIGURED',
-          description: 'EMAIL_SERVICE_URL or EMAIL_API_KEY env vars are missing',
+          description:
+            'EMAIL_SERVICE_URL or EMAIL_API_KEY env vars are missing',
         },
       };
     }
@@ -126,9 +127,7 @@ export class EmailClientService {
           continue;
         }
 
-        this.logger.error(
-          `Email request to Vercel failed: ${error.message}`,
-        );
+        this.logger.error(`Email request to Vercel failed: ${error.message}`);
         return {
           success: false,
           message: 'Email service request failed',

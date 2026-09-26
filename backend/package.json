@@ -53,6 +53,7 @@
     "nodemailer": "^9.1.1",
     "openai": "^7.4.0",
     "pg": "^8.22.0",
+    "redis": "^6.2.1",
     "reflect-metadata": "^0.2.2",
     "resend": "^6.18.1",
     "rxjs": "^7.8.1",

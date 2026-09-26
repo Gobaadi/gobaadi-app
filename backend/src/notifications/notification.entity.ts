@@ -58,6 +58,12 @@ export class Notification {
   @Column({ default: false })
   isRead: boolean;
 
+  @Column({ nullable: true })
+  occurrence?: string;
+
+  @Column({ nullable: true })
+  time?: string;
+
   @CreateDateColumn()
   createdAt: Date;
 }

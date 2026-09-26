@@ -31,6 +31,9 @@ export class PushToken {
   @Column({ nullable: true })
   deviceId?: string;
 
+  @Column({ nullable: true })
+  os?: string;
+
   @CreateDateColumn()
   createdAt: Date;
 

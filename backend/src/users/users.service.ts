@@ -5,7 +5,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ILike, Repository } from 'typeorm';
+import { Repository, ILike } from 'typeorm';
+import * as bcrypt from 'bcrypt';
 import { User, UserRole } from './user.entity';
 import { PaginatedResult } from '../common/paginated-result.interface';
 
@@ -195,6 +196,8 @@ export class UsersService {
       phone?: string;
       role?: UserRole;
       profilePhoto?: string;
+      avatar?: string;
+      password?: string;
       verified?: boolean;
     },
   ): Promise<User> {
@@ -203,19 +206,30 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
     if (data.email && data.email !== user.email) {
-      const existing = await this.userRepository.findOneBy({ email: data.email });
+      const existing = await this.userRepository.findOneBy({
+        email: data.email,
+      });
       if (existing && existing.id !== id) {
         throw new ConflictException('Email already in use');
       }
     }
     if (data.phone && data.phone !== user.phone) {
-      const existing = await this.userRepository.findOneBy({ phone: data.phone });
+      const existing = await this.userRepository.findOneBy({
+        phone: data.phone,
+      });
       if (existing && existing.id !== id) {
         throw new ConflictException('Phone already in use');
       }
     }
-    Object.assign(user, data);
-    return this.userRepository.save(user);
+    const { password, ...rest } = data;
+    Object.assign(user, rest);
+    if (password) {
+      user.password = await bcrypt.hash(password, 10);
+    }
+    const saved = await this.userRepository.save(user);
+    const { password: savedPassword, ...safe } = saved;
+    void savedPassword;
+    return safe;
   }
 
   async remove(id: number): Promise<{ success: boolean }> {

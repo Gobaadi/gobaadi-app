@@ -73,13 +73,17 @@ export class ChatController {
   @Roles(UserRole.DOCTOR)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create or find a conversation with a patient' })
-  @ApiBody({ schema: { properties: { patientId: { type: 'number', example: 1 } } } })
+  @ApiBody({
+    schema: { properties: { patientId: { type: 'number', example: 1 } } },
+  })
   @ApiResponse({ status: 201, description: 'Conversation created or found' })
   async createConversation(
     @CurrentUser() user: JwtPayload,
     @Body('patientId') patientId: number,
   ): Promise<Conversation> {
-    const doctor = await this.doctorRepository.findOne({ where: { userId: user.sub } });
+    const doctor = await this.doctorRepository.findOne({
+      where: { userId: user.sub },
+    });
     if (!doctor) {
       throw new ForbiddenException('No doctor profile linked to this account');
     }

@@ -166,7 +166,10 @@ export class AppointmentsController {
     required: false,
     description: 'Number of days to look back (default 2)',
   })
-  @ApiResponse({ status: 200, description: 'List of recent completed appointments' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of recent completed appointments',
+  })
   async getRecentCompleted(
     @CurrentUser() user: JwtPayload,
     @Query('days') days?: string,
@@ -184,9 +187,21 @@ export class AppointmentsController {
   @ApiOperation({
     summary: "Search/filter the current doctor's appointments",
   })
-  @ApiQuery({ name: 'search', required: false, description: 'Search by patient or animal name' })
-  @ApiQuery({ name: 'date', required: false, description: 'Filter by date (YYYY-MM-DD)' })
-  @ApiQuery({ name: 'consultationType', required: false, enum: ConsultationType })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description: 'Search by patient or animal name',
+  })
+  @ApiQuery({
+    name: 'date',
+    required: false,
+    description: 'Filter by date (YYYY-MM-DD)',
+  })
+  @ApiQuery({
+    name: 'consultationType',
+    required: false,
+    enum: ConsultationType,
+  })
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'limit', required: false })
   @ApiResponse({ status: 200, description: 'Filtered appointments' })
@@ -197,7 +212,9 @@ export class AppointmentsController {
     @Query('consultationType') consultationType?: ConsultationType,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
-  ): Promise<AppointmentWithPatient[] | PaginatedResult<AppointmentWithPatient>> {
+  ): Promise<
+    AppointmentWithPatient[] | PaginatedResult<AppointmentWithPatient>
+  > {
     return this.appointmentsService.searchDoctorAppointments(user.sub, {
       search,
       date,
@@ -285,7 +302,9 @@ export class AppointmentsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.DOCTOR)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Start a consultation for an appointment (doctor-only)' })
+  @ApiOperation({
+    summary: 'Start a consultation for an appointment (doctor-only)',
+  })
   @ApiParam({ name: 'id', example: '1' })
   @ApiResponse({ status: 200, description: 'Consultation started' })
   async startConsultation(

@@ -9,7 +9,12 @@ import { DoctorTimeOff } from '../time-off/doctor-time-off.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Doctor, Availability, Appointment, DoctorTimeOff]),
+    TypeOrmModule.forFeature([
+      Doctor,
+      Availability,
+      Appointment,
+      DoctorTimeOff,
+    ]),
   ],
   controllers: [DoctorsController],
   providers: [DoctorsService],

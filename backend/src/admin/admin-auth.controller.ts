@@ -1,6 +1,11 @@
 import { Controller, Post, Body, Get, Patch, UseGuards } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
-import { ApiOperation, ApiResponse, ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { AdminAuthService } from './admin-auth.service';
 import { AdminLoginDto } from './dto/admin-login.dto';
 import { AdminRegisterDto } from './dto/admin-register.dto';
@@ -58,7 +63,10 @@ export class AdminAuthController {
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @ApiOperation({ summary: 'Reset admin password' })
   async resetPassword(@Body() body: AdminResetPasswordDto) {
-    return this.adminAuthService.resetPassword(body.resetToken, body.newPassword);
+    return this.adminAuthService.resetPassword(
+      body.resetToken,
+      body.newPassword,
+    );
   }
 
   @Post('refresh')
