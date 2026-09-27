@@ -74,6 +74,8 @@ export default function BookSlotScreen() {
   const handleConfirmSlot = async () => {
     if (!selectedTimeSlot || !doctor) return;
 
+    console.log("selectedTimeSlot", selectedTimeSlot)
+
     // Require booking reason
     if (!bookingReason.trim()) {
       Alert.alert('Required', 'Please enter a booking reason before proceeding.');
@@ -115,7 +117,7 @@ export default function BookSlotScreen() {
   // Custom Dec 2026 calendar data
   // Dec 1, 2026 starts on Tuesday
   const daysOfWeek = ['SUM', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-  
+
   // Grid layout helper:
   // Week rows representing Dec 2026:
   const calendarRows = [
@@ -173,145 +175,145 @@ export default function BookSlotScreen() {
 
       {doctor && (
         <>
-      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-        {/* Doctor Summary Card */}
-        <View style={styles.doctorCard}>
-          <Image source={doctor.image} style={styles.doctorPortrait} />
-          <View style={styles.doctorDetails}>
-            <Text style={styles.doctorName}>{doctor.name}</Text>
-            <Text style={styles.doctorSpecialty}>{doctor.specialty}</Text>
-            <View style={styles.ratingLocationRow}>
-              <Text style={styles.locationPin}>📍</Text>
-              <Text style={styles.locationTextMeta}>{doctor.location}</Text>
-            </View>
-            <View style={styles.ratingRow}>
-              <Text style={styles.starIcon}>⭐</Text>
-              <Text style={styles.ratingValue}>{doctor.rating}</Text>
-              <Text style={styles.reviewsText}>| {doctor.reviews} Reviews</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Visit Type */}
-        <Text style={styles.sectionTitle}>Visit Type</Text>
-        <TouchableOpacity style={styles.dropdownTrigger} activeOpacity={0.8}>
-          <Text style={styles.dropdownValue}>{selectedVisitType}</Text>
-          <Text style={styles.dropdownArrow}>▼</Text>
-        </TouchableOpacity>
-
-        {/* Booking Reason */}
-        <Text style={styles.sectionTitle}>Booking Reason</Text>
-        <TextInput
-          style={styles.reasonInput}
-          placeholder="Description of symptoms"
-          placeholderTextColor="#A39E99"
-          value={bookingReason}
-          onChangeText={setBookingReason}
-          multiline
-          textAlignVertical="top"
-        />
-
-        {/* Date Selection */}
-        <Text style={styles.sectionTitle}>Select Date</Text>
-        
-        <View style={styles.calendarContainer}>
-          {/* Calendar Month Header */}
-          <View style={styles.calendarHeader}>
-            <TouchableOpacity><Text style={styles.navArrow}>‹</Text></TouchableOpacity>
-            <Text style={styles.calendarMonthTitle}>December 2026</Text>
-            <TouchableOpacity><Text style={styles.navArrow}>›</Text></TouchableOpacity>
-          </View>
-
-          {/* Days of Week Header */}
-          <View style={styles.weekdaysRow}>
-            {daysOfWeek.map((day) => (
-              <Text key={day} style={styles.weekdayLabel}>{day}</Text>
-            ))}
-          </View>
-
-          {/* Calendar Grid */}
-          <View style={styles.calendarGrid}>
-            {calendarRows.map((row, rowIndex) => (
-              <View key={rowIndex} style={styles.calendarGridRow}>
-                {row.map((dayNum, colIndex) => {
-                  const isCurrentMonth = !(
-                    (rowIndex === 0 && dayNum > 20) ||
-                    (rowIndex === 4 && dayNum === 1)
-                  );
-                  const isSelected = isCurrentMonth && dayNum === selectedDay;
-
-                  return (
-                    <TouchableOpacity
-                      key={colIndex}
-                      style={[
-                        styles.calendarDayCell,
-                        isSelected && styles.calendarDayCellSelected
-                      ]}
-                      onPress={() => handleDaySelect(dayNum, rowIndex)}
-                      disabled={!isCurrentMonth}
-                      activeOpacity={0.7}
-                    >
-                      <Text
-                        style={[
-                          styles.calendarDayText,
-                          !isCurrentMonth && styles.calendarDayTextDisabled,
-                          isSelected && styles.calendarDayTextSelected
-                        ]}
-                      >
-                        {dayNum}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
+          <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+            {/* Doctor Summary Card */}
+            <View style={styles.doctorCard}>
+              <Image source={doctor.image} style={styles.doctorPortrait} />
+              <View style={styles.doctorDetails}>
+                <Text style={styles.doctorName}>{doctor.name}</Text>
+                <Text style={styles.doctorSpecialty}>{doctor.specialty}</Text>
+                <View style={styles.ratingLocationRow}>
+                  <Text style={styles.locationPin}>📍</Text>
+                  <Text style={styles.locationTextMeta}>{doctor.location}</Text>
+                </View>
+                <View style={styles.ratingRow}>
+                  <Text style={styles.starIcon}>⭐</Text>
+                  <Text style={styles.ratingValue}>{doctor.rating}</Text>
+                  <Text style={styles.reviewsText}>| {doctor.reviews} Reviews</Text>
+                </View>
               </View>
-            ))}
+            </View>
+
+            {/* Visit Type */}
+            <Text style={styles.sectionTitle}>Visit Type</Text>
+            <TouchableOpacity style={styles.dropdownTrigger} activeOpacity={0.8}>
+              <Text style={styles.dropdownValue}>{selectedVisitType}</Text>
+              <Text style={styles.dropdownArrow}>▼</Text>
+            </TouchableOpacity>
+
+            {/* Booking Reason */}
+            <Text style={styles.sectionTitle}>Booking Reason</Text>
+            <TextInput
+              style={styles.reasonInput}
+              placeholder="Description of symptoms"
+              placeholderTextColor="#A39E99"
+              value={bookingReason}
+              onChangeText={setBookingReason}
+              multiline
+              textAlignVertical="top"
+            />
+
+            {/* Date Selection */}
+            <Text style={styles.sectionTitle}>Select Date</Text>
+
+            <View style={styles.calendarContainer}>
+              {/* Calendar Month Header */}
+              <View style={styles.calendarHeader}>
+                <TouchableOpacity><Text style={styles.navArrow}>‹</Text></TouchableOpacity>
+                <Text style={styles.calendarMonthTitle}>December 2026</Text>
+                <TouchableOpacity><Text style={styles.navArrow}>›</Text></TouchableOpacity>
+              </View>
+
+              {/* Days of Week Header */}
+              <View style={styles.weekdaysRow}>
+                {daysOfWeek.map((day) => (
+                  <Text key={day} style={styles.weekdayLabel}>{day}</Text>
+                ))}
+              </View>
+
+              {/* Calendar Grid */}
+              <View style={styles.calendarGrid}>
+                {calendarRows.map((row, rowIndex) => (
+                  <View key={rowIndex} style={styles.calendarGridRow}>
+                    {row.map((dayNum, colIndex) => {
+                      const isCurrentMonth = !(
+                        (rowIndex === 0 && dayNum > 20) ||
+                        (rowIndex === 4 && dayNum === 1)
+                      );
+                      const isSelected = isCurrentMonth && dayNum === selectedDay;
+
+                      return (
+                        <TouchableOpacity
+                          key={colIndex}
+                          style={[
+                            styles.calendarDayCell,
+                            isSelected && styles.calendarDayCellSelected
+                          ]}
+                          onPress={() => handleDaySelect(dayNum, rowIndex)}
+                          disabled={!isCurrentMonth}
+                          activeOpacity={0.7}
+                        >
+                          <Text
+                            style={[
+                              styles.calendarDayText,
+                              !isCurrentMonth && styles.calendarDayTextDisabled,
+                              isSelected && styles.calendarDayTextSelected
+                            ]}
+                          >
+                            {dayNum}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                ))}
+              </View>
+            </View>
+
+            {/* Time Slot Selection */}
+            <View style={styles.timeSlotsHeader}>
+              <Text style={styles.timeSlotsTitle}>Select Time Slot</Text>
+            </View>
+
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.timeSlotsRow}
+            >
+              {availableSlots.length === 0 ? (
+                <Text style={styles.noSlotsText}>No open slots for this date.</Text>
+              ) : null}
+              {availableSlots.map((slot) => {
+                const isSelected = slot === selectedTimeSlot;
+                return (
+                  <TouchableOpacity
+                    key={slot}
+                    style={[styles.timeSlotChip, isSelected && styles.timeSlotChipSelected]}
+                    onPress={() => setSelectedTimeSlot(slot)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.timeSlotText, isSelected && styles.timeSlotTextSelected]}>
+                      {slot}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </ScrollView>
+
+          {/* Floating Bottom Confirm Button */}
+          <View style={styles.bottomBar}>
+            <TouchableOpacity
+              style={[styles.confirmButton, (!selectedTimeSlot || !bookingReason.trim() || !doctor) && { opacity: 0.5 }]}
+              onPress={handleConfirmSlot}
+              disabled={!selectedTimeSlot || !bookingReason.trim() || !doctor}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.confirmButtonText}>
+                {isReschedule ? '📅 Confirm Reschedule' : '📅 Confirm Slot'}
+              </Text>
+            </TouchableOpacity>
           </View>
-        </View>
-
-        {/* Time Slot Selection */}
-        <View style={styles.timeSlotsHeader}>
-          <Text style={styles.timeSlotsTitle}>Select Time Slot</Text>
-        </View>
-
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.timeSlotsRow}
-        >
-          {availableSlots.length === 0 ? (
-            <Text style={styles.noSlotsText}>No open slots for this date.</Text>
-          ) : null}
-          {availableSlots.map((slot) => {
-            const isSelected = slot === selectedTimeSlot;
-            return (
-              <TouchableOpacity
-                key={slot}
-                style={[styles.timeSlotChip, isSelected && styles.timeSlotChipSelected]}
-                onPress={() => setSelectedTimeSlot(slot)}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.timeSlotText, isSelected && styles.timeSlotTextSelected]}>
-                  {slot}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      </ScrollView>
-
-      {/* Floating Bottom Confirm Button */}
-      <View style={styles.bottomBar}>
-        <TouchableOpacity
-          style={[styles.confirmButton, (!selectedTimeSlot || !bookingReason.trim() || !doctor) && { opacity: 0.5 }]}
-          onPress={handleConfirmSlot}
-          disabled={!selectedTimeSlot || !bookingReason.trim() || !doctor}
-          activeOpacity={0.85}
-        >
-          <Text style={styles.confirmButtonText}>
-            {isReschedule ? '📅 Confirm Reschedule' : '📅 Confirm Slot'}
-          </Text>
-        </TouchableOpacity>
-      </View>
         </>
       )}
     </SafeAreaView>

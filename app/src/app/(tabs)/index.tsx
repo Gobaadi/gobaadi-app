@@ -371,9 +371,15 @@ export default function HomeDashboard() {
                   <View style={styles.checkeredIcon}>
                     <View style={styles.checkeredGrid} />
                   </View>
-                  <View>
-                    <Text style={styles.taskTitle}>{task.title}</Text>
-                    {task.detail ? <Text style={styles.taskDetail}>{task.detail}</Text> : null}
+                  <View style={styles.taskTextCol}>
+                    <Text style={styles.taskTitle} numberOfLines={1}>
+                      {task.title}
+                    </Text>
+                    {task.detail ? (
+                      <Text style={styles.taskDetail} numberOfLines={2} ellipsizeMode="tail">
+                        {task.detail}
+                      </Text>
+                    ) : null}
                   </View>
                 </View>
 
@@ -880,19 +886,29 @@ const styles = StyleSheet.create({
   taskItemLeft: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
+    minWidth: 0,
+    marginRight: 12,
+  },
+  taskTextCol: {
+    flex: 1,
+    minWidth: 0,
   },
   taskTitle: {
     fontSize: 15,
     fontWeight: '700',
     color: '#1A1817',
+    flexShrink: 1,
   },
   taskDetail: {
     fontSize: 13,
     color: '#7C7672',
     marginTop: 2,
+    flexShrink: 1,
   },
   taskItemRight: {
     alignItems: 'flex-end',
+    flexShrink: 0,
   },
   taskTime: {
     fontSize: 13,
