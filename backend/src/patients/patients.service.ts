@@ -29,10 +29,7 @@ export class PatientsService {
     const pageSize = limit && limit > 0 ? limit : 20;
 
     const animalWhere = search
-      ? [
-          { name: ILike(`%${search}%`) },
-          { breed: ILike(`%${search}%`) },
-        ]
+      ? [{ name: ILike(`%${search}%`) }, { breed: ILike(`%${search}%`) }]
       : {};
 
     const [animals, total] = await this.animalRepository.findAndCount({

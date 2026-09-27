@@ -23,7 +23,13 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { PaginatedResult } from '../common/paginated-result.interface';
-import { IsOptional, IsString, IsEmail, IsBoolean, IsEnum } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsEmail,
+  IsBoolean,
+  IsEnum,
+} from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 class AdminUpdateUserDto {
@@ -107,9 +113,7 @@ export class AdminUsersController {
   @Delete(':id')
   @ApiOperation({ summary: 'Delete a user (admin only)' })
   @ApiResponse({ status: 200, description: 'User deleted' })
-  async deleteUser(
-    @Param('id') id: string,
-  ): Promise<{ success: boolean }> {
+  async deleteUser(@Param('id') id: string): Promise<{ success: boolean }> {
     return this.usersService.remove(parseInt(id, 10));
   }
 }

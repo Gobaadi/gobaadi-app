@@ -16,7 +16,15 @@ dns.setDefaultResultOrder('ipv4first');
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.use(helmet());
-  app.enableCors();
+  const frontendUrl = process.env.FRONTEND_URL;
+  app.enableCors({
+    origin: [
+      frontendUrl,
+      'http://localhost:3000',
+      'http://localhost:7000',
+    ].filter((origin): origin is string => Boolean(origin)),
+    credentials: true,
+  });
   app.use(cookieParser());
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   app.useGlobalFilters(new HttpExceptionFilter());

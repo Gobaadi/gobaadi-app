@@ -1,7 +1,12 @@
 import 'dotenv/config';
 import { DataSource } from 'typeorm';
 import * as bcrypt from 'bcrypt';
-import { Admin, AdminRole, AdminDesignation, AdminStatus } from '../admin/entities/admin.entity';
+import {
+  Admin,
+  AdminRole,
+  AdminDesignation,
+  AdminStatus,
+} from '../admin/entities/admin.entity';
 import { User, UserRole } from '../users/user.entity';
 
 const SEED_PASSWORD = 'Password123!';
@@ -26,8 +31,10 @@ async function seed() {
 
   // Seed super_admin
   const adminRepo = dataSource.getRepository(Admin);
-  const existingAdmin = await adminRepo.findOneBy({ email: 'admin@gobadi.com' });
-  
+  const existingAdmin = await adminRepo.findOneBy({
+    email: 'admin@gobadi.com',
+  });
+
   if (!existingAdmin) {
     await adminRepo.save({
       name: 'Super Admin',

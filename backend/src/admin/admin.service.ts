@@ -27,10 +27,7 @@ export class AdminService {
     search?: string,
   ): Promise<PaginatedResult<Admin>> {
     const where = search
-      ? [
-          { name: ILike(`%${search}%`) },
-          { email: ILike(`%${search}%`) },
-        ]
+      ? [{ name: ILike(`%${search}%`) }, { email: ILike(`%${search}%`) }]
       : {};
     const [data, total] = await this.adminRepository.findAndCount({
       where,
@@ -62,8 +59,9 @@ export class AdminService {
     avatar?: string;
     status?: AdminStatus;
   }): Promise<Admin> {
+    const email = dto.email.trim().toLowerCase();
     const existing = await this.adminRepository.findOneBy({
-      email: dto.email,
+      email,
     });
     if (existing) {
       throw new ConflictException('An admin with this email already exists.');
@@ -71,8 +69,8 @@ export class AdminService {
 
     const passwordHash = await bcrypt.hash(dto.password, 10);
     const admin = this.adminRepository.create({
-      name: dto.name,
-      email: dto.email,
+      name: dto.name?.trim(),
+      email,
       password: passwordHash,
       role: dto.role || AdminRole.ADMIN,
       designation: dto.designation,
@@ -80,7 +78,10 @@ export class AdminService {
       status: dto.status || AdminStatus.ACTIVE,
       verified: true,
     });
-    return this.adminRepository.save(admin);
+    const saved = await this.adminRepository.save(admin);
+    const { password, ...safe } = saved;
+    void password;
+    return safe as Admin;
   }
 
   async update(
@@ -88,6 +89,7 @@ export class AdminService {
     dto: {
       name?: string;
       email?: string;
+      password?: string;
       role?: AdminRole;
       designation?: AdminDesignation;
       avatar?: string;
@@ -99,17 +101,30 @@ export class AdminService {
       throw new NotFoundException('Admin not found');
     }
 
-    if (dto.email && dto.email !== admin.email) {
-      const existing = await this.adminRepository.findOneBy({
-        email: dto.email,
-      });
-      if (existing) {
-        throw new ConflictException('Email already in use');
+    const { password, ...rest } = dto;
+    if (rest.email !== undefined) {
+      const newEmail = rest.email.trim().toLowerCase();
+      if (newEmail !== admin.email) {
+        const existing = await this.adminRepository.findOneBy({
+          email: newEmail,
+        });
+        if (existing) {
+          throw new ConflictException('Email already in use');
+        }
+        rest.email = newEmail;
+      } else {
+        delete rest.email;
       }
     }
 
-    Object.assign(admin, dto);
-    return this.adminRepository.save(admin);
+    Object.assign(admin, rest);
+    if (password) {
+      admin.password = await bcrypt.hash(password, 10);
+    }
+    const saved = await this.adminRepository.save(admin);
+    const { password: savedPassword, ...safe } = saved;
+    void savedPassword;
+    return safe as Admin;
   }
 
   async delete(id: number): Promise<{ success: boolean }> {

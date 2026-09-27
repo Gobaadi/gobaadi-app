@@ -73,11 +73,15 @@ export class VideoCallService {
     }
 
     if (appointment.status === AppointmentStatus.CANCELLED) {
-      throw new BadRequestException('Cannot start a call for a cancelled appointment');
+      throw new BadRequestException(
+        'Cannot start a call for a cancelled appointment',
+      );
     }
 
     if (appointment.status === AppointmentStatus.COMPLETED) {
-      throw new BadRequestException('Cannot start a call for a completed appointment');
+      throw new BadRequestException(
+        'Cannot start a call for a completed appointment',
+      );
     }
 
     const now = new Date();

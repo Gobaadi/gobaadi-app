@@ -56,6 +56,7 @@ import { BadgesModule } from './badges/badges.module';
 import { VideoCallModule } from './video-call/video-call.module';
 import { AiModule } from './ai/ai.module';
 import { PatientsModule } from './patients/patients.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -67,7 +68,9 @@ import { PatientsModule } from './patients/patients.module';
       password: process.env.DB_PASSWORD || 'postgrespassword',
       database: process.env.DB_DATABASE || 'gobadi',
       autoLoadEntities: true,
-      synchronize: true,
+      synchronize: false,
+      retryAttempts: 10,
+      retryDelay: 3000,
       ssl:
         process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
     }),
@@ -140,6 +143,7 @@ import { PatientsModule } from './patients/patients.module';
     VideoCallModule,
     AiModule,
     PatientsModule,
+    DashboardModule,
   ],
   controllers: [AppController, HealthController],
   providers: [

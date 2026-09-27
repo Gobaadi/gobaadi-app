@@ -31,7 +31,11 @@ import type { JwtPayload } from '../auth/jwt-payload.interface';
 import { PaginatedResult } from '../common/paginated-result.interface';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Appointment, AppointmentStatus, ConsultationType } from '../appointments/appointment.entity';
+import {
+  Appointment,
+  AppointmentStatus,
+  ConsultationType,
+} from '../appointments/appointment.entity';
 import { DoctorTimeOff } from '../time-off/doctor-time-off.entity';
 
 @ApiTags('doctors')
@@ -253,9 +257,7 @@ export class DoctorsController {
     status: 200,
     description: 'Doctor stats: patients count, consultations, experience',
   })
-  async getMyDashboardStats(
-    @CurrentUser() user: JwtPayload,
-  ) {
+  async getMyDashboardStats(@CurrentUser() user: JwtPayload) {
     const doctor = await this.doctorsService.getDoctorByUserId(user.sub);
     if (!doctor) {
       throw new ForbiddenException('No doctor profile linked to this account');
@@ -288,9 +290,21 @@ export class DoctorsController {
   @Get(':id/schedule')
   @ApiOperation({ summary: 'Get doctor schedule with optional filters' })
   @ApiParam({ name: 'id', example: '1' })
-  @ApiQuery({ name: 'date', required: false, description: 'Filter by date (YYYY-MM-DD)' })
-  @ApiQuery({ name: 'consultationType', required: false, enum: ConsultationType })
-  @ApiQuery({ name: 'status', required: false, description: 'Filter by status' })
+  @ApiQuery({
+    name: 'date',
+    required: false,
+    description: 'Filter by date (YYYY-MM-DD)',
+  })
+  @ApiQuery({
+    name: 'consultationType',
+    required: false,
+    enum: ConsultationType,
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    description: 'Filter by status',
+  })
   @ApiQuery({ name: 'month', required: false, description: 'Month (1-12)' })
   @ApiQuery({ name: 'year', required: false, description: 'Year (e.g. 2026)' })
   @ApiResponse({ status: 200, description: 'Doctor schedule' })
@@ -317,8 +331,19 @@ export class DoctorsController {
         dayEnd,
       });
     } else if (month && year) {
-      const startDate = new Date(parseInt(year, 10), parseInt(month, 10) - 1, 1);
-      const endDate = new Date(parseInt(year, 10), parseInt(month, 10), 0, 23, 59, 59);
+      const startDate = new Date(
+        parseInt(year, 10),
+        parseInt(month, 10) - 1,
+        1,
+      );
+      const endDate = new Date(
+        parseInt(year, 10),
+        parseInt(month, 10),
+        0,
+        23,
+        59,
+        59,
+      );
       qb.andWhere('a.startAt >= :startDate AND a.startAt <= :endDate', {
         startDate,
         endDate,
@@ -326,7 +351,9 @@ export class DoctorsController {
     }
 
     if (consultationType) {
-      qb.andWhere('a.consultationType = :consultationType', { consultationType });
+      qb.andWhere('a.consultationType = :consultationType', {
+        consultationType,
+      });
     }
 
     if (status) {
@@ -345,11 +372,24 @@ export class DoctorsController {
   }
 
   @Get(':id/schedule/list')
-  @ApiOperation({ summary: 'Get doctor schedule as flat list for current month (ascending)' })
+  @ApiOperation({
+    summary: 'Get doctor schedule as flat list for current month (ascending)',
+  })
   @ApiParam({ name: 'id', example: '1' })
-  @ApiQuery({ name: 'month', required: false, description: 'Month (1-12), default current' })
-  @ApiQuery({ name: 'year', required: false, description: 'Year, default current' })
-  @ApiResponse({ status: 200, description: 'Flat list of appointments sorted by date ascending' })
+  @ApiQuery({
+    name: 'month',
+    required: false,
+    description: 'Month (1-12), default current',
+  })
+  @ApiQuery({
+    name: 'year',
+    required: false,
+    description: 'Year, default current',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Flat list of appointments sorted by date ascending',
+  })
   async getDoctorScheduleList(
     @Param('id') id: string,
     @Query('month') month?: string,

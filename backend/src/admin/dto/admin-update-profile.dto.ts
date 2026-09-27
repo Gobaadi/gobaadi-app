@@ -1,6 +1,15 @@
-import { IsOptional, IsString, MinLength, MaxLength, IsEnum } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  MinLength,
+  MaxLength,
+  IsIn,
+} from 'class-validator';
+import { Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { AdminDesignation } from '../entities/admin.entity';
+
+const ADMIN_DESIGNATION_VALUES = Object.values(AdminDesignation);
 
 export class AdminUpdateProfileDto {
   @ApiPropertyOptional({ example: 'Admin User' })
@@ -9,9 +18,14 @@ export class AdminUpdateProfileDto {
   @MinLength(1)
   name?: string;
 
-  @ApiPropertyOptional({ enum: AdminDesignation })
+  @ApiPropertyOptional({
+    enum: [...ADMIN_DESIGNATION_VALUES, 'co-founder'],
+    description:
+      'Admin designation. Accepts both "co_founder" and legacy "co-founder".',
+  })
   @IsOptional()
-  @IsEnum(AdminDesignation)
+  @Transform(({ value }) => (value === 'co-founder' ? 'co_founder' : value))
+  @IsIn([...ADMIN_DESIGNATION_VALUES, 'co-founder'])
   designation?: AdminDesignation;
 
   @ApiPropertyOptional({ example: 'newpassword123' })
@@ -20,4 +34,10 @@ export class AdminUpdateProfileDto {
   @MinLength(6)
   @MaxLength(100)
   password?: string;
+
+  @ApiPropertyOptional({ example: '+8801XXXXXXXXX' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  phone?: string;
 }
