@@ -50,14 +50,16 @@ export default function PasswordSetupScreen() {
     }
 
     try {
-      await registerApi({
+      const payload = {
         name: params.name || '',
         identifier: params.identifier || '',
         password,
         role: params.role || 'doctor',
         bvcRegistrationNumber: params.bvcNumber,
-      }).unwrap();
-      
+      };
+      console.log('[1/8][FE password-setup.tsx] Doctor register submit →', payload);
+      await registerApi(payload).unwrap();
+      console.log('[1/8][FE password-setup.tsx] Register API success → navigating to /otp');
       router.push({
         pathname: '/otp',
         params: {
@@ -69,6 +71,7 @@ export default function PasswordSetupScreen() {
         }
       });
     } catch (err: any) {
+      console.log('[1/8][FE password-setup.tsx] Register API FAILED →', err?.data ?? err?.message ?? err);
       setErrorMessage(err?.data?.message || 'Could not create account. Please try again.');
     }
   };

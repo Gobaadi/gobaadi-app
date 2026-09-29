@@ -39,7 +39,10 @@ export const authApi = createApi({
       MessageResponse,
       { name?: string; identifier: string; password: string; role: string; bvcRegistrationNumber?: string }
     >({
-      query: (body) => ({ url: '/auth/register', method: 'POST', body }),
+      query: (body) => {
+        console.log('[2/8][FE authApi.ts] → POST /auth/register body:', body);
+        return { url: '/auth/register', method: 'POST', body };
+      },
     }),
 
     login: builder.mutation<
@@ -57,16 +60,23 @@ export const authApi = createApi({
     }),
 
     sendOtp: builder.mutation<OtpResponse, { phone: string; purpose?: 'login' | 'verify' | 'reset' }>({
-      query: (body) => ({ url: '/auth/send-otp', method: 'POST', body }),
+      query: (body) => {
+        console.log('[2/8][FE authApi.ts] → POST /auth/send-otp body:', body);
+        return { url: '/auth/send-otp', method: 'POST', body };
+      },
     }),
 
     verifyOtp: builder.mutation<
       VerifyOtpResponse,
       { phone: string; code: string; purpose?: 'login' | 'verify' | 'reset' }
     >({
-      query: (body) => ({ url: '/auth/verify-otp', method: 'POST', body }),
+      query: (body) => {
+        console.log('[2/8][FE authApi.ts] → POST /auth/verify-otp body:', body);
+        return { url: '/auth/verify-otp', method: 'POST', body };
+      },
       onQueryStarted: async (_arg, { dispatch, queryFulfilled }) => {
         const { data } = await queryFulfilled;
+        console.log('[2/8][FE authApi.ts] ← POST /auth/verify-otp response:', data);
         if (data.accessToken && data.refreshToken) {
           const user = (data.user as AuthUser) ?? jwtToAuthUser(data.accessToken);
           dispatch(
