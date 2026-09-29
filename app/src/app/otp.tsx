@@ -90,7 +90,9 @@ export default function OTPScreen() {
     setErrorMessage('');
 
     try {
+      console.log('[7/8][FE otp.tsx] Verify OTP submit →', { phone, code, purpose });
       const res = await verifyOtp({ phone, code, purpose }).unwrap();
+      console.log('[7/8][FE otp.tsx] Verify OTP success ←', res);
       if (!res.verified) {
         setErrorMessage(res.message);
         return;
@@ -112,6 +114,7 @@ export default function OTPScreen() {
       }
       router.replace('/congo');
     } catch (err: any) {
+      console.log('[7/8][FE otp.tsx] Verify OTP FAILED ←', err?.data ?? err?.message ?? err);
       setErrorMessage(err?.data?.message || 'Could not verify OTP. Please try again.');
     }
   };
@@ -120,9 +123,12 @@ export default function OTPScreen() {
     if (cooldown > 0) return;
     setErrorMessage('');
     try {
+      console.log('[7/8][FE otp.tsx] Resend OTP →', { phone, purpose });
       await sendOtp({ phone, purpose }).unwrap();
+      console.log('[7/8][FE otp.tsx] Resend OTP success');
       setCooldown(30);
     } catch (err: any) {
+      console.log('[7/8][FE otp.tsx] Resend OTP FAILED ←', err?.data ?? err?.message ?? err);
       setErrorMessage(err?.data?.message || 'Could not resend OTP. Please try again.');
     }
   };

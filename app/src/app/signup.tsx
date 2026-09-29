@@ -132,15 +132,19 @@ export default function SignUpScreen() {
     }
 
     try {
-      await register({
+      const payload = {
         name: name.trim(),
         identifier,
         password,
         role: role || 'user',
         bvcRegistrationNumber: undefined,
-      }).unwrap();
+      };
+      console.log('[1/8][FE signup.tsx] Register submit →', payload);
+      await register(payload).unwrap();
+      console.log('[1/8][FE signup.tsx] Register API success → navigating to /otp');
       router.push({ pathname: '/otp', params: { phone: identifier, purpose: 'verify', role: role || 'user' } });
     } catch (err: any) {
+      console.log('[1/8][FE signup.tsx] Register API FAILED →', err?.data ?? err?.message ?? err);
       setErrorMessage(err?.data?.message || 'Could not create account. Please try again.');
     }
   };
