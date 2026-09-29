@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "gobadi",
-    "slug": "gobadi",
+    "name": "Gobaadi",
+    "slug": "Gobaadi",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -18,7 +18,7 @@
         "foregroundImage": "./assets/images/icon.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.champius.gobadi"
+      "package": "com.champius.gobaadi"
     },
     "web": {
       "output": "static",
@@ -48,9 +48,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "a4004164-d5d1-4e52-b2cd-86fff85fe566"
+        "projectId": "6ed7a045-7394-4031-b29b-291332536bb8"
       }
     },
-    "owner": "mdabusufianjidan"
+    "owner": "mdabusufian"
   }
 }
