@@ -45,28 +45,31 @@ function generateDatePills() {
   return pills;
 }
 
-function getDefaultTimes(): { dateOffset: number; startTime: string; endTime: string } {
+function getDefaultTimes(): { startTime: string; endTime: string } {
   const now = new Date();
   const start = new Date(now);
   start.setMinutes(0, 0, 0);
   start.setHours(start.getHours() + 1);
 
-  const end = new Date(start);
-  end.setHours(end.getHours() + 1);
+  // Default date is always today, so the default time must never leave today
+  const dayEnd = new Date(now);
+  dayEnd.setHours(23, 59, 0, 0);
+  if (start.getTime() > dayEnd.getTime()) {
+    start.setTime(dayEnd.getTime());
+  }
+
+  const end = new Date(start.getTime() + 60 * 60 * 1000);
 
   function fmt(d: Date): string {
     let h = d.getHours();
+    const m = String(d.getMinutes()).padStart(2, '0');
     const p = h >= 12 ? 'PM' : 'AM';
     if (h === 0) h = 12;
     else if (h > 12) h -= 12;
-    return `${h}:00 ${p}`;
+    return `${h}:${m} ${p}`;
   }
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const dateOffset = Math.round((start.getTime() - today.getTime()) / 86400000);
-
-  return { dateOffset, startTime: fmt(start), endTime: fmt(end) };
+  return { startTime: fmt(start), endTime: fmt(end) };
 }
 
 function DatePillItem({ pill, isSelected, onSelect }: {
@@ -98,7 +101,7 @@ export default function AddTaskScreen() {
 
   const datePills = useMemo(() => generateDatePills(), []);
   const defaults = useMemo(() => getDefaultTimes(), []);
-  const [selectedDate, setSelectedDate] = useState(datePills[defaults.dateOffset]?.fullDate || datePills[0].fullDate);
+  const [selectedDate, setSelectedDate] = useState(datePills[0].fullDate);
   const [selectedShed, setSelectedShed] = useState('cow');
   const [selectedType, setSelectedType] = useState('hygiene');
   const [customTask, setCustomTask] = useState('');
