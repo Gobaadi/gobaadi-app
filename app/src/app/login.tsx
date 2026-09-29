@@ -50,7 +50,7 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     setErrorMessage('');
-    console.log('[LOGIN] API_URL =', API_URL);
+    // console.log('[LOGIN] API_URL =', API_URL);
     const identifier = mode === 'phone' ? phone : email;
     if (mode === 'phone' && !BD_PHONE_REGEX.test(phone)) {
       setErrorMessage('Please enter a valid 11-digit Bangladeshi phone number (e.g., 01712345678).');
