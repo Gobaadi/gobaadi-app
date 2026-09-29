@@ -363,7 +363,10 @@ export default function BlockTimeOffScreen() {
         <View style={styles.bottomBar}>
           <TouchableOpacity
             style={styles.viewCalendarBtn}
-            onPress={() => router.back()}
+            onPress={() => {
+              router.dismissAll();
+              router.navigate('/doctor-bookings');
+            }}
             activeOpacity={0.85}
           >
             <Text style={styles.viewCalendarBtnText}>View Calendar</Text>

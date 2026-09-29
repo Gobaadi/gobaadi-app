@@ -41,7 +41,7 @@ const PREFERENCES: PreferenceItem[] = [
 export default function DoctorNotificationPreferencesScreen() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<FilterTab>('all');
-  const { data: preferences, isLoading, isError } = useGetPreferencesQuery();
+  const { data: preferences, isLoading, isError, refetch } = useGetPreferencesQuery();
   const [updatePreferences, { isLoading: isUpdating }] = useUpdatePreferencesMutation();
 
   const filteredPreferences = useMemo(() => {
@@ -91,6 +91,9 @@ export default function DoctorNotificationPreferencesScreen() {
         <View style={styles.loadingContainer}>
           <Ionicons name="cloud-offline-outline" size={48} color="#9C9690" />
           <Text style={styles.errorText}>Failed to load preferences</Text>
+          <TouchableOpacity style={styles.retryBtn} onPress={() => refetch()} activeOpacity={0.8}>
+            <Text style={styles.retryBtnText}>Try Again</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -167,4 +170,6 @@ const styles = StyleSheet.create({
   prefDesc: { fontSize: 11, fontWeight: '500', color: '#7C7672' },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
   errorText: { fontSize: 14, fontWeight: '500', color: '#9C9690' },
+  retryBtn: { marginTop: 8, backgroundColor: '#BD632F', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 10 },
+  retryBtnText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
 });

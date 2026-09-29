@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -7,6 +7,7 @@ import {
   ScrollView,
   Image,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -15,6 +16,7 @@ import {
   useGetDoctorBookingsQuery,
   useRescheduleBookingMutation,
 } from '@/store/doctorPortalApi';
+import { useGetSlotsQuery } from '@/store/doctorsApi';
 
 function getDaysInMonth(year: number, month: number): number {
   return new Date(year, month + 1, 0).getDate();
@@ -42,11 +44,6 @@ const MONTH_NAMES = [
 ];
 const DAY_LETTERS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-const TIME_SLOTS = [
-  '07:00 PM', '07:30 PM', '08:00 PM', '08:30 PM',
-  '09:00 PM', '09:30 PM', '10:00 PM',
-];
-
 export default function AppointmentRescheduleScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -60,6 +57,17 @@ export default function AppointmentRescheduleScreen() {
   );
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
+
+  const doctorId = appointment ? String(appointment.doctorId) : '';
+  const selectedDateStr = selectedDate ? formatDateKey(selectedDate) : '';
+  const { data: timeSlots = [], isLoading: slotsLoading } = useGetSlotsQuery(
+    { doctorId, date: selectedDateStr },
+    { skip: !doctorId || !selectedDateStr }
+  );
+
+  useEffect(() => {
+    setSelectedTime(null);
+  }, [selectedDate]);
 
   if (!appointment) {
     return (
@@ -239,28 +247,34 @@ export default function AppointmentRescheduleScreen() {
         </View>
 
         <Text style={styles.sectionTitle}>Select time</Text>
-        <View style={styles.timeSlotsRow}>
-          {TIME_SLOTS.map((slot) => (
-            <TouchableOpacity
-              key={slot}
-              style={[
-                styles.timeSlot,
-                selectedTime === slot && styles.timeSlotActive,
-              ]}
-              onPress={() => setSelectedTime(slot)}
-              activeOpacity={0.7}
-            >
-              <Text
+        {slotsLoading ? (
+          <ActivityIndicator size="small" color="#BD632F" style={{ marginTop: 12 }} />
+        ) : timeSlots.length === 0 ? (
+          <Text style={styles.emptyText}>No available slots for this date</Text>
+        ) : (
+          <View style={styles.timeSlotsRow}>
+            {timeSlots.map((slot) => (
+              <TouchableOpacity
+                key={slot}
                 style={[
-                  styles.timeSlotText,
-                  selectedTime === slot && styles.timeSlotTextActive,
+                  styles.timeSlot,
+                  selectedTime === slot && styles.timeSlotActive,
                 ]}
+                onPress={() => setSelectedTime(slot)}
+                activeOpacity={0.7}
               >
-                {slot}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+                <Text
+                  style={[
+                    styles.timeSlotText,
+                    selectedTime === slot && styles.timeSlotTextActive,
+                  ]}
+                >
+                  {slot}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
       </ScrollView>
 
       <View style={styles.bottomContainer}>

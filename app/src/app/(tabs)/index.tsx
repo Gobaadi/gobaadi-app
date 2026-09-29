@@ -18,6 +18,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useGetAnimalsQuery } from '@/store/animalsApi';
 import { useGetTasksQuery, useToggleTaskMutation } from '@/store/tasksApi';
+import { useGetDoctorBookingsQuery } from '@/store/doctorPortalApi';
 import { useGetWeatherQuery } from '@/store/weatherApi';
 import { useGetAlertsQuery, useActOnAlertMutation } from '@/store/alertsApi';
 import { useGetMyReferralQuery, useClaimReferralMutation } from '@/store/referralsApi';
@@ -26,11 +27,12 @@ import LanguageBottomSheet from '@/components/LanguageBottomSheet';
 import Svg, { Path } from 'react-native-svg';
 import { EmptyState } from '@/components/ui/empty-state';
 import { RowSkeleton, AlertCardSkeleton, SkeletonBox } from '@/components/ui/skeleton';
+import { localDateKey } from '@/utils/date';
 
 const { width } = Dimensions.get('window');
 
 function todayDateKey(): string {
-  return new Date().toISOString().slice(0, 10);
+  return localDateKey();
 }
 
 function formatFullDate(): string {
@@ -66,6 +68,15 @@ export default function HomeDashboard() {
   const [claimCode, setClaimCode] = useState('');
 
   const animals = (allAnimals || []).slice(0, 3);
+
+  const { data: allBookings = [] } = useGetDoctorBookingsQuery();
+  const upcomingAppointments = allBookings
+    .filter((b) => {
+      const start = new Date(b.startAt);
+      return b.status !== 'CANCELLED' && start >= new Date();
+    })
+    .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime())
+    .slice(0, 3);
 
   async function shareReferral() {
     if (!referral) return;
@@ -288,6 +299,55 @@ export default function HomeDashboard() {
           )}
         </View>
 
+        {/* My Appointments Section */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>My Appointments</Text>
+          <TouchableOpacity onPress={() => router.push('/my-appointments')}>
+            <Text style={styles.viewAllText}>View all</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.listCard}>
+          {upcomingAppointments.length === 0 ? (
+            <EmptyState
+              compact
+              title="No upcoming appointments"
+              actionLabel="Book a consultation"
+              onAction={() => router.push('/(tabs)/doctors')}
+            />
+          ) : (
+            upcomingAppointments.map((appt, idx) => (
+              <TouchableOpacity
+                key={appt.id}
+                style={[
+                  styles.listItem,
+                  idx < upcomingAppointments.length - 1 && styles.listItemBorderDashed,
+                ]}
+                activeOpacity={0.7}
+                onPress={() => router.push({
+                  pathname: '/appointment-details',
+                  params: { id: String(appt.id) },
+                })}
+              >
+                <View style={styles.listItemLeft}>
+                  <View style={styles.checkeredIcon}>
+                    <View style={styles.checkeredGrid} />
+                  </View>
+                  <View>
+                    <Text style={styles.animalName}>
+                      {appt.doctorName || `Doctor #${appt.doctorId}`}
+                    </Text>
+                    <Text style={styles.animalBreed}>
+                      {appt.animalName || 'Consultation'} · {new Date(appt.startAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </Text>
+                  </View>
+                </View>
+                <Text style={styles.arrowIcon}>→</Text>
+              </TouchableOpacity>
+            ))
+          )}
+        </View>
+
         {/* Today's Task Section */}
         <Text style={[styles.sectionTitle, { marginTop: 24, marginBottom: 16, marginLeft: 24 }]}>Today's Task</Text>
 
@@ -311,9 +371,15 @@ export default function HomeDashboard() {
                   <View style={styles.checkeredIcon}>
                     <View style={styles.checkeredGrid} />
                   </View>
-                  <View>
-                    <Text style={styles.taskTitle}>{task.title}</Text>
-                    {task.detail ? <Text style={styles.taskDetail}>{task.detail}</Text> : null}
+                  <View style={styles.taskTextCol}>
+                    <Text style={styles.taskTitle} numberOfLines={1}>
+                      {task.title}
+                    </Text>
+                    {task.detail ? (
+                      <Text style={styles.taskDetail} numberOfLines={2} ellipsizeMode="tail">
+                        {task.detail}
+                      </Text>
+                    ) : null}
                   </View>
                 </View>
 
@@ -820,19 +886,29 @@ const styles = StyleSheet.create({
   taskItemLeft: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
+    minWidth: 0,
+    marginRight: 12,
+  },
+  taskTextCol: {
+    flex: 1,
+    minWidth: 0,
   },
   taskTitle: {
     fontSize: 15,
     fontWeight: '700',
     color: '#1A1817',
+    flexShrink: 1,
   },
   taskDetail: {
     fontSize: 13,
     color: '#7C7672',
     marginTop: 2,
+    flexShrink: 1,
   },
   taskItemRight: {
     alignItems: 'flex-end',
+    flexShrink: 0,
   },
   taskTime: {
     fontSize: 13,

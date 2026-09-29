@@ -8,6 +8,7 @@ import { Between, Repository } from 'typeorm';
 import { Task } from './task.entity';
 import { RedisService } from '../redis/redis.service';
 import { CreateTaskDto } from './dto/create-task.dto';
+import { UpdateTaskDto } from './dto/update-task.dto';
 export { Task } from './task.entity';
 
 @Injectable()
@@ -23,8 +24,15 @@ export class TasksService {
     date: string,
     category?: string,
     priority?: string,
+    tzOffsetMinutes = 0,
   ): Promise<Task[]> {
-    const cacheKey = this.buildCacheKey(userId, date, category, priority);
+    const cacheKey = this.buildCacheKey(
+      userId,
+      date,
+      category,
+      priority,
+      tzOffsetMinutes,
+    );
     try {
       const cached = await this.redisService.get(cacheKey);
       if (cached) {
@@ -34,7 +42,7 @@ export class TasksService {
       console.warn('Failed to read tasks cache from Redis', err);
     }
 
-    const { start, end } = this.dayBounds(date);
+    const { start, end } = this.dayBounds(date, tzOffsetMinutes);
     const where: Record<string, unknown> = {
       userId,
       scheduledTime: Between(start, end),
@@ -79,6 +87,19 @@ export class TasksService {
     return saved;
   }
 
+  async updateTask(userId: number, id: number, dto: UpdateTaskDto): Promise<Task> {
+    const task = await this.getOwnedTask(userId, id);
+    if (dto.title !== undefined) task.title = dto.title;
+    if (dto.detail !== undefined) task.detail = dto.detail;
+    if (dto.scheduledTime !== undefined) task.scheduledTime = new Date(dto.scheduledTime);
+    if (dto.category !== undefined) task.category = dto.category;
+    if (dto.priority !== undefined) task.priority = dto.priority;
+    if (dto.dueDate !== undefined) task.dueDate = dto.dueDate ? new Date(dto.dueDate) : undefined;
+    const saved = await this.taskRepository.save(task);
+    await this.invalidateCacheForTask(saved);
+    return saved;
+  }
+
   async deleteTask(userId: number, id: number): Promise<void> {
     const task = await this.getOwnedTask(userId, id);
     await this.taskRepository.remove(task);
@@ -97,9 +118,10 @@ export class TasksService {
   }
 
   private async invalidateCacheForTask(task: Task): Promise<void> {
-    const date = this.toDateKey(task.scheduledTime);
     try {
-      await this.redisService.del(this.buildCacheKey(task.userId, date));
+      await this.redisService.delPattern(
+        `cache:tasks:user:${task.userId}:date:*`,
+      );
     } catch (err) {
       console.warn('Failed to invalidate tasks cache in Redis', err);
     }
@@ -110,20 +132,31 @@ export class TasksService {
     date: string,
     category?: string,
     priority?: string,
+    tzOffsetMinutes = 0,
   ): string {
-    const parts = [`cache:tasks:user:${userId}:date:${date}`];
+    const parts = [
+      `cache:tasks:user:${userId}:date:${date}:tz:${tzOffsetMinutes}`,
+    ];
     if (category) parts.push(`cat:${category}`);
     if (priority) parts.push(`pri:${priority}`);
     return parts.join(':');
   }
 
-  private toDateKey(date: Date): string {
-    return new Date(date).toISOString().slice(0, 10);
-  }
-
-  private dayBounds(date: string): { start: Date; end: Date } {
-    const start = new Date(`${date}T00:00:00.000Z`);
-    const end = new Date(`${date}T23:59:59.999Z`);
+  private dayBounds(
+    date: string,
+    tzOffsetMinutes = 0,
+  ): { start: Date; end: Date } {
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+    if (!match) {
+      const start = new Date(`${date}T00:00:00.000Z`);
+      const end = new Date(`${date}T23:59:59.999Z`);
+      return { start, end };
+    }
+    const [, year, month, day] = match;
+    const utcMidnight = Date.parse(`${year}-${month}-${day}T00:00:00.000Z`);
+    const startMs = utcMidnight + tzOffsetMinutes * 60_000;
+    const start = new Date(startMs);
+    const end = new Date(startMs + 24 * 60 * 60 * 1000 - 1);
     return { start, end };
   }
 }

@@ -12,6 +12,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useCreateTaskMutation, useGetTasksQuery } from '@/store/tasksApi';
+import { localDateKey } from '@/utils/date';
+import { apiErrorMessage } from '@/utils/api-error';
 
 const SHEDS = [
   { id: 'cow', name: 'Cow Shed', icon: '🐮' },
@@ -37,34 +39,37 @@ function generateDatePills() {
     pills.push({
       day: d.toLocaleDateString('en-US', { weekday: 'short' }).slice(0, 3),
       date: String(d.getDate()).padStart(2, '0'),
-      fullDate: d.toISOString().slice(0, 10),
+      fullDate: localDateKey(d),
     });
   }
   return pills;
 }
 
-function getDefaultTimes(): { dateOffset: number; startTime: string; endTime: string } {
+function getDefaultTimes(): { startTime: string; endTime: string } {
   const now = new Date();
   const start = new Date(now);
   start.setMinutes(0, 0, 0);
   start.setHours(start.getHours() + 1);
 
-  const end = new Date(start);
-  end.setHours(end.getHours() + 1);
+  // Default date is always today, so the default time must never leave today
+  const dayEnd = new Date(now);
+  dayEnd.setHours(23, 59, 0, 0);
+  if (start.getTime() > dayEnd.getTime()) {
+    start.setTime(dayEnd.getTime());
+  }
+
+  const end = new Date(start.getTime() + 60 * 60 * 1000);
 
   function fmt(d: Date): string {
     let h = d.getHours();
+    const m = String(d.getMinutes()).padStart(2, '0');
     const p = h >= 12 ? 'PM' : 'AM';
     if (h === 0) h = 12;
     else if (h > 12) h -= 12;
-    return `${h}:00 ${p}`;
+    return `${h}:${m} ${p}`;
   }
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const dateOffset = Math.round((start.getTime() - today.getTime()) / 86400000);
-
-  return { dateOffset, startTime: fmt(start), endTime: fmt(end) };
+  return { startTime: fmt(start), endTime: fmt(end) };
 }
 
 function DatePillItem({ pill, isSelected, onSelect }: {
@@ -96,7 +101,7 @@ export default function AddTaskScreen() {
 
   const datePills = useMemo(() => generateDatePills(), []);
   const defaults = useMemo(() => getDefaultTimes(), []);
-  const [selectedDate, setSelectedDate] = useState(datePills[defaults.dateOffset]?.fullDate || datePills[0].fullDate);
+  const [selectedDate, setSelectedDate] = useState(datePills[0].fullDate);
   const [selectedShed, setSelectedShed] = useState('cow');
   const [selectedType, setSelectedType] = useState('hygiene');
   const [customTask, setCustomTask] = useState('');
@@ -114,8 +119,17 @@ export default function AddTaskScreen() {
     if (repeat !== 'none') detailParts.push(`Repeat: ${repeat.charAt(0).toUpperCase() + repeat.slice(1)}`);
     if (instruction.trim()) detailParts.push(`Instruction: ${instruction.trim()}`);
 
-    // Use selected full date string directly
-    const scheduledDate = new Date(selectedDate);
+    // Parse selected local calendar date (YYYY-MM-DD), not UTC midnight
+    const dateParts = selectedDate.split('-').map((p) => parseInt(p, 10));
+    const scheduledDate = new Date(
+      dateParts[0],
+      (dateParts[1] || 1) - 1,
+      dateParts[2] || 1,
+      0,
+      0,
+      0,
+      0,
+    );
 
     const timeParts = startTime.match(/(\d+):(\d+)\s*(AM|PM)/i);
     if (timeParts) {
@@ -140,10 +154,13 @@ export default function AddTaskScreen() {
         scheduledTime: scheduledDate.toISOString(),
       }).unwrap();
 
-      router.back();
+      router.replace({
+        pathname: '/my-task',
+        params: { date: selectedDate },
+      });
     } catch (err) {
       console.log('Error adding task:', err);
-      Alert.alert('Could not add task', 'Please try again.');
+      Alert.alert('Could not add task', apiErrorMessage(err, 'Please try again.'));
     }
   }
 
