@@ -20,13 +20,12 @@ import { useGetAnimalsQuery } from '@/store/animalsApi';
 import { useGetTasksQuery, useToggleTaskMutation } from '@/store/tasksApi';
 import { useGetDoctorBookingsQuery } from '@/store/doctorPortalApi';
 import { useGetWeatherQuery } from '@/store/weatherApi';
-import { useGetAlertsQuery, useActOnAlertMutation } from '@/store/alertsApi';
 import { useGetMyReferralQuery, useClaimReferralMutation } from '@/store/referralsApi';
 import { useLanguage } from '@/hooks/use-language';
 import LanguageBottomSheet from '@/components/LanguageBottomSheet';
 import Svg, { Path } from 'react-native-svg';
 import { EmptyState } from '@/components/ui/empty-state';
-import { RowSkeleton, AlertCardSkeleton, SkeletonBox } from '@/components/ui/skeleton';
+import { RowSkeleton, SkeletonBox } from '@/components/ui/skeleton';
 import { localDateKey } from '@/utils/date';
 
 const { width } = Dimensions.get('window');
@@ -55,14 +54,12 @@ export default function HomeDashboard() {
   const { data: allAnimals, isLoading: isAnimalsLoading } = useGetAnimalsQuery();
   const { data: tasks = [], isLoading: isTasksLoading } = useGetTasksQuery(todayDateKey());
   const { data: weather, isLoading: isWeatherLoading } = useGetWeatherQuery();
-  const { data: alerts = [], isLoading: isAlertsLoading } = useGetAlertsQuery();
   const { data: referral } = useGetMyReferralQuery();
   const [claimReferral, { isLoading: isClaiming }] = useClaimReferralMutation();
   const { language, languageCode, setLanguage } = useLanguage();
   const [showLangSheet, setShowLangSheet] = useState(false);
 
   const [toggleTaskMutation] = useToggleTaskMutation();
-  const [actOnAlertMutation] = useActOnAlertMutation();
 
   const [showClaimInput, setShowClaimInput] = useState(false);
   const [claimCode, setClaimCode] = useState('');
@@ -112,10 +109,6 @@ export default function HomeDashboard() {
 
   function toggleTask(id: number) {
     toggleTaskMutation(String(id));
-  }
-
-  function actOnAlert(alertId: number, actionChoice: 'MANAGE' | 'SCHEDULE') {
-    actOnAlertMutation({ id: alertId, actionChoice });
   }
 
   return (
@@ -394,54 +387,22 @@ export default function HomeDashboard() {
           )}
         </View>
 
-        {/* Alerts Section */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Alerts</Text>
-          <TouchableOpacity activeOpacity={0.7}>
-            <Text style={styles.viewAllText}>View all</Text>
+        <View style={styles.taskActionsRow}>
+          <TouchableOpacity
+            style={styles.addTaskBtn}
+            activeOpacity={0.85}
+            onPress={() => router.push('/add-task')}
+          >
+            <Text style={styles.addTaskBtnText}>Add Task</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.viewAllTaskBtn}
+            activeOpacity={0.85}
+            onPress={() => router.push('/my-task')}
+          >
+            <Text style={styles.viewAllTaskBtnText}>View All</Text>
           </TouchableOpacity>
         </View>
-
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.alertsScroll}
-        >
-          {isAlertsLoading ? (
-            <>
-              <AlertCardSkeleton />
-              <AlertCardSkeleton />
-            </>
-          ) : alerts.length === 0 ? (
-            <Text style={styles.noAlertsText}>No active alerts right now.</Text>
-          ) : (
-            alerts.map((alert) => (
-              <View key={alert.id} style={styles.alertCard}>
-                <View
-                  style={[
-                    styles.alertIconCircle,
-                    alert.severity === 'HIGH' || alert.severity === 'CRITICAL'
-                      ? styles.alertIconRed
-                      : styles.alertIconOrange,
-                  ]}
-                >
-                  <Text style={styles.alertIconText}>{alert.actionType === 'MANAGE' ? '⚠' : '⚙'}</Text>
-                </View>
-                <Text style={styles.alertCardTitle}>{alert.title}</Text>
-                <Text style={styles.alertCardSub}>{alert.location} • {alert.crop}</Text>
-                <TouchableOpacity
-                  style={styles.alertCardBtn}
-                  activeOpacity={0.8}
-                  onPress={() => actOnAlert(alert.id, alert.actionType)}
-                >
-                  <Text style={styles.alertCardBtnText}>
-                    {alert.actionType === 'MANAGE' ? 'Manage Now' : 'Schedule'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            ))
-          )}
-        </ScrollView>
 
         {/* Refer to Friend & Earn Banner */}
         <View style={styles.referBanner}>
@@ -825,6 +786,43 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
+  taskActionsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginHorizontal: 24,
+    marginTop: 12,
+  },
+  addTaskBtn: {
+    flex: 1,
+    backgroundColor: '#BD632F',
+    height: 50,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#BD632F',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 5,
+    elevation: 3,
+  },
+  addTaskBtnText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  viewAllTaskBtn: {
+    flex: 1,
+    backgroundColor: '#F0EAE1',
+    height: 50,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  viewAllTaskBtnText: {
+    color: '#1A1817',
+    fontSize: 16,
+    fontWeight: '600',
+  },
   listItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -935,68 +933,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 10,
     fontWeight: '700',
-  },
-  alertsScroll: {
-    paddingLeft: 24,
-    paddingRight: 8,
-    gap: 16,
-  },
-  noAlertsText: {
-    fontSize: 13,
-    color: '#9C9690',
-    paddingHorizontal: 24,
-  },
-  alertCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: '#E6E1DC',
-    padding: 18,
-    width: 175,
-  },
-  alertIconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  alertIconRed: {
-    backgroundColor: '#FFEBEE',
-  },
-  alertIconOrange: {
-    backgroundColor: '#FFF3E0',
-  },
-  alertIconText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#E53935',
-  },
-  alertCardTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#1A1817',
-    marginBottom: 4,
-  },
-  alertCardSub: {
-    fontSize: 11,
-    color: '#9C9690',
-    marginBottom: 12,
-  },
-  alertCardBtn: {
-    backgroundColor: '#FAF9F6',
-    borderRadius: 12,
-    height: 36,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E9E5DF',
-  },
-  alertCardBtnText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#1A1817',
   },
   referBanner: {
     flexDirection: 'row',

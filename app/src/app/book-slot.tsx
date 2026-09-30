@@ -19,6 +19,8 @@ function pad(n: number): string {
   return String(n).padStart(2, '0');
 }
 
+const VISIT_TYPES = ['Online', 'Physical'] as const;
+
 export default function BookSlotScreen() {
   const router = useRouter();
   const { id, appointmentId, mode } = useLocalSearchParams();
@@ -26,6 +28,7 @@ export default function BookSlotScreen() {
   const isReschedule = mode === 'reschedule' && !!appointmentId;
   const today = new Date();
   const [selectedVisitType, setSelectedVisitType] = useState('Online');
+  const [showVisitTypeOptions, setShowVisitTypeOptions] = useState(false);
   const [selectedDay, setSelectedDay] = useState(today.getDate());
   const [selectedTimeSlot, setSelectedTimeSlot] = useState('');
   const [bookingReason, setBookingReason] = useState('');
@@ -196,10 +199,42 @@ export default function BookSlotScreen() {
 
             {/* Visit Type */}
             <Text style={styles.sectionTitle}>Visit Type</Text>
-            <TouchableOpacity style={styles.dropdownTrigger} activeOpacity={0.8}>
+            <TouchableOpacity
+              style={styles.dropdownTrigger}
+              activeOpacity={0.8}
+              onPress={() => setShowVisitTypeOptions((v) => !v)}
+            >
               <Text style={styles.dropdownValue}>{selectedVisitType}</Text>
-              <Text style={styles.dropdownArrow}>▼</Text>
+              <Text style={styles.dropdownArrow}>{showVisitTypeOptions ? '▲' : '▼'}</Text>
             </TouchableOpacity>
+
+            {showVisitTypeOptions && (
+              <View style={styles.visitTypeMenu}>
+                {VISIT_TYPES.map((type) => (
+                  <TouchableOpacity
+                    key={type}
+                    style={[
+                      styles.visitTypeItem,
+                      selectedVisitType === type && styles.visitTypeItemActive,
+                    ]}
+                    activeOpacity={0.8}
+                    onPress={() => {
+                      setSelectedVisitType(type);
+                      setShowVisitTypeOptions(false);
+                    }}
+                  >
+                    <Text
+                      style={[
+                        styles.visitTypeItemText,
+                        selectedVisitType === type && styles.visitTypeItemTextActive,
+                      ]}
+                    >
+                      {type}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
 
             {/* Booking Reason */}
             <Text style={styles.sectionTitle}>Booking Reason</Text>
@@ -470,6 +505,35 @@ const styles = StyleSheet.create({
   dropdownArrow: {
     fontSize: 12,
     color: '#BD632F',
+  },
+  visitTypeMenu: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E6E1DC',
+    marginTop: -14,
+    marginBottom: 20,
+    paddingVertical: 6,
+    elevation: 3,
+    zIndex: 10,
+  },
+  visitTypeItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F5F2EC',
+  },
+  visitTypeItemActive: {
+    backgroundColor: '#FFF8F4',
+  },
+  visitTypeItemText: {
+    fontSize: 14,
+    color: '#1A1817',
+    fontWeight: '500',
+  },
+  visitTypeItemTextActive: {
+    color: '#BD632F',
+    fontWeight: '700',
   },
   reasonInput: {
     backgroundColor: '#FFFFFF',

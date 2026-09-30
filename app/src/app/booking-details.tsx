@@ -148,7 +148,7 @@ export default function BookingDetailsScreen() {
       <View style={styles.bottomBar}>
         <TouchableOpacity
           style={styles.homeButton}
-          onPress={() => router.replace('/(tabs)/doctors')}
+          onPress={() => router.replace('/(tabs)')}
           activeOpacity={0.85}
         >
           <Text style={styles.homeButtonText}>← Back to home</Text>

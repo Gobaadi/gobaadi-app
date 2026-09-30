@@ -1,192 +1,402 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import {
   StyleSheet,
   View,
   Text,
   TouchableOpacity,
   ImageBackground,
+  ScrollView,
   Dimensions,
   Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 
-import { useAnalyzeSymptomsMutation, useGetDiagnosisByIdQuery } from '@/store/aiDiagnosisApi';
+import {
+  useAnalyzeSymptomsMutation,
+  useGetDiagnosisByIdQuery,
+  useUploadDiagnosisImageMutation,
+} from '@/store/aiDiagnosisApi';
+import { getDiseaseInfo } from '@/constants/disease-info';
+import { formatRelativeTime } from '@/utils/date';
+import { compressImageForUpload } from '@/utils/compress-image';
 
 const { width, height } = Dimensions.get('window');
 
+const DEFAULT_SYMPTOM = 'visible abnormality observed in photo';
+const ANALYSIS_TIMEOUT_MS = 90_000;
+
+type Phase = 'camera' | 'capturing' | 'uploading' | 'analyzing' | 'done' | 'error';
+
 export default function AiHoldScreen() {
   const router = useRouter();
-  const { imageUrl, symptoms: symptomsParam } = useLocalSearchParams<{ imageUrl?: string; symptoms?: string }>();
-  const [scanState, setScanState] = useState<'holding' | 'scanning' | 'done'>('holding');
+  const { imageUrl, symptoms: symptomsParam } = useLocalSearchParams<{
+    imageUrl?: string;
+    symptoms?: string;
+  }>();
+
+  const [phase, setPhase] = useState<Phase>(() => (imageUrl ? 'analyzing' : 'camera'));
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [capturedUri, setCapturedUri] = useState<string | null>(null);
+  const [pendingId, setPendingId] = useState<number | null>(null);
+  const [uploadedUrl, setUploadedUrl] = useState<string | undefined>(imageUrl || undefined);
+
   const [progress] = useState(new Animated.Value(0));
   const [modalY] = useState(new Animated.Value(height));
-  const [analyzeSymptoms, { error: submitError }] = useAnalyzeSymptomsMutation();
-  const [pendingId, setPendingId] = useState<number | null>(null);
+  const startedRef = useRef(false);
+  const cameraRef = useRef<CameraView>(null);
 
-  const { data: diagnosis, error: pollError } = useGetDiagnosisByIdQuery(pendingId as number, {
+  const [permission, requestPermission] = useCameraPermissions();
+  const [uploadDiagnosisImage] = useUploadDiagnosisImageMutation();
+  const [analyzeSymptoms] = useAnalyzeSymptomsMutation();
+
+  const { data: diagnosis } = useGetDiagnosisByIdQuery(pendingId as number, {
     skip: pendingId === null,
     pollingInterval: 2000,
   });
-  const error = submitError || pollError || diagnosis?.status === 'FAILED';
 
-  useEffect(() => {
-    // Trigger the scanner line animation while the analysis request runs
-    Animated.timing(progress, {
-      toValue: 1,
-      duration: 3500,
+  const isReady = diagnosis?.status === 'READY';
+  const isFailed = diagnosis?.status === 'FAILED';
+  const displayPhase: Phase = isReady ? 'done' : isFailed ? 'error' : phase;
+  const displayErrorMessage = isFailed
+    ? diagnosis?.failureReason || 'The analysis could not be completed. Please try again.'
+    : errorMessage;
+
+  function parseSymptoms(): string[] {
+    try {
+      const parsed: string[] = symptomsParam ? JSON.parse(symptomsParam) : [];
+      const cleaned = parsed.map((s) => s.trim()).filter(Boolean);
+      return cleaned.length > 0 ? cleaned : [DEFAULT_SYMPTOM];
+    } catch {
+      return [DEFAULT_SYMPTOM];
+    }
+  }
+
+  const showSheet = useCallback(() => {
+    Animated.spring(modalY, {
+      toValue: 0,
+      tension: 50,
+      friction: 8,
       useNativeDriver: true,
     }).start();
+  }, [modalY]);
 
-    let symptoms: string[] = [];
-    try {
-      symptoms = symptomsParam ? JSON.parse(symptomsParam) : [];
-    } catch {
-      symptoms = [];
+  async function runAnalysis(remoteUrl?: string) {
+    setErrorMessage(null);
+    setPhase('uploading');
+
+    let url = remoteUrl;
+    if (!url && capturedUri) {
+      const file = await compressImageForUpload(capturedUri, {
+        fileName: capturedUri.split('/').pop() || `scan-${Date.now()}.jpg`,
+        mimeType: 'image/jpeg',
+      });
+      const formData = new FormData();
+      formData.append('file', {
+        uri: file.uri,
+        name: file.name,
+        type: file.type,
+      } as any);
+      try {
+        const uploaded = await uploadDiagnosisImage(formData).unwrap();
+        url = uploaded.url;
+      } catch (err) {
+        const status = (err as { status?: number | string })?.status;
+        setErrorMessage(
+          status === 413
+            ? 'Photo is too large — please take a smaller photo.'
+            : 'Upload failed. Please check your connection and try again.',
+        );
+        setPhase('error');
+        showSheet();
+        return;
+      }
     }
 
-    analyzeSymptoms({ symptoms, images: imageUrl ? [imageUrl] : [] })
-      .unwrap()
-      .then((created) => {
-        setPendingId(created.id);
-      })
-      .catch(() => {
-        // Surfaced via `error` below; leave the scan line running so the
-        // user isn't stuck on a silently-frozen screen.
-      });
+    setUploadedUrl(url);
+    setPhase('analyzing');
+
+    try {
+      const created = await analyzeSymptoms({
+        symptoms: parseSymptoms(),
+        images: url ? [url] : [],
+      }).unwrap();
+      setPendingId(created.id);
+    } catch (err) {
+      console.log('Error starting analysis:', JSON.stringify(err));
+      const serverMsg = (err as { data?: { message?: string } })?.data?.message;
+      setErrorMessage(serverMsg || 'Could not start the analysis. Please try again.');
+      setPhase('error');
+      showSheet();
+    }
+  }
+
+  async function handleShutter() {
+    if (!cameraRef.current || phase !== 'camera') return;
+    setPhase('capturing');
+    try {
+      const photo = await cameraRef.current.takePictureAsync({ quality: 0.8 });
+      if (!photo?.uri) {
+        setPhase('camera');
+        return;
+      }
+      setCapturedUri(photo.uri);
+      await runAnalysis();
+    } catch {
+      setErrorMessage('Could not capture the photo. Please try again.');
+      setPhase('error');
+      showSheet();
+    }
+  }
+
+  function handleRetry() {
+    if (uploadedUrl) {
+      setPendingId(null);
+      runAnalysis(uploadedUrl);
+    } else {
+      setPhase('camera');
+      setErrorMessage(null);
+      setCapturedUri(null);
+      modalY.setValue(height);
+    }
+  }
+
+  // Gallery entry: analysis starts as soon as the screen opens.
+  useEffect(() => {
+    if (imageUrl && !startedRef.current) {
+      startedRef.current = true;
+      runAnalysis(imageUrl);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Scanner line sweeps while the analysis request runs.
   useEffect(() => {
-    if (diagnosis && diagnosis.status !== 'PENDING' && scanState !== 'done') {
-      setScanState('done');
-      Animated.spring(modalY, {
-        toValue: 0,
-        tension: 50,
-        friction: 8,
+    if (displayPhase === 'uploading' || displayPhase === 'analyzing') {
+      progress.setValue(0);
+      Animated.timing(progress, {
+        toValue: 1,
+        duration: 3500,
         useNativeDriver: true,
       }).start();
     }
-  }, [diagnosis, scanState]);
+  }, [displayPhase, progress]);
 
-  // Scan line animation interpolation
+  // Slide the result sheet up once the diagnosis settles (READY / FAILED).
+  useEffect(() => {
+    if (displayPhase === 'done' || displayPhase === 'error') {
+      showSheet();
+    }
+  }, [displayPhase, showSheet]);
+
+  // Don't leave the user stuck if the queue never responds.
+  useEffect(() => {
+    if (displayPhase !== 'analyzing' && displayPhase !== 'uploading') return;
+    const timer = setTimeout(() => {
+      setErrorMessage('The analysis is taking longer than expected. Please try again.');
+      setPhase('error');
+      showSheet();
+    }, ANALYSIS_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, [displayPhase, showSheet]);
+
   const scanLineY = progress.interpolate({
     inputRange: [0, 0.5, 1],
     outputRange: [height * 0.25, height * 0.65, height * 0.25],
   });
 
-  return (
-    <View style={styles.container}>
-      {/* Cow Diagnostic Image Background */}
-      <ImageBackground
-        source={require('@/assets/images/cow_mouth.png')}
-        style={styles.cameraBackground}
-        resizeMode="cover"
-      >
-        {/* Back Button */}
-        <SafeAreaView style={styles.safeHeader}>
-          <TouchableOpacity
-            style={styles.circleButton}
-            onPress={() => router.back()}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+  const diseaseInfo = getDiseaseInfo(diagnosis?.analysisResult);
+  const confidencePct =
+    diagnosis?.confidenceScore != null ? Math.round(diagnosis.confidenceScore * 100) : null;
+  const backgroundSource = capturedUri
+    ? { uri: capturedUri }
+    : imageUrl
+      ? { uri: imageUrl }
+      : null;
+  const showBottomControls = displayPhase === 'camera';
+  const showAnalyzingBadge = displayPhase === 'uploading' || displayPhase === 'analyzing';
+
+  if (!backgroundSource && phase === 'camera' && permission && !permission.granted) {
+    return (
+      <View style={styles.container}>
+        <SafeAreaView style={styles.permissionWrap}>
+          <View style={styles.permissionIcon}>
+            <Ionicons name="camera" size={36} color="#BD632F" />
+          </View>
+          <Text style={styles.permissionTitle}>Camera access needed</Text>
+          <Text style={styles.permissionText}>
+            Allow camera access so you can scan your animal for diseases and nutrient deficiencies.
+          </Text>
+          <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
+            <Text style={styles.permissionButtonText}>Allow Camera</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.permissionLink} onPress={() => router.back()}>
+            <Text style={styles.permissionLinkText}>Go back</Text>
           </TouchableOpacity>
         </SafeAreaView>
+      </View>
+    );
+  }
 
-        {/* Scan Frame Guidelines */}
-        <View style={styles.overlayFrameContainer}>
-          <View style={styles.scanTargetArea}>
-            {/* 4 Corner Markers */}
-            <View style={[styles.cornerMarker, styles.topLeftCorner]} />
-            <View style={[styles.cornerMarker, styles.topRightCorner]} />
-            <View style={[styles.cornerMarker, styles.bottomLeftCorner]} />
-            <View style={[styles.cornerMarker, styles.bottomRightCorner]} />
+  return (
+    <View style={styles.container}>
+      {backgroundSource ? (
+        <ImageBackground source={backgroundSource} style={styles.cameraBackground} resizeMode="cover">
+          {showAnalyzingBadge && (
+            <View style={styles.centeredBadge}>
+              <View style={styles.statusBadge}>
+                <Ionicons name="time-outline" size={14} color="#FFFFFF" style={styles.statusBadgeIcon} />
+                <Text style={styles.statusBadgeText}>
+                  {phase === 'uploading' ? 'Uploading scan…' : 'Please hold still…'}
+                </Text>
+              </View>
+            </View>
+          )}
+        </ImageBackground>
+      ) : (
+        <CameraView ref={cameraRef} style={styles.cameraBackground} facing="back" />
+      )}
+
+      {/* Back Button */}
+      <SafeAreaView style={styles.safeHeader} pointerEvents="box-none">
+        <TouchableOpacity
+          style={styles.circleButton}
+          onPress={() => router.back()}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+        </TouchableOpacity>
+      </SafeAreaView>
+
+      {/* Framing overlay: dimmed edges + grid + corner brackets */}
+      {phase === 'camera' && !backgroundSource && (
+        <>
+          <View style={[styles.dimBand, { top: 0, height: height * 0.25 }]} />
+          <View style={[styles.dimBand, { top: height * 0.65, bottom: 0 }]} />
+          <View style={[styles.dimBand, { top: height * 0.25, height: height * 0.4, left: 0, right: 'auto', width: width * 0.15 }]} />
+          <View style={[styles.dimBand, { top: height * 0.25, height: height * 0.4, right: 0, left: 'auto', width: width * 0.15 }]} />
+
+          <View style={styles.overlayFrameContainer}>
+            <View style={styles.scanTargetArea}>
+              <View style={[styles.gridLineV, { left: '33.33%' }]} />
+              <View style={[styles.gridLineV, { left: '66.66%' }]} />
+              <View style={[styles.gridLineH, { top: '33.33%' }]} />
+              <View style={[styles.gridLineH, { top: '66.66%' }]} />
+              <View style={[styles.cornerMarker, styles.topLeftCorner]} />
+              <View style={[styles.cornerMarker, styles.topRightCorner]} />
+              <View style={[styles.cornerMarker, styles.bottomLeftCorner]} />
+              <View style={[styles.cornerMarker, styles.bottomRightCorner]} />
+            </View>
           </View>
+        </>
+      )}
+
+      {/* Laser scanning line while uploading/analyzing */}
+      {showAnalyzingBadge && backgroundSource && (
+        <Animated.View style={[styles.scanLine, { transform: [{ translateY: scanLineY }] }]} />
+      )}
+
+      {/* Shutter + guidance badge */}
+      {showBottomControls && !backgroundSource && (
+        <View style={styles.bottomControls}>
+          <View style={styles.statusBadge}>
+            <Ionicons name="time-outline" size={14} color="#FFFFFF" style={styles.statusBadgeIcon} />
+            <Text style={styles.statusBadgeText}>Please hold still…</Text>
+          </View>
+
+          <TouchableOpacity
+            style={styles.shutterContainer}
+            onPress={handleShutter}
+            activeOpacity={0.9}
+            disabled={phase !== 'camera'}
+          >
+            <View style={styles.shutterOuterRing}>
+              <View style={styles.shutterInnerCircle} />
+            </View>
+          </TouchableOpacity>
         </View>
+      )}
 
-        {/* Laser Scanning Line Animation */}
-        {scanState !== 'done' && (
-          <Animated.View style={[styles.scanLine, { transform: [{ translateY: scanLineY }] }]} />
-        )}
+      {/* Backdrop overlay when modal is up */}
+      {displayPhase === 'done' && <View style={styles.dimBackdrop} />}
 
-        {/* Bottom Shutter & Status Indicators */}
-        {scanState !== 'done' && (
-          <View style={styles.bottomControls}>
-            <View style={styles.statusBadge}>
-              <Ionicons name="time-outline" size={14} color="#FFFFFF" style={styles.statusBadgeIcon} />
-              <Text style={styles.statusBadgeText}>Please hold still...</Text>
-            </View>
-
-            {/* Simulated shutter focus button */}
-            <TouchableOpacity style={styles.shutterContainer} activeOpacity={0.9}>
-              <View style={styles.shutterOuterRing}>
-                <View style={styles.shutterInnerCircle} />
+      {/* Slide up scan results modal sheet */}
+      <Animated.View style={[styles.modalSheet, { transform: [{ translateY: modalY }] }]}>
+        <View style={styles.modalHandle} />
+        <ScrollView
+          style={styles.modalScroll}
+          contentContainerStyle={styles.modalScrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {displayPhase === 'error' ? (
+            <>
+              <View style={styles.errorIcon}>
+                <Ionicons name="alert" size={24} color="#C62828" />
               </View>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* Backdrop overlay when modal is up */}
-        {scanState === 'done' && <View style={styles.dimBackdrop} />}
-
-        {/* Slide up scan results modal sheet */}
-        <Animated.View style={[styles.modalSheet, { transform: [{ translateY: modalY }] }]}>
-          {/* Handle bar */}
-          <View style={styles.modalHandle} />
-
-          {/* Diagnosis Header Info */}
-          <View style={styles.diagnoseInfoBox}>
-            <View style={styles.cowInfoRow}>
-              <View style={styles.cowAvatarCircle}>
-                <Text style={styles.cowAvatarEmoji}>🐮</Text>
+              <Text style={styles.diagnosticTitle}>Analysis could not be completed</Text>
+              <Text style={styles.diagnosticParagraph}>{displayErrorMessage}</Text>
+            </>
+          ) : (
+            <>
+              <View style={styles.diagnoseInfoBox}>
+                <View style={styles.cowInfoRow}>
+                  <View style={styles.cowAvatarCircle}>
+                    <Text style={styles.cowAvatarEmoji}>🐮</Text>
+                  </View>
+                  <View style={styles.cowMetaCol}>
+                    <Text style={styles.cowTitle}>Cow</Text>
+                    <Text style={styles.cowTime}>
+                      Detected : {formatRelativeTime(diagnosis?.createdAt)}
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.matchBadge}>
+                  <Text style={styles.matchBadgeText}>
+                    {confidencePct !== null ? `${confidencePct}% ✅` : '—'}
+                  </Text>
+                </View>
               </View>
-              <View style={styles.cowMetaCol}>
-                <Text style={styles.cowTitle}>Cow</Text>
-                <Text style={styles.cowTime}>Detected : just now</Text>
-              </View>
-            </View>
-            <View style={styles.matchBadge}>
-              <Text style={styles.matchBadgeText}>
-                {diagnosis?.confidenceScore != null ? `${Math.round(diagnosis.confidenceScore * 100)}% ✅` : '—'}
-              </Text>
-            </View>
-          </View>
 
-          {/* Diagnosis detail block */}
-          <View style={styles.diagnosticBody}>
-            {error ? (
-              <Text style={styles.diagnosticParagraph}>
-                Something went wrong analyzing this scan. Please try again.
-              </Text>
-            ) : (
-              <>
-                <Text style={styles.diagnosticTitle}>{diagnosis?.analysisResult ?? 'Analyzing...'}</Text>
-                <Text style={styles.diagnosticSubtitle}>Highly contagious viral disease</Text>
-                <Text style={styles.diagnosticParagraph}>
-                  Foot-and-Mouth Disease (FMD) is a highly viral illness affecting cloven-hoofed livestock like cattle, pigs, and sheep, but it poses absolutely no threat to human health or food safety.
+              <View style={styles.diagnosticBody}>
+                <Text style={styles.diagnosticTitle}>
+                  {diagnosis?.analysisResult ?? 'Analyzing…'}
                 </Text>
-                <Text style={styles.diagnosticParagraph}>
-                  If FMD has been detected in your herd or region, immediate action is required to prevent widespread transmission and massive economic losses.
-                </Text>
+                <Text style={styles.diagnosticSubtitle}>{diseaseInfo.subtitle}</Text>
+                {diseaseInfo.paragraphs.map((paragraph, index) => (
+                  <Text key={index} style={styles.diagnosticParagraph}>
+                    {paragraph}
+                  </Text>
+                ))}
                 {diagnosis?.recommendations?.length ? (
                   <Text style={styles.actionPlanLabel}>Immediate Action Plan</Text>
                 ) : null}
-              </>
-            )}
-          </View>
+              </View>
+            </>
+          )}
+        </ScrollView>
 
-          {/* Details Summary Action button */}
+        {displayPhase === 'error' ? (
+          <TouchableOpacity style={styles.summaryButton} onPress={handleRetry} activeOpacity={0.85}>
+            <Ionicons name="refresh" size={18} color="#FFFFFF" style={styles.summaryButtonIcon} />
+            <Text style={styles.summaryButtonText}>Try Again</Text>
+          </TouchableOpacity>
+        ) : (
           <TouchableOpacity
             style={styles.summaryButton}
             disabled={!diagnosis || diagnosis.status !== 'READY'}
-            onPress={() => router.replace({ pathname: '/ai-summary', params: { id: String(diagnosis!.id) } })}
+            onPress={() =>
+              router.replace({ pathname: '/ai-summary', params: { id: String(diagnosis!.id) } })
+            }
             activeOpacity={0.85}
           >
-            <Text style={styles.summaryButtonText}>Details Summary</Text>
+            <Text style={styles.summaryButtonText}>
+              {!diagnosis || diagnosis.status !== 'READY' ? 'Analyzing…' : 'Details Summary'}
+            </Text>
           </TouchableOpacity>
-        </Animated.View>
-      </ImageBackground>
+        )}
+      </Animated.View>
     </View>
   );
 }
@@ -200,6 +410,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   safeHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
     paddingHorizontal: 24,
     paddingTop: 16,
   },
@@ -216,10 +430,11 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
   },
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '700',
+  dimBand: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.35)',
   },
   overlayFrameContainer: {
     position: 'absolute',
@@ -234,6 +449,20 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     position: 'relative',
+  },
+  gridLineV: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.35)',
+  },
+  gridLineH: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.35)',
   },
   cornerMarker: {
     position: 'absolute',
@@ -280,6 +509,16 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.8,
     shadowRadius: 6,
     elevation: 8,
+  },
+  centeredBadge: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    paddingBottom: 140,
   },
   bottomControls: {
     position: 'absolute',
@@ -340,6 +579,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 32,
     padding: 24,
     paddingBottom: 40,
+    maxHeight: height * 0.75,
   },
   modalHandle: {
     width: 48,
@@ -348,6 +588,12 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     alignSelf: 'center',
     marginBottom: 20,
+  },
+  modalScroll: {
+    flexGrow: 0,
+  },
+  modalScrollContent: {
+    paddingBottom: 4,
   },
   diagnoseInfoBox: {
     flexDirection: 'row',
@@ -401,7 +647,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   diagnosticBody: {
-    marginBottom: 24,
+    marginBottom: 8,
   },
   diagnosticTitle: {
     fontSize: 18,
@@ -427,7 +673,18 @@ const styles = StyleSheet.create({
     color: '#1A1817',
     marginTop: 8,
   },
+  errorIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#FDECEC',
+    justifyContent: 'center',
+    alignItems: 'center',
+    alignSelf: 'center',
+    marginBottom: 12,
+  },
   summaryButton: {
+    flexDirection: 'row',
     backgroundColor: '#BD632F',
     height: 52,
     borderRadius: 26,
@@ -438,10 +695,66 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 6,
     elevation: 3,
+    marginTop: 16,
+  },
+  summaryButtonIcon: {
+    marginRight: 8,
   },
   summaryButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
+  },
+  permissionWrap: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+    backgroundColor: '#FAF9F6',
+  },
+  permissionIcon: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    backgroundColor: '#FFF1E8',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  permissionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1A1817',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  permissionText: {
+    fontSize: 14,
+    color: '#7C7672',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 24,
+  },
+  permissionButton: {
+    backgroundColor: '#BD632F',
+    width: '100%',
+    height: 52,
+    borderRadius: 26,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  permissionButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  permissionLink: {
+    paddingVertical: 8,
+  },
+  permissionLinkText: {
+    color: '#7C7672',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
