@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   ImageBackground,
   StatusBar,
+  Alert,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSelector } from 'react-redux';
 import type { RootState } from '@/store/store';
 import { useGetDoctorBookingsQuery, useGetTodayStatsQuery } from '@/store/doctorPortalApi';
+import { useGetConversationsQuery, useCreateConversationMutation } from '@/store/chatApi';
 import { useLanguage } from '@/hooks/use-language';
 
 function getGreeting(): string {
@@ -46,6 +48,31 @@ export default function DoctorHomeScreen() {
 
   const { data: bookings = [], isLoading } = useGetDoctorBookingsQuery();
   const { data: todayStats } = useGetTodayStatsQuery();
+  const { data: conversations = [] } = useGetConversationsQuery();
+  const [createConversation] = useCreateConversationMutation();
+
+  const openPatientChat = async (booking: (typeof bookings)[number]) => {
+    try {
+      const existing = conversations.find((c) => c.patientId === booking.patientId);
+      let conversationId = existing?.id;
+      if (!conversationId) {
+        const created = await createConversation({
+          patientId: booking.patientId,
+        }).unwrap();
+        conversationId = created.id;
+      }
+      router.push({
+        pathname: '/chat',
+        params: {
+          conversationId: String(conversationId),
+          patientName: booking.patientName || `Patient #${booking.patientId}`,
+          appointmentId: String(booking.id),
+        },
+      });
+    } catch {
+      Alert.alert('Error', 'Could not open the conversation. Please try again.');
+    }
+  };
 
   if (!isDoctor) return null;
 
@@ -145,7 +172,7 @@ export default function DoctorHomeScreen() {
                     <Text style={styles.patientDetail}>{b.patientPhone || 'Backache'}</Text>
                   </View>
 
-                  <TouchableOpacity style={styles.chatBtn} activeOpacity={0.8} onPress={() => router.push({ pathname: '/chat', params: { conversationId: String(b.patientId) } })}>
+                  <TouchableOpacity style={styles.chatBtn} activeOpacity={0.8} onPress={() => openPatientChat(b)}>
                     <Ionicons name="chatbubble" size={22} color="#3B82F6" />
                   </TouchableOpacity>
                 </View>

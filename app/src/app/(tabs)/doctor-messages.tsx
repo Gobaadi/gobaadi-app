@@ -73,7 +73,18 @@ export default function DoctorMessagesScreen() {
 
   const patientLookup = useMemo(() => {
     const map = new Map<number, DoctorAppointment>();
-    bookings.forEach((b) => {
+    const now = new Date().getTime();
+    // Prefer the soonest upcoming appointment per patient, otherwise the
+    // most recent past one — chat should link to the relevant appointment.
+    const sorted = [...bookings].sort((a, b) => {
+      const aUp = new Date(a.startAt).getTime() >= now;
+      const bUp = new Date(b.startAt).getTime() >= now;
+      if (aUp !== bUp) return aUp ? -1 : 1;
+      return aUp
+        ? new Date(a.startAt).getTime() - new Date(b.startAt).getTime()
+        : new Date(b.startAt).getTime() - new Date(a.startAt).getTime();
+    });
+    sorted.forEach((b) => {
       if (!map.has(b.patientId)) {
         map.set(b.patientId, b);
       }
@@ -96,6 +107,7 @@ export default function DoctorMessagesScreen() {
         animalImage: appointment?.animalImage,
         patientId: conv.patientId,
         conversationId: conv.id,
+        appointmentId: appointment?.id != null ? Number(appointment.id) : undefined,
       });
     });
 
@@ -136,13 +148,18 @@ export default function DoctorMessagesScreen() {
 
   const handleChatPress = useCallback(
     async (chat: EnrichedChat) => {
+      const baseParams = {
+        patientName: chat.name,
+        animalImage: chat.animalImage || '',
+        appointmentId:
+          chat.appointmentId != null ? String(chat.appointmentId) : undefined,
+      };
       if (chat.conversationId) {
         router.push({
           pathname: '/chat',
           params: {
             conversationId: String(chat.conversationId),
-            patientName: chat.name,
-            animalImage: chat.animalImage || '',
+            ...baseParams,
           },
         });
         return;
@@ -155,8 +172,7 @@ export default function DoctorMessagesScreen() {
           pathname: '/chat',
           params: {
             conversationId: String(result.id),
-            patientName: chat.name,
-            animalImage: chat.animalImage || '',
+            ...baseParams,
           },
         });
       } catch {}

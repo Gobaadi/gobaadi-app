@@ -27,7 +27,7 @@ export function IncomingCallModal({
 
           <View style={styles.buttonRow}>
             <TouchableOpacity style={styles.rejectBtn} onPress={onReject} activeOpacity={0.8}>
-              <Ionicons name="call" size={24} color="#FFFFFF" />
+              <Ionicons name="videocam-off" size={24} color="#FFFFFF" />
             </TouchableOpacity>
             <TouchableOpacity style={styles.acceptBtn} onPress={onAccept} activeOpacity={0.8}>
               <Ionicons name="videocam" size={24} color="#FFFFFF" />

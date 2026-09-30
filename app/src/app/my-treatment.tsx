@@ -23,6 +23,7 @@ import {
   type AppointmentStatus,
 } from '@/store/doctorPortalApi';
 import { useCreateSessionMutation } from '@/store/videoCallApi';
+import { useLazyGetForAppointmentQuery } from '@/store/consultationsApi';
 import { useCallSignalingContext } from '@/components/IncomingCallProvider';
 
 interface Treatment {
@@ -68,6 +69,7 @@ export default function MyTreatmentScreen() {
   const { data: doctors = [] } = useGetDoctorsQuery();
   const [cancelBookingMutation] = useCancelBookingMutation();
   const [createSession] = useCreateSessionMutation();
+  const [getConsultation] = useLazyGetForAppointmentQuery();
 
   const doctorsById = useMemo(
     () => Object.fromEntries(doctors.map((d) => [d.id, d])),
@@ -88,9 +90,20 @@ export default function MyTreatmentScreen() {
 
       try {
         setCallingAppointmentId(appointment.id);
+        const consultation = await getConsultation(String(appointment.id))
+          .unwrap()
+          .catch(() => null);
+        if (consultation?.status !== 'ONGOING') {
+          setCallingAppointmentId(null);
+          Alert.alert(
+            'Consultation not started',
+            'Start the consultation in the chat before placing a call.',
+          );
+          return;
+        }
         const session = await createSession(appointment.id).unwrap();
-        const doctor = doctorsById[appointment.doctorId];
-        const callerRole = user.role === 'doctor' ? 'DOCTOR' as const : 'FARMER' as const;
+        const callerRole =
+          user.role === 'doctor' ? ('DOCTOR' as const) : ('PATIENT' as const);
 
         startCall(
           appointment.id,
@@ -105,7 +118,7 @@ export default function MyTreatmentScreen() {
         Alert.alert('Call Failed', Array.isArray(message) ? message[0] : message);
       }
     },
-    [user, doctorsById, createSession, startCall],
+    [user, createSession, getConsultation, startCall],
   );
 
   useEffect(() => {

@@ -16,14 +16,19 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useSelector } from 'react-redux';
+import type { RootState } from '@/store/store';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import PrescriptionBottomSheet from '@/components/PrescriptionBottomSheet';
+import { useCallSignalingContext } from '@/components/IncomingCallProvider';
 import { useGetMessagesQuery, useSendMessageMutation, useSendAttachmentMessageMutation } from '@/store/chatApi';
 import {
   useGetByIdQuery as useGetConsultationQuery,
-  useStartConsultationMutation,
+  useGetForAppointmentQuery,
+  useStartForAppointmentMutation,
   useEndConsultationMutation,
+  consultationStartedAt,
 } from '@/store/consultationsApi';
 import {
   useCreatePrescriptionMutation,
@@ -66,23 +71,33 @@ export default function ChatScreen() {
     appointmentId?: string;
   }>();
 
-  const consultationId = params.consultationId || '';
+  const [consultationId, setConsultationId] = useState(params.consultationId || '');
   const conversationId = params.conversationId ? parseInt(params.conversationId, 10) : undefined;
   const patientName = params.patientName || 'Patient';
   const animalImage = params.animalImage || '';
   const animalId = params.animalId || '';
   const appointmentId = params.appointmentId || '';
 
+  const viewerRole = useSelector((state: RootState) => state.auth.user?.role);
+  const isViewerDoctor = viewerRole === 'doctor';
+
   const { data: consultation } = useGetConsultationQuery(consultationId, { skip: !consultationId });
+  // Re-attach to an already-running consultation when the chat is (re)opened —
+  // params.consultationId is rarely passed by navigators.
+  const { data: appointmentConsultation } = useGetForAppointmentQuery(appointmentId, {
+    skip: !appointmentId,
+  });
+  const activeConsultation = consultation ?? appointmentConsultation ?? undefined;
   const { data: apiMessages, isLoading: messagesLoading } = useGetMessagesQuery(conversationId, { skip: !conversationId });
   const [sendMessage, { isLoading: sending }] = useSendMessageMutation();
-  const [startConsultation, { isLoading: starting }] = useStartConsultationMutation();
+  const [startConsultation, { isLoading: starting }] = useStartForAppointmentMutation();
   const [endConsultation, { isLoading: ending }] = useEndConsultationMutation();
   const [createPrescription] = useCreatePrescriptionMutation();
   const [sendPrescriptionApi] = useSendPrescriptionMutation();
   const [sendAttachment, { isLoading: sendingAttachment }] = useSendAttachmentMessageMutation();
 
   useChatSocket(conversationId);
+  const { ringCall } = useCallSignalingContext();
 
   const [consultationState, setConsultationState] = useState<ConsultationState>('idle');
   const [inputText, setInputText] = useState('');
@@ -93,20 +108,22 @@ export default function ChatScreen() {
   const [localMessages, setLocalMessages] = useState<ChatMessageUI[]>([]);
 
   useEffect(() => {
-    if (consultation) {
-      if (consultation.status === 'COMPLETED' || consultation.status === 'ENDED') {
-        setConsultationState('ended');
-      } else if (consultation.status === 'IN_PROGRESS') {
-        setConsultationState('active');
-        if (consultation.startedAt) {
-          const elapsed = Math.floor(
-            (Date.now() - new Date(consultation.startedAt).getTime()) / 1000,
-          );
-          setRemainingTime(Math.max(0, CONSULTATION_DURATION_SECONDS - elapsed));
-        }
-      }
+    if (!activeConsultation) return;
+    if (activeConsultation.status === 'COMPLETED') {
+      setRemainingTime(0);
+      setConsultationState((prev) => (prev === 'prescription_sent' ? prev : 'ended'));
+      return;
     }
-  }, [consultation]);
+    if (activeConsultation.status === 'ONGOING') {
+      setConsultationState((prev) =>
+        prev === 'ended' || prev === 'prescription_sent' ? prev : 'active',
+      );
+      const elapsed = Math.floor(
+        (Date.now() - new Date(consultationStartedAt(activeConsultation)).getTime()) / 1000,
+      );
+      setRemainingTime(Math.max(0, CONSULTATION_DURATION_SECONDS - elapsed));
+    }
+  }, [activeConsultation]);
 
   useEffect(() => {
     if (consultationState !== 'active') return;
@@ -140,11 +157,21 @@ export default function ChatScreen() {
   }, [apiMessages]);
 
   const handleStartConsultation = async () => {
-    if (!consultationId) return;
+    if (!appointmentId) {
+      Alert.alert(
+        'Error',
+        'Missing appointment information. Please open this chat from the appointment.',
+      );
+      return;
+    }
     try {
-      await startConsultation(consultationId).unwrap();
+      const started = await startConsultation(appointmentId).unwrap();
+      setConsultationId(String(started.id));
       setConsultationState('active');
-      setRemainingTime(CONSULTATION_DURATION_SECONDS);
+      const elapsed = Math.floor(
+        (Date.now() - new Date(consultationStartedAt(started)).getTime()) / 1000,
+      );
+      setRemainingTime(Math.max(0, CONSULTATION_DURATION_SECONDS - elapsed));
     } catch {
       Alert.alert('Error', 'Failed to start consultation. Please try again.');
     }
@@ -164,7 +191,7 @@ export default function ChatScreen() {
       params: {
         consultationId,
         patientName,
-        startedAt: consultation?.startedAt || '',
+        startedAt: consultation ? consultationStartedAt(consultation) : '',
         conversationId: conversationId ? String(conversationId) : '',
         animalId,
         appointmentId,
@@ -174,6 +201,30 @@ export default function ChatScreen() {
 
   const handleSendPrescription = () => {
     setShowPrescriptionSheet(true);
+  };
+
+  /**
+   * Ring the other party (socket callStarted), then join the call screen
+   * immediately and wait in the Agora channel.
+   */
+  const handleStartCall = () => {
+    if (!appointmentId) {
+      Alert.alert(
+        'Error',
+        'Missing appointment information. Please open this chat from the appointment.',
+      );
+      return;
+    }
+    ringCall(parseInt(appointmentId, 10));
+    router.push({
+      pathname: '/video-call',
+      params: {
+        appointmentId,
+        conversationId: conversationId ? String(conversationId) : '',
+        patientName,
+        animalImage,
+      },
+    });
   };
 
   const handlePrescriptionSent = useCallback(async (data: { medications: any[]; instructions: string; note: string }) => {
@@ -332,7 +383,7 @@ export default function ChatScreen() {
     setInputText('');
     const optimistic: ChatMessageUI = {
       id: `temp-${Date.now()}`,
-      sender: 'doctor',
+      sender: isViewerDoctor ? 'doctor' : 'patient',
       text,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
@@ -346,12 +397,12 @@ export default function ChatScreen() {
   };
 
   const renderMessage = ({ item }: { item: ChatMessageUI }) => {
-    const isDoctor = item.sender === 'doctor';
+    const isMine = isViewerDoctor ? item.sender === 'doctor' : item.sender === 'patient';
 
     if (item.isPrescription) {
       return (
-        <View style={styles.messageRowRight}>
-          <View style={styles.prescriptionBubble}>
+        <View style={isMine ? styles.messageRowRight : styles.messageRowLeft}>
+          <View style={isMine ? styles.prescriptionBubble : styles.prescriptionBubbleLeft}>
             <View style={styles.prescriptionHeader}>
               <Ionicons name="document-text" size={18} color="#FFFFFF" />
               <Text style={styles.prescriptionTitle}>Prescription - {item.prescriptionDate}</Text>
@@ -378,21 +429,25 @@ export default function ChatScreen() {
     }
 
     return (
-      <View style={isDoctor ? styles.messageRowRight : styles.messageRowLeft}>
-        {!isDoctor && (
+      <View style={isMine ? styles.messageRowRight : styles.messageRowLeft}>
+        {!isMine && (
           <View style={styles.patientAvatar}>
-            {animalImage ? (
-              <Image source={{ uri: animalImage }} style={styles.patientAvatarImage} />
+            {item.sender === 'patient' ? (
+              animalImage ? (
+                <Image source={{ uri: animalImage }} style={styles.patientAvatarImage} />
+              ) : (
+                <Ionicons name="paw" size={16} color="#BD632F" />
+              )
             ) : (
-              <Ionicons name="paw" size={16} color="#BD632F" />
+              <Ionicons name="person" size={16} color="#BD632F" />
             )}
           </View>
         )}
-        <View style={isDoctor ? styles.doctorBubble : styles.patientBubble}>
-          <Text style={isDoctor ? styles.doctorBubbleText : styles.patientBubbleText}>
+        <View style={isMine ? styles.mineBubble : styles.theirsBubble}>
+          <Text style={isMine ? styles.mineBubbleText : styles.theirsBubbleText}>
             {item.text}
           </Text>
-          <Text style={isDoctor ? styles.doctorTimeText : styles.patientTimeText}>
+          <Text style={isMine ? styles.mineTimeText : styles.theirsTimeText}>
             {item.time}
           </Text>
         </View>
@@ -408,40 +463,26 @@ export default function ChatScreen() {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{patientName}</Text>
         <View style={styles.headerActions}>
-          <TouchableOpacity
-            style={styles.headerActionBtn}
-            activeOpacity={0.7}
-            onPress={() =>
-              router.push({
-                pathname: '/video-call',
-                params: {
-                  appointmentId,
-                  conversationId: conversationId ? String(conversationId) : '',
-                  patientName,
-                  animalImage,
-                },
-              })
-            }
-          >
-            <Ionicons name="call" size={18} color="#FFFFFF" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.headerActionBtn}
-            activeOpacity={0.7}
-            onPress={() =>
-              router.push({
-                pathname: '/video-call',
-                params: {
-                  appointmentId,
-                  conversationId: conversationId ? String(conversationId) : '',
-                  patientName,
-                  animalImage,
-                },
-              })
-            }
-          >
-            <Ionicons name="videocam" size={18} color="#FFFFFF" />
-          </TouchableOpacity>
+          {!!appointmentId && (
+            <>
+              <TouchableOpacity
+                style={[styles.headerActionBtn, consultationState !== 'active' && styles.headerActionBtnDisabled]}
+                activeOpacity={0.7}
+                disabled={consultationState !== 'active'}
+                onPress={handleStartCall}
+              >
+                <Ionicons name="call" size={18} color="#FFFFFF" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.headerActionBtn, consultationState !== 'active' && styles.headerActionBtnDisabled]}
+                activeOpacity={0.7}
+                disabled={consultationState !== 'active'}
+                onPress={handleStartCall}
+              >
+                <Ionicons name="videocam" size={18} color="#FFFFFF" />
+              </TouchableOpacity>
+            </>
+          )}
           <TouchableOpacity style={styles.headerActionBtn} activeOpacity={0.7} onPress={() => setShowActionsMenu((prev) => !prev)}>
             <Ionicons name="ellipsis-vertical" size={18} color="#FFFFFF" />
           </TouchableOpacity>
@@ -478,7 +519,7 @@ export default function ChatScreen() {
         </>
       )}
 
-      {(consultationState === 'idle' || consultationState === 'active') && consultation && (
+      {consultationState === 'active' && activeConsultation && (
         <View style={styles.upcomingBanner}>
           <View style={styles.upcomingBannerLeft}>
             <View style={styles.upcomingBannerAvatar}>
@@ -490,7 +531,7 @@ export default function ChatScreen() {
             </View>
             <View>
               <Text style={styles.upcomingBannerTime}>
-                {new Date(consultation.startedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · Today
+                {new Date(consultationStartedAt(activeConsultation)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · Today
               </Text>
               <Text style={styles.upcomingBannerName}>{patientName}</Text>
             </View>
@@ -498,17 +539,7 @@ export default function ChatScreen() {
           <TouchableOpacity
             style={styles.upcomingBannerJoin}
             activeOpacity={0.85}
-            onPress={() =>
-              router.push({
-                pathname: '/video-call',
-                params: {
-                  appointmentId,
-                  conversationId: conversationId ? String(conversationId) : '',
-                  patientName,
-                  animalImage,
-                },
-              })
-            }
+            onPress={handleStartCall}
           >
             <Text style={styles.upcomingBannerJoinText}>Join</Text>
           </TouchableOpacity>
@@ -519,7 +550,7 @@ export default function ChatScreen() {
         <View style={styles.consultationBanner}>
           <Text style={styles.consultationBannerTitle}>Consultation started</Text>
           <Text style={styles.consultationBannerDesc}>You are now in consultation with {patientName}</Text>
-          <Text style={styles.consultationBannerBullet}>•  Start time: {consultation ? new Date(consultation.startedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</Text>
+          <Text style={styles.consultationBannerBullet}>•  Start time: {consultation ? new Date(consultationStartedAt(consultation)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</Text>
           <Text style={styles.consultationBannerBullet}>•  Max Duration: 30 min</Text>
           <Text style={styles.consultationBannerRemaining}>•  Remaining time: {formatTimeRemaining(remainingTime)}</Text>
           <TouchableOpacity style={styles.endConsultationBtn} onPress={handleEndConsultation} activeOpacity={0.85} disabled={ending}>
@@ -536,7 +567,7 @@ export default function ChatScreen() {
         <View style={styles.consultationBanner}>
           <Text style={styles.consultationBannerEndedTitle}>Consultation ended!</Text>
           <Text style={styles.consultationBannerDesc}>Your consultation with {patientName} has ended.</Text>
-          <Text style={styles.consultationBannerBullet}>•  Start time: {consultation ? new Date(consultation.startedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</Text>
+          <Text style={styles.consultationBannerBullet}>•  Start time: {consultation ? new Date(consultationStartedAt(consultation)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</Text>
           <Text style={styles.consultationBannerBullet}>•  Max Duration: 30 min</Text>
           <Text style={styles.consultationBannerRemaining}>•  Remaining time: {formatTimeRemaining(remainingTime)}</Text>
         </View>
@@ -604,7 +635,7 @@ export default function ChatScreen() {
         </View>
       )}
 
-      {consultationState === 'idle' && (
+      {consultationState === 'idle' && !!appointmentId && (
         <View style={styles.startConsultationContainer}>
           <TouchableOpacity style={styles.startConsultationBtn} onPress={handleStartConsultation} activeOpacity={0.85} disabled={starting}>
             {starting ? (
@@ -616,7 +647,7 @@ export default function ChatScreen() {
         </View>
       )}
 
-      {consultationState !== 'idle' && (
+      {(!!conversationId || consultationState !== 'idle') && (
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           keyboardVerticalOffset={0}
@@ -665,6 +696,7 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 18, fontWeight: '800', color: '#FFFFFF' },
   headerActions: { flexDirection: 'row', gap: 4 },
   headerActionBtn: { width: 36, height: 36, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
+  headerActionBtnDisabled: { opacity: 0.4 },
   upcomingBanner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#E6D5C3', marginHorizontal: 20, borderRadius: 14, padding: 12, marginBottom: 12 },
   upcomingBannerLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   upcomingBannerAvatar: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFF2EB', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
@@ -696,13 +728,14 @@ const styles = StyleSheet.create({
   messageRowRight: { flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 14, maxWidth: '85%', alignSelf: 'flex-end' },
   patientAvatar: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#FFF2EB', justifyContent: 'center', alignItems: 'center', marginRight: 8, overflow: 'hidden' },
   patientAvatarImage: { width: 32, height: 32, borderRadius: 16 },
-  patientBubble: { backgroundColor: '#F5EDE6', borderRadius: 18, borderBottomLeftRadius: 4, paddingHorizontal: 14, paddingVertical: 10, maxWidth: '100%' },
-  patientBubbleText: { fontSize: 14, fontWeight: '500', color: '#1A1817', lineHeight: 19 },
-  patientTimeText: { fontSize: 10, fontWeight: '500', color: '#9C9690', marginTop: 4, alignSelf: 'flex-end' },
-  doctorBubble: { backgroundColor: '#BD632F', borderRadius: 18, borderBottomRightRadius: 4, paddingHorizontal: 14, paddingVertical: 10, maxWidth: '100%' },
-  doctorBubbleText: { fontSize: 14, fontWeight: '500', color: '#FFFFFF', lineHeight: 19 },
-  doctorTimeText: { fontSize: 10, fontWeight: '500', color: 'rgba(255,255,255,0.7)', marginTop: 4, alignSelf: 'flex-end' },
+  theirsBubble: { backgroundColor: '#FFFFFF', borderRadius: 18, borderBottomLeftRadius: 4, borderWidth: 1, borderColor: '#F0EAE1', paddingHorizontal: 14, paddingVertical: 10, maxWidth: '100%' },
+  theirsBubbleText: { fontSize: 14, fontWeight: '500', color: '#BD632F', lineHeight: 19 },
+  theirsTimeText: { fontSize: 10, fontWeight: '500', color: 'rgba(189, 99, 47, 0.6)', marginTop: 4, alignSelf: 'flex-end' },
+  mineBubble: { backgroundColor: '#BD632F', borderRadius: 18, borderBottomRightRadius: 4, paddingHorizontal: 14, paddingVertical: 10, maxWidth: '100%' },
+  mineBubbleText: { fontSize: 14, fontWeight: '500', color: '#FFFFFF', lineHeight: 19 },
+  mineTimeText: { fontSize: 10, fontWeight: '500', color: 'rgba(255,255,255,0.7)', marginTop: 4, alignSelf: 'flex-end' },
   prescriptionBubble: { backgroundColor: '#BD632F', borderRadius: 18, borderBottomRightRadius: 4, paddingHorizontal: 14, paddingVertical: 12, maxWidth: '100%', minWidth: 220 },
+  prescriptionBubbleLeft: { backgroundColor: '#BD632F', borderRadius: 18, borderBottomLeftRadius: 4, borderBottomRightRadius: 18, paddingHorizontal: 14, paddingVertical: 12, maxWidth: '100%', minWidth: 220 },
   prescriptionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
   prescriptionTitle: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
   prescriptionMeta: { fontSize: 11, fontWeight: '500', color: 'rgba(255,255,255,0.7)', marginBottom: 4 },
