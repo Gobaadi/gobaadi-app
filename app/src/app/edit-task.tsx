@@ -224,7 +224,11 @@ export default function EditTaskScreen() {
               value={customTask}
               onChangeText={setCustomTask}
             />
-            <TouchableOpacity style={styles.micBtn} activeOpacity={0.7}>
+            <TouchableOpacity
+              style={styles.micBtn}
+              onPress={() => Alert.alert('Voice input', 'Voice input is coming soon.')}
+              activeOpacity={0.7}
+            >
               <Ionicons name="mic-outline" size={20} color="#BD632F" />
             </TouchableOpacity>
           </View>

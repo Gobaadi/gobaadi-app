@@ -1,6 +1,18 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Optional,
+  Param,
+  Post,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
+  ApiConsumes,
   ApiOperation,
   ApiParam,
   ApiResponse,
@@ -25,11 +37,14 @@ export class SupportController {
   @Post()
   @ApiOperation({ summary: 'Create a support ticket' })
   @ApiResponse({ status: 201, description: 'Ticket created' })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('file'))
   async create(
     @CurrentUser() user: JwtPayload,
     @Body() dto: CreateTicketDto,
+    @Optional() @UploadedFile() file?: Express.Multer.File,
   ): Promise<SupportTicket> {
-    return this.supportService.create(user.sub, dto);
+    return this.supportService.create(user.sub, dto, file);
   }
 
   @Get()

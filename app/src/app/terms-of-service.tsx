@@ -10,6 +10,30 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
+const LOREM_A =
+  'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ' +
+  'ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco ' +
+  'laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in ' +
+  'voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat ' +
+  'non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.';
+
+const LOREM_B =
+  'Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, ' +
+  'totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae ' +
+  'dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, ' +
+  'sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt neque porro quisquam ' +
+  'est, qui dolorem ipsum quia dolor sit amet.';
+
+const SECTIONS: { heading: string; body: string }[] = [
+  { heading: '1. Acceptance of Terms', body: `${LOREM_A} ${LOREM_B}` },
+  { heading: '2. Account Registration', body: `${LOREM_A} ${LOREM_B}` },
+  { heading: '3. User Responsibilities', body: `${LOREM_A} ${LOREM_B}` },
+  { heading: '4. Marketplace & Orders', body: `${LOREM_A} ${LOREM_B}` },
+  { heading: '5. Veterinary Consultations', body: `${LOREM_A} ${LOREM_B}` },
+  { heading: '6. Limitation of Liability', body: `${LOREM_A} ${LOREM_B}` },
+  { heading: '7. Termination & Contact', body: `${LOREM_A} ${LOREM_B}` },
+];
+
 export default function TermsOfServiceScreen() {
   const router = useRouter();
 
@@ -28,35 +52,12 @@ export default function TermsOfServiceScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Section 1 */}
-        <Text style={styles.sectionHeading}>1. Types of Data We Collect</Text>
-        <Text style={styles.paragraph}>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt
-          ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco
-          laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in
-          voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat
-          non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-        </Text>
-
-        {/* Section 2 */}
-        <Text style={styles.sectionHeading}>2. Use of Your Personal Data</Text>
-        <Text style={styles.paragraph}>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt
-          ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco
-          laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in
-          voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat
-          non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-        </Text>
-
-        {/* Section 3 */}
-        <Text style={styles.sectionHeading}>3. Disclosure of Your Personal Data</Text>
-        <Text style={styles.paragraph}>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt
-          ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco
-          laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in
-          voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat
-          non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-        </Text>
+        {SECTIONS.map((section) => (
+          <View key={section.heading}>
+            <Text style={styles.sectionHeading}>{section.heading}</Text>
+            <Text style={styles.paragraph}>{section.body}</Text>
+          </View>
+        ))}
       </ScrollView>
     </SafeAreaView>
   );

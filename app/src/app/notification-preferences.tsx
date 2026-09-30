@@ -18,10 +18,10 @@ import {
 } from '@/store/notificationPreferencesApi';
 import type { NotificationPreference } from '@/store/notificationPreferencesApi';
 
-type FilterTab = 'all' | 'appointments' | 'patients' | 'messages';
+type FilterTab = 'all' | 'tasks' | 'hygiene' | 'health' | 'help';
 
 interface PreferenceItem {
-  key: keyof Pick<NotificationPreference, 'appointmentReminders' | 'chatMessages' | 'followUpReminders' | 'hygieneReminders' | 'systemUpdates' | 'weatherAlerts' | 'taskReminders' | 'promotionalOffers'>;
+  key: keyof Pick<NotificationPreference, 'weatherAlerts' | 'vaccinationReminders' | 'taskReminders' | 'hygieneReminders' | 'systemUpdates'>;
   title: string;
   description: string;
   icon: string;
@@ -31,14 +31,11 @@ interface PreferenceItem {
 }
 
 const PREFERENCES: PreferenceItem[] = [
-  { key: 'appointmentReminders', title: 'Appointments Reminders', description: 'Get notified about upcoming appointments', icon: 'calendar', iconBg: '#FFF2EB', iconColor: '#BD632F', tab: 'appointments' },
-  { key: 'chatMessages', title: 'Patient Messages', description: 'Get notified when patients send messages', icon: 'chatbubble-ellipses', iconBg: '#FFF2EB', iconColor: '#BD632F', tab: 'patients' },
-  { key: 'followUpReminders', title: 'Follow-up Reminders', description: 'Reminders for scheduled follow-ups', icon: 'notifications', iconBg: '#E8F5E9', iconColor: '#4CAF50', tab: 'appointments' },
-  { key: 'hygieneReminders', title: 'Hygiene Reminder', description: 'Get notified about animal hygiene updates', icon: 'medical', iconBg: '#E8F5E9', iconColor: '#4CAF50', tab: 'patients' },
-  { key: 'systemUpdates', title: 'System Updates', description: 'Important updates from the platform', icon: 'volume-high', iconBg: '#F3E5F5', iconColor: '#9C27B0', tab: 'messages' },
-  { key: 'weatherAlerts', title: 'Weather Alerts', description: 'Get notified about weather changes affecting livestock', icon: 'partly-sunny', iconBg: '#E3F2FD', iconColor: '#2196F3', tab: 'all' },
-  { key: 'taskReminders', title: 'Task Reminders', description: 'Reminders for your scheduled tasks', icon: 'checkbox', iconBg: '#FFF9C4', iconColor: '#F9A825', tab: 'all' },
-  { key: 'promotionalOffers', title: 'Promotions', description: 'Get notified about offers and discounts', icon: 'pricetag', iconBg: '#FEECE2', iconColor: '#BD632F', tab: 'messages' },
+  { key: 'weatherAlerts', title: 'Weather', description: 'Rain, Heat, Wind Updates', icon: 'cloudy', iconBg: '#E3F2FD', iconColor: '#2196F3', tab: 'health' },
+  { key: 'vaccinationReminders', title: 'Animal Health', description: 'Rain, Heat, Wind Updates', icon: 'paw', iconBg: '#E8F5E9', iconColor: '#4CAF50', tab: 'health' },
+  { key: 'taskReminders', title: 'Task Reminder', description: 'Reminder For Schedule Task', icon: 'clipboard', iconBg: '#E8F5E9', iconColor: '#4CAF50', tab: 'tasks' },
+  { key: 'hygieneReminders', title: 'Hygiene Reminder', description: 'Reminder For Schedule Task', icon: 'medkit', iconBg: '#E8F5E9', iconColor: '#4CAF50', tab: 'hygiene' },
+  { key: 'systemUpdates', title: 'Help', description: 'Update About Request & Responce', icon: 'help-circle', iconBg: '#E8F5E9', iconColor: '#4CAF50', tab: 'help' },
 ];
 
 export default function NotificationPreferencesScreen() {
@@ -113,7 +110,7 @@ export default function NotificationPreferencesScreen() {
       </View>
 
       <View style={styles.tabRow}>
-        {(['all', 'appointments', 'patients', 'messages'] as FilterTab[]).map((tab) => (
+        {(['all', 'tasks', 'hygiene', 'health', 'help'] as FilterTab[]).map((tab) => (
           <TouchableOpacity
             key={tab}
             style={[styles.tab, activeTab === tab && styles.tabActive]}
@@ -121,7 +118,7 @@ export default function NotificationPreferencesScreen() {
             activeOpacity={0.7}
           >
             <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-              {tab === 'all' ? 'All' : tab === 'appointments' ? 'Appointments' : tab === 'patients' ? 'Patients' : 'Messages'}
+              {tab.charAt(0).toUpperCase() + tab.slice(1)}
             </Text>
           </TouchableOpacity>
         ))}

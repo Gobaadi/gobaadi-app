@@ -5,6 +5,7 @@ import {
   Text,
   TouchableOpacity,
   Linking,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -28,7 +29,11 @@ export default function ContactSupportScreen() {
         <TouchableOpacity
           style={styles.contactCard}
           activeOpacity={0.8}
-          onPress={() => Linking.openURL('mailto:support@gobaadi.com')}
+          onPress={() =>
+            Linking.openURL('mailto:support@gobaadi.com').catch(() =>
+              Alert.alert('No email app', 'Please contact us at support@gobaadi.com'),
+            )
+          }
         >
           <View style={styles.contactIcon}>
             <Ionicons name="mail-outline" size={22} color="#BD632F" />
@@ -43,7 +48,11 @@ export default function ContactSupportScreen() {
         <TouchableOpacity
           style={styles.contactCard}
           activeOpacity={0.8}
-          onPress={() => Linking.openURL('tel:+8801911418977')}
+          onPress={() =>
+            Linking.openURL('tel:+8801911418977').catch(() =>
+              Alert.alert('No phone app', 'Please call customer service at +8801911418977'),
+            )
+          }
         >
           <View style={styles.contactIcon}>
             <Ionicons name="call-outline" size={22} color="#BD632F" />

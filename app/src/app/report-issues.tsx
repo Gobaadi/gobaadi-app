@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as DocumentPicker from 'expo-document-picker';
 import { useCreateTicketMutation } from '@/store/supportApi';
 
 const ISSUE_TYPES = [
@@ -27,7 +28,33 @@ export default function ReportIssuesScreen() {
   const [selectedIssue, setSelectedIssue] = useState('E.g App Not Working');
   const [description, setDescription] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
+  const [attachment, setAttachment] = useState<{
+    uri: string;
+    name: string;
+    size: number | null;
+    mimeType?: string;
+  } | null>(null);
   const [createTicket, { isLoading }] = useCreateTicketMutation();
+
+  async function handleBrowseFile() {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: '*/*',
+        copyToCacheDirectory: true,
+        multiple: false,
+      });
+      if (result.canceled || !result.assets?.length) return;
+      const file = result.assets[0];
+      setAttachment({
+        uri: file.uri,
+        name: file.name,
+        size: typeof file.size === 'number' ? file.size : null,
+        mimeType: file.mimeType,
+      });
+    } catch {
+      Alert.alert('Error', 'Could not select the file. Please try again.');
+    }
+  }
 
   async function handleSubmit() {
     if (!description.trim()) {
@@ -39,7 +66,17 @@ export default function ReportIssuesScreen() {
       return;
     }
     try {
-      await createTicket({ subject: selectedIssue, message: description }).unwrap();
+      const form = new FormData();
+      form.append('subject', selectedIssue);
+      form.append('message', description);
+      if (attachment) {
+        form.append('file', {
+          uri: attachment.uri,
+          name: attachment.name,
+          type: attachment.mimeType || 'application/octet-stream',
+        } as any);
+      }
+      await createTicket(form).unwrap();
       Alert.alert('Report Submitted', 'Thank you for reporting. Our team will inspect it promptly.', [
         { text: 'OK', onPress: () => router.back() },
       ]);
@@ -107,6 +144,42 @@ export default function ReportIssuesScreen() {
             onChangeText={setDescription}
           />
         </View>
+
+        {/* Attachment Upload */}
+        <View style={styles.uploadCard}>
+          <View style={styles.uploadIconCircle}>
+            <Ionicons name="camera-outline" size={22} color="#7C7672" />
+          </View>
+          <Text style={styles.uploadTitle}>Drag &amp; Drop</Text>
+          <Text style={styles.uploadSubtitle}>Select File and Upload Here</Text>
+          <View style={styles.uploadDivider} />
+          <TouchableOpacity
+            style={styles.browseBtn}
+            onPress={handleBrowseFile}
+            activeOpacity={0.8}
+            disabled={isLoading}
+          >
+            <Ionicons name="add" size={20} color="#1A1817" />
+            <Text style={styles.browseBtnText}>Browse File</Text>
+          </TouchableOpacity>
+        </View>
+
+        {attachment && (
+          <View style={styles.selectedFileRow}>
+            <Ionicons name="document-attach-outline" size={18} color="#BD632F" />
+            <Text style={styles.selectedFileName} numberOfLines={1}>
+              {attachment.name}
+            </Text>
+            <TouchableOpacity
+              onPress={() => setAttachment(null)}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              activeOpacity={0.7}
+              disabled={isLoading}
+            >
+              <Ionicons name="close-circle" size={20} color="#9C9690" />
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Submit Button */}
         <TouchableOpacity
@@ -217,6 +290,77 @@ const styles = StyleSheet.create({
     height: 100,
     textAlignVertical: 'top',
     fontSize: 14,
+    color: '#1A1817',
+  },
+  uploadCard: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E6E1DC',
+    borderRadius: 18,
+    padding: 20,
+    marginBottom: 12,
+    alignItems: 'center',
+  },
+  uploadIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#F5F2EC',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  uploadTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1A1817',
+    marginBottom: 4,
+  },
+  uploadSubtitle: {
+    fontSize: 13,
+    color: '#9C9690',
+    marginBottom: 14,
+  },
+  uploadDivider: {
+    height: 1,
+    alignSelf: 'stretch',
+    backgroundColor: '#E6E1DC',
+    marginBottom: 14,
+    borderStyle: 'dashed',
+  },
+  browseBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    alignSelf: 'stretch',
+    height: 46,
+    borderRadius: 12,
+    backgroundColor: '#EEF3F9',
+    borderWidth: 1,
+    borderColor: '#DCE5F0',
+  },
+  browseBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1A1817',
+  },
+  selectedFileRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#FFF8F4',
+    borderWidth: 1,
+    borderColor: '#F0DFD4',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginBottom: 16,
+  },
+  selectedFileName: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '600',
     color: '#1A1817',
   },
   submitBtn: {

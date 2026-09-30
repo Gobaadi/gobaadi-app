@@ -111,6 +111,15 @@ export default function AddTaskScreen() {
   const [endTime, setEndTime] = useState(defaults.endTime);
 
   async function handleSubmit() {
+    if (!customTask.trim()) {
+      Alert.alert('Required field', 'Please enter your task description.');
+      return;
+    }
+    if (!startTime.trim() || !endTime.trim()) {
+      Alert.alert('Required field', 'Please enter start and end time.');
+      return;
+    }
+
     const typeObj = TASK_TYPES.find((t) => t.id === selectedType);
     const shedObj = SHEDS.find((s) => s.id === selectedShed);
     const title = customTask.trim() || `${typeObj?.name || 'Task'} - ${shedObj?.name || 'Farm'}`;
@@ -183,7 +192,11 @@ export default function AddTaskScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Date Selector Pills */}
         <View style={styles.datePillsRow}>
           {datePills.map((p) => (
@@ -273,7 +286,11 @@ export default function AddTaskScreen() {
               value={customTask}
               onChangeText={setCustomTask}
             />
-            <TouchableOpacity style={styles.micBtn} activeOpacity={0.7}>
+            <TouchableOpacity
+              style={styles.micBtn}
+              onPress={() => Alert.alert('Voice input', 'Voice input is coming soon.')}
+              activeOpacity={0.7}
+            >
               <Ionicons name="mic-outline" size={20} color="#BD632F" />
             </TouchableOpacity>
           </View>

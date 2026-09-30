@@ -12,6 +12,7 @@ import {
   ReplyTicketDto,
   UpdateTicketStatusDto,
 } from './dto/support.dto';
+import { S3Service } from '../s3/s3.service';
 
 @Injectable()
 export class SupportService {
@@ -20,14 +21,33 @@ export class SupportService {
     private readonly ticketRepository: Repository<SupportTicket>,
     @InjectRepository(SupportTicketReply)
     private readonly replyRepository: Repository<SupportTicketReply>,
+    private readonly s3Service: S3Service,
   ) {}
 
-  async create(userId: number, dto: CreateTicketDto): Promise<SupportTicket> {
+  async create(
+    userId: number,
+    dto: CreateTicketDto,
+    file?: Express.Multer.File,
+  ): Promise<SupportTicket> {
+    let attachmentUrl: string | null = null;
+    let attachmentFileName: string | null = null;
+
+    if (file) {
+      const uploaded = await this.s3Service.uploadFile(file.buffer, {
+        folder: 'gobadi/support-attachments',
+        contentType: file.mimetype,
+      });
+      attachmentUrl = uploaded.url;
+      attachmentFileName = file.originalname;
+    }
+
     return this.ticketRepository.save(
       this.ticketRepository.create({
         userId,
         subject: dto.subject,
         message: dto.message,
+        attachmentUrl,
+        attachmentFileName,
       }),
     );
   }
