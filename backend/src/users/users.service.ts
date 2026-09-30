@@ -9,6 +9,7 @@ import { Repository, ILike } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User, UserRole } from './user.entity';
 import { PaginatedResult } from '../common/paginated-result.interface';
+import { S3Service } from '../s3/s3.service';
 
 interface CreateWithPasswordInput {
   name: string;
@@ -30,6 +31,7 @@ export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    private readonly s3Service: S3Service,
   ) {}
 
   async findOrCreateByPhone(
@@ -87,6 +89,14 @@ export class UsersService {
     }
     Object.assign(user, data);
     return this.userRepository.save(user);
+  }
+
+  async uploadPhoto(file: Express.Multer.File): Promise<string> {
+    const result = await this.s3Service.uploadFile(file.buffer, {
+      folder: 'gobadi/avatars',
+      contentType: file.mimetype,
+    });
+    return result.url;
   }
 
   /** Looks up a user by phone or email, including the normally-hidden password hash. */

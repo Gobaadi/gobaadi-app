@@ -49,7 +49,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow $(PRODUCT_NAME) to access your photos to add animal pictures."
+          "photosPermission": "Allow $(PRODUCT_NAME) to access your photos to add animal pictures.",
+          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera to take a profile photo."
         }
       ]
     ],

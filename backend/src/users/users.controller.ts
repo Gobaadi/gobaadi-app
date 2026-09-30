@@ -1,6 +1,19 @@
-import { Body, Controller, Get, Patch, UseGuards } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Patch,
+  Post,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
   ApiOperation,
   ApiProperty,
   ApiResponse,
@@ -58,5 +71,28 @@ export class UsersController {
       language: body.language,
     } as any);
     return { success: true, language: body.language };
+  }
+
+  @Post('me/photo')
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { file: { type: 'string', format: 'binary' } },
+    },
+  })
+  @ApiOperation({ summary: 'Upload a profile photo and save it to the profile' })
+  @ApiResponse({ status: 201, description: 'Photo uploaded' })
+  async uploadMyPhoto(
+    @UploadedFile() file: Express.Multer.File,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<{ url: string }> {
+    if (!file) {
+      throw new BadRequestException('A file is required');
+    }
+    const url = await this.usersService.uploadPhoto(file);
+    await this.usersService.updateProfile(user.sub, { profilePhoto: url });
+    return { url };
   }
 }

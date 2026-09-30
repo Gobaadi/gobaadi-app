@@ -28,6 +28,12 @@ interface Category {
   icon: string;
 }
 
+function clinicImageSource(avatar?: string) {
+  return avatar && avatar.startsWith('http')
+    ? { uri: avatar }
+    : require('@/assets/images/clinic_lobby.png');
+}
+
 interface DoctorView {
   id: number;
   name: string;
@@ -42,7 +48,7 @@ export default function DoctorsScreen() {
   const router = useRouter();
   const [activeSlide, setActiveSlide] = useState(0);
   const [activeCategory, setActiveCategory] = useState('General');
-  const { data: clinics = [] } = useGetClinicsQuery();
+  const { data: clinics = [], isLoading: clinicsLoading } = useGetClinicsQuery();
   const { languageCode } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearch = useDebounce(searchQuery, 300);
@@ -439,54 +445,59 @@ export default function DoctorsScreen() {
         )}
 
         {/* Nearby Medical Centers Section */}
-        {clinics.length > 0 && (
-          <>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Nearby Medical Centers</Text>
-            </View>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Nearby Medical Centers</Text>
+          <TouchableOpacity onPress={() => router.push('/all-clinics')}>
+            <Text style={styles.viewAllText}>View all</Text>
+          </TouchableOpacity>
+        </View>
 
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.clinicsRow}
-            >
-              {clinics.map((clinic) => (
-                <TouchableOpacity
-                  key={clinic.id}
-                  style={styles.clinicCard}
-                  activeOpacity={0.8}
-                  onPress={() => router.push({ pathname: '/doctor-detail', params: { id: String(clinic.doctors?.[0]?.id || clinic.id) } })}
-                >
-                  <View style={styles.clinicAvatarContainer}>
-                    {clinic.avatar ? (
-                      <Image source={{ uri: clinic.avatar }} style={styles.clinicAvatar} />
-                    ) : (
-                      <View style={styles.clinicAvatarPlaceholder}>
-                        <Text style={styles.clinicAvatarEmoji}>🏥</Text>
-                      </View>
+        {clinicsLoading ? (
+          <View style={styles.emptyDoctorsContainer}>
+            <ActivityIndicator size="small" color="#BD632F" />
+          </View>
+        ) : clinics.length === 0 ? (
+          <View style={styles.emptyDoctorsContainer}>
+            <Text style={styles.emptyDoctorsIcon}>🏥</Text>
+            <Text style={styles.emptyDoctorsText}>No medical centers found</Text>
+            <Text style={styles.emptyDoctorsSubtext}>
+              Check back soon — new medical centers are added regularly.
+            </Text>
+          </View>
+        ) : (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.clinicsRow}
+          >
+            {clinics.map((clinic) => (
+              <TouchableOpacity
+                key={clinic.id}
+                style={styles.clinicCard}
+                activeOpacity={0.8}
+                onPress={() => router.push({ pathname: '/doctor-detail', params: { id: String(clinic.doctors?.[0]?.id || clinic.id) } })}
+              >
+                <Image source={clinicImageSource(clinic.avatar)} style={styles.clinicCoverImage} />
+                <View style={styles.clinicInfo}>
+                  <View style={styles.clinicNameRow}>
+                    <Text style={styles.clinicName} numberOfLines={1}>{clinic.name}</Text>
+                    {clinic.isVerified && (
+                      <Ionicons name="checkmark-circle" size={14} color="#4CAF50" />
                     )}
                   </View>
-                  <View style={styles.clinicInfo}>
-                    <View style={styles.clinicNameRow}>
-                      <Text style={styles.clinicName} numberOfLines={1}>{clinic.name}</Text>
-                      {clinic.isVerified && (
-                        <Ionicons name="checkmark-circle" size={14} color="#4CAF50" />
-                      )}
-                    </View>
-                    <View style={styles.clinicLocationRow}>
-                      <Text style={styles.clinicLocationPin}>📍</Text>
-                      <Text style={styles.clinicLocation} numberOfLines={1}>{clinic.location}</Text>
-                    </View>
-                    <View style={styles.clinicRatingRow}>
-                      <Text style={styles.clinicStarIcon}>⭐</Text>
-                      <Text style={styles.clinicRatingValue}>{clinic.rating}</Text>
-                      <Text style={styles.clinicDoctorCount}>| {clinic.doctors?.length || 0} Doctors</Text>
-                    </View>
+                  <View style={styles.clinicLocationRow}>
+                    <Text style={styles.clinicLocationPin}>📍</Text>
+                    <Text style={styles.clinicLocation} numberOfLines={1}>{clinic.location}</Text>
                   </View>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </>
+                  <View style={styles.clinicRatingRow}>
+                    <Text style={styles.clinicStarIcon}>⭐</Text>
+                    <Text style={styles.clinicRatingValue}>{clinic.rating}</Text>
+                    <Text style={styles.clinicDoctorCount}>| {clinic.doctors?.length || 0} Doctors</Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
         )}
       </ScrollView>
     </SafeAreaView>
@@ -1019,41 +1030,24 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   clinicCard: {
-    flexDirection: 'row',
-    width: 280,
+    width: 260,
     backgroundColor: '#FFFFFF',
     borderRadius: 18,
     borderWidth: 1,
     borderColor: '#E6E1DC',
-    padding: 14,
+    overflow: 'hidden',
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.03,
     shadowRadius: 6,
     elevation: 1,
   },
-  clinicAvatarContainer: {
-    marginRight: 12,
-  },
-  clinicAvatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 14,
-  },
-  clinicAvatarPlaceholder: {
-    width: 56,
-    height: 56,
-    borderRadius: 14,
-    backgroundColor: '#FFF2EB',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  clinicAvatarEmoji: {
-    fontSize: 24,
+  clinicCoverImage: {
+    width: '100%',
+    height: 130,
   },
   clinicInfo: {
-    flex: 1,
-    justifyContent: 'center',
+    padding: 14,
   },
   clinicNameRow: {
     flexDirection: 'row',

@@ -61,7 +61,7 @@ export default function MyTreatmentScreen() {
   const router = useRouter();
   const user = useSelector((state: RootState) => state.auth.user);
   const { startCall, outgoingState, resetOutgoingState } = useCallSignalingContext();
-  const [activeFilter, setActiveFilter] = useState<'All' | 'Upcoming'>('All');
+  const [activeFilter, setActiveFilter] = useState<'All' | 'Upcoming' | 'Medicine'>('All');
   const [activeVisitTab, setActiveVisitTab] = useState<'online' | 'physical'>('online');
   const [searchQuery, setSearchQuery] = useState('');
   const [callingAppointmentId, setCallingAppointmentId] = useState<number | null>(null);
@@ -133,10 +133,10 @@ export default function MyTreatmentScreen() {
           id: String(a.id),
           appointmentId: a.id,
           doctorId: a.doctorId,
-          name: doctor?.name || 'Doctor',
-          specialty: doctor?.specialty || '',
+          name: a.doctorName || doctor?.name || 'Doctor',
+          specialty: a.doctorSpecialty || doctor?.specialty || '',
           rating: doctor?.rating || 0,
-          avatar: doctor?.avatar || '',
+          avatar: a.doctorAvatar || doctor?.avatar || '',
           date: formatDate(a.startAt),
           bookedOn: formatDate(a.createdAt),
           status: a.status,
@@ -150,8 +150,16 @@ export default function MyTreatmentScreen() {
   );
 
   const filteredTreatments = treatments.filter((item) => {
-    if (searchQuery && !item.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      const matches =
+        item.name.toLowerCase().includes(query) ||
+        item.specialty.toLowerCase().includes(query);
+      return matches;
+    }
+
     if (activeFilter === 'Upcoming' && !isUpcoming(item.status)) return false;
+    if (activeFilter === 'Medicine' && !item.specialty?.toLowerCase().includes('medicine')) return false;
 
     // Filter by visit type tab
     if (activeVisitTab === 'online') {
@@ -261,7 +269,13 @@ export default function MyTreatmentScreen() {
         {/* Treatment card List */}
         <View style={styles.listContainer}>
           {filteredTreatments.length === 0 ? (
-            <Text style={styles.emptyText}>No appointments yet.</Text>
+            <Text style={styles.emptyText}>
+              {appointments.length === 0
+                ? 'No appointments yet.'
+                : searchQuery
+                  ? 'No appointments match your search.'
+                  : 'No appointments found.'}
+            </Text>
           ) : (
             filteredTreatments.map((item) => (
               <TouchableOpacity
