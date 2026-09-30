@@ -28,6 +28,12 @@ export class SupportTicket {
   @Column('text', { nullable: true })
   message?: string;
 
+  @Column({ type: 'varchar', nullable: true })
+  attachmentUrl?: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  attachmentFileName?: string | null;
+
   @Column({
     type: 'enum',
     enum: TicketStatus,

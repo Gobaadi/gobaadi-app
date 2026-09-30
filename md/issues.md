@@ -97,6 +97,11 @@ Blocked Test Cases (Not Run due to task creation failure):
 - **SOLVED**: `my-task.tsx` has custom delete confirmation Modal with Cancel and "Yes, Delete" buttons. Cancel closes modal. Delete calls `deleteTaskMutation` and refreshes list.
 ---
 
+Edit Task Navigation (new QA round): Tester reported "Edit Task does not open when tapped".
+- **Note: retest on a fresh build from HEAD**
+- **VERIFIED (no code change needed)**: Wiring checked end-to-end: `my-task.tsx` Edit Task button pushes `/edit-task` with id/title/detail/scheduledTime params, route is registered in `_layout.tsx`, `edit-task.tsx` mounts cleanly (`parseExistingTask` is null-safe), and expo-router `resolveHref` filters nullish params instead of throwing. Working tree matches HEAD for all task files. If it still fails on a fresh build, capture the console output for a runtime diagnosis.
+---
+
 5. Appointments & Doctor Consultations
 
 GOB-MOB-FN-TC-078 (Book Slot Validation): User can proceed to checkout without entering a booking reason.

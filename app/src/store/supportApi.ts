@@ -14,6 +14,8 @@ export interface Ticket {
   subject: string;
   message: string;
   status: string;
+  attachmentUrl?: string | null;
+  attachmentFileName?: string | null;
   messages: TicketMessage[];
   createdAt: string;
   updatedAt: string;
@@ -29,7 +31,7 @@ export const supportApi = createApi({
   baseQuery: baseQueryWithReauth,
   tagTypes: ['SupportTicket'],
   endpoints: (builder) => ({
-    createTicket: builder.mutation<Ticket, CreateTicketInput>({
+    createTicket: builder.mutation<Ticket, FormData>({
       query: (body) => ({
         url: '/support/tickets',
         method: 'POST',
