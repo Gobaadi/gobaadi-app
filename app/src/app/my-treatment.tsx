@@ -16,6 +16,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSelector } from 'react-redux';
 import type { RootState } from '@/store/store';
 import { useGetDoctorsQuery } from '@/store/doctorsApi';
+import { useLocation } from '@/hooks/use-location';
+import LocationBottomSheet from '@/components/LocationBottomSheet';
 import {
   useGetDoctorBookingsQuery,
   useCancelBookingMutation,
@@ -63,6 +65,8 @@ export default function MyTreatmentScreen() {
   const [activeVisitTab, setActiveVisitTab] = useState<'online' | 'physical'>('online');
   const [searchQuery, setSearchQuery] = useState('');
   const [callingAppointmentId, setCallingAppointmentId] = useState<number | null>(null);
+  const { location, setLocation } = useLocation();
+  const [locationSheetOpen, setLocationSheetOpen] = useState(false);
 
   const { data: appointments = [] } = useGetDoctorBookingsQuery();
   const { data: doctors = [] } = useGetDoctorsQuery();
@@ -183,12 +187,23 @@ export default function MyTreatmentScreen() {
         {/* Location selector */}
         <View style={styles.locationContainer}>
           <Text style={styles.locationLabel}>Location</Text>
-          <TouchableOpacity style={styles.locationSelector} activeOpacity={0.7}>
+          <TouchableOpacity
+            style={styles.locationSelector}
+            activeOpacity={0.7}
+            onPress={() => setLocationSheetOpen(true)}
+          >
             <Text style={styles.locationPin}>📍</Text>
-            <Text style={styles.locationText}>Uttar Badda, Dhaka</Text>
+            <Text style={styles.locationText}>{location}</Text>
             <Text style={styles.dropdownArrow}>▼</Text>
           </TouchableOpacity>
         </View>
+
+        <LocationBottomSheet
+          visible={locationSheetOpen}
+          selectedLocation={location}
+          onClose={() => setLocationSheetOpen(false)}
+          onSave={setLocation}
+        />
 
         {/* Search Field */}
         <View style={styles.searchBar}>

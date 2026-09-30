@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   ScrollView,
   Modal,
-  Alert,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,6 +17,8 @@ import { useGetLivestockQuery, useGetMyListingsQuery } from '@/store/livestockAp
 import { useDebounce } from '@/hooks/use-debounce';
 import { EmptyState } from '@/components/ui/empty-state';
 import { MediaCardSkeleton } from '@/components/ui/skeleton';
+import { useLocation } from '@/hooks/use-location';
+import LocationBottomSheet from '@/components/LocationBottomSheet';
 
 interface Category {
   id: string;
@@ -48,6 +49,8 @@ export default function MarketScreen() {
   const [selectedSpecies, setSelectedSpecies] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState<{ min: string; max: string }>({ min: '', max: '' });
   const debouncedSearch = useDebounce(searchQuery, 300);
+  const { location, setLocation } = useLocation();
+  const [locationSheetOpen, setLocationSheetOpen] = useState(false);
 
   const categories: Category[] = [
     { id: '1', name: 'Animals', icon: '🐂' },
@@ -179,11 +182,21 @@ export default function MarketScreen() {
         <View>
           <Text style={styles.headerTitle}>Marketplace</Text>
           {/* Location row */}
-          <TouchableOpacity style={styles.locationRow} activeOpacity={0.7} onPress={() => Alert.alert('Location', 'Location selection coming soon.')}>
+          <TouchableOpacity
+            style={styles.locationRow}
+            activeOpacity={0.7}
+            onPress={() => setLocationSheetOpen(true)}
+          >
             <Text style={styles.locationPin}>📍</Text>
-            <Text style={styles.locationText}>Uttar Badda, Dhaka</Text>
+            <Text style={styles.locationText}>{location}</Text>
             <Text style={styles.dropdownArrow}>▼</Text>
           </TouchableOpacity>
+          <LocationBottomSheet
+            visible={locationSheetOpen}
+            selectedLocation={location}
+            onClose={() => setLocationSheetOpen(false)}
+            onSave={setLocation}
+          />
         </View>
 
         <View style={styles.headerActions}>

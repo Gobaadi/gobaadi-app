@@ -24,6 +24,7 @@ import {
   useUpdateAnimalMutation,
   useUploadAnimalPhotoMutation,
 } from '@/store/animalsApi';
+import { compressImageForUpload } from '@/utils/compress-image';
 
 // Custom Calendar Modal Component
 interface CalendarModalProps {
@@ -202,8 +203,35 @@ export default function AddAnimalScreen() {
   };
 
   // Multiple Image Picker
+  const addPickedAssets = (assets: ImagePicker.ImagePickerAsset[]) => {
+    const validTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+    const validAssets = assets.filter((asset) => {
+      if (asset.mimeType && !validTypes.includes(asset.mimeType)) {
+        return false;
+      }
+      return true;
+    });
+    if (validAssets.length < assets.length) {
+      Alert.alert('Invalid file type', 'Only JPEG and PNG images are allowed.');
+    }
+    if (validAssets.length === 0) return;
+    const newUris = validAssets.map((asset) => asset.uri);
+    setPhotos((prev) => [...prev, ...newUris]);
+    if (photos.length === 0) {
+      setActivePhotoIndex(0);
+    }
+  };
+
   const pickImages = async () => {
     try {
+      // Android sometimes kills the activity after the picker finishes; the
+      // selection is parked until drained via getPendingResultAsync.
+      const pending = await ImagePicker.getPendingResultAsync();
+      if (pending && 'assets' in pending && !pending.canceled && pending.assets?.length) {
+        addPickedAssets(pending.assets);
+        return;
+      }
+
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permissionResult.granted) {
         Alert.alert('Permission required', 'Access to photo gallery is required to upload animal photos.');
@@ -217,24 +245,13 @@ export default function AddAnimalScreen() {
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        const validTypes = ['image/jpeg', 'image/png', 'image/jpg'];
-        const validAssets = result.assets.filter((asset) => {
-          if (asset.mimeType && !validTypes.includes(asset.mimeType)) {
-            return false;
-          }
-          return true;
-        });
-        if (validAssets.length < result.assets.length) {
-          Alert.alert('Invalid file type', 'Only JPEG and PNG images are allowed.');
-        }
-        const newUris = validAssets.map((asset) => asset.uri);
-        setPhotos((prev) => [...prev, ...newUris]);
-        if (photos.length === 0) {
-          setActivePhotoIndex(0);
-        }
+        addPickedAssets(result.assets);
+      } else if (!result.canceled) {
+        Alert.alert('Photo selection failed', 'Could not read the selected photo. Please try again.');
       }
     } catch (err) {
       console.log('Error picking images:', err);
+      Alert.alert('Photo selection failed', 'Could not open the photo gallery. Please try again.');
     }
   };
 
@@ -330,11 +347,16 @@ export default function AddAnimalScreen() {
         try {
           uploadedNewUrls = await Promise.all(
             newLocalUris.map(async (uri) => {
-              const fileName = uri.split('/').pop() || `animal-${Date.now()}.jpg`;
-              const blobRes = await fetch(uri);
-              const blob = await blobRes.blob();
+              const file = await compressImageForUpload(uri, {
+                fileName: uri.split('/').pop() || `animal-${Date.now()}.jpg`,
+                mimeType: 'image/jpeg',
+              });
               const formData = new FormData();
-              formData.append('file', blob, fileName);
+              formData.append('file', {
+                uri: file.uri,
+                name: file.name,
+                type: file.type,
+              } as any);
               const result = await uploadAnimalPhoto(formData).unwrap();
               return result.url;
             })
@@ -342,7 +364,12 @@ export default function AddAnimalScreen() {
         } catch (uploadErr: any) {
           console.log("Error uploading photos:", uploadErr);
           setIsUploading(false);
-          Alert.alert('Upload failed', uploadErr?.data?.message || uploadErr?.message || 'Failed to upload photos. Please try again.');
+          Alert.alert(
+            'Upload failed',
+            uploadErr?.status === 413
+              ? 'Photo is too large — please pick a smaller image.'
+              : uploadErr?.data?.message || uploadErr?.message || 'Failed to upload photos. Please try again.',
+          );
           return;
         }
         setIsUploading(false);

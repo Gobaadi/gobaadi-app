@@ -17,6 +17,7 @@ import {
   useUploadMedicalRecordMutation,
   type AttachmentStatus,
 } from '@/store/medicalRecordsApi';
+import { compressImageForUpload } from '@/utils/compress-image';
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, {
@@ -55,19 +56,26 @@ export default function MedicalRecordsScreen() {
     }
 
     const asset = result.assets[0];
-    const fileName = asset.uri.split('/').pop() || `upload-${Date.now()}.jpg`;
+    const file = await compressImageForUpload(asset.uri, {
+      fileName: asset.fileName || `upload-${Date.now()}.jpg`,
+      mimeType: asset.mimeType || 'image/jpeg',
+    });
     const formData = new FormData();
     formData.append('file', {
-      uri: asset.uri,
-      name: fileName,
-      type: asset.mimeType || 'image/jpeg',
+      uri: file.uri,
+      name: file.name,
+      type: file.type,
     } as any);
 
     try {
       await uploadMedicalRecord(formData).unwrap();
     } catch (err) {
       console.log('Error uploading medical record:', err);
-      Alert.alert('Upload failed', 'Please try again.');
+      const status = (err as { status?: number | string })?.status;
+      Alert.alert(
+        'Upload failed',
+        status === 413 ? 'Photo is too large — please pick a smaller image.' : 'Please try again.',
+      );
     }
   }
 

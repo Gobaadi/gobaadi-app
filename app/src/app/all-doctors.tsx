@@ -15,6 +15,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useGetDoctorsQuery } from '@/store/doctorsApi';
 import { EmptyState } from '@/components/ui/empty-state';
 import { MediaCardSkeleton } from '@/components/ui/skeleton';
+import { useLocation } from '@/hooks/use-location';
+import LocationBottomSheet from '@/components/LocationBottomSheet';
 
 interface DoctorView {
   id: number;
@@ -32,6 +34,8 @@ export default function AllDoctorsScreen() {
   const [searchText, setSearchText] = useState('');
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [selectedSpecialties, setSelectedSpecialties] = useState<string[]>([]);
+  const { location, setLocation } = useLocation();
+  const [locationSheetOpen, setLocationSheetOpen] = useState(false);
   const { data: doctorList = [], isLoading } = useGetDoctorsQuery();
 
   const doctors: DoctorView[] = useMemo(() => {
@@ -101,12 +105,23 @@ export default function AllDoctorsScreen() {
 
       {/* Location bar */}
       <View style={styles.locationContainer}>
-        <TouchableOpacity style={styles.locationSelector} activeOpacity={0.7}>
+        <TouchableOpacity
+          style={styles.locationSelector}
+          activeOpacity={0.7}
+          onPress={() => setLocationSheetOpen(true)}
+        >
           <Ionicons name="location" size={16} color="#BD632F" style={styles.pinIcon} />
-          <Text style={styles.locationText}>Uttar Badda, Dhaka</Text>
+          <Text style={styles.locationText}>{location}</Text>
           <Ionicons name="chevron-down" size={14} color="#7C7672" />
         </TouchableOpacity>
       </View>
+
+      <LocationBottomSheet
+        visible={locationSheetOpen}
+        selectedLocation={location}
+        onClose={() => setLocationSheetOpen(false)}
+        onSave={setLocation}
+      />
 
       {/* Search Input */}
       <View style={styles.searchContainer}>
