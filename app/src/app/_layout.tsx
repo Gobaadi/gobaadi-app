@@ -1,3 +1,5 @@
+import '@/utils/install-rn-fetch';
+
 import { DarkTheme, DefaultTheme, ThemeProvider, Stack, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useColorScheme } from 'react-native';
@@ -86,6 +88,7 @@ function RootNavigator() {
         <Stack.Screen name="ai-hold" />
         <Stack.Screen name="ai-summary" />
         <Stack.Screen name="all-doctors" />
+        <Stack.Screen name="all-clinics" />
         <Stack.Screen name="doctor-detail" />
         <Stack.Screen name="book-slot" />
         <Stack.Screen name="confirm-booking" />

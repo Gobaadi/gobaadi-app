@@ -8,6 +8,7 @@ export interface UserProfile {
   name?: string;
   email?: string;
   avatar?: string;
+  profilePhoto?: string;
   verified: boolean;
 }
 
@@ -30,7 +31,19 @@ export const usersApi = createApi({
       query: (body) => ({ url: '/users/me', method: 'PATCH', body }),
       invalidatesTags: ['Profile'],
     }),
+    uploadMyPhoto: builder.mutation<{ url: string }, FormData>({
+      query: (formData) => ({
+        url: '/users/me/photo',
+        method: 'POST',
+        body: formData,
+      }),
+      invalidatesTags: ['Profile'],
+    }),
   }),
 });
 
-export const { useGetMyProfileQuery, useUpdateMyProfileMutation } = usersApi;
+export const {
+  useGetMyProfileQuery,
+  useUpdateMyProfileMutation,
+  useUploadMyPhotoMutation,
+} = usersApi;

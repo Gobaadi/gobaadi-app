@@ -101,7 +101,11 @@ export default function DoctorDetailScreen() {
         </View>
 
         {/* Availability Card */}
-        <TouchableOpacity style={styles.availabilityCard} activeOpacity={0.85}>
+        <TouchableOpacity
+          style={styles.availabilityCard}
+          activeOpacity={0.85}
+          onPress={() => router.push({ pathname: '/book-slot', params: { id: doctor.id } })}
+        >
           <View style={styles.availabilityLeft}>
             <View style={styles.clockCircle}>
               <Text style={styles.clockIcon}>🕐</Text>
