@@ -195,7 +195,7 @@ export class AuthService {
     }
 
     // If the identifier is an email, or a separate email was supplied
-    // alongside a phone identifier, send OTP email via the Vercel email service.
+    // alongside a phone identifier, send OTP email via Gmail SMTP from this backend.
     const emailTarget = phone.includes('@') ? phone : notifyEmail;
     if (emailTarget) {
       const subject = 'Your Gobadi Verification OTP Code';
