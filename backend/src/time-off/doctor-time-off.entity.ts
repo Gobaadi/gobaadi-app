@@ -3,8 +3,11 @@ import {
   PrimaryGeneratedColumn,
   Column,
   Index,
+  JoinColumn,
+  ManyToOne,
   CreateDateColumn,
 } from 'typeorm';
+import { Doctor } from '../doctors/doctor.entity';
 
 export enum TimeOffReason {
   VACATION = 'vacation',
@@ -22,6 +25,10 @@ export class DoctorTimeOff {
   @Index()
   @Column()
   doctorId: number;
+
+  @ManyToOne(() => Doctor, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'doctorId' })
+  doctor?: Doctor;
 
   @Column('date')
   startDate: string;

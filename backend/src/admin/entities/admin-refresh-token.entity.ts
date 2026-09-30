@@ -3,8 +3,11 @@ import {
   PrimaryGeneratedColumn,
   Column,
   Index,
+  JoinColumn,
+  ManyToOne,
   CreateDateColumn,
 } from 'typeorm';
+import { Admin } from './admin.entity';
 
 @Entity('admin_refresh_tokens')
 export class AdminRefreshToken {
@@ -14,6 +17,10 @@ export class AdminRefreshToken {
   @Index()
   @Column()
   adminId: number;
+
+  @ManyToOne(() => Admin, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'adminId' })
+  admin?: Admin;
 
   @Index({ unique: true })
   @Column()

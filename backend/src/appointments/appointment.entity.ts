@@ -3,9 +3,12 @@ import {
   PrimaryGeneratedColumn,
   Column,
   Index,
+  JoinColumn,
+  ManyToOne,
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { Doctor } from '../doctors/doctor.entity';
 
 export enum AppointmentStatus {
   PENDING = 'PENDING',
@@ -34,6 +37,10 @@ export class Appointment {
   @Index()
   @Column()
   doctorId: number;
+
+  @ManyToOne(() => Doctor, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'doctorId' })
+  doctor?: Doctor;
 
   @Index()
   @Column('int', { nullable: true })

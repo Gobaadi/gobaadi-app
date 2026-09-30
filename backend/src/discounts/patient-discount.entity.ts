@@ -3,9 +3,12 @@ import {
   PrimaryGeneratedColumn,
   Column,
   Index,
+  JoinColumn,
+  ManyToOne,
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { Doctor } from '../doctors/doctor.entity';
 
 @Entity('patient_discounts')
 @Index(['doctorId', 'patientId'], { unique: true })
@@ -16,6 +19,10 @@ export class PatientDiscount {
   @Index()
   @Column()
   doctorId: number;
+
+  @ManyToOne(() => Doctor, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'doctorId' })
+  doctor?: Doctor;
 
   /** Animal.id */
   @Index()
