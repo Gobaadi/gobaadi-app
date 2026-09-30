@@ -2,12 +2,16 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { VideoSession } from './video-call.entity';
 import { Appointment } from '../appointments/appointment.entity';
+import { Doctor } from '../doctors/doctor.entity';
 import { VideoCallService } from './video-call.service';
 import { VideoCallController } from './video-call.controller';
 import { AuthModule } from '../auth/auth.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([VideoSession, Appointment]), AuthModule],
+  imports: [
+    TypeOrmModule.forFeature([VideoSession, Appointment, Doctor]),
+    AuthModule,
+  ],
   controllers: [VideoCallController],
   providers: [VideoCallService],
   exports: [VideoCallService],

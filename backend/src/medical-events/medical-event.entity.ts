@@ -24,7 +24,10 @@ export class MedicalEvent {
   @PrimaryGeneratedColumn()
   id: number;
 
-  /** Animal.id */
+  /**
+   * Patient owner (User.id) — the human who booked the appointment.
+   * Consultations are keyed patient user <-> doctor, never by animal.
+   */
   @Index()
   @Column()
   patientId: number;

@@ -69,25 +69,32 @@ export class ChatController {
   }
 
   @Post('conversations')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.DOCTOR)
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Create or find a conversation with a patient' })
+  @ApiOperation({ summary: 'Create or find a conversation with a patient or doctor' })
   @ApiBody({
-    schema: { properties: { patientId: { type: 'number', example: 1 } } },
+    schema: {
+      properties: {
+        patientId: { type: 'number', example: 1 },
+        doctorId: { type: 'number', example: 1 },
+      },
+    },
   })
   @ApiResponse({ status: 201, description: 'Conversation created or found' })
   async createConversation(
     @CurrentUser() user: JwtPayload,
-    @Body('patientId') patientId: number,
+    @Body() body: { patientId?: number; doctorId?: number },
   ): Promise<Conversation> {
+    if (user.role === UserRole.USER) {
+      return this.conversationService.findOrCreateForPatient(user.sub, body.doctorId);
+    }
     const doctor = await this.doctorRepository.findOne({
       where: { userId: user.sub },
     });
     if (!doctor) {
       throw new ForbiddenException('No doctor profile linked to this account');
     }
-    return this.conversationService.findOrCreate(doctor.id, patientId);
+    return this.conversationService.findOrCreate(doctor.id, body.patientId as number);
   }
 
   @Get('messages')

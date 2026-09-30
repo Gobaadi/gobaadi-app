@@ -8,12 +8,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RtcTokenBuilder, RtcRole } from 'agora-token';
 import { VideoSession, VideoSessionStatus } from './video-call.entity';
-import {
-  Appointment,
-  AppointmentStatus,
-} from '../appointments/appointment.entity';
-
-const CALL_GRACE_PERIOD_MS = 30 * 60 * 1000; // 30 minutes before/after slot
+import { Appointment } from '../appointments/appointment.entity';
+import { Doctor } from '../doctors/doctor.entity';
+import { assertCanCall } from '../common/call-gate';
 
 @Injectable()
 export class VideoCallService {
@@ -22,7 +19,44 @@ export class VideoCallService {
     private readonly sessionRepo: Repository<VideoSession>,
     @InjectRepository(Appointment)
     private readonly appointmentRepo: Repository<Appointment>,
+    @InjectRepository(Doctor)
+    private readonly doctorRepo: Repository<Doctor>,
   ) {}
+
+  /**
+   * Appointment.doctorId is a Doctor.id (profile), while callers send
+   * User.id — resolve the profile before comparing, matching the
+   * getOwnedAppointment pattern used by AppointmentsService.
+   */
+  private async assertParticipant(
+    appointment: Appointment,
+    userId: number,
+  ): Promise<void> {
+    if (appointment.patientId === userId) return;
+    const doctor = await this.doctorRepo.findOneBy({
+      id: appointment.doctorId,
+    });
+    if (doctor?.userId === userId) return;
+    throw new ForbiddenException('You are not part of this consultation');
+  }
+
+  private async resolveDoctorUserId(
+    appointment: Appointment,
+  ): Promise<number | null> {
+    const doctor = await this.doctorRepo.findOneBy({
+      id: appointment.doctorId,
+    });
+    return doctor?.userId ?? null;
+  }
+
+  private findLatestSession(
+    appointmentId: number,
+  ): Promise<VideoSession | null> {
+    return this.sessionRepo.findOne({
+      where: { appointmentId },
+      order: { createdAt: 'DESC' },
+    });
+  }
 
   generateRtcToken(
     channelName: string,
@@ -63,76 +97,16 @@ export class VideoCallService {
       throw new NotFoundException('Appointment not found');
     }
 
-    const isDoctor = appointment.doctorId === userId;
-    const isPatient = appointment.patientId === userId;
+    await this.assertParticipant(appointment, userId);
+    assertCanCall(appointment);
 
-    if (!isDoctor && !isPatient) {
-      throw new ForbiddenException(
-        'You are not a participant of this consultation',
-      );
-    }
-
-    if (appointment.status === AppointmentStatus.CANCELLED) {
-      throw new BadRequestException(
-        'Cannot start a call for a cancelled appointment',
-      );
-    }
-
-    if (appointment.status === AppointmentStatus.COMPLETED) {
-      throw new BadRequestException(
-        'Cannot start a call for a completed appointment',
-      );
-    }
-
-    const now = new Date();
-    const callWindowStart = new Date(
-      appointment.startAt.getTime() - CALL_GRACE_PERIOD_MS,
-    );
-    const callWindowEnd = new Date(
-      appointment.endAt.getTime() + CALL_GRACE_PERIOD_MS,
-    );
-
-    if (now < callWindowStart || now > callWindowEnd) {
-      throw new BadRequestException(
-        'Call is only allowed within the consultation time window',
-      );
-    }
-
-    const existing = await this.sessionRepo.findOne({
-      where: { appointmentId },
-    });
-    if (existing && existing.status !== VideoSessionStatus.ENDED) {
-      return existing;
-    }
-
-    const channelName = `appointment-${appointmentId}`;
-
-    const session = this.sessionRepo.create({
-      appointmentId,
-      channelName,
-      doctorUserId: appointment.doctorId,
-      patientId: appointment.patientId,
-      status: VideoSessionStatus.WAITING,
-    });
-
-    return this.sessionRepo.save(session);
+    return this.getOrCreateSession(appointmentId);
   }
 
   async joinSession(
     appointmentId: number,
     userId: number,
   ): Promise<{ token: string; channelName: string; appId: string }> {
-    const session = await this.sessionRepo.findOne({
-      where: { appointmentId },
-    });
-    if (!session) {
-      throw new NotFoundException('No active call for this appointment');
-    }
-
-    if (session.status === VideoSessionStatus.ENDED) {
-      throw new BadRequestException('This call has ended');
-    }
-
     const appointment = await this.appointmentRepo.findOneBy({
       id: appointmentId,
     });
@@ -140,11 +114,14 @@ export class VideoCallService {
       throw new NotFoundException('Appointment not found');
     }
 
-    const isDoctor = appointment.doctorId === userId;
-    const isPatient = appointment.patientId === userId;
+    await this.assertParticipant(appointment, userId);
+    assertCanCall(appointment);
 
-    if (!isDoctor && !isPatient) {
-      throw new ForbiddenException('You are not part of this consultation');
+    let session = await this.findLatestSession(appointmentId);
+    if (!session) {
+      session = await this.createWaitingSession(appointment);
+    } else if (session.status === VideoSessionStatus.ENDED) {
+      session = await this.reuseSession(session);
     }
 
     if (session.status === VideoSessionStatus.WAITING) {
@@ -163,16 +140,19 @@ export class VideoCallService {
   }
 
   async endSession(appointmentId: number, userId: number): Promise<void> {
-    const session = await this.sessionRepo.findOne({
-      where: { appointmentId },
-    });
+    const session = await this.findLatestSession(appointmentId);
     if (!session) {
       throw new NotFoundException('No active call for this appointment');
     }
 
-    if (session.doctorUserId !== userId && session.patientId !== userId) {
-      throw new ForbiddenException('You are not part of this consultation');
+    const appointment = await this.appointmentRepo.findOneBy({
+      id: appointmentId,
+    });
+    if (!appointment) {
+      throw new NotFoundException('Appointment not found');
     }
+
+    await this.assertParticipant(appointment, userId);
 
     session.status = VideoSessionStatus.ENDED;
     session.endedAt = new Date();
@@ -180,26 +160,45 @@ export class VideoCallService {
   }
 
   async getOrCreateSession(appointmentId: number): Promise<VideoSession> {
-    let session = await this.sessionRepo.findOne({
-      where: { appointmentId },
-    });
-    if (!session || session.status === VideoSessionStatus.ENDED) {
-      const appointment = await this.appointmentRepo.findOneBy({
-        id: appointmentId,
-      });
-      if (!appointment) {
-        throw new NotFoundException('Appointment not found');
-      }
-      const channelName = `appointment-${appointmentId}`;
-      session = this.sessionRepo.create({
-        appointmentId,
-        channelName,
-        doctorUserId: appointment.doctorId,
-        patientId: appointment.patientId,
-        status: VideoSessionStatus.WAITING,
-      });
-      session = await this.sessionRepo.save(session);
+    const existing = await this.findLatestSession(appointmentId);
+    if (existing && existing.status !== VideoSessionStatus.ENDED) {
+      return existing;
     }
-    return session;
+
+    const appointment = await this.appointmentRepo.findOneBy({
+      id: appointmentId,
+    });
+    if (!appointment) {
+      throw new NotFoundException('Appointment not found');
+    }
+
+    if (existing) {
+      return this.reuseSession(existing);
+    }
+    return this.createWaitingSession(appointment);
+  }
+
+  private async createWaitingSession(
+    appointment: Appointment,
+  ): Promise<VideoSession> {
+    const session = this.sessionRepo.create({
+      appointmentId: appointment.id,
+      channelName: `appointment-${appointment.id}`,
+      doctorUserId: await this.resolveDoctorUserId(appointment),
+      patientId: appointment.patientId,
+      status: VideoSessionStatus.WAITING,
+    });
+    return this.sessionRepo.save(session);
+  }
+
+  /**
+   * Reset the ENDED row for a new call instead of inserting another row,
+   * keeping one session row per appointment (no ordering ambiguity).
+   */
+  private reuseSession(session: VideoSession): Promise<VideoSession> {
+    session.status = VideoSessionStatus.WAITING;
+    session.startedAt = null;
+    session.endedAt = null;
+    return this.sessionRepo.save(session);
   }
 }
