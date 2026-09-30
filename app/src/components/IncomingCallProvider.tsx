@@ -17,6 +17,7 @@ interface CallSignalingContextValue {
     callerRole: 'FARMER' | 'PATIENT' | 'DOCTOR',
     channelName: string,
   ) => void;
+  ringCall: (appointmentId: number) => void;
   cancelCall: () => void;
   resetOutgoingState: () => void;
 }
@@ -33,7 +34,7 @@ export function useCallSignalingContext() {
 
 export function IncomingCallProvider({ children }: { children: React.ReactNode }) {
   const user = useSelector((state: RootState) => state.auth.user);
-  const signaling = useCallSignaling(user?.id);
+  const signaling = useCallSignaling(user);
 
   return (
     <CallSignalingContext.Provider value={signaling}>

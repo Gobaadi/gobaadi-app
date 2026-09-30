@@ -20,6 +20,7 @@ import { getRequiredJwtSecret } from '../auth/jwt-secret.util';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/notification.entity';
 import { Appointment } from '../appointments/appointment.entity';
+import { Doctor } from '../doctors/doctor.entity';
 import { VideoSession } from '../video-call/video-call.entity';
 
 @WebSocketGateway({
@@ -42,6 +43,8 @@ export class ChatGateway
     private readonly notificationsService: NotificationsService,
     @InjectRepository(Appointment)
     private readonly appointmentRepo: Repository<Appointment>,
+    @InjectRepository(Doctor)
+    private readonly doctorRepo: Repository<Doctor>,
     @InjectRepository(VideoSession)
     private readonly sessionRepo: Repository<VideoSession>,
   ) {}
@@ -232,17 +235,8 @@ export class ChatGateway
     });
     if (!appointment) return;
 
-    if (
-      appointment.doctorId !== user.sub &&
-      appointment.patientId !== user.sub
-    ) {
-      return;
-    }
-
-    const targetUserId =
-      user.sub === appointment.doctorId
-        ? appointment.patientId
-        : appointment.doctorId;
+    const targetUserId = await this.resolveCallTarget(appointment, user.sub);
+    if (!targetUserId) return;
 
     this.notifyUser(targetUserId, 'callStarted', {
       appointmentId: data.appointmentId,
@@ -271,17 +265,8 @@ export class ChatGateway
     });
     if (!appointment) return;
 
-    if (
-      appointment.doctorId !== user.sub &&
-      appointment.patientId !== user.sub
-    ) {
-      return;
-    }
-
-    const targetUserId =
-      user.sub === appointment.doctorId
-        ? appointment.patientId
-        : appointment.doctorId;
+    const targetUserId = await this.resolveCallTarget(appointment, user.sub);
+    if (!targetUserId) return;
 
     this.notifyUser(targetUserId, 'callResponse', {
       appointmentId: data.appointmentId,
@@ -307,22 +292,35 @@ export class ChatGateway
     });
     if (!appointment) return;
 
-    if (
-      appointment.doctorId !== user.sub &&
-      appointment.patientId !== user.sub
-    ) {
-      return;
-    }
-
-    const targetUserId =
-      user.sub === appointment.doctorId
-        ? appointment.patientId
-        : appointment.doctorId;
+    const targetUserId = await this.resolveCallTarget(appointment, user.sub);
+    if (!targetUserId) return;
 
     this.notifyUser(targetUserId, 'callEnded', {
       appointmentId: data.appointmentId,
       endedBy: data.endedBy,
     });
+  }
+
+  /**
+   * Validates the requester is a participant of the appointment and returns
+   * the OTHER party's User.id. Appointment.doctorId is a Doctor.id (profile),
+   * so resolve doctor.userId before comparing — same rule as
+   * AppointmentsService.getOwnedAppointment.
+   */
+  private async resolveCallTarget(
+    appointment: Appointment,
+    requesterSub: number,
+  ): Promise<number | null> {
+    const doctor = await this.doctorRepo.findOneBy({
+      id: appointment.doctorId,
+    });
+    if (appointment.patientId === requesterSub) {
+      return doctor?.userId ?? null;
+    }
+    if (doctor?.userId === requesterSub) {
+      return appointment.patientId;
+    }
+    return null;
   }
 
   notifyConversation(

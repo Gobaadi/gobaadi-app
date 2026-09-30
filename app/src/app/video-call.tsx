@@ -64,6 +64,9 @@ export default function VideoCallScreen() {
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [permissionsRequested, setPermissionsRequested] = useState(false);
   const endedRef = useRef(false);
+  // True once Agora actually connects — guards cleanup so a failed join or
+  // denied permissions never ends the OTHER party's live call.
+  const connectedRef = useRef(false);
 
   const uid = user?.id ?? 0;
 
@@ -105,6 +108,10 @@ export default function VideoCallScreen() {
   }, [isConnected]);
 
   useEffect(() => {
+    if (isConnected) connectedRef.current = true;
+  }, [isConnected]);
+
+  useEffect(() => {
     const handleCallEnded = (payload: { appointmentId: number; endedBy: number }) => {
       if (payload.appointmentId === appointmentId && payload.endedBy !== uid) {
         setCallEnded(true);
@@ -119,7 +126,7 @@ export default function VideoCallScreen() {
 
   useEffect(() => {
     return () => {
-      if (!endedRef.current) {
+      if (!endedRef.current && connectedRef.current) {
         endedRef.current = true;
         agoraManager.leave();
         endSession(appointmentId).unwrap().catch(() => {});
@@ -131,6 +138,12 @@ export default function VideoCallScreen() {
   const handleEndCall = useCallback(async () => {
     if (endedRef.current) return;
     endedRef.current = true;
+    if (!connectedRef.current) {
+      // Never connected (failed join / permissions / backing out) — leave the
+      // screen without ending the session or signaling the other party.
+      router.back();
+      return;
+    }
     try {
       await agoraManager.leave();
       await endSession(appointmentId).unwrap();
@@ -139,7 +152,41 @@ export default function VideoCallScreen() {
       // ignore cleanup errors
     }
     setCallEnded(true);
-  }, [appointmentId, uid, endSession]);
+  }, [appointmentId, uid, endSession, router]);
+
+  // Callee declined: the caller is already waiting in this screen (ringCall
+  // joins immediately), so surface the rejection and leave cleanly.
+  useEffect(() => {
+    const handleResponse = (payload: {
+      appointmentId: number;
+      accepted: boolean;
+    }) => {
+      if (payload.appointmentId !== appointmentId || payload.accepted) return;
+      if (endedRef.current) return;
+      Alert.alert('Call Declined', 'The other party declined the call.', [
+        { text: 'OK', onPress: () => handleEndCall() },
+      ]);
+    };
+    socketManager.on('callResponse', handleResponse);
+    return () => {
+      socketManager.off('callResponse', handleResponse);
+    };
+  }, [appointmentId, handleEndCall]);
+
+  if (!appointmentId) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Ionicons name="warning-outline" size={48} color="#E53935" />
+        <Text style={styles.loadingText}>Missing appointment information</Text>
+        <TouchableOpacity
+          style={{ marginTop: 16, padding: 12, backgroundColor: '#BD632F', borderRadius: 12 }}
+          onPress={() => router.back()}
+        >
+          <Text style={{ color: '#FFF', fontWeight: '600' }}>Go Back</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   if (hasPermission === false) {
     return (

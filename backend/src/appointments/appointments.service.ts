@@ -7,35 +7,35 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, Repository, SelectQueryBuilder } from 'typeorm';
+import { Animal } from '../animals/animal.entity';
+import { assertCanCall } from '../common/call-gate';
+import { PaginatedResult } from '../common/paginated-result.interface';
+import { DiscountsService } from '../discounts/discounts.service';
+import { Doctor, DoctorsService } from '../doctors/doctors.service';
+import {
+  MedicalEvent,
+  MedicalEventStatus,
+  MedicalEventType,
+} from '../medical-events/medical-event.entity';
+import { NotificationType } from '../notifications/notification.entity';
+import { NotificationsService } from '../notifications/notifications.service';
+import { Service } from '../services/service.entity';
+import { TimeOffService } from '../time-off/time-off.service';
+import { User, UserRole } from '../users/user.entity';
+import { UsersService } from '../users/users.service';
+import { VideoCallService } from '../video-call/video-call.service';
+import { WalletService } from '../wallet/wallet.service';
 import {
   Appointment,
   AppointmentStatus,
   ConsultationType,
 } from './appointment.entity';
-import { DoctorsService, Doctor } from '../doctors/doctors.service';
-import { UserRole } from '../users/user.entity';
-import { UsersService } from '../users/users.service';
-import { Service } from '../services/service.entity';
-import { Animal } from '../animals/animal.entity';
-import { DiscountsService } from '../discounts/discounts.service';
-import { WalletService } from '../wallet/wallet.service';
-import { TimeOffService } from '../time-off/time-off.service';
+import { CancelAppointmentDto } from './dto/cancel-appointment.dto';
 import {
   addMinutes,
   parseSlotDateTime,
   subMinutes,
 } from './utils/slot-time.util';
-import { NotificationsService } from '../notifications/notifications.service';
-import { NotificationType } from '../notifications/notification.entity';
-import { CancelAppointmentDto } from './dto/cancel-appointment.dto';
-import { PaginatedResult } from '../common/paginated-result.interface';
-import {
-  MedicalEvent,
-  MedicalEventType,
-  MedicalEventStatus,
-} from '../medical-events/medical-event.entity';
-import { VideoCallService } from '../video-call/video-call.service';
-import { User } from '../users/user.entity';
 
 const RESCHEDULE_CANCEL_BUFFER_MS = 1 * 60 * 60 * 1000; // 1 hour
 
@@ -91,18 +91,19 @@ export class AppointmentsService {
     reasonForConsultation?: string,
     symptoms?: string[],
   ): Promise<Appointment> {
-    if (animalId) {
-      const animal = await this.animalRepository.findOneBy({
-        id: animalId,
-        userId: patientId,
-      });
-      if (!animal) {
-        throw new BadRequestException(
-          'animalId must belong to the booking user',
-        );
-      }
-    }
-
+    console.log(
+      'this is Bookappointment',
+      doctorId,
+      patientId,
+      date,
+      time,
+      clinicId,
+      serviceId,
+      animalId,
+      consultationType,
+      reasonForConsultation,
+      symptoms,
+    );
     const startAt = parseSlotDateTime(date, time);
     const appointment = await this.assertNoConflictAndBook(
       doctorId,
@@ -712,23 +713,7 @@ export class AppointmentsService {
       requesterId,
       requesterRole,
     );
-    if (
-      appointment.consultationType !== ConsultationType.ONLINE_VIDEO &&
-      appointment.consultationType !== ConsultationType.ONLINE_VOICE &&
-      appointment.consultationType !== ConsultationType.ONLINE_CHAT
-    ) {
-      throw new BadRequestException(
-        'This appointment is not an online consultation',
-      );
-    }
-    if (
-      appointment.status !== AppointmentStatus.CONFIRMED &&
-      appointment.status !== AppointmentStatus.RESCHEDULED
-    ) {
-      throw new BadRequestException(
-        'This appointment is not in a joinable state',
-      );
-    }
+    assertCanCall(appointment);
 
     const session =
       await this.videoCallService.getOrCreateSession(appointmentId);

@@ -3,8 +3,12 @@ import {
   PrimaryGeneratedColumn,
   Column,
   Index,
+  JoinColumn,
+  ManyToOne,
   CreateDateColumn,
 } from 'typeorm';
+import { Doctor } from '../doctors/doctor.entity';
+import { User } from '../users/user.entity';
 
 @Entity('conversations')
 @Index(['doctorId', 'patientId'], { unique: true })
@@ -16,8 +20,16 @@ export class Conversation {
   @Column()
   doctorId: number;
 
+  @ManyToOne(() => Doctor, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'doctorId' })
+  doctor?: Doctor;
+
   @Column('int', { nullable: true })
   doctorUserId?: number | null;
+
+  @ManyToOne(() => User, { nullable: true, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'doctorUserId' })
+  doctorUser?: User;
 
   @Index()
   @Column()

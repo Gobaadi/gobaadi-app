@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,6 +17,8 @@ import { useGetAnimalByIdQuery } from '@/store/animalsApi';
 import { useGetByAnimalMedicalEventsQuery } from '@/store/medicalEventsApi';
 import { useGetByAnimalPrescriptionsQuery } from '@/store/prescriptionsApi';
 import { useGetByPatientMedicalRecordsQuery } from '@/store/medicalRecordsApi';
+import { useGetConversationsQuery, useCreateConversationMutation } from '@/store/chatApi';
+import { useGetDoctorBookingsQuery } from '@/store/doctorPortalApi';
 import type { MedicalEvent } from '@/store/medicalEventsApi';
 
 const TABS = [
@@ -239,6 +242,45 @@ export default function PatientDetailsScreen() {
   const { data: allEvents = [], isLoading: eventsLoading } = useGetByAnimalMedicalEventsQuery({ animalId });
   const { data: prescriptions = [] } = useGetByAnimalPrescriptionsQuery(animalId);
   const { data: records = [] } = useGetByPatientMedicalRecordsQuery(animalId);
+  const { data: conversations = [] } = useGetConversationsQuery();
+  const [createConversation] = useCreateConversationMutation();
+  const { data: bookings = [] } = useGetDoctorBookingsQuery();
+
+  /**
+   * Opens the chat for this animal's owner with the real conversation id and
+   * (when an appointment exists for this animal) the appointment id, so the
+   * consultation flow works from this screen.
+   */
+  const handleStartConsultation = async () => {
+    const booking =
+      bookings
+        .filter((b) => b.animalId === Number(animalId))
+        .sort((a, b) => +new Date(b.startAt) - +new Date(a.startAt))[0] ?? null;
+    const patientId = booking?.patientId ?? animal?.userId ?? null;
+    if (!patientId) {
+      Alert.alert('Error', 'No owner found for this animal.');
+      return;
+    }
+    try {
+      const existing = conversations.find((c) => c.patientId === patientId);
+      let conversationId = existing?.id;
+      if (!conversationId) {
+        const created = await createConversation({ patientId }).unwrap();
+        conversationId = created.id;
+      }
+      router.push({
+        pathname: '/chat',
+        params: {
+          conversationId: String(conversationId),
+          patientName: booking?.patientName || animal?.name || 'Patient',
+          animalImage: booking?.animalImage || animal?.image || '',
+          ...(booking ? { appointmentId: String(booking.id) } : {}),
+        },
+      });
+    } catch {
+      Alert.alert('Error', 'Could not open the consultation. Please try again.');
+    }
+  };
 
   const consultEvents = allEvents.filter((e) => e.type === 'CONSULTATION');
   const treatmentEvents = allEvents.filter((e) => e.type === 'TREATMENT');
@@ -362,9 +404,7 @@ export default function PatientDetailsScreen() {
         <TouchableOpacity
           style={styles.consultBtn}
           activeOpacity={0.85}
-          onPress={() =>
-            router.push({ pathname: '/chat', params: { conversationId: animalId, fullPage: 'true' } })
-          }
+          onPress={handleStartConsultation}
         >
           <Text style={styles.consultBtnText}>Start Consultation</Text>
         </TouchableOpacity>

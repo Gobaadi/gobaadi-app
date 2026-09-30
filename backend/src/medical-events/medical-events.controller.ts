@@ -314,6 +314,27 @@ export class MedicalEventsController {
     return result.data;
   }
 
+  @Get('consultations/appointment/:appointmentId')
+  @ApiOperation({
+    summary: 'Get the latest consultation for an appointment (null if none)',
+  })
+  @ApiParam({ name: 'appointmentId', example: '1' })
+  @ApiResponse({ status: 200, description: 'Consultation record or null' })
+  async getConsultationByAppointment(
+    @Param('appointmentId') appointmentId: string,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<MedicalEvent | null> {
+    const doctor =
+      user.role === UserRole.DOCTOR
+        ? await this.doctorsService.getDoctorByUserId(user.sub)
+        : null;
+    return this.medicalEventsService.getLatestForAppointment(
+      user.sub,
+      doctor?.id ?? null,
+      parseInt(appointmentId, 10),
+    );
+  }
+
   @Get('consultations/:id')
   @ApiOperation({ summary: 'Get a single consultation record' })
   @ApiParam({ name: 'id', example: '1' })
@@ -349,21 +370,42 @@ export class MedicalEventsController {
     return this.medicalEventsService.update(parseInt(id, 10), doctor.id, body);
   }
 
+  @Post('consultations/appointment/:appointmentId')
+  @ApiOperation({
+    summary: 'Start (or resume) the consultation for an appointment',
+  })
+  @ApiParam({ name: 'appointmentId', example: '1' })
+  @ApiResponse({ status: 201, description: 'Consultation started' })
+  async startConsultationByAppointment(
+    @Param('appointmentId') appointmentId: string,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<MedicalEvent> {
+    const doctor =
+      user.role === UserRole.DOCTOR
+        ? await this.doctorsService.getDoctorByUserId(user.sub)
+        : null;
+    return this.medicalEventsService.startForAppointment(
+      user.sub,
+      doctor?.id ?? null,
+      parseInt(appointmentId, 10),
+    );
+  }
+
   @Post('consultations/:id/end')
-  @UseGuards(RolesGuard)
-  @Roles(UserRole.DOCTOR)
   @ApiOperation({ summary: 'End a consultation (mark as completed)' })
   @ApiParam({ name: 'id', example: '1' })
   async endConsultation(
     @Param('id') id: string,
     @CurrentUser() user: JwtPayload,
   ): Promise<MedicalEvent> {
-    const doctor = await this.doctorsService.getDoctorByUserId(user.sub);
-    if (!doctor) {
-      throw new ForbiddenException('No doctor profile linked to this account');
-    }
-    return this.medicalEventsService.update(parseInt(id, 10), doctor.id, {
-      status: 'COMPLETED' as any,
-    });
+    const doctor =
+      user.role === UserRole.DOCTOR
+        ? await this.doctorsService.getDoctorByUserId(user.sub)
+        : null;
+    return this.medicalEventsService.endForParticipant(
+      user.sub,
+      doctor?.id ?? null,
+      parseInt(id, 10),
+    );
   }
 }

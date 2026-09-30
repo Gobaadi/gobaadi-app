@@ -12,7 +12,14 @@ export interface IncomingCall {
 
 export type OutgoingCallState = 'idle' | 'calling' | 'accepted' | 'rejected' | 'timeout' | 'error';
 
-export function useCallSignaling(userId: number | undefined) {
+interface SignalingUser {
+  id: number;
+  name?: string;
+  role?: string;
+}
+
+export function useCallSignaling(user: SignalingUser | null | undefined) {
+  const userId = user?.id;
   const [incomingCall, setIncomingCall] = useState<IncomingCall | null>(null);
   const [outgoingState, setOutgoingState] = useState<OutgoingCallState>('idle');
   const [outgoingAppointmentId, setOutgoingAppointmentId] = useState<number | null>(null);
@@ -47,22 +54,19 @@ export function useCallSignaling(userId: number | undefined) {
       appointmentId: number;
       responderId: number;
     }) => {
+      // Only honor responses while the outgoing call is still pending —
+      // late "accepted"/"rejected" after cancel/timeout must be ignored.
+      if (timeoutRef.current === null) return;
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
       if (payload.accepted) {
         setOutgoingState('accepted');
-        if (timeoutRef.current) {
-          clearTimeout(timeoutRef.current);
-          timeoutRef.current = null;
-        }
         router.push({
           pathname: '/video-call',
           params: { appointmentId: String(payload.appointmentId) },
         });
       } else {
         setOutgoingState('rejected');
-        if (timeoutRef.current) {
-          clearTimeout(timeoutRef.current);
-          timeoutRef.current = null;
-        }
       }
     };
 
@@ -105,6 +109,30 @@ export function useCallSignaling(userId: number | undefined) {
       }, 30000);
     },
     [],
+  );
+
+  /**
+   * Fire-and-forget ring: notifies the other party, then the caller joins
+   * /video-call immediately and waits in the Agora channel. The callee
+   * accepts via IncomingCallModal and joins the same channel
+   * (channelName convention matches backend video-call.service).
+   */
+  const ringCall = useCallback(
+    (appointmentId: number) => {
+      if (!userId || !appointmentId) return;
+      const callerRole = user?.role === 'doctor'
+        ? ('DOCTOR' as const)
+        : ('PATIENT' as const);
+      socketManager.emit('callStarted', {
+        appointmentId,
+        callerId: userId,
+        callerName:
+          user?.name || (callerRole === 'DOCTOR' ? 'Doctor' : 'Patient'),
+        callerRole,
+        channelName: `appointment-${appointmentId}`,
+      });
+    },
+    [userId, user],
   );
 
   const cancelCall = useCallback(() => {
@@ -160,6 +188,7 @@ export function useCallSignaling(userId: number | undefined) {
     outgoingState,
     outgoingAppointmentId,
     startCall,
+    ringCall,
     cancelCall,
     resetOutgoingState,
   };

@@ -1,11 +1,14 @@
-import * as SecureStore from 'expo-secure-store';
+import * as SecureStore from "expo-secure-store";
+// for production deployment
+export const API_URL =
+  process.env.EXPO_PUBLIC_API_URL || "https://backend.gobaadi.com";
 
-export const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://backend.gobaadi.com';
+// for local development
+// export const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000";
 
-const AUTH_TOKEN_KEY = 'gobadi_jwt';
-const REFRESH_TOKEN_KEY = 'gobadi_refresh_jwt';
-const LANGUAGE_KEY = 'gobadi_language';
-const LOCATION_KEY = 'gobadi_location';
+const AUTH_TOKEN_KEY = "gobadi_jwt";
+const REFRESH_TOKEN_KEY = "gobadi_refresh_jwt";
+const LANGUAGE_KEY = "gobadi_language";
 
 export async function getToken(): Promise<string | null> {
   return SecureStore.getItemAsync(AUTH_TOKEN_KEY);
@@ -31,14 +34,17 @@ export async function clearRefreshToken(): Promise<void> {
   await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
 }
 
-export async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> {
-  const url = `${API_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+export async function apiFetch<T>(
+  endpoint: string,
+  options?: RequestInit,
+): Promise<T> {
+  const url = `${API_URL}${endpoint.startsWith("/") ? endpoint : `/${endpoint}`}`;
 
   const token = await getToken();
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    ...(options?.headers as Record<string, string> || {}),
+    ...((options?.headers as Record<string, string>) || {}),
   };
 
   try {
@@ -52,15 +58,12 @@ export async function apiFetch<T>(endpoint: string, options?: RequestInit): Prom
       throw new Error(errBody.message || `API error: ${response.status}`);
     }
 
-    return await response.json() as T;
+    return (await response.json()) as T;
   } catch (error) {
     console.error(`API Fetch failed for ${url}:`, error);
     throw error;
   }
 }
-
-
-
 
 export async function getLanguage(): Promise<string | null> {
   return SecureStore.getItemAsync(LANGUAGE_KEY);

@@ -5,7 +5,11 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { MedicalEvent, MedicalEventType } from './medical-event.entity';
+import {
+  MedicalEvent,
+  MedicalEventStatus,
+  MedicalEventType,
+} from './medical-event.entity';
 import { CreateMedicalEventDto } from './dto/create-medical-event.dto';
 import { UpdateMedicalEventDto } from './dto/update-medical-event.dto';
 import { Appointment } from '../appointments/appointment.entity';
@@ -68,6 +72,33 @@ export class MedicalEventsService {
       event.patientId,
     );
     return event;
+  }
+
+  /**
+   * Latest CONSULTATION record for an appointment (any status), or null when
+   * no consultation has been started yet. Lets a chat screen re-attach to an
+   * ongoing consultation instead of relying on an in-navigation param.
+   */
+  async getLatestForAppointment(
+    requesterUserId: number,
+    requesterDoctorId: number | null,
+    appointmentId: number,
+  ): Promise<MedicalEvent | null> {
+    const appointment = await this.appointmentRepository.findOneBy({
+      id: appointmentId,
+    });
+    if (!appointment) {
+      throw new NotFoundException('Appointment not found');
+    }
+    this.assertAppointmentParticipant(
+      appointment,
+      requesterUserId,
+      requesterDoctorId,
+    );
+    return this.medicalEventRepository.findOne({
+      where: { appointmentId, type: MedicalEventType.CONSULTATION },
+      order: { createdAt: 'DESC' },
+    });
   }
 
   async create(
@@ -134,11 +165,99 @@ export class MedicalEventsService {
     await this.medicalEventRepository.remove(event);
   }
 
+  /**
+   * Find-or-create the CONSULTATION record for an appointment and return it
+   * in ONGOING state. Keyed by appointment (patient user <-> doctor), never by
+   * animal — either appointment participant may call it.
+   */
+  async startForAppointment(
+    requesterUserId: number,
+    requesterDoctorId: number | null,
+    appointmentId: number,
+  ): Promise<MedicalEvent> {
+    const appointment = await this.appointmentRepository.findOneBy({
+      id: appointmentId,
+    });
+    if (!appointment) {
+      throw new NotFoundException('Appointment not found');
+    }
+    this.assertAppointmentParticipant(
+      appointment,
+      requesterUserId,
+      requesterDoctorId,
+    );
+
+    const ongoing = await this.medicalEventRepository.findOne({
+      where: {
+        appointmentId,
+        type: MedicalEventType.CONSULTATION,
+        status: MedicalEventStatus.ONGOING,
+      },
+      order: { createdAt: 'DESC' },
+    });
+    if (ongoing) {
+      return ongoing;
+    }
+
+    return this.medicalEventRepository.save(
+      this.medicalEventRepository.create({
+        patientId: appointment.patientId,
+        appointmentId,
+        doctorId: appointment.doctorId,
+        type: MedicalEventType.CONSULTATION,
+        data: { startedAt: new Date().toISOString() },
+      }),
+    );
+  }
+
+  async endForParticipant(
+    requesterUserId: number,
+    requesterDoctorId: number | null,
+    eventId: number,
+  ): Promise<MedicalEvent> {
+    const event = await this.medicalEventRepository.findOneBy({ id: eventId });
+    if (!event) {
+      throw new NotFoundException('Medical event not found');
+    }
+    const isPatient = event.patientId === requesterUserId;
+    const isDoctor =
+      requesterDoctorId !== null && event.doctorId === requesterDoctorId;
+    if (!isPatient && !isDoctor) {
+      throw new ForbiddenException(
+        'You are not a participant of this consultation',
+      );
+    }
+    event.status = MedicalEventStatus.COMPLETED;
+    return this.medicalEventRepository.save(event);
+  }
+
+  private assertAppointmentParticipant(
+    appointment: Appointment,
+    requesterUserId: number,
+    requesterDoctorId: number | null,
+  ): void {
+    if (appointment.patientId === requesterUserId) {
+      return;
+    }
+    if (
+      requesterDoctorId !== null &&
+      appointment.doctorId === requesterDoctorId
+    ) {
+      return;
+    }
+    throw new ForbiddenException(
+      'You are not a participant of this appointment',
+    );
+  }
+
   private async assertCanAccessPatient(
     requesterUserId: number,
     requesterDoctorId: number | null,
     patientId: number,
   ): Promise<void> {
+    if (patientId === requesterUserId) {
+      return;
+    }
     if (requesterDoctorId) {
       const treated = await this.appointmentRepository.findOneBy({
         doctorId: requesterDoctorId,

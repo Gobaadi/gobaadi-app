@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -10,6 +10,7 @@ import {
   StatusBar,
   PanResponder,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -17,6 +18,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useGetClinicsQuery } from '@/store/clinicsApi';
 import { useGetDoctorBookingsQuery } from '@/store/doctorPortalApi';
 import { useGetDoctorsQuery } from '@/store/doctorsApi';
+import { useGetConversationsQuery, useCreateConversationMutation } from '@/store/chatApi';
+import { useGetForAppointmentQuery } from '@/store/consultationsApi';
+import { useCallSignalingContext } from '@/components/IncomingCallProvider';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useLanguage } from '@/hooks/use-language';
 import { useLocation } from '@/hooks/use-location';
@@ -64,7 +68,7 @@ export default function DoctorsScreen() {
       .filter(
         (a) =>
           (a.status === 'PENDING' || a.status === 'CONFIRMED' || a.status === 'RESCHEDULED') &&
-          new Date(a.startAt) > now,
+          new Date(a.endAt) > now,
       )
       .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime())[0] ?? null;
   }, [appointments]);
@@ -75,6 +79,69 @@ export default function DoctorsScreen() {
   }, [upcomingTreatment, doctors]);
 
   const hasUpcoming = upcomingTreatment !== null;
+
+  const { data: conversations = [] } = useGetConversationsQuery();
+  const [createConversation] = useCreateConversationMutation();
+
+  const handleOpenChat = useCallback(async () => {
+    if (!upcomingTreatment) return;
+    const appointment = upcomingTreatment;
+    const existing = conversations.find(
+      (c) =>
+        c.appointmentId === appointment.id ||
+        (c.doctorId === appointment.doctorId && c.patientId === appointment.patientId),
+    );
+    let conversationId = existing?.id;
+    if (!conversationId) {
+      try {
+        const created = await createConversation({
+          patientId: appointment.patientId,
+          doctorId: appointment.doctorId,
+        }).unwrap();
+        conversationId = created.id;
+      } catch {
+        Alert.alert('Error', 'Could not start the conversation. Please try again.');
+        return;
+      }
+    }
+    router.push({
+      pathname: '/chat',
+      params: {
+        conversationId: String(conversationId),
+        appointmentId: String(appointment.id),
+        patientName: appointment.patientName || 'Patient',
+        animalImage: appointment.animalImage || '',
+      },
+    });
+  }, [upcomingTreatment, conversations, createConversation, router]);
+
+  const { ringCall } = useCallSignalingContext();
+
+  // Calls are gated on an active (ONGOING) consultation — same rule as chat.
+  const { data: treatmentConsultation } = useGetForAppointmentQuery(
+    upcomingTreatment ? String(upcomingTreatment.id) : '',
+    { skip: !upcomingTreatment },
+  );
+
+  /**
+   * Ring the doctor (socket callStarted), then join the call screen and
+   * wait in the Agora channel until the doctor accepts.
+   */
+  const handleStartCall = useCallback(() => {
+    if (!upcomingTreatment) return;
+    if (treatmentConsultation?.status !== 'ONGOING') {
+      Alert.alert(
+        'Consultation not started',
+        'Start the consultation in the chat before placing a call.',
+      );
+      return;
+    }
+    ringCall(upcomingTreatment.id);
+    router.push({
+      pathname: '/video-call',
+      params: { appointmentId: String(upcomingTreatment.id) },
+    });
+  }, [upcomingTreatment, treatmentConsultation, ringCall, router]);
 
   const slideCount = hasUpcoming ? 2 : 1;
   const effectiveSlide = hasUpcoming ? activeSlide : 0;
@@ -237,28 +304,21 @@ export default function DoctorsScreen() {
                 <TouchableOpacity
                   style={styles.upcomingCard}
                   activeOpacity={0.95}
-                  disabled
+                  onPress={handleOpenChat}
                 >
                   <View style={styles.upcomingHeader}>
                     <Text style={styles.upcomingTitle}>Upcoming Treatment</Text>
                     <View style={styles.upcomingActions}>
                       <TouchableOpacity
                         style={styles.chatButton}
-                        onPress={() =>
-                          router.push({ pathname: '/chat', params: { conversationId: String(upcomingTreatment?.doctorId) } })
-                        }
+                        onPress={handleOpenChat}
                       >
                         <Text style={styles.actionEmoji}>💬</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
                         style={styles.callButton}
                         activeOpacity={0.8}
-                        onPress={() =>
-                          router.push({
-                            pathname: '/video-call',
-                            params: { appointmentId: String(upcomingTreatment?.id) },
-                          })
-                        }
+                        onPress={handleStartCall}
                       >
                         <Text style={styles.callIcon}>📹</Text>
                         <Text style={styles.callText}>Start Call</Text>
