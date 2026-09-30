@@ -17,24 +17,13 @@ import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useUploadDiagnosisImageMutation } from '@/store/aiDiagnosisApi';
+import { compressImageForUpload } from '@/utils/compress-image';
 
 export default function AiScanScreen() {
   const router = useRouter();
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [symptomsText, setSymptomsText] = useState('');
   const [uploadDiagnosisImage, { isLoading: isUploading }] = useUploadDiagnosisImageMutation();
-
-  async function pickFromCamera() {
-    const permission = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert('Permission needed', 'Please allow camera access to scan a photo.');
-      return;
-    }
-    const result = await ImagePicker.launchCameraAsync({ quality: 0.8 });
-    if (!result.canceled && result.assets?.[0]) {
-      setImageUri(result.assets[0].uri);
-    }
-  }
 
   async function pickFromGallery() {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -61,12 +50,15 @@ export default function AiScanScreen() {
 
     let imageUrl: string | undefined;
     if (imageUri) {
-      const fileName = imageUri.split('/').pop() || `scan-${Date.now()}.jpg`;
+      const file = await compressImageForUpload(imageUri, {
+        fileName: imageUri.split('/').pop() || `scan-${Date.now()}.jpg`,
+        mimeType: 'image/jpeg',
+      });
       const formData = new FormData();
       formData.append('file', {
-        uri: imageUri,
-        name: fileName,
-        type: 'image/jpeg',
+        uri: file.uri,
+        name: file.name,
+        type: file.type,
       } as any);
 
       try {
@@ -74,7 +66,11 @@ export default function AiScanScreen() {
         imageUrl = result.url;
       } catch (err) {
         console.log('Error uploading scan image:', err);
-        Alert.alert('Upload failed', 'Please try again.');
+        const status = (err as { status?: number | string })?.status;
+        Alert.alert(
+          'Upload failed',
+          status === 413 ? 'Photo is too large — please pick a smaller image.' : 'Please try again.',
+        );
         return;
       }
     }
@@ -118,7 +114,7 @@ export default function AiScanScreen() {
           <Text style={styles.title}>AI-Powered animals Diagnostics</Text>
 
           <Text style={styles.subtitle}>
-            Take a photo or upload an image to detect animal's diseases, fungal attack and nutrient deficiencies
+            Take a photo or upload an image to detect animal&apos;s diseases, fungal attack and nutrient deficiencies
           </Text>
 
           {imageUri ? (
@@ -144,7 +140,7 @@ export default function AiScanScreen() {
           ) : (
             <TouchableOpacity
               style={styles.scanButton}
-              onPress={pickFromCamera}
+              onPress={() => router.push('/ai-hold')}
               activeOpacity={0.85}
             >
               <Ionicons name="camera" size={18} color="#FFFFFF" style={styles.scanButtonIcon} />

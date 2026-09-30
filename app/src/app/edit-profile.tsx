@@ -13,24 +13,114 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useGetMyProfileQuery, useUpdateMyProfileMutation } from '@/store/usersApi';
+import * as ImagePicker from 'expo-image-picker';
+import {
+  useGetMyProfileQuery,
+  useUpdateMyProfileMutation,
+  useUploadMyPhotoMutation,
+} from '@/store/usersApi';
+import { useLocation } from '@/hooks/use-location';
+import { compressImageForUpload } from '@/utils/compress-image';
 
 export default function EditProfileScreen() {
   const router = useRouter();
   const { data: profile } = useGetMyProfileQuery();
   const [updateProfile, { isLoading: isSaving }] = useUpdateMyProfileMutation();
+  const [uploadMyPhoto] = useUploadMyPhotoMutation();
+  const { location, setLocation } = useLocation();
 
   const [name, setName] = useState(profile?.name || '');
   const [phone, setPhone] = useState(profile?.phone || '');
+  const [locationInput, setLocationInput] = useState<string | null>(null);
+  const [pickedPhotoUri, setPickedPhotoUri] = useState<string | null>(null);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
   useEffect(() => {
     if (profile?.name) setName(profile.name);
     if (profile?.phone) setPhone(profile.phone);
   }, [profile]);
 
-  const handleSave = async () => {
+  const avatarSource = pickedPhotoUri
+    ? { uri: pickedPhotoUri }
+    : profile?.profilePhoto
+      ? { uri: profile.profilePhoto }
+      : require('@/assets/images/user_profile.png');
+
+  const openPhotoPicker = () => {
+    Alert.alert('Change Profile Photo', 'Choose an option', [
+      { text: 'Take Photo', onPress: () => pickPhoto('camera') },
+      { text: 'Choose from Library', onPress: () => pickPhoto('library') },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
+
+  const pickPhoto = async (source: 'camera' | 'library') => {
     try {
-      await updateProfile({ name, phone }).unwrap();
+      const permission =
+        source === 'camera'
+          ? await ImagePicker.requestCameraPermissionsAsync()
+          : await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert(
+          'Permission required',
+          source === 'camera'
+            ? 'Camera access is required to take a profile photo.'
+            : 'Photo library access is required to choose a profile photo.',
+        );
+        return;
+      }
+      const result =
+        source === 'camera'
+          ? await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.8 })
+          : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
+      if (result.canceled || !result.assets?.length) return;
+      await uploadPhoto(result.assets[0].uri);
+    } catch {
+      Alert.alert(
+        'Photo selection failed',
+        'Could not open the camera or photo gallery. Please try again.',
+      );
+    }
+  };
+
+  const uploadPhoto = async (uri: string) => {
+    try {
+      setIsUploadingPhoto(true);
+      setPickedPhotoUri(uri);
+      const file = await compressImageForUpload(uri, {
+        fileName: `avatar-${Date.now()}.jpg`,
+        mimeType: 'image/jpeg',
+      });
+      const formData = new FormData();
+      formData.append('file', {
+        uri: file.uri,
+        name: file.name,
+        type: file.type,
+      } as any);
+      await uploadMyPhoto(formData).unwrap();
+    } catch (err: any) {
+      setPickedPhotoUri(null);
+      Alert.alert(
+        'Upload failed',
+        err?.status === 413
+          ? 'The photo is too large. Please try a smaller image.'
+          : err?.data?.message ||
+            err?.message ||
+            'Failed to upload photo. Please try again.',
+      );
+    } finally {
+      setIsUploadingPhoto(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!name.trim()) {
+      Alert.alert('Required field', 'Please enter your name.');
+      return;
+    }
+    try {
+      await updateProfile({ name: name.trim(), phone }).unwrap();
+      await setLocation((locationInput ?? '').trim() || location);
       Alert.alert('Success', 'Profile updated successfully.');
       router.back();
     } catch (err) {
@@ -59,12 +149,21 @@ export default function EditProfileScreen() {
         {/* Profile Card Container */}
         <View style={styles.profileCard}>
           {/* Avatar */}
-          <View style={styles.avatarWrapper}>
-            <Image
-              source={require('@/assets/images/user_profile.png')}
-              style={styles.avatarImage}
-            />
-          </View>
+          <TouchableOpacity
+            style={styles.avatarWrapper}
+            onPress={openPhotoPicker}
+            disabled={isUploadingPhoto}
+            activeOpacity={0.8}
+          >
+            <Image source={avatarSource} style={styles.avatarImage} />
+            <View style={styles.cameraBadge}>
+              {isUploadingPhoto ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Ionicons name="camera" size={18} color="#FFFFFF" />
+              )}
+            </View>
+          </TouchableOpacity>
 
           {/* Form Fields */}
           <View style={styles.fieldContainer}>
@@ -96,6 +195,20 @@ export default function EditProfileScreen() {
                 keyboardType="phone-pad"
               />
               <Ionicons name="checkmark-circle" size={22} color="#4CAF50" />
+            </View>
+          </View>
+
+          <View style={styles.fieldContainer}>
+            <Text style={styles.fieldLabel}>Location</Text>
+            <View style={styles.inputWrapper}>
+              <TextInput
+                style={styles.textInput}
+                value={locationInput ?? location}
+                onChangeText={setLocationInput}
+                placeholder="Enter location"
+                placeholderTextColor="#A39E99"
+              />
+              <Ionicons name="location-outline" size={20} color="#BD632F" />
             </View>
           </View>
         </View>
@@ -172,6 +285,19 @@ const styles = StyleSheet.create({
   avatarWrapper: {
     position: 'relative',
     marginBottom: 28,
+  },
+  cameraBadge: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#BD632F',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
   },
   avatarImage: {
     width: 140,

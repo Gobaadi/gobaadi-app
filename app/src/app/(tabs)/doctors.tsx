@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -21,12 +21,21 @@ import { useGetDoctorsQuery } from '@/store/doctorsApi';
 import { useGetConversationsQuery, useCreateConversationMutation } from '@/store/chatApi';
 import { useGetForAppointmentQuery } from '@/store/consultationsApi';
 import { useCallSignalingContext } from '@/components/IncomingCallProvider';
+import { useDebounce } from '@/hooks/use-debounce';
 import { useLanguage } from '@/hooks/use-language';
+import { useLocation } from '@/hooks/use-location';
+import LocationBottomSheet from '@/components/LocationBottomSheet';
 
 interface Category {
   id: string;
   name: string;
   icon: string;
+}
+
+function clinicImageSource(avatar?: string) {
+  return avatar && avatar.startsWith('http')
+    ? { uri: avatar }
+    : require('@/assets/images/clinic_lobby.png');
 }
 
 interface DoctorView {
@@ -42,9 +51,13 @@ interface DoctorView {
 export default function DoctorsScreen() {
   const router = useRouter();
   const [activeSlide, setActiveSlide] = useState(0);
-  const [activeCategory, setActiveCategory] = useState('Medicine');
-  const { data: clinics = [] } = useGetClinicsQuery();
+  const [activeCategory, setActiveCategory] = useState('General');
+  const { data: clinics = [], isLoading: clinicsLoading } = useGetClinicsQuery();
   const { languageCode } = useLanguage();
+  const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery, 300);
+  const { location, setLocation } = useLocation();
+  const [locationSheetOpen, setLocationSheetOpen] = useState(false);
 
   const { data: appointments = [], isLoading: appointmentsLoading } = useGetDoctorBookingsQuery();
   const { data: doctors = [] } = useGetDoctorsQuery();
@@ -133,6 +146,15 @@ export default function DoctorsScreen() {
   const slideCount = hasUpcoming ? 2 : 1;
   const effectiveSlide = hasUpcoming ? activeSlide : 0;
 
+  useEffect(() => {
+    if (slideCount <= 1) return;
+    const timer = setTimeout(
+      () => setActiveSlide((prev) => (prev + 1) % slideCount),
+      4000,
+    );
+    return () => clearTimeout(timer);
+  }, [slideCount, activeSlide]);
+
   const panResponder = useMemo(
     () =>
       PanResponder.create({
@@ -168,9 +190,18 @@ export default function DoctorsScreen() {
     { id: '5', name: 'Avian & Co.', icon: '🐦' },
   ];
 
-  const nearbyDoctors: DoctorView[] = useMemo(
-    () =>
-      doctors.map((d) => ({
+  const nearbyDoctors: DoctorView[] = useMemo(() => {
+    const q = debouncedSearch.trim().toLowerCase();
+    const category = activeCategory.toLowerCase();
+    return doctors
+      .filter(
+        (d) =>
+          (!q ||
+            d.name.toLowerCase().includes(q) ||
+            d.specialty.toLowerCase().includes(q)) &&
+          d.specialty.toLowerCase().includes(category),
+      )
+      .map((d) => ({
         id: d.id,
         name: d.name,
         specialty: d.specialty,
@@ -180,9 +211,8 @@ export default function DoctorsScreen() {
         image: d.avatar === 'jessica_doctor.png'
           ? require('@/assets/images/jessica_doctor.png')
           : require('@/assets/images/michael_doctor.png'),
-      })),
-    [doctors],
-  );
+      }));
+  }, [doctors, debouncedSearch, activeCategory]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -214,9 +244,13 @@ export default function DoctorsScreen() {
         <View style={styles.locationContainer}>
           <View>
             <Text style={styles.locationLabel}>Location</Text>
-            <TouchableOpacity style={styles.locationSelector} activeOpacity={0.7}>
+            <TouchableOpacity
+              style={styles.locationSelector}
+              activeOpacity={0.7}
+              onPress={() => setLocationSheetOpen(true)}
+            >
               <Text style={styles.pinIcon}>📍</Text>
-              <Text style={styles.locationText}>Uttar Badda, Dhaka</Text>
+              <Text style={styles.locationText}>{location}</Text>
               <Text style={styles.dropdownArrow}>∨</Text>
             </TouchableOpacity>
           </View>
@@ -227,6 +261,13 @@ export default function DoctorsScreen() {
           </TouchableOpacity>
         </View>
 
+        <LocationBottomSheet
+          visible={locationSheetOpen}
+          selectedLocation={location}
+          onClose={() => setLocationSheetOpen(false)}
+          onSave={setLocation}
+        />
+
         {/* Search Bar */}
         <View style={styles.searchContainer}>
           <Text style={styles.searchIcon}>🔍</Text>
@@ -234,7 +275,20 @@ export default function DoctorsScreen() {
             style={styles.searchInput}
             placeholder="Search doctors..."
             placeholderTextColor="#A39E99"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            autoCorrect={false}
+            returnKeyType="search"
           />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity
+              onPress={() => setSearchQuery('')}
+              activeOpacity={0.7}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons name="close-circle" size={18} color="#A39E99" />
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Sliding Banners Section */}
@@ -336,7 +390,7 @@ export default function DoctorsScreen() {
                       </TouchableOpacity>
                     </View>
 
-                    <Image source={require('@/assets/images/ai_cow.png')} style={styles.aiCowImage} />
+                    <Image source={require('@/assets/images/analyzewithai.png')} style={styles.aiCowImage} />
                   </View>
 
                   {/* Dots */}
@@ -399,7 +453,13 @@ export default function DoctorsScreen() {
           <View style={styles.emptyDoctorsContainer}>
             <Text style={styles.emptyDoctorsIcon}>👨‍⚕️</Text>
             <Text style={styles.emptyDoctorsText}>No doctors found</Text>
-            <Text style={styles.emptyDoctorsSubtext}>Check back soon — new vets are added regularly.</Text>
+            <Text style={styles.emptyDoctorsSubtext}>
+              {debouncedSearch.trim()
+                ? 'Try a different name or specialty.'
+                : doctors.length > 0
+                  ? 'No doctors found in this category.'
+                  : 'Check back soon — new vets are added regularly.'}
+            </Text>
           </View>
         ) : (
           nearbyDoctors.map((doc) => (
@@ -445,54 +505,59 @@ export default function DoctorsScreen() {
         )}
 
         {/* Nearby Medical Centers Section */}
-        {clinics.length > 0 && (
-          <>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Nearby Medical Centers</Text>
-            </View>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Nearby Medical Centers</Text>
+          <TouchableOpacity onPress={() => router.push('/all-clinics')}>
+            <Text style={styles.viewAllText}>View all</Text>
+          </TouchableOpacity>
+        </View>
 
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.clinicsRow}
-            >
-              {clinics.map((clinic) => (
-                <TouchableOpacity
-                  key={clinic.id}
-                  style={styles.clinicCard}
-                  activeOpacity={0.8}
-                  onPress={() => router.push({ pathname: '/doctor-detail', params: { id: String(clinic.doctors?.[0]?.id || clinic.id) } })}
-                >
-                  <View style={styles.clinicAvatarContainer}>
-                    {clinic.avatar ? (
-                      <Image source={{ uri: clinic.avatar }} style={styles.clinicAvatar} />
-                    ) : (
-                      <View style={styles.clinicAvatarPlaceholder}>
-                        <Text style={styles.clinicAvatarEmoji}>🏥</Text>
-                      </View>
+        {clinicsLoading ? (
+          <View style={styles.emptyDoctorsContainer}>
+            <ActivityIndicator size="small" color="#BD632F" />
+          </View>
+        ) : clinics.length === 0 ? (
+          <View style={styles.emptyDoctorsContainer}>
+            <Text style={styles.emptyDoctorsIcon}>🏥</Text>
+            <Text style={styles.emptyDoctorsText}>No medical centers found</Text>
+            <Text style={styles.emptyDoctorsSubtext}>
+              Check back soon — new medical centers are added regularly.
+            </Text>
+          </View>
+        ) : (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.clinicsRow}
+          >
+            {clinics.map((clinic) => (
+              <TouchableOpacity
+                key={clinic.id}
+                style={styles.clinicCard}
+                activeOpacity={0.8}
+                onPress={() => router.push({ pathname: '/doctor-detail', params: { id: String(clinic.doctors?.[0]?.id || clinic.id) } })}
+              >
+                <Image source={clinicImageSource(clinic.avatar)} style={styles.clinicCoverImage} />
+                <View style={styles.clinicInfo}>
+                  <View style={styles.clinicNameRow}>
+                    <Text style={styles.clinicName} numberOfLines={1}>{clinic.name}</Text>
+                    {clinic.isVerified && (
+                      <Ionicons name="checkmark-circle" size={14} color="#4CAF50" />
                     )}
                   </View>
-                  <View style={styles.clinicInfo}>
-                    <View style={styles.clinicNameRow}>
-                      <Text style={styles.clinicName} numberOfLines={1}>{clinic.name}</Text>
-                      {clinic.isVerified && (
-                        <Ionicons name="checkmark-circle" size={14} color="#4CAF50" />
-                      )}
-                    </View>
-                    <View style={styles.clinicLocationRow}>
-                      <Text style={styles.clinicLocationPin}>📍</Text>
-                      <Text style={styles.clinicLocation} numberOfLines={1}>{clinic.location}</Text>
-                    </View>
-                    <View style={styles.clinicRatingRow}>
-                      <Text style={styles.clinicStarIcon}>⭐</Text>
-                      <Text style={styles.clinicRatingValue}>{clinic.rating}</Text>
-                      <Text style={styles.clinicDoctorCount}>| {clinic.doctors?.length || 0} Doctors</Text>
-                    </View>
+                  <View style={styles.clinicLocationRow}>
+                    <Text style={styles.clinicLocationPin}>📍</Text>
+                    <Text style={styles.clinicLocation} numberOfLines={1}>{clinic.location}</Text>
                   </View>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </>
+                  <View style={styles.clinicRatingRow}>
+                    <Text style={styles.clinicStarIcon}>⭐</Text>
+                    <Text style={styles.clinicRatingValue}>{clinic.rating}</Text>
+                    <Text style={styles.clinicDoctorCount}>| {clinic.doctors?.length || 0} Doctors</Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
         )}
       </ScrollView>
     </SafeAreaView>
@@ -781,6 +846,7 @@ const styles = StyleSheet.create({
     padding: 18,
     position: 'relative',
     height: 165,
+    overflow: 'hidden',
   },
   aiCardContent: {
     flexDirection: 'row',
@@ -791,6 +857,7 @@ const styles = StyleSheet.create({
   aiLeftColumn: {
     flex: 1.2,
     justifyContent: 'center',
+    paddingRight: 130,
   },
   aiCardTitle: {
     fontSize: 18,
@@ -824,9 +891,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   aiCowImage: {
-    width: 110,
-    height: 110,
-    borderRadius: 14,
+    position: 'absolute',
+    right: 0,
+    top: 7,
+    width: 241,
+    height: 149,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -1021,41 +1090,24 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   clinicCard: {
-    flexDirection: 'row',
-    width: 280,
+    width: 260,
     backgroundColor: '#FFFFFF',
     borderRadius: 18,
     borderWidth: 1,
     borderColor: '#E6E1DC',
-    padding: 14,
+    overflow: 'hidden',
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.03,
     shadowRadius: 6,
     elevation: 1,
   },
-  clinicAvatarContainer: {
-    marginRight: 12,
-  },
-  clinicAvatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 14,
-  },
-  clinicAvatarPlaceholder: {
-    width: 56,
-    height: 56,
-    borderRadius: 14,
-    backgroundColor: '#FFF2EB',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  clinicAvatarEmoji: {
-    fontSize: 24,
+  clinicCoverImage: {
+    width: '100%',
+    height: 130,
   },
   clinicInfo: {
-    flex: 1,
-    justifyContent: 'center',
+    padding: 14,
   },
   clinicNameRow: {
     flexDirection: 'row',

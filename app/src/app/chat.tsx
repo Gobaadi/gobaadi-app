@@ -23,6 +23,7 @@ import * as ImagePicker from 'expo-image-picker';
 import PrescriptionBottomSheet from '@/components/PrescriptionBottomSheet';
 import { useCallSignalingContext } from '@/components/IncomingCallProvider';
 import { useGetMessagesQuery, useSendMessageMutation, useSendAttachmentMessageMutation } from '@/store/chatApi';
+import { compressImageForUpload } from '@/utils/compress-image';
 import {
   useGetByIdQuery as useGetConsultationQuery,
   useGetForAppointmentQuery,
@@ -368,12 +369,25 @@ export default function ChatScreen() {
     const fileName = asset.fileName || `photo-${Date.now()}.jpg`;
 
     try {
+      const isImage = (asset.mimeType || 'image/jpeg').startsWith('image/');
+      const file = isImage
+        ? await compressImageForUpload(asset.uri, {
+            fileName,
+            mimeType: asset.mimeType || 'image/jpeg',
+          })
+        : { uri: asset.uri, name: fileName, type: asset.mimeType || 'application/octet-stream' };
       await sendAttachment({
         conversationId,
-        file: { uri: asset.uri, name: fileName, type: asset.mimeType || 'image/jpeg' },
+        file: { uri: file.uri, name: file.name, type: file.type },
       }).unwrap();
-    } catch {
-      Alert.alert('Error', 'Failed to send attachment. Please try again.');
+    } catch (err) {
+      const status = (err as { status?: number | string })?.status;
+      Alert.alert(
+        'Error',
+        status === 413
+          ? 'Photo is too large — please pick a smaller image.'
+          : 'Failed to send attachment. Please try again.',
+      );
     }
   };
 

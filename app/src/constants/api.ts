@@ -72,3 +72,11 @@ export async function getLanguage(): Promise<string | null> {
 export async function setLanguage(lang: string): Promise<void> {
   await SecureStore.setItemAsync(LANGUAGE_KEY, lang);
 }
+
+export async function getLocation(): Promise<string | null> {
+  return SecureStore.getItemAsync(LOCATION_KEY);
+}
+
+export async function saveLocation(location: string): Promise<void> {
+  await SecureStore.setItemAsync(LOCATION_KEY, location);
+}
