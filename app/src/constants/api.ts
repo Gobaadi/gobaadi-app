@@ -9,6 +9,7 @@ export const API_URL =
 const AUTH_TOKEN_KEY = "gobadi_jwt";
 const REFRESH_TOKEN_KEY = "gobadi_refresh_jwt";
 const LANGUAGE_KEY = "gobadi_language";
+const LOCATION_KEY = "gobadi_location";
 
 export async function getToken(): Promise<string | null> {
   return SecureStore.getItemAsync(AUTH_TOKEN_KEY);
