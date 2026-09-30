@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -17,7 +17,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useGetClinicsQuery } from '@/store/clinicsApi';
 import { useGetDoctorBookingsQuery } from '@/store/doctorPortalApi';
 import { useGetDoctorsQuery } from '@/store/doctorsApi';
+import { useDebounce } from '@/hooks/use-debounce';
 import { useLanguage } from '@/hooks/use-language';
+import { useLocation } from '@/hooks/use-location';
+import LocationBottomSheet from '@/components/LocationBottomSheet';
 
 interface Category {
   id: string;
@@ -38,9 +41,13 @@ interface DoctorView {
 export default function DoctorsScreen() {
   const router = useRouter();
   const [activeSlide, setActiveSlide] = useState(0);
-  const [activeCategory, setActiveCategory] = useState('Medicine');
+  const [activeCategory, setActiveCategory] = useState('General');
   const { data: clinics = [] } = useGetClinicsQuery();
   const { languageCode } = useLanguage();
+  const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery, 300);
+  const { location, setLocation } = useLocation();
+  const [locationSheetOpen, setLocationSheetOpen] = useState(false);
 
   const { data: appointments = [], isLoading: appointmentsLoading } = useGetDoctorBookingsQuery();
   const { data: doctors = [] } = useGetDoctorsQuery();
@@ -65,6 +72,15 @@ export default function DoctorsScreen() {
 
   const slideCount = hasUpcoming ? 2 : 1;
   const effectiveSlide = hasUpcoming ? activeSlide : 0;
+
+  useEffect(() => {
+    if (slideCount <= 1) return;
+    const timer = setTimeout(
+      () => setActiveSlide((prev) => (prev + 1) % slideCount),
+      4000,
+    );
+    return () => clearTimeout(timer);
+  }, [slideCount, activeSlide]);
 
   const panResponder = useMemo(
     () =>
@@ -101,9 +117,18 @@ export default function DoctorsScreen() {
     { id: '5', name: 'Avian & Co.', icon: '🐦' },
   ];
 
-  const nearbyDoctors: DoctorView[] = useMemo(
-    () =>
-      doctors.map((d) => ({
+  const nearbyDoctors: DoctorView[] = useMemo(() => {
+    const q = debouncedSearch.trim().toLowerCase();
+    const category = activeCategory.toLowerCase();
+    return doctors
+      .filter(
+        (d) =>
+          (!q ||
+            d.name.toLowerCase().includes(q) ||
+            d.specialty.toLowerCase().includes(q)) &&
+          d.specialty.toLowerCase().includes(category),
+      )
+      .map((d) => ({
         id: d.id,
         name: d.name,
         specialty: d.specialty,
@@ -113,9 +138,8 @@ export default function DoctorsScreen() {
         image: d.avatar === 'jessica_doctor.png'
           ? require('@/assets/images/jessica_doctor.png')
           : require('@/assets/images/michael_doctor.png'),
-      })),
-    [doctors],
-  );
+      }));
+  }, [doctors, debouncedSearch, activeCategory]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -147,9 +171,13 @@ export default function DoctorsScreen() {
         <View style={styles.locationContainer}>
           <View>
             <Text style={styles.locationLabel}>Location</Text>
-            <TouchableOpacity style={styles.locationSelector} activeOpacity={0.7}>
+            <TouchableOpacity
+              style={styles.locationSelector}
+              activeOpacity={0.7}
+              onPress={() => setLocationSheetOpen(true)}
+            >
               <Text style={styles.pinIcon}>📍</Text>
-              <Text style={styles.locationText}>Uttar Badda, Dhaka</Text>
+              <Text style={styles.locationText}>{location}</Text>
               <Text style={styles.dropdownArrow}>∨</Text>
             </TouchableOpacity>
           </View>
@@ -160,6 +188,13 @@ export default function DoctorsScreen() {
           </TouchableOpacity>
         </View>
 
+        <LocationBottomSheet
+          visible={locationSheetOpen}
+          selectedLocation={location}
+          onClose={() => setLocationSheetOpen(false)}
+          onSave={setLocation}
+        />
+
         {/* Search Bar */}
         <View style={styles.searchContainer}>
           <Text style={styles.searchIcon}>🔍</Text>
@@ -167,7 +202,20 @@ export default function DoctorsScreen() {
             style={styles.searchInput}
             placeholder="Search doctors..."
             placeholderTextColor="#A39E99"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            autoCorrect={false}
+            returnKeyType="search"
           />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity
+              onPress={() => setSearchQuery('')}
+              activeOpacity={0.7}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons name="close-circle" size={18} color="#A39E99" />
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Sliding Banners Section */}
@@ -276,7 +324,7 @@ export default function DoctorsScreen() {
                       </TouchableOpacity>
                     </View>
 
-                    <Image source={require('@/assets/images/ai_cow.png')} style={styles.aiCowImage} />
+                    <Image source={require('@/assets/images/analyzewithai.png')} style={styles.aiCowImage} />
                   </View>
 
                   {/* Dots */}
@@ -339,7 +387,13 @@ export default function DoctorsScreen() {
           <View style={styles.emptyDoctorsContainer}>
             <Text style={styles.emptyDoctorsIcon}>👨‍⚕️</Text>
             <Text style={styles.emptyDoctorsText}>No doctors found</Text>
-            <Text style={styles.emptyDoctorsSubtext}>Check back soon — new vets are added regularly.</Text>
+            <Text style={styles.emptyDoctorsSubtext}>
+              {debouncedSearch.trim()
+                ? 'Try a different name or specialty.'
+                : doctors.length > 0
+                  ? 'No doctors found in this category.'
+                  : 'Check back soon — new vets are added regularly.'}
+            </Text>
           </View>
         ) : (
           nearbyDoctors.map((doc) => (
@@ -721,6 +775,7 @@ const styles = StyleSheet.create({
     padding: 18,
     position: 'relative',
     height: 165,
+    overflow: 'hidden',
   },
   aiCardContent: {
     flexDirection: 'row',
@@ -731,6 +786,7 @@ const styles = StyleSheet.create({
   aiLeftColumn: {
     flex: 1.2,
     justifyContent: 'center',
+    paddingRight: 130,
   },
   aiCardTitle: {
     fontSize: 18,
@@ -764,9 +820,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   aiCowImage: {
-    width: 110,
-    height: 110,
-    borderRadius: 14,
+    position: 'absolute',
+    right: 0,
+    top: 7,
+    width: 241,
+    height: 149,
   },
   sectionHeader: {
     flexDirection: 'row',

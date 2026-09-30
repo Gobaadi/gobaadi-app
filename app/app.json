@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Gobaadi",
-    "slug": "Gobaadi",
+    "name": "gobadi",
+    "slug": "gobadi",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -18,7 +18,7 @@
         "foregroundImage": "./assets/images/icon.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.champius.gobaadi"
+      "package": "com.champius.gobadi"
     },
     "web": {
       "output": "static",
@@ -39,7 +39,19 @@
       "expo-image",
       "expo-web-browser",
       "@react-native-community/datetimepicker",
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera to scan your animal"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow $(PRODUCT_NAME) to access your photos to add animal pictures."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

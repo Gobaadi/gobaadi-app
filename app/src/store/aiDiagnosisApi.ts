@@ -51,6 +51,7 @@ export const aiDiagnosisApi = createApi({
 export const {
   useGetDiagnosisHistoryQuery,
   useGetDiagnosisByIdQuery,
+  useLazyGetDiagnosisByIdQuery,
   useUploadDiagnosisImageMutation,
   useAnalyzeSymptomsMutation,
 } = aiDiagnosisApi;

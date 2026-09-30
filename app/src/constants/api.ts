@@ -1,10 +1,11 @@
 import * as SecureStore from 'expo-secure-store';
 
-export const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://gobadi-app.onrender.com';
+export const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://backend.gobaadi.com';
 
 const AUTH_TOKEN_KEY = 'gobadi_jwt';
 const REFRESH_TOKEN_KEY = 'gobadi_refresh_jwt';
 const LANGUAGE_KEY = 'gobadi_language';
+const LOCATION_KEY = 'gobadi_location';
 
 export async function getToken(): Promise<string | null> {
   return SecureStore.getItemAsync(AUTH_TOKEN_KEY);
@@ -67,4 +68,12 @@ export async function getLanguage(): Promise<string | null> {
 
 export async function setLanguage(lang: string): Promise<void> {
   await SecureStore.setItemAsync(LANGUAGE_KEY, lang);
+}
+
+export async function getLocation(): Promise<string | null> {
+  return SecureStore.getItemAsync(LOCATION_KEY);
+}
+
+export async function saveLocation(location: string): Promise<void> {
+  await SecureStore.setItemAsync(LOCATION_KEY, location);
 }

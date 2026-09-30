@@ -314,7 +314,12 @@ export default function SignUpScreen() {
               </View>
               <Text style={styles.termsText}>
                 By continuing, you agree to our{' '}
-                <Text style={styles.termsHighlight}>terms of services</Text>
+                <Text
+                  style={styles.termsHighlight}
+                  onPress={() => router.push('/terms-of-service')}
+                >
+                  terms of services
+                </Text>
               </Text>
             </TouchableOpacity>
 

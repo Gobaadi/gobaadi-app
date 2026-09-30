@@ -5,31 +5,121 @@ import {
   Text,
   TouchableOpacity,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-import { useGetDiagnosisHistoryQuery } from '@/store/aiDiagnosisApi';
+import { useGetDiagnosisByIdQuery } from '@/store/aiDiagnosisApi';
+import { getDiseaseInfo } from '@/constants/disease-info';
+import { formatRelativeTime } from '@/utils/date';
+
+function parseTitleDetail(rec: string): { title: string; detail?: string } {
+  const separator = rec.indexOf(':');
+  if (separator > 0 && separator < rec.length - 1) {
+    return { title: rec.slice(0, separator + 1), detail: rec.slice(separator + 1).trim() };
+  }
+  return { title: rec };
+}
 
 export default function AiSummaryScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id?: string }>();
-  const { data: history } = useGetDiagnosisHistoryQuery();
-  const diagnosis = history?.find((d) => String(d.id) === id) ?? history?.[0];
+  const diagnosisId = id ? Number(id) : undefined;
 
+  const {
+    data: diagnosis,
+    isLoading,
+    isError,
+    refetch,
+  } = useGetDiagnosisByIdQuery(diagnosisId as number, { skip: !diagnosisId });
+
+  function handleBack() {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/(tabs)/doctors');
+    }
+  }
+
+  if (!diagnosisId) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.circleButton} onPress={handleBack} activeOpacity={0.8}>
+            <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Summary</Text>
+          <TouchableOpacity style={styles.circleButton} activeOpacity={0.8}>
+            <Ionicons name="notifications-outline" size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.centerState}>
+          <Ionicons name="document-text-outline" size={40} color="#A39E99" />
+          <Text style={styles.centerStateText}>No diagnosis selected</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={() => router.replace('/ai-scan')}>
+            <Text style={styles.retryButtonText}>Start a new scan</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.circleButton} onPress={handleBack} activeOpacity={0.8}>
+            <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Summary</Text>
+          <TouchableOpacity style={styles.circleButton} activeOpacity={0.8}>
+            <Ionicons name="notifications-outline" size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.centerState}>
+          <ActivityIndicator size="large" color="#BD632F" />
+          <Text style={styles.centerStateText}>Loading diagnosis…</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (isError || !diagnosis) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.circleButton} onPress={handleBack} activeOpacity={0.8}>
+            <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Summary</Text>
+          <TouchableOpacity style={styles.circleButton} activeOpacity={0.8}>
+            <Ionicons name="notifications-outline" size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.centerState}>
+          <Ionicons name="cloud-offline-outline" size={40} color="#A39E99" />
+          <Text style={styles.centerStateText}>
+            Could not load this diagnosis. Please try again.
+          </Text>
+          <TouchableOpacity style={styles.retryButton} onPress={() => refetch()}>
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const diseaseInfo = getDiseaseInfo(diagnosis.analysisResult);
   const confidencePct =
-    diagnosis?.confidenceScore != null ? Math.round(diagnosis.confidenceScore * 100) : null;
+    diagnosis.confidenceScore != null ? Math.round(diagnosis.confidenceScore * 100) : null;
 
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.circleButton}
-          onPress={() => router.replace('/(tabs)/doctors')}
-          activeOpacity={0.8}
-        >
+        <TouchableOpacity style={styles.circleButton} onPress={handleBack} activeOpacity={0.8}>
           <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
         </TouchableOpacity>
 
@@ -41,7 +131,7 @@ export default function AiSummaryScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-        {/* Cow Info Header Card */}
+        {/* Animal Info Header Card */}
         <View style={styles.diagnoseInfoBox}>
           <View style={styles.cowInfoRow}>
             <View style={styles.cowAvatarCircle}>
@@ -49,9 +139,7 @@ export default function AiSummaryScreen() {
             </View>
             <View style={styles.cowMetaCol}>
               <Text style={styles.cowTitle}>Cow</Text>
-              <Text style={styles.cowTime}>
-                {diagnosis ? new Date(diagnosis.createdAt).toLocaleString() : 'No scan found'}
-              </Text>
+              <Text style={styles.cowTime}>Detected : {formatRelativeTime(diagnosis.createdAt)}</Text>
             </View>
           </View>
           <View style={styles.matchBadge}>
@@ -61,36 +149,74 @@ export default function AiSummaryScreen() {
 
         {/* Diagnostic Detail Card */}
         <View style={styles.detailsCard}>
-          <Text style={styles.diagnosticTitle}>{diagnosis?.analysisResult ?? 'No diagnosis available'}</Text>
-          <Text style={styles.diagnosticSubtitle}>Highly contagious viral disease</Text>
+          <Text style={styles.diagnosticTitle}>{diagnosis.analysisResult ?? 'No diagnosis available'}</Text>
+          <Text style={styles.diagnosticSubtitle}>{diseaseInfo.subtitle}</Text>
 
           <View style={styles.divider} />
 
-          <Text style={styles.diagnosticParagraph}>
-            Foot-and-Mouth Disease (FMD) is a highly viral illness affecting cloven-hoofed livestock like cattle, pigs, and sheep, but it poses absolutely no threat to human health or food safety.
-          </Text>
-          <Text style={styles.diagnosticParagraph}>
-            If FMD has been detected in your herd or region, immediate action is required to prevent widespread transmission and massive economic losses.
-          </Text>
+          {diseaseInfo.paragraphs.map((paragraph, index) => (
+            <Text key={index} style={styles.diagnosticParagraph}>
+              {paragraph}
+            </Text>
+          ))}
+
+          {diagnosis.status === 'FAILED' && (
+            <Text style={styles.failureText}>
+              {diagnosis.failureReason || 'The automated analysis failed for this scan.'}
+            </Text>
+          )}
 
           <View style={styles.divider} />
 
           {/* Action plan list */}
           <Text style={styles.actionPlanHeader}>Immediate Action Plan</Text>
 
-          {(diagnosis?.recommendations ?? []).map((rec, index) => (
-            <View key={index} style={styles.actionRow}>
-              <Text style={styles.actionNumber}>{index + 1}.</Text>
-              <View style={styles.actionTextCol}>
-                <Text style={styles.actionTitle}>{rec}</Text>
-              </View>
-            </View>
-          ))}
+          {diagnosis.recommendations.length === 0 ? (
+            <Text style={styles.diagnosticParagraph}>
+              No specific actions were recommended for this diagnosis. Keep monitoring the animal
+              and consult a veterinarian if symptoms continue.
+            </Text>
+          ) : (
+            diagnosis.recommendations.map((rec, index) => {
+              const { title, detail } = parseTitleDetail(rec);
+              return (
+                <View key={index} style={styles.actionRow}>
+                  <Text style={styles.actionNumber}>{index + 1}.</Text>
+                  <View style={styles.actionTextCol}>
+                    <Text style={styles.actionTitle}>
+                      {title}
+                      {detail ? <Text style={styles.actionDesc}> {detail}</Text> : null}
+                    </Text>
+                  </View>
+                </View>
+              );
+            })
+          )}
 
-          {!!diagnosis?.recommendedDoctorIds.length && (
+          {diseaseInfo.clinicalSigns.length > 0 && (
+            <>
+              <View style={styles.divider} />
+              <Text style={styles.actionPlanHeader}>Key Clinical Signs in Cattle</Text>
+              {diseaseInfo.clinicalSigns.map((sign, index) => (
+                <View key={index} style={styles.actionRow}>
+                  <Ionicons name="medkit-outline" size={14} color="#BD632F" style={styles.signIcon} />
+                  <View style={styles.actionTextCol}>
+                    <Text style={styles.signText}>{sign}</Text>
+                  </View>
+                </View>
+              ))}
+            </>
+          )}
+
+          {!!diagnosis.recommendedDoctorIds.length && (
             <TouchableOpacity
               style={styles.summaryButton}
-              onPress={() => router.push({ pathname: '/doctor-detail', params: { id: String(diagnosis.recommendedDoctorIds[0]) } })}
+              onPress={() =>
+                router.push({
+                  pathname: '/doctor-detail',
+                  params: { id: String(diagnosis.recommendedDoctorIds[0]) },
+                })
+              }
               activeOpacity={0.85}
             >
               <Text style={styles.summaryButtonText}>View Recommended Doctor</Text>
@@ -132,15 +258,37 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '700',
-  },
   headerTitle: {
     fontSize: 20,
     fontWeight: '700',
     color: '#1A1817',
+  },
+  centerState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+    gap: 12,
+  },
+  centerStateText: {
+    fontSize: 14,
+    color: '#7C7672',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  retryButton: {
+    backgroundColor: '#BD632F',
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+    marginTop: 8,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '700',
   },
   diagnoseInfoBox: {
     flexDirection: 'row',
@@ -218,7 +366,7 @@ const styles = StyleSheet.create({
   },
   diagnosticSubtitle: {
     fontSize: 13,
-    color: '#7C7672',
+    color: '#C62828',
     fontWeight: '600',
     marginBottom: 16,
   },
@@ -228,9 +376,12 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     marginBottom: 12,
   },
-  linkText: {
-    color: '#BD632F',
-    textDecorationLine: 'underline',
+  failureText: {
+    fontSize: 13,
+    color: '#C62828',
+    lineHeight: 18,
+    marginBottom: 12,
+    fontWeight: '600',
   },
   summaryButton: {
     backgroundColor: '#BD632F',
@@ -280,5 +431,14 @@ const styles = StyleSheet.create({
   actionDesc: {
     fontWeight: '400',
     color: '#7C7672',
+  },
+  signIcon: {
+    marginRight: 8,
+    marginTop: 2,
+  },
+  signText: {
+    fontSize: 13,
+    color: '#4C4844',
+    lineHeight: 18,
   },
 });
