@@ -20,6 +20,8 @@ class SocketManager {
   private socket: Socket | null = null;
   private pendingHandlers = new Map<string, Set<SocketEventHandler>>();
   private isRefreshingAuth = false;
+  private serverRejectCount = 0;
+  private healthTimer: ReturnType<typeof setInterval> | null = null;
 
   async connect(): Promise<void> {
     if (this.socket?.connected) {
@@ -31,7 +33,15 @@ class SocketManager {
     }
 
     if (this.socket) {
-      this.socket.disconnect();
+      // A live socket instance already exists: reuse it instead of creating
+      // a duplicate connection (and losing any in-flight auto-reconnect).
+      if (this.socket.active) {
+        return;
+      }
+      this.socket.auth = { token };
+      this.socket.connect();
+      this.startHealthCheck();
+      return;
     }
 
     this.socket = io(API_URL, {
@@ -45,6 +55,7 @@ class SocketManager {
     });
 
     this.socket.on('connect', () => {
+      this.serverRejectCount = 0;
       this.replayHandlers();
     });
 
@@ -55,22 +66,59 @@ class SocketManager {
       await this.reauthenticateAndReconnect();
     });
 
+    this.socket.on('disconnect', (reason) => {
+      // A server-initiated disconnect ("io server disconnect", typically an
+      // invalid/expired token) STOPS socket.io's auto-reconnect permanently.
+      // Without this handler the socket dies silently and the user never
+      // receives incoming calls again until app restart.
+      if (reason === 'io server disconnect') {
+        void this.handleServerRejection();
+      }
+    });
+
     this.socket.io.on('reconnect', () => {
       // Reconciliation: after any reconnect, cached message/conversation
       // state may be stale, so let subscribers refetch via RTK Query tags.
       this.emitLocal('reconnected');
     });
+
+    this.startHealthCheck();
+  }
+
+  /**
+   * Belt-and-suspenders: every 30s, if the socket is neither connected nor
+   * trying (e.g. a rejected handshake stalled the client), refresh the token
+   * and force a reconnect. No-op while connected or while socket.io is
+   * already auto-reconnecting.
+   */
+  private startHealthCheck(): void {
+    if (this.healthTimer) return;
+    this.healthTimer = setInterval(() => {
+      if (!this.socket || this.socket.connected || this.socket.active) return;
+      void this.reauthenticateAndReconnect();
+    }, 30000);
+  }
+
+  private async handleServerRejection(): Promise<void> {
+    this.serverRejectCount += 1;
+    if (this.serverRejectCount > 5) return;
+    const delay = Math.min(2000 * 2 ** (this.serverRejectCount - 1), 60000);
+    await new Promise((resolve) => setTimeout(resolve, delay));
+    if (!this.socket) return;
+    await this.reauthenticateAndReconnect();
   }
 
   private async reauthenticateAndReconnect(): Promise<void> {
     if (this.isRefreshingAuth) return;
     this.isRefreshingAuth = true;
     try {
-      if (!_storeRef) return;
+      if (!_storeRef || !this.socket) return;
       const newAccessToken = await refreshAccessToken(_storeRef.dispatch, _storeRef.getState);
       if (newAccessToken && this.socket) {
         this.socket.auth = { token: newAccessToken };
-        this.socket.connect();
+        if (!this.socket.connected && !this.socket.active) {
+          this.socket.connect();
+        }
       }
     } finally {
       this.isRefreshingAuth = false;
@@ -128,8 +176,13 @@ class SocketManager {
   }
 
   disconnect(): void {
+    if (this.healthTimer) {
+      clearInterval(this.healthTimer);
+      this.healthTimer = null;
+    }
     this.socket?.disconnect();
     this.socket = null;
+    this.serverRejectCount = 0;
     this.pendingHandlers.clear();
   }
 }
