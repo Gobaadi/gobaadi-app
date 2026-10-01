@@ -9,8 +9,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useGetDoctorByIdQuery } from '@/store/doctorsApi';
 import { useGetServicesQuery } from '@/store/servicesApi';
+import { doctorImageSource } from '@/utils/doctor-image';
 
 export default function DoctorDetailScreen() {
   const router = useRouter();
@@ -43,9 +45,7 @@ export default function DoctorDetailScreen() {
       location: 'Uttar Badda, Dhaka',
       rating: doctorData.rating || 4.8,
       reviews: 124,
-      image: doctorData.avatar === 'jessica_doctor.png'
-        ? require('@/assets/images/jessica_doctor.png')
-        : require('@/assets/images/michael_doctor.png'),
+      image: doctorImageSource(doctorData.avatar),
       availability: doctorData.avatar === 'jessica_doctor.png' ? '8 AM - 5 PM' : '6 AM - 9 PM',
     };
   }, [doctorData]);
@@ -76,8 +76,12 @@ export default function DoctorDetailScreen() {
 
         <Text style={styles.headerTitle}>Doctor Detail</Text>
 
-        <TouchableOpacity style={styles.circleButton} activeOpacity={0.8}>
-          <Text style={styles.buttonText}>🔔</Text>
+        <TouchableOpacity
+          style={styles.circleButton}
+          activeOpacity={0.8}
+          onPress={() => router.push('/notifications')}
+        >
+          <Ionicons name="notifications-outline" size={20} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
 

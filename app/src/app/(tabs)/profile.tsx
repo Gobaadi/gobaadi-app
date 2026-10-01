@@ -18,6 +18,7 @@ import { useGetMyDoctorProfileQuery, useGetDoctorBookingsQuery } from '@/store/d
 import { useGetAnimalsQuery } from '@/store/animalsApi';
 import { useGetBalanceQuery } from '@/store/walletApi';
 import type { RootState, AppDispatch } from '@/store/store';
+import { doctorImageSource } from '@/utils/doctor-image';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -85,7 +86,7 @@ export default function ProfileScreen() {
               <View style={styles.doctorInfoRow}>
                 <View style={styles.avatarWrapper}>
                   <Image
-                    source={doctorProfile?.avatar ? { uri: doctorProfile.avatar } : require('@/assets/images/doctor_avatar.png')}
+                    source={doctorImageSource(doctorProfile?.avatar, require('@/assets/images/doctor_avatar.png'))}
                     style={styles.doctorAvatar}
                     contentFit="cover"
                   />
@@ -234,7 +235,13 @@ export default function ProfileScreen() {
             <View style={styles.card}>
               <View style={styles.farmerTopRow}>
                 <Image
-                  source={require('@/assets/images/user_profile.png')}
+                  source={
+                    userProfile?.profilePhoto
+                      ? { uri: userProfile.profilePhoto }
+                      : userProfile?.avatar
+                        ? { uri: userProfile.avatar }
+                        : require('@/assets/images/user_profile.png')
+                  }
                   style={styles.farmerAvatar}
                   contentFit="cover"
                 />
@@ -294,9 +301,9 @@ export default function ProfileScreen() {
             >
               <View style={styles.planLeft}>
                 <Text style={styles.planTitle}>Current Plan</Text>
-                <Text style={styles.planPrice}>$99.00</Text>
+                <Text style={styles.planPrice}>$00.00</Text>
                 <Text style={styles.planBilling}>
-                  Next Billing : <Text style={styles.planBillingBold}>Oct 15, 2026</Text>
+                  Next Billing : <Text style={styles.planBillingBold}>-</Text>
                 </Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color="#7C7672" />

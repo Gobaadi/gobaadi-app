@@ -17,6 +17,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { MediaCardSkeleton } from '@/components/ui/skeleton';
 import { useLocation } from '@/hooks/use-location';
 import LocationBottomSheet from '@/components/LocationBottomSheet';
+import { doctorImageSource } from '@/utils/doctor-image';
 
 interface DoctorView {
   id: number;
@@ -46,9 +47,7 @@ export default function AllDoctorsScreen() {
       location: 'Uttar Badda, Dhaka',
       rating: d.rating || 4.8,
       reviews: 124,
-      image: d.avatar === 'jessica_doctor.png'
-        ? require('@/assets/images/jessica_doctor.png')
-        : require('@/assets/images/michael_doctor.png'),
+      image: doctorImageSource(d.avatar),
     }));
 
     if (activeFilter !== 'All') {

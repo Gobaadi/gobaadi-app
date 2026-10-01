@@ -9,13 +9,19 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useGetDoctorBookingsQuery } from '@/store/doctorPortalApi';
+import { useSelector } from 'react-redux';
+import type { RootState } from '@/store/store';
+import { useGetBookingByIdQuery, useGetDoctorBookingsQuery } from '@/store/doctorPortalApi';
 
 export default function AppointmentCancelledScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const isDoctor = useSelector((state: RootState) => state.auth.user?.role) === 'doctor';
+  const { data: fetchedAppointment } = useGetBookingByIdQuery(String(id ?? ''), {
+    skip: !id,
+  });
   const { data: bookings = [] } = useGetDoctorBookingsQuery();
-  const appointment = bookings.find((b) => String(b.id) === id);
+  const appointment = fetchedAppointment ?? bookings.find((b) => String(b.id) === id);
 
   const displayName = appointment
     ? appointment.animalName || appointment.patientName || `Patient #${appointment.patientId}`
@@ -71,7 +77,7 @@ export default function AppointmentCancelledScreen() {
       <View style={styles.bottomContainer}>
         <TouchableOpacity
           style={styles.homeBtn}
-          onPress={() => router.replace('/doctor-home')}
+          onPress={() => router.replace(isDoctor ? '/doctor-home' : '/')}
           activeOpacity={0.8}
         >
           <Text style={styles.homeBtnText}>Go Home</Text>

@@ -111,7 +111,7 @@ export default function BillingDetailsScreen() {
 
           {/* Your Slot Section */}
           <Text style={styles.sectionHeader}>Booking Reason</Text>
-          <Text style={styles.reasonText}>{params.reason || 'The symptom was extreme fever'}</Text>
+          <Text style={styles.reasonText}>{params.reason || '—'}</Text>
 
           <View style={styles.divider} />
 

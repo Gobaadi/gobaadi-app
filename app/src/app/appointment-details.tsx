@@ -6,14 +6,16 @@ import {
   TouchableOpacity,
   ScrollView,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import {
+  useGetBookingByIdQuery,
   useGetDoctorBookingsQuery,
-  type DoctorAppointment,
 } from '@/store/doctorPortalApi';
+import { doctorImageSource } from '@/utils/doctor-image';
 
 function formatTimeRange(start: string, end: string): string {
   const s = new Date(start);
@@ -46,12 +48,77 @@ function getStatusStyle(status: string) {
   }
 }
 
+function consultationTypeLabel(value?: string): string | null {
+  switch (value) {
+    case 'online_video':
+      return 'Online - Video';
+    case 'online_voice':
+      return 'Online - Voice';
+    case 'online_chat':
+      return 'Online - Chat';
+    case 'physical':
+      return 'In Person';
+    case undefined:
+    case null:
+    case '':
+      return null;
+    default:
+      return value;
+  }
+}
+
+function formatSymptoms(symptoms?: string | string[]): string | null {
+  if (!symptoms) return null;
+  const text = Array.isArray(symptoms) ? symptoms.filter(Boolean).join(', ') : symptoms;
+  return text.trim() ? text.trim() : null;
+}
+
+function paymentStatusStyle(status?: string): { label: string; color: string } {
+  switch (status) {
+    case 'paid':
+      return { label: 'Paid', color: '#4CAF50' };
+    case 'pending':
+      return { label: 'Pending', color: '#E65100' };
+    case 'failed':
+      return { label: 'Failed', color: '#C62828' };
+    case 'refunded':
+      return { label: 'Refunded', color: '#1565C0' };
+    default:
+      return { label: '—', color: '#9C9690' };
+  }
+}
+
 export default function AppointmentDetailsScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { data: bookings = [] } = useGetDoctorBookingsQuery();
+  const {
+    data: fetchedAppointment,
+    isLoading: idLoading,
+  } = useGetBookingByIdQuery(String(id ?? ''), { skip: !id });
+  const { data: bookings = [], isLoading: listLoading } = useGetDoctorBookingsQuery();
 
-  const appointment = bookings.find((b) => String(b.id) === id);
+  const appointment = fetchedAppointment ?? bookings.find((b) => String(b.id) === id);
+
+  if (!appointment && (idLoading || listLoading)) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backBtn}
+            onPress={() => router.back()}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="arrow-back" size={20} color="#BD632F" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Appointment Details</Text>
+          <View style={{ width: 40 }} />
+        </View>
+        <View style={styles.emptyContainer}>
+          <ActivityIndicator size="small" color="#BD632F" />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (!appointment) {
     return (
@@ -78,6 +145,10 @@ export default function AppointmentDetailsScreen() {
   const statusStyle = getStatusStyle(appointment.status);
   const displayName =
     appointment.animalName || appointment.patientName || `Patient #${appointment.patientId}`;
+  const consultationType = consultationTypeLabel(appointment.consultationType);
+  const reason = (appointment.reasonForConsultation ?? '').trim();
+  const symptoms = formatSymptoms(appointment.symptoms);
+  const payment = paymentStatusStyle(appointment.paymentStatus);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -89,7 +160,7 @@ export default function AppointmentDetailsScreen() {
         >
           <Ionicons name="arrow-back" size={20} color="#BD632F" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Appointments Details</Text>
+        <Text style={styles.headerTitle}>Appointment Details</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -135,27 +206,47 @@ export default function AppointmentDetailsScreen() {
 
           <View style={styles.divider} />
 
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Consultation Type</Text>
-            <Text style={styles.detailValue}>Online - Video</Text>
+          <View style={styles.cardRow}>
+            <Image
+              source={doctorImageSource(appointment.doctorAvatar)}
+              style={styles.doctorAvatar}
+            />
+            <View style={styles.cardInfo}>
+              <Text style={styles.cardLabel}>DOCTOR</Text>
+              <Text style={styles.cardName}>
+                {appointment.doctorName || `Doctor #${appointment.doctorId}`}
+              </Text>
+              {appointment.doctorSpecialty && (
+                <Text style={styles.cardDetail}>{appointment.doctorSpecialty}</Text>
+              )}
+            </View>
           </View>
 
-          {appointment.symptoms && (
+          <View style={styles.divider} />
+
+          {consultationType && (
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Consultation Type</Text>
+              <Text style={styles.detailValue}>{consultationType}</Text>
+            </View>
+          )}
+
+          {reason && (
             <>
               <View style={styles.divider} />
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Reason for Consultation</Text>
-                <Text style={styles.detailValue}>{appointment.symptoms}</Text>
+                <Text style={styles.detailValue}>{reason}</Text>
               </View>
             </>
           )}
 
-          {appointment.symptoms && (
+          {symptoms && (
             <>
               <View style={styles.divider} />
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Symptoms</Text>
-                <Text style={styles.detailValue}>{appointment.symptoms}</Text>
+                <Text style={styles.detailValue}>{symptoms}</Text>
               </View>
             </>
           )}
@@ -163,8 +254,22 @@ export default function AppointmentDetailsScreen() {
           <View style={styles.divider} />
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Payment</Text>
-            <Text style={[styles.detailValue, styles.paidText]}>Paid</Text>
+            <Text style={[styles.detailValue, { color: payment.color }]}>
+              {payment.label}
+            </Text>
           </View>
+
+          {appointment.price != null && (
+            <>
+              <View style={styles.divider} />
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Fee</Text>
+                <Text style={styles.detailValue}>
+                  ৳ {appointment.price.toLocaleString()}
+                </Text>
+              </View>
+            </>
+          )}
         </View>
       </ScrollView>
 
@@ -246,13 +351,19 @@ const styles = StyleSheet.create({
   },
   cardInfo: { flex: 1, justifyContent: 'center' },
   cardName: { fontSize: 16, fontWeight: '700', color: '#1A1817', marginBottom: 2 },
+  doctorAvatar: { width: 56, height: 56, borderRadius: 28 },
+  cardLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#9C9690',
+    marginBottom: 2,
+  },
   cardDetail: { fontSize: 13, fontWeight: '500', color: '#7C7672', marginBottom: 2 },
   cardOwner: { fontSize: 13, fontWeight: '500', color: '#7C7672' },
   divider: { height: 1, backgroundColor: '#F0EAE1', marginVertical: 12 },
   detailRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingVertical: 2 },
   detailLabel: { fontSize: 14, fontWeight: '500', color: '#9C9690', flex: 1 },
   detailValue: { fontSize: 14, fontWeight: '600', color: '#1A1817', flex: 1, textAlign: 'right' },
-  paidText: { color: '#4CAF50' },
   emptyContainer: { alignItems: 'center', marginTop: 60, gap: 12 },
   emptyText: { fontSize: 15, fontWeight: '500', color: '#9C9690' },
   bottomContainer: {

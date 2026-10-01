@@ -7,30 +7,50 @@ import {
   ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-const LOREM_A =
-  'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ' +
-  'ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco ' +
-  'laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in ' +
-  'voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat ' +
-  'non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.';
+const LAST_UPDATED = 'October 1, 2026';
 
-const LOREM_B =
-  'Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, ' +
-  'totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae ' +
-  'dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, ' +
-  'sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt neque porro quisquam ' +
-  'est, qui dolorem ipsum quia dolor sit amet.';
+type Feature = {
+  emoji: string;
+  title: string;
+  description: string;
+};
 
-const SECTIONS: { heading: string; body: string }[] = [
-  { heading: '1. Our Vision', body: `${LOREM_A} ${LOREM_B}` },
-  { heading: '2. Our Mission', body: `${LOREM_A} ${LOREM_B}` },
-  { heading: '3. What Gobaadi Offers', body: `${LOREM_A} ${LOREM_B}` },
-  { heading: '4. Who We Serve', body: `${LOREM_A} ${LOREM_B}` },
-  { heading: '5. Our Team', body: `${LOREM_A} ${LOREM_B}` },
-  { heading: '6. Contact Us', body: `${LOREM_A} ${LOREM_B}` },
+const FEATURES: Feature[] = [
+  {
+    emoji: '🐄',
+    title: 'Manage Livestock',
+    description: 'Keep your animals, health records, vaccinations, and important information organized.',
+  },
+  {
+    emoji: '🩺',
+    title: 'Connect with Vets',
+    description: 'Access veterinary guidance and digital consultation when you need support.',
+  },
+  {
+    emoji: '🤖',
+    title: 'Get AI-Assisted Insights',
+    description: 'Receive helpful livestock health and management insights powered by AI.',
+  },
+  {
+    emoji: '🛒',
+    title: 'Buy & Sell',
+    description:
+      'Discover livestock, feed, medicines, equipment, and other agricultural products through the marketplace.',
+  },
+  {
+    emoji: '🔔',
+    title: 'Stay on Track',
+    description: 'Get reminders for vaccinations, treatments, feeding, and other important livestock activities.',
+  },
+];
+
+const FOOTER_LINKS: { label: string; href: Href }[] = [
+  { label: 'Privacy Policy', href: '/privacy-policy' },
+  { label: 'Terms & Conditions', href: '/terms-of-service' },
+  { label: 'Help & Support', href: '/help-support' },
 ];
 
 export default function AboutAppScreen() {
@@ -51,12 +71,52 @@ export default function AboutAppScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {SECTIONS.map((section) => (
-          <View key={section.heading}>
-            <Text style={styles.sectionHeading}>{section.heading}</Text>
-            <Text style={styles.paragraph}>{section.body}</Text>
+        <Text style={styles.docTitle}>About Gobaadi</Text>
+        <Text style={styles.tagline}>Where livestock meets intelligence.</Text>
+        <Text style={styles.lastUpdated}>Last Updated: {LAST_UPDATED}</Text>
+
+        <Text style={styles.paragraph}>
+          Gobaadi is a smart livestock platform built to help farmers and livestock owners manage
+          their animals, access trusted support, and make better-informed decisions.
+        </Text>
+        <Text style={styles.subheading}>With Gobaadi, you can:</Text>
+
+        {FEATURES.map((feature) => (
+          <View key={feature.title} style={styles.featureRow}>
+            <Text style={styles.featureEmoji}>{feature.emoji}</Text>
+            <View style={styles.featureBody}>
+              <Text style={styles.featureTitle}>{feature.title}</Text>
+              <Text style={styles.paragraph}>{feature.description}</Text>
+            </View>
           </View>
         ))}
+
+        <Text style={styles.sectionHeading}>Our Mission</Text>
+        <Text style={styles.paragraph}>
+          We believe technology should support farmers, not replace their experience. Gobaadi brings
+          technology, veterinary expertise, and practical farming knowledge together to create a
+          more connected livestock ecosystem.
+        </Text>
+
+        <View style={styles.footer}>
+          <Text style={styles.footerBrand}>Gobaadi</Text>
+          <Text style={styles.footerTagline}>Where livestock meets intelligence.</Text>
+          <View style={styles.versionRow}>
+            <Text style={styles.versionLabel}>App Version</Text>
+            <Text style={styles.versionValue}>1.0.0</Text>
+          </View>
+
+          <View style={styles.linksRow}>
+            {FOOTER_LINKS.map((link, index) => (
+              <React.Fragment key={link.label}>
+                {index > 0 ? <Text style={styles.linkSeparator}>·</Text> : null}
+                <TouchableOpacity activeOpacity={0.7} onPress={() => router.push(link.href)}>
+                  <Text style={styles.link}>{link.label}</Text>
+                </TouchableOpacity>
+              </React.Fragment>
+            ))}
+          </View>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -92,16 +152,111 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 40,
   },
+  docTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1A1817',
+    marginTop: 8,
+  },
+  tagline: {
+    fontSize: 14,
+    fontStyle: 'italic',
+    color: '#BD632F',
+    marginTop: 4,
+  },
+  lastUpdated: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#9C9690',
+    marginTop: 6,
+    marginBottom: 4,
+  },
+  subheading: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1A1817',
+    marginTop: 14,
+    marginBottom: 4,
+  },
+  featureRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    marginTop: 14,
+  },
+  featureEmoji: {
+    fontSize: 22,
+    lineHeight: 26,
+  },
+  featureBody: {
+    flex: 1,
+  },
+  featureTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1A1817',
+    marginBottom: 2,
+  },
   sectionHeading: {
     fontSize: 16,
     fontWeight: '700',
     color: '#1A1817',
-    marginTop: 18,
+    marginTop: 24,
     marginBottom: 8,
   },
   paragraph: {
     fontSize: 14,
     color: '#7C7672',
     lineHeight: 22,
+  },
+  footer: {
+    marginTop: 30,
+    paddingTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#EDE8E3',
+    alignItems: 'center',
+  },
+  footerBrand: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1A1817',
+  },
+  footerTagline: {
+    fontSize: 13,
+    fontStyle: 'italic',
+    color: '#7C7672',
+    marginTop: 2,
+  },
+  versionRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 14,
+  },
+  versionLabel: {
+    fontSize: 13,
+    color: '#9C9690',
+  },
+  versionValue: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#1A1817',
+  },
+  linksRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: 14,
+  },
+  linkSeparator: {
+    fontSize: 14,
+    color: '#9C9690',
+  },
+  link: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#BD632F',
+    textDecorationLine: 'underline',
   },
 });

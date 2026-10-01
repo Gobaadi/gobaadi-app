@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useGetDoctorByIdQuery } from '@/store/doctorsApi';
+import { doctorImageSource } from '@/utils/doctor-image';
 
 function pad(n: number): string {
   return String(n).padStart(2, '0');
@@ -45,9 +46,7 @@ export default function BookingDetailsScreen() {
       location: 'Uttar Badda, Dhaka',
       rating: doctorData.rating || 4.8,
       reviews: 124,
-      image: doctorData.avatar === 'jessica_doctor.png'
-        ? require('@/assets/images/jessica_doctor.png')
-        : require('@/assets/images/michael_doctor.png'),
+      image: doctorImageSource(doctorData.avatar),
     };
   }, [doctorData, doctorId]);
 
@@ -101,7 +100,7 @@ export default function BookingDetailsScreen() {
 
           {/* Booking Reason */}
           <Text style={styles.sectionHeader}>Booking Reason</Text>
-          <Text style={styles.reasonText}>{bookingReason || 'The symptom was extreme fever'}</Text>
+          <Text style={styles.reasonText}>{bookingReason || '—'}</Text>
 
           <View style={styles.divider} />
 
