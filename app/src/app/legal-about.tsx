@@ -47,7 +47,7 @@ export default function LegalAboutScreen() {
         </TouchableOpacity>
 
         {/* Privacy Policy Card */}
-        {/* <TouchableOpacity
+        <TouchableOpacity
           style={styles.card}
           activeOpacity={0.85}
           onPress={() => router.push('/privacy-policy')}
@@ -62,7 +62,7 @@ export default function LegalAboutScreen() {
             </View>
           </View>
           <Ionicons name="chevron-forward" size={20} color="#9C9690" />
-        </TouchableOpacity> */}
+        </TouchableOpacity>
 
         {/* About App Card */}
         <TouchableOpacity

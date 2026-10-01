@@ -10,28 +10,47 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-const LOREM_A =
-  'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ' +
-  'ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco ' +
-  'laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in ' +
-  'voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat ' +
-  'non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.';
+const LAST_UPDATED = 'October 1, 2026';
 
-const LOREM_B =
-  'Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, ' +
-  'totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae ' +
-  'dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, ' +
-  'sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt neque porro quisquam ' +
-  'est, qui dolorem ipsum quia dolor sit amet.';
+type Section = {
+  heading: string;
+  body: string;
+};
 
-const SECTIONS: { heading: string; body: string }[] = [
-  { heading: '1. Types of Data We Collect', body: `${LOREM_A} ${LOREM_B}` },
-  { heading: '2. Use of Your Personal Data', body: `${LOREM_A} ${LOREM_B}` },
-  { heading: '3. Disclosure of Your Personal Data', body: `${LOREM_A} ${LOREM_B}` },
-  { heading: '4. Data Retention', body: `${LOREM_A} ${LOREM_B}` },
-  { heading: '5. Data Security', body: `${LOREM_A} ${LOREM_B}` },
-  { heading: '6. Your Rights', body: `${LOREM_A} ${LOREM_B}` },
-  { heading: '7. Contact Us', body: `${LOREM_A} ${LOREM_B}` },
+const SECTIONS: Section[] = [
+  {
+    heading: '1. Types of Data We Collect',
+    body:
+      'Gobaadi may collect information you provide when creating an account or using our services, ' +
+      'including your name, phone number, email address, farm details, livestock information, ' +
+      'location, photos, videos, and other information related to your farming activities. We may ' +
+      'also collect information about livestock health, vaccination, feeding, treatment, marketplace ' +
+      'listings, purchases, sales, and interactions with veterinarians or service providers. ' +
+      'Technical information such as device type, operating system, app usage, and diagnostic data ' +
+      'may also be collected to maintain and improve the app.',
+  },
+  {
+    heading: '2. Use of Your Personal Data',
+    body:
+      'We use your information to provide, operate, maintain, and improve Gobaadi and its features. ' +
+      'This may include managing your account, maintaining livestock records, providing reminders ' +
+      'and personalized livestock management information, facilitating communication with ' +
+      'veterinarians and service providers, supporting marketplace activities, processing ' +
+      'transactions, improving our AI-powered features, and providing customer support. We may also ' +
+      'use information to understand how users interact with the app, improve our services, prevent ' +
+      'misuse, and maintain the security and reliability of Gobaadi.',
+  },
+  {
+    heading: '3. Disclosure of Your Personal Data',
+    body:
+      'Gobaadi may share relevant information with veterinarians, marketplace sellers or buyers, ' +
+      'delivery and payment service providers, technology and cloud service providers, analytics ' +
+      'providers, and other trusted service partners when necessary to provide our services. We only ' +
+      'share information where it is reasonably necessary for the relevant service or business ' +
+      'purpose. We may also disclose information when required by law, legal process, or to protect ' +
+      'the rights, safety, and security of Gobaadi, our users, livestock, or other parties. We do ' +
+      'not sell your personal information to third parties for their independent marketing purposes.',
+  },
 ];
 
 export default function PrivacyPolicyScreen() {
@@ -52,6 +71,8 @@ export default function PrivacyPolicyScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <Text style={styles.lastUpdated}>Last Updated: {LAST_UPDATED}</Text>
+
         {SECTIONS.map((section) => (
           <View key={section.heading}>
             <Text style={styles.sectionHeading}>{section.heading}</Text>
@@ -92,6 +113,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 10,
     paddingBottom: 40,
+  },
+  lastUpdated: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#9C9690',
+    marginTop: 6,
+    marginBottom: 4,
   },
   sectionHeading: {
     fontSize: 16,

@@ -58,7 +58,10 @@ export default function HomeDashboard() {
   const insets = useSafeAreaInsets();
 
   const { data: allAnimals, isLoading: isAnimalsLoading } = useGetAnimalsQuery();
-  const { data: tasks = [], isLoading: isTasksLoading } = useGetTasksQuery(todayDateKey());
+  const { data: tasks = [], isLoading: isTasksLoading } = useGetTasksQuery(todayDateKey(), {
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
+  });
   const { data: weather, isLoading: isWeatherLoading } = useGetWeatherQuery();
   const { data: referral } = useGetMyReferralQuery();
   const [claimReferral, { isLoading: isClaiming }] = useClaimReferralMutation();
