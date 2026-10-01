@@ -186,7 +186,7 @@ function WeeklyView({
   blockedDates: Set<string>;
   onAppointmentPress: (appointment: DoctorAppointment) => void;
 }) {
-  const weekDates = useMemo(() => getWeekDates(selectedDate), [selectedDate.getTime()]);
+  const weekDates = useMemo(() => getWeekDates(selectedDate), [selectedDate]);
 
   const dayAppointments = useMemo(() => {
     return bookings
@@ -296,7 +296,6 @@ function WeeklyView({
 export default function DoctorBookingsScreen() {
   const router = useRouter();
   const isDoctor = useRequireDoctor();
-  if (!isDoctor) return null;
   const [viewMode, setViewMode] = useState<ViewMode>('monthly');
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showAllAppointments, setShowAllAppointments] = useState(false);
@@ -344,13 +343,14 @@ export default function DoctorBookingsScreen() {
     return { openDays, blockedDays, totalAppointments: bookings.length };
   }, [bookings.length, blockedDates]);
 
-  const upcomingAppointments = useMemo(() => {
+  const upcomingAll = useMemo(() => {
     const now = new Date();
     return bookings
       .filter((a) => new Date(a.startAt) >= now)
-      .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime())
-      .slice(0, showAllAppointments ? 10 : 2);
-  }, [bookings, showAllAppointments]);
+      .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
+  }, [bookings]);
+
+  const upcomingAppointments = showAllAppointments ? upcomingAll : upcomingAll.slice(0, 2);
 
   const handleSelectDate = useCallback((date: Date) => {
     setSelectedDate(date);
@@ -371,6 +371,8 @@ export default function DoctorBookingsScreen() {
       params: { id: String(appointment.id) },
     });
   }, [router]);
+
+  if (!isDoctor) return null;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -442,7 +444,13 @@ export default function DoctorBookingsScreen() {
                 activeOpacity={0.7}
                 style={styles.viewAllBtn}
               >
-                <Text style={styles.viewAllText}>View all</Text>
+                <Text style={styles.viewAllText}>
+                  {showAllAppointments
+                    ? 'Show less'
+                    : upcomingAll.length > 2
+                      ? `View all (${upcomingAll.length})`
+                      : 'View all'}
+                </Text>
                 <Ionicons
                   name={showAllAppointments ? 'chevron-up' : 'chevron-down'}
                   size={14}
@@ -573,7 +581,14 @@ const styles = StyleSheet.create({
   upcomingSection: { marginTop: 20 },
   upcomingHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   upcomingTitle: { fontSize: 16, fontWeight: '700', color: '#1A1817' },
-  viewAllBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  viewAllBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 14,
+  },
   viewAllText: { fontSize: 14, fontWeight: '600', color: '#BD632F' },
   upcomingCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 14, borderWidth: 1, borderColor: '#E6E1DC', padding: 12, marginBottom: 10, gap: 10 },
   upcomingAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#FFF2EB', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },

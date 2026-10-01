@@ -27,6 +27,33 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 type ViewMode = 'calendar' | 'list';
 type CalendarGranularity = 'yearly' | 'monthly';
 
+type FilterStatus = 'all' | 'upcoming' | 'completed' | 'cancelled';
+type FilterConsultation = 'all' | 'video' | 'voice' | 'chat' | 'physical';
+
+const STATUS_FILTER_OPTIONS: { value: FilterStatus; label: string }[] = [
+  { value: 'all', label: 'All' },
+  { value: 'upcoming', label: 'Upcoming' },
+  { value: 'completed', label: 'Completed' },
+  { value: 'cancelled', label: 'Cancelled' },
+];
+
+const CONSULTATION_FILTER_OPTIONS: { value: FilterConsultation; label: string }[] = [
+  { value: 'all', label: 'All' },
+  { value: 'video', label: 'Video' },
+  { value: 'voice', label: 'Voice' },
+  { value: 'chat', label: 'Chat' },
+  { value: 'physical', label: 'Physical' },
+];
+
+const CONSULTATION_TYPE_VALUE: Record<Exclude<FilterConsultation, 'all'>, string> = {
+  video: 'online_video',
+  voice: 'online_voice',
+  chat: 'online_chat',
+  physical: 'physical',
+};
+
+const UPCOMING_STATUSES = ['PENDING', 'CONFIRMED', 'RESCHEDULED'];
+
 const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December',
@@ -145,7 +172,7 @@ function WeekStrip({
   selectedDate: Date;
   onSelectDate: (d: Date) => void;
 }) {
-  const weekDates = useMemo(() => getWeekDates(selectedDate), [selectedDate.getTime()]);
+  const weekDates = useMemo(() => getWeekDates(selectedDate), [selectedDate]);
 
   return (
     <View style={styles.weekStrip}>
@@ -420,7 +447,6 @@ function ListAppointmentCard({ appointment }: { appointment: DoctorAppointment }
 
 export default function ScheduleScreen() {
   const isDoctor = useRequireDoctor();
-  if (!isDoctor) return null;
   const router = useRouter();
   const user = useSelector((state: RootState) => state.auth.user);
 
@@ -431,22 +457,47 @@ export default function ScheduleScreen() {
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [showDaySheet, setShowDaySheet] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
+  const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
+  const [filterConsultation, setFilterConsultation] = useState<FilterConsultation>('all');
 
   const { data: bookings = [], isLoading } = useGetDoctorBookingsQuery();
 
+  const filteredBookings = useMemo(() => {
+    return bookings.filter((b) => {
+      const statusOk =
+        filterStatus === 'all' ||
+        (filterStatus === 'upcoming' && UPCOMING_STATUSES.includes(b.status)) ||
+        (filterStatus === 'completed' && b.status === 'COMPLETED') ||
+        (filterStatus === 'cancelled' && b.status === 'CANCELLED');
+      const consultationOk =
+        filterConsultation === 'all' ||
+        b.consultationType === CONSULTATION_TYPE_VALUE[filterConsultation];
+      return statusOk && consultationOk;
+    });
+  }, [bookings, filterStatus, filterConsultation]);
+
+  const activeFilterCount =
+    (filterStatus !== 'all' ? 1 : 0) + (filterConsultation !== 'all' ? 1 : 0);
+
+  const clearFilters = useCallback(() => {
+    setFilterStatus('all');
+    setFilterConsultation('all');
+  }, []);
+
   const appointmentDates = useMemo(() => {
     const dates = new Set<string>();
-    bookings.forEach((b) => {
+    filteredBookings.forEach((b) => {
       dates.add(formatDateKey(new Date(b.startAt)));
     });
     return dates;
-  }, [bookings]);
+  }, [filteredBookings]);
 
   const handleSelectDate = useCallback((date: Date) => {
     setSelectedDate(date);
     setCurrentMonth(date.getMonth());
     setCurrentYear(date.getFullYear());
     setShowDaySheet(true);
+    setShowFilter(false);
   }, []);
 
   const navigateMonth = useCallback((direction: number) => {
@@ -463,6 +514,8 @@ export default function ScheduleScreen() {
       return next;
     });
   }, []);
+
+  if (!isDoctor) return null;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -500,13 +553,19 @@ export default function ScheduleScreen() {
       {isLoading ? (
         <ActivityIndicator size="large" color="#BD632F" style={{ marginTop: 40 }} />
       ) : viewMode === 'list' ? (
-        <ListView appointments={bookings} />
+        <ListView appointments={filteredBookings} />
       ) : (
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.calendarScroll}>
           <View style={styles.filterRow}>
-            <TouchableOpacity style={styles.filterBtn} onPress={() => setShowFilter(!showFilter)} activeOpacity={0.8}>
+            <TouchableOpacity
+              style={[styles.filterBtn, activeFilterCount > 0 && styles.filterBtnActive]}
+              onPress={() => setShowFilter(!showFilter)}
+              activeOpacity={0.8}
+            >
               <Ionicons name="options-outline" size={14} color="#1A1817" />
-              <Text style={styles.filterBtnText}>Filter</Text>
+              <Text style={styles.filterBtnText}>
+                Filter{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
+              </Text>
             </TouchableOpacity>
             <View style={styles.granularityToggle}>
               <TouchableOpacity
@@ -529,6 +588,62 @@ export default function ScheduleScreen() {
               </TouchableOpacity>
             </View>
           </View>
+
+          {showFilter && (
+            <View style={styles.filterPanel}>
+              <View style={styles.filterPanelHeader}>
+                <Text style={styles.filterPanelTitle}>Filter schedule</Text>
+                <TouchableOpacity onPress={clearFilters} activeOpacity={0.7}>
+                  <Text style={styles.clearFilterText}>Clear</Text>
+                </TouchableOpacity>
+              </View>
+
+              <Text style={styles.filterGroupLabel}>Status</Text>
+              <View style={styles.filterChipRow}>
+                {STATUS_FILTER_OPTIONS.map((opt) => (
+                  <TouchableOpacity
+                    key={opt.value}
+                    style={[styles.filterChip, filterStatus === opt.value && styles.filterChipActive]}
+                    onPress={() => setFilterStatus(opt.value)}
+                    activeOpacity={0.8}
+                  >
+                    <Text
+                      style={[
+                        styles.filterChipText,
+                        filterStatus === opt.value && styles.filterChipTextActive,
+                      ]}
+                    >
+                      {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <Text style={styles.filterGroupLabel}>Consultation type</Text>
+              <View style={styles.filterChipRow}>
+                {CONSULTATION_FILTER_OPTIONS.map((opt) => (
+                  <TouchableOpacity
+                    key={opt.value}
+                    style={[
+                      styles.filterChip,
+                      filterConsultation === opt.value && styles.filterChipActive,
+                    ]}
+                    onPress={() => setFilterConsultation(opt.value)}
+                    activeOpacity={0.8}
+                  >
+                    <Text
+                      style={[
+                        styles.filterChipText,
+                        filterConsultation === opt.value && styles.filterChipTextActive,
+                      ]}
+                    >
+                      {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          )}
 
           {granularity === 'yearly' ? (
             <>
@@ -578,7 +693,7 @@ export default function ScheduleScreen() {
 
       <DayBottomSheet
         visible={showDaySheet}
-        appointments={bookings}
+        appointments={filteredBookings}
         selectedDate={selectedDate}
         onClose={() => setShowDaySheet(false)}
       />
@@ -676,6 +791,68 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: '#1A1817',
+  },
+  filterBtnActive: {
+    borderColor: '#BD632F',
+    backgroundColor: '#FDF2EA',
+  },
+  filterPanel: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E6E1DC',
+    padding: 14,
+    marginBottom: 16,
+  },
+  filterPanelHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  filterPanelTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1A1817',
+  },
+  clearFilterText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#BD632F',
+  },
+  filterGroupLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#7C7672',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 8,
+  },
+  filterChipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 14,
+  },
+  filterChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E6E1DC',
+    backgroundColor: '#FAF9F6',
+  },
+  filterChipActive: {
+    backgroundColor: '#BD632F',
+    borderColor: '#BD632F',
+  },
+  filterChipText: {
+    fontSize: 12.5,
+    fontWeight: '600',
+    color: '#7C7672',
+  },
+  filterChipTextActive: {
+    color: '#FFFFFF',
   },
   granularityToggle: {
     flexDirection: 'row',

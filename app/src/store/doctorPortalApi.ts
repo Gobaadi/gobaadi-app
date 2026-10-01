@@ -14,6 +14,7 @@ export interface DoctorProfile {
   specializations?: string[];
   experiences?: DoctorExperience[];
   licenseNumber?: string;
+  credentialDocuments?: string[];
 }
 
 export interface DoctorExperience {
@@ -257,6 +258,22 @@ export const doctorPortalApi = createApi({
       }),
       invalidatesTags: ['Dashboard', 'DoctorProfile'],
     }),
+    uploadCredentialDocument: builder.mutation<DoctorProfile, FormData>({
+      query: (formData) => ({
+        url: '/doctors/me/credential-documents',
+        method: 'POST',
+        body: formData,
+      }),
+      invalidatesTags: ['Dashboard', 'DoctorProfile'],
+    }),
+    updateCredentialDocuments: builder.mutation<DoctorProfile, string[]>({
+      query: (documents) => ({
+        url: '/doctors/me/credential-documents',
+        method: 'PATCH',
+        body: { documents },
+      }),
+      invalidatesTags: ['Dashboard', 'DoctorProfile'],
+    }),
     getAvailability: builder.query<Availability[], number>({
       query: (doctorId) => `/doctors/${doctorId}/availability`,
       providesTags: ['Availability'],
@@ -293,6 +310,8 @@ export const {
   useUpdateSpecializationsMutation,
   useUpdateExperiencesMutation,
   useUpdateProfileMutation,
+  useUploadCredentialDocumentMutation,
+  useUpdateCredentialDocumentsMutation,
   useGetAvailabilityQuery,
   useSetAvailabilityMutation,
 } = doctorPortalApi;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useRequireDoctor } from '@/hooks/use-require-doctor';
 import {
   StyleSheet,
@@ -32,9 +32,8 @@ function parseTab(tab?: string): Tab {
 
 export default function ProfileEditScreen() {
   const router = useRouter();
-  const { tab } = useLocalSearchParams<{ tab?: string }>();
+  const { tab, section } = useLocalSearchParams<{ tab?: string; section?: string }>();
   const isDoctor = useRequireDoctor();
-  if (!isDoctor) return null;
 
   const { data: doctorProfile, isLoading: profileLoading } = useGetMyDoctorProfileQuery(undefined, { skip: !isDoctor });
   const { data: doctorBookings = [] } = useGetDoctorBookingsQuery(undefined, { skip: !isDoctor });
@@ -45,6 +44,16 @@ export default function ProfileEditScreen() {
   const [updateSpecializations, { isLoading: savingSpecializations }] = useUpdateSpecializationsMutation();
 
   const [activeTab, setActiveTab] = useState<Tab>(() => parseTab(tab));
+
+  const scrollViewRef = useRef<ScrollView>(null);
+  const qualificationInputRef = useRef<TextInput>(null);
+  const specializationInputRef = useRef<TextInput>(null);
+  const didScrollToSection = useRef(false);
+  const [credentialsContentY, setCredentialsContentY] = useState<number | null>(null);
+  const [qualificationsHeaderY, setQualificationsHeaderY] = useState<number | null>(null);
+  const [highlightedSection, setHighlightedSection] = useState<string | null>(null);
+  const [qualificationError, setQualificationError] = useState('');
+  const [specializationError, setSpecializationError] = useState('');
 
   // About fields
   const [name, setName] = useState('');
@@ -173,6 +182,10 @@ export default function ProfileEditScreen() {
     if (newQualification.trim()) {
       setQualifications([...qualifications, newQualification.trim()]);
       setNewQualification('');
+      setQualificationError('');
+    } else {
+      setQualificationError('Enter a qualification first');
+      qualificationInputRef.current?.focus();
     }
   };
 
@@ -184,12 +197,41 @@ export default function ProfileEditScreen() {
     if (newSpecialization.trim()) {
       setSpecializations([...specializations, newSpecialization.trim()]);
       setNewSpecialization('');
+      setSpecializationError('');
+    } else {
+      setSpecializationError('Enter a specialization first');
+      specializationInputRef.current?.focus();
     }
   };
 
   const removeSpecialization = (index: number) => {
     setSpecializations(specializations.filter((_, i) => i !== index));
   };
+
+  useEffect(() => {
+    if (section !== 'qualifications') return;
+    if (credentialsContentY === null || qualificationsHeaderY === null) return;
+    if (didScrollToSection.current) return;
+
+    const scrollTimer = setTimeout(() => {
+      didScrollToSection.current = true;
+      scrollViewRef.current?.scrollTo({
+        y: Math.max(0, credentialsContentY + qualificationsHeaderY - 12),
+        animated: true,
+      });
+      setHighlightedSection('qualifications');
+    }, 120);
+
+    return () => clearTimeout(scrollTimer);
+  }, [section, credentialsContentY, qualificationsHeaderY]);
+
+  useEffect(() => {
+    if (!highlightedSection) return;
+    const clearTimer = setTimeout(() => setHighlightedSection(null), 2400);
+    return () => clearTimeout(clearTimer);
+  }, [highlightedSection]);
+
+  if (!isDoctor) return null;
 
   if (profileLoading) {
     return (
@@ -223,7 +265,7 @@ export default function ProfileEditScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+      <ScrollView ref={scrollViewRef} contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         {/* Doctor Card */}
         <View style={styles.doctorCard}>
           <View style={styles.doctorInfoRow}>
@@ -366,9 +408,12 @@ export default function ProfileEditScreen() {
 
         {/* Credentials Tab - Edit */}
         {activeTab === 'credentials' && (
-          <View>
+          <View onLayout={(e) => setCredentialsContentY(e.nativeEvent.layout.y)}>
             {/* Qualifications */}
-            <View style={styles.sectionHeader}>
+            <View
+              style={[styles.sectionHeader, highlightedSection === 'qualifications' && styles.sectionHeaderHighlight]}
+              onLayout={(e) => setQualificationsHeaderY(e.nativeEvent.layout.y)}
+            >
               <Text style={styles.sectionTitle}>Qualifications</Text>
             </View>
 
@@ -390,17 +435,28 @@ export default function ProfileEditScreen() {
 
             <View style={styles.addRow}>
               <TextInput
-                style={[styles.input, { flex: 1 }]}
+                ref={qualificationInputRef}
+                style={[styles.input, { flex: 1, height: 40 }]}
                 value={newQualification}
-                onChangeText={setNewQualification}
+                onChangeText={(text) => {
+                  setNewQualification(text);
+                  if (qualificationError) setQualificationError('');
+                }}
                 placeholder="Add qualification..."
                 placeholderTextColor="#A39E99"
                 onSubmitEditing={addQualification}
               />
-              <TouchableOpacity style={styles.addBtn} onPress={addQualification} activeOpacity={0.8}>
+              <TouchableOpacity
+                style={styles.addBtn}
+                onPress={addQualification}
+                activeOpacity={0.8}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                accessibilityLabel="Add qualification"
+              >
                 <Ionicons name="add" size={20} color="#FFFFFF" />
               </TouchableOpacity>
             </View>
+            {qualificationError ? <Text style={styles.errorText}>{qualificationError}</Text> : null}
 
             {/* Specializations */}
             <View style={[styles.sectionHeader, { marginTop: 24 }]}>
@@ -425,17 +481,28 @@ export default function ProfileEditScreen() {
 
             <View style={styles.addRow}>
               <TextInput
-                style={[styles.input, { flex: 1 }]}
+                ref={specializationInputRef}
+                style={[styles.input, { flex: 1, height: 40 }]}
                 value={newSpecialization}
-                onChangeText={setNewSpecialization}
+                onChangeText={(text) => {
+                  setNewSpecialization(text);
+                  if (specializationError) setSpecializationError('');
+                }}
                 placeholder="Add specialization..."
                 placeholderTextColor="#A39E99"
                 onSubmitEditing={addSpecialization}
               />
-              <TouchableOpacity style={styles.addBtn} onPress={addSpecialization} activeOpacity={0.8}>
+              <TouchableOpacity
+                style={styles.addBtn}
+                onPress={addSpecialization}
+                activeOpacity={0.8}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                accessibilityLabel="Add specialization"
+              >
                 <Ionicons name="add" size={20} color="#FFFFFF" />
               </TouchableOpacity>
             </View>
+            {specializationError ? <Text style={styles.errorText}>{specializationError}</Text> : null}
 
             {/* License Number */}
             <View style={[styles.sectionHeader, { marginTop: 24 }]}>
@@ -494,7 +561,9 @@ const styles = StyleSheet.create({
 
   // Sections
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  sectionHeaderHighlight: { backgroundColor: '#FFF2EB', borderRadius: 10 },
   sectionTitle: { fontSize: 16, fontWeight: '800', color: '#1A1817' },
+  errorText: { fontSize: 12, fontWeight: '600', color: '#E53935', marginTop: 6 },
 
   // Fields
   fieldLabel: { fontSize: 12, fontWeight: '500', color: '#9C9690', marginBottom: 6, marginTop: 4 },
