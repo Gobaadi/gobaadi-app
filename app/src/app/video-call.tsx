@@ -89,7 +89,7 @@ export default function VideoCallScreen() {
   const [callEnded, setCallEnded] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
-  const [permissionsRequested, setPermissionsRequested] = useState(false);
+  const permissionsRequested = useRef(false);
   const endedRef = useRef(false);
   // True once Agora actually connects — guards cleanup so a failed join or
   // denied permissions never ends the OTHER party's live call.
@@ -103,9 +103,11 @@ export default function VideoCallScreen() {
     isConnected,
     isMuted,
     isCameraOff,
+    joinError: agoraJoinError,
     toggleMute,
     toggleCamera,
     switchCamera,
+    retryJoin,
   } = useAgora(
     callData?.token || '',
     callData?.channelName || '',
@@ -115,8 +117,8 @@ export default function VideoCallScreen() {
   );
 
   useEffect(() => {
-    if (permissionsRequested) return;
-    setPermissionsRequested(true);
+    if (permissionsRequested.current) return;
+    permissionsRequested.current = true;
     requestPermissions(isAudioCall).then((granted) => {
       setHasPermission(granted);
       if (!granted) {
@@ -129,7 +131,7 @@ export default function VideoCallScreen() {
         );
       }
     });
-  }, [permissionsRequested, isAudioCall, router]);
+  }, [isAudioCall, router]);
 
   useEffect(() => {
     if (!isConnected) return;
@@ -321,7 +323,21 @@ export default function VideoCallScreen() {
 
       <View style={styles.callInfoOverlay}>
         <Text style={styles.callTimer}>{formatTimer(elapsed)}</Text>
-        {!isConnected && <Text style={styles.connectingText}>Connecting...</Text>}
+        {!isConnected && agoraJoinError && (
+          <View style={styles.joinErrorBox}>
+            <Text style={styles.joinErrorText}>{agoraJoinError}</Text>
+            <TouchableOpacity
+              style={styles.retryBtn}
+              onPress={retryJoin}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.retryBtnText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        {!isConnected && !agoraJoinError && (
+          <Text style={styles.connectingText}>Connecting...</Text>
+        )}
         {isConnected && remoteUids.length === 0 && (
           <Text style={styles.connectingText}>Waiting for participant...</Text>
         )}
@@ -429,6 +445,20 @@ const styles = StyleSheet.create({
   },
   callTimer: { fontSize: 14, fontWeight: '500', color: 'rgba(255,255,255,0.7)' },
   connectingText: { fontSize: 12, color: '#FFC107', marginTop: 4 },
+  joinErrorBox: { alignItems: 'center', marginTop: 6, gap: 8 },
+  joinErrorText: {
+    fontSize: 12,
+    color: '#E53935',
+    textAlign: 'center',
+    maxWidth: 280,
+  },
+  retryBtn: {
+    paddingHorizontal: 20,
+    paddingVertical: 7,
+    backgroundColor: '#BD632F',
+    borderRadius: 10,
+  },
+  retryBtnText: { color: '#FFFFFF', fontWeight: '700', fontSize: 13 },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
