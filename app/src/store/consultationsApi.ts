@@ -46,7 +46,10 @@ export const consultationsApi = createApi({
         url: `/consultations/${id}/end`,
         method: 'POST',
       }),
-      invalidatesTags: (_result, _error, id) => [{ type: 'Consultation', id }],
+      // Invalidate every Consultation tag: the id here is the event id while
+      // getForAppointment is tagged by appointmentId, and other participants'
+      // chats must refetch too when a session ends.
+      invalidatesTags: () => [{ type: 'Consultation' }],
     }),
   }),
 });

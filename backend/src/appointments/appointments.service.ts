@@ -8,7 +8,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, Repository, SelectQueryBuilder } from 'typeorm';
 import { Animal } from '../animals/animal.entity';
-import { assertCanCall } from '../common/call-gate';
+import { assertCanCall, ConsultationGateState } from '../common/call-gate';
 import { PaginatedResult } from '../common/paginated-result.interface';
 import { DiscountsService } from '../discounts/discounts.service';
 import { Doctor, DoctorsService } from '../doctors/doctors.service';
@@ -713,7 +713,16 @@ export class AppointmentsService {
       requesterId,
       requesterRole,
     );
-    assertCanCall(appointment);
+    const consultation = await this.medicalEventRepository.findOne({
+      where: { appointmentId, type: MedicalEventType.CONSULTATION },
+      order: { createdAt: 'DESC' },
+    });
+    const consultationState: ConsultationGateState = !consultation
+      ? 'none'
+      : consultation.status === MedicalEventStatus.ONGOING
+        ? 'ONGOING'
+        : 'COMPLETED';
+    assertCanCall(appointment, { consultationState });
 
     const session =
       await this.videoCallService.getOrCreateSession(appointmentId);

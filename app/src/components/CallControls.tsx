@@ -9,6 +9,7 @@ interface CallControlsProps {
   onToggleCamera: () => void;
   onSwitchCamera: () => void;
   onEndCall: () => void;
+  hideVideoControls?: boolean;
 }
 
 export function CallControls({
@@ -18,16 +19,19 @@ export function CallControls({
   onToggleCamera,
   onSwitchCamera,
   onEndCall,
+  hideVideoControls = false,
 }: CallControlsProps) {
   return (
     <View style={styles.controlBar}>
-      <TouchableOpacity style={styles.controlBtn} onPress={onToggleCamera} activeOpacity={0.8}>
-        <Ionicons
-          name={isCameraOff ? 'videocam-off' : 'videocam'}
-          size={22}
-          color="#FFFFFF"
-        />
-      </TouchableOpacity>
+      {!hideVideoControls && (
+        <TouchableOpacity style={styles.controlBtn} onPress={onToggleCamera} activeOpacity={0.8}>
+          <Ionicons
+            name={isCameraOff ? 'videocam-off' : 'videocam'}
+            size={22}
+            color="#FFFFFF"
+          />
+        </TouchableOpacity>
+      )}
 
       <TouchableOpacity style={styles.controlBtn} onPress={onToggleMute} activeOpacity={0.8}>
         <Ionicons
@@ -37,9 +41,11 @@ export function CallControls({
         />
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.controlBtn} onPress={onSwitchCamera} activeOpacity={0.8}>
-        <Ionicons name="camera-reverse" size={22} color="#FFFFFF" />
-      </TouchableOpacity>
+      {!hideVideoControls && (
+        <TouchableOpacity style={styles.controlBtn} onPress={onSwitchCamera} activeOpacity={0.8}>
+          <Ionicons name="camera-reverse" size={22} color="#FFFFFF" />
+        </TouchableOpacity>
+      )}
 
       <TouchableOpacity style={styles.endCallBtn} onPress={onEndCall} activeOpacity={0.8}>
         <Ionicons name="call" size={22} color="#FFFFFF" />

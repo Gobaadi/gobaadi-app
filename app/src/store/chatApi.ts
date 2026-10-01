@@ -99,7 +99,10 @@ export const chatApi = createApi({
       },
       invalidatesTags: ['ChatMessage', 'Conversation'],
     }),
-    createConversation: builder.mutation<Conversation, { patientId?: number; doctorId?: number }>({
+    createConversation: builder.mutation<
+      Conversation,
+      { patientId?: number; doctorId?: number; appointmentId?: number }
+    >({
       query: (body) => ({
         url: '/chat/conversations',
         method: 'POST',

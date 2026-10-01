@@ -71,22 +71,55 @@ export class ChatController {
   @Post('conversations')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Create or find a conversation with a patient or doctor' })
+  @ApiOperation({
+    summary: 'Create or find a conversation with a patient or doctor',
+  })
   @ApiBody({
     schema: {
       properties: {
         patientId: { type: 'number', example: 1 },
         doctorId: { type: 'number', example: 1 },
+        appointmentId: { type: 'number', example: 1 },
       },
     },
   })
   @ApiResponse({ status: 201, description: 'Conversation created or found' })
   async createConversation(
     @CurrentUser() user: JwtPayload,
-    @Body() body: { patientId?: number; doctorId?: number },
+    @Body()
+    body: { patientId?: number; doctorId?: number; appointmentId?: number },
   ): Promise<Conversation> {
+    if (body.appointmentId) {
+      const appointment = await this.appointmentRepository.findOneBy({
+        id: body.appointmentId,
+      });
+      if (!appointment) {
+        throw new NotFoundException('Appointment not found');
+      }
+      const doctor = await this.doctorRepository.findOneBy({
+        id: appointment.doctorId,
+      });
+      if (!doctor) {
+        throw new ForbiddenException(
+          'No doctor profile linked to this appointment',
+        );
+      }
+      const isPatient = appointment.patientId === user.sub;
+      const isDoctor = doctor.userId === user.sub;
+      if (!isPatient && !isDoctor) {
+        throw new ForbiddenException('You are not part of this appointment');
+      }
+      return this.conversationService.findOrCreate(
+        doctor.id,
+        appointment.patientId,
+      );
+    }
+
     if (user.role === UserRole.USER) {
-      return this.conversationService.findOrCreateForPatient(user.sub, body.doctorId);
+      return this.conversationService.findOrCreateForPatient(
+        user.sub,
+        body.doctorId,
+      );
     }
     const doctor = await this.doctorRepository.findOne({
       where: { userId: user.sub },
@@ -94,7 +127,10 @@ export class ChatController {
     if (!doctor) {
       throw new ForbiddenException('No doctor profile linked to this account');
     }
-    return this.conversationService.findOrCreate(doctor.id, body.patientId as number);
+    return this.conversationService.findOrCreate(
+      doctor.id,
+      body.patientId as number,
+    );
   }
 
   @Get('messages')

@@ -112,5 +112,16 @@ export async function compressImageForUpload(
     }
   }
 
+  // Ladder exhausted (e.g. getImageSize failed so no resize was applied) —
+  // force one aggressive pass so the upload stays under the proxy's 1 MiB cap.
+  const forced = await resizeTo(uri, 800, 800, 0.3);
+  if (forced) {
+    compressed.uri = forced;
+    const forcedSize = getLocalFileSize(forced);
+    if (forcedSize === null || forcedSize <= MAX_UPLOAD_BYTES) {
+      return compressed;
+    }
+  }
+
   return compressed.uri === original.uri ? original : compressed;
 }

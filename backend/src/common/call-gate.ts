@@ -7,13 +7,29 @@ import {
 
 const CALL_GRACE_PERIOD_MS = 30 * 60 * 1000; // 30 minutes before/after slot
 
+/** Status of the appointment's CONSULTATION medical event, if any. */
+export type ConsultationGateState = 'none' | 'ONGOING' | 'COMPLETED';
+
+export interface CallGateOptions {
+  /**
+   * - 'none': normal slot-window rules apply.
+   * - 'ONGOING': consultation is live → the ±30 min slot window is waived
+   *   (the session must stay joinable) but not the status/type checks.
+   * - 'COMPLETED': session is over → calls are blocked, messaging only.
+   */
+  consultationState?: ConsultationGateState;
+}
+
 /**
  * Shared rules for starting or joining a video call — used by
  * VideoCallService (createSession/joinSession) and
  * AppointmentsService.getJoinInfo so every entry point enforces the
  * same status + time-window policy.
  */
-export function assertCanCall(appointment: Appointment): void {
+export function assertCanCall(
+  appointment: Appointment,
+  options: CallGateOptions = {},
+): void {
   if (
     appointment.status !== AppointmentStatus.CONFIRMED &&
     appointment.status !== AppointmentStatus.RESCHEDULED
@@ -34,6 +50,19 @@ export function assertCanCall(appointment: Appointment): void {
     throw new BadRequestException(
       'This appointment is not an online consultation',
     );
+  }
+
+  // Consultation ended → session is final; only messaging remains available.
+  if (options.consultationState === 'COMPLETED') {
+    throw new BadRequestException(
+      'Consultation has ended — only messaging is available',
+    );
+  }
+
+  // Consultation already in progress → slot window no longer applies;
+  // the session ends via endConsultation / the auto-completion sweep instead.
+  if (options.consultationState === 'ONGOING') {
+    return;
   }
 
   const now = Date.now();

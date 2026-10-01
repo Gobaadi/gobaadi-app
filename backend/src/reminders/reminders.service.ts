@@ -3,6 +3,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 
 const SCAN_INTERVAL_MS = 5 * 60 * 1000;
+const COMPLETION_SCAN_INTERVAL_MS = 60 * 1000;
 
 @Injectable()
 export class RemindersService implements OnModuleInit {
@@ -39,8 +40,30 @@ export class RemindersService implements OnModuleInit {
         );
       });
 
+    // Auto-completion sweep: closes appointments whose slot passed, ends
+    // consultations older than the 30 min limit, and ends stale call sessions.
+    const completionRegistration = this.remindersQueue
+      .add(
+        'complete-past-sessions',
+        {},
+        {
+          repeat: { every: COMPLETION_SCAN_INTERVAL_MS },
+          jobId: 'session-completion-scan',
+        },
+      )
+      .then(() => {
+        this.logger.log(
+          `Registered repeatable session-completion scan every ${COMPLETION_SCAN_INTERVAL_MS / 1000}s`,
+        );
+      })
+      .catch((err: Error) => {
+        this.logger.warn(
+          `Failed to register session-completion scan: ${err.message}`,
+        );
+      });
+
     const timedOut = await Promise.race([
-      registration.then(() => false),
+      Promise.all([registration, completionRegistration]).then(() => false),
       new Promise<boolean>((resolve) =>
         setTimeout(() => resolve(true), 10_000),
       ),

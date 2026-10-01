@@ -225,6 +225,7 @@ export class ChatGateway
       callerName: string;
       callerRole: 'FARMER' | 'PATIENT' | 'DOCTOR';
       channelName: string;
+      callType?: 'audio' | 'video';
     },
   ) {
     const user: JwtPayload = client.data.user;
@@ -244,6 +245,7 @@ export class ChatGateway
       callerName: data.callerName,
       callerRole: data.callerRole,
       channelName: data.channelName,
+      callType: data.callType === 'audio' ? 'audio' : 'video',
     });
   }
 

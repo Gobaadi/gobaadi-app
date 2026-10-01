@@ -16,13 +16,14 @@ export function useAgora(
   channelName: string,
   appId: string,
   uid: number,
+  startCameraOff = false,
 ) {
   const [state, setState] = useState<AgoraState>({
     localUid: null,
     remoteUids: [],
     isConnected: false,
     isMuted: false,
-    isCameraOff: false,
+    isCameraOff: startCameraOff,
     isFrontCamera: true,
   });
 
@@ -78,6 +79,9 @@ export function useAgora(
       if (!engine || !mounted) return;
 
       engine.registerEventHandler(handler);
+      // Audio call: never publish camera. Also resets the singleton engine
+      // after a previous audio call so later video calls start with camera on.
+      await agoraManager.muteVideo(startCameraOff);
       await agoraManager.join(token, channelName, uid);
     };
 
@@ -91,7 +95,7 @@ export function useAgora(
       }
       agoraManager.leave();
     };
-  }, [appId, token, channelName, uid]);
+  }, [appId, token, channelName, uid, startCameraOff]);
 
   const toggleMute = useCallback(async () => {
     const newMuted = !stateRef.current.isMuted;
