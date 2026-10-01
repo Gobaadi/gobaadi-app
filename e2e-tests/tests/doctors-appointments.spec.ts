@@ -77,8 +77,10 @@ test.describe('Doctors & Appointments API Tests', () => {
     const docBookingsJson = await docBookings.json();
     expect(docBookingsJson.some((b: any) => b.id === appointment.id)).toBe(true);
 
-    // 8. Cancel appointment
-    const cancelRes = await userClient.patch(`/doctors/bookings/${appointment.id}/cancel`);
+    // 8. Cancel appointment (reason is required by the API)
+    const cancelRes = await userClient.patch(`/doctors/bookings/${appointment.id}/cancel`, {
+      reason: 'Test cancellation',
+    });
     expect(cancelRes.status()).toBe(200);
     const cancelledApp = await cancelRes.json();
     expect(cancelledApp.status).toBe('CANCELLED');

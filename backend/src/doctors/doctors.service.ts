@@ -8,6 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { ILike, IsNull, Repository } from 'typeorm';
 import { Doctor } from './doctor.entity';
 import { Availability } from './availability.entity';
+import { User } from '../users/user.entity';
 import { PaginatedResult } from '../common/paginated-result.interface';
 import { MeilisearchService } from '../meilisearch/meilisearch.service';
 import { UpdateSingleDayDto } from './dto/update-single-day.dto';
@@ -31,6 +32,8 @@ export class DoctorsService {
     private readonly doctorRepository: Repository<Doctor>,
     @InjectRepository(Availability)
     private readonly availabilityRepository: Repository<Availability>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
     private readonly meilisearchService: MeilisearchService,
   ) {}
 
@@ -338,7 +341,16 @@ export class DoctorsService {
       doctor.consultationFee = dto.consultationFee;
     if (dto.licenseNumber !== undefined)
       doctor.licenseNumber = dto.licenseNumber;
-    return this.doctorRepository.save(doctor);
+    const saved = await this.doctorRepository.save(doctor);
+    // Keep the account-level name in sync so auth-derived UI (home greeting,
+    // JWT payload) matches the profile name.
+    if (dto.name !== undefined) {
+      await this.userRepository.update(
+        { id: doctorUserId },
+        { name: dto.name },
+      );
+    }
+    return saved;
   }
 
   async getDashboardStats(doctorUserId: number) {
