@@ -1,10 +1,12 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Modal, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import type { CallType } from '@/hooks/use-call-signaling';
 
 interface IncomingCallModalProps {
   visible: boolean;
   callerName: string;
+  callType?: CallType;
   onAccept: () => void;
   onReject: () => void;
 }
@@ -12,25 +14,36 @@ interface IncomingCallModalProps {
 export function IncomingCallModal({
   visible,
   callerName,
+  callType = 'video',
   onAccept,
   onReject,
 }: IncomingCallModalProps) {
+  const isAudio = callType === 'audio';
+
   return (
     <Modal visible={visible} transparent animationType="slide">
       <View style={styles.overlay}>
         <View style={styles.card}>
-          <View style={styles.avatarContainer}>
-            <Ionicons name="videocam" size={36} color="#FFFFFF" />
+          <View
+            style={[styles.avatarContainer, isAudio && styles.avatarContainerAudio]}
+          >
+            <Ionicons name={isAudio ? 'call' : 'videocam'} size={36} color="#FFFFFF" />
           </View>
-          <Text style={styles.title}>Incoming Video Call</Text>
+          <Text style={styles.title}>
+            {isAudio ? 'Incoming Audio Call' : 'Incoming Video Call'}
+          </Text>
           <Text style={styles.subtitle}>{callerName}</Text>
 
           <View style={styles.buttonRow}>
             <TouchableOpacity style={styles.rejectBtn} onPress={onReject} activeOpacity={0.8}>
-              <Ionicons name="videocam-off" size={24} color="#FFFFFF" />
+              <Ionicons name="call" size={24} color="#FFFFFF" style={styles.rejectIcon} />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.acceptBtn} onPress={onAccept} activeOpacity={0.8}>
-              <Ionicons name="videocam" size={24} color="#FFFFFF" />
+            <TouchableOpacity
+              style={[styles.acceptBtn, isAudio && styles.acceptBtnAudio]}
+              onPress={onAccept}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="call" size={24} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
         </View>
@@ -62,6 +75,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
+  avatarContainerAudio: { backgroundColor: '#2E7D32' },
+  rejectIcon: { transform: [{ rotate: '135deg' }] },
   title: {
     fontSize: 20,
     fontWeight: '700',
@@ -93,4 +108,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  acceptBtnAudio: { backgroundColor: '#43A047' },
 });

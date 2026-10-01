@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { MulterModule } from '@nestjs/platform-express';
 import { ChatService } from './chat.service';
 import { ChatController } from './chat.controller';
 import { ChatMessage } from './chat-message.entity';
@@ -21,6 +22,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
       Doctor,
       VideoSession,
     ]),
+    MulterModule.register({ limits: { fileSize: 10 * 1024 * 1024 } }),
     S3Module,
     NotificationsModule,
   ],

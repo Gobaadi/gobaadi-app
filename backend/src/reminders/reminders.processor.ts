@@ -3,11 +3,20 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Job, Queue } from 'bullmq';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import {
   Appointment,
   AppointmentStatus,
 } from '../appointments/appointment.entity';
+import {
+  MedicalEvent,
+  MedicalEventStatus,
+  MedicalEventType,
+} from '../medical-events/medical-event.entity';
+import {
+  VideoSession,
+  VideoSessionStatus,
+} from '../video-call/video-call.entity';
 import { Doctor } from '../doctors/doctor.entity';
 import { User } from '../users/user.entity';
 import { ChatGateway } from '../chat/chat.gateway';
@@ -36,6 +45,9 @@ const WINDOWS: ReminderWindow[] = [
   },
 ];
 
+/** Max consultation/call session length (matches the client-side 30 min auto-end). */
+const SESSION_MAX_DURATION_MS = 30 * 60 * 1000;
+
 @Processor('reminders-queue')
 export class RemindersProcessor extends WorkerHost {
   private readonly logger = new Logger(RemindersProcessor.name);
@@ -47,6 +59,10 @@ export class RemindersProcessor extends WorkerHost {
     private readonly doctorRepository: Repository<Doctor>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(MedicalEvent)
+    private readonly medicalEventRepository: Repository<MedicalEvent>,
+    @InjectRepository(VideoSession)
+    private readonly videoSessionRepository: Repository<VideoSession>,
     @InjectQueue('mail-queue')
     private readonly mailQueue: Queue,
     private readonly chatGateway: ChatGateway,
@@ -56,13 +72,98 @@ export class RemindersProcessor extends WorkerHost {
   }
 
   async process(job: Job<any, any, string>): Promise<any> {
-    if (job.name !== 'scan-appointments') {
+    if (job.name === 'scan-appointments') {
+      for (const window of WINDOWS) {
+        await this.scanWindow(window);
+      }
       return;
     }
 
-    for (const window of WINDOWS) {
-      await this.scanWindow(window);
+    if (job.name === 'complete-past-sessions') {
+      await this.completePastSessions();
     }
+  }
+
+  /**
+   * Auto-completion sweep (runs every 60s):
+   * 1. Appointments whose slot has passed become COMPLETED — but only when no
+   *    consultation is still ONGOING (an active session keeps the appointment
+   *    open until the consultation itself ends).
+   * 2. ONGOING consultations older than 30 min from their start become COMPLETED.
+   * 3. ACTIVE call sessions started more than 30 min ago become ENDED
+   *    (safety net when a client dies instead of ending the call cleanly).
+   */
+  private async completePastSessions(): Promise<void> {
+    const completedAppointments: { id: number }[] =
+      await this.appointmentRepository.query(
+        `UPDATE appointments a
+            SET status = 'COMPLETED'
+          WHERE a.status IN ('CONFIRMED', 'RESCHEDULED')
+            AND a."endAt" < now()
+            AND NOT EXISTS (
+              SELECT 1 FROM medical_events m
+              WHERE m."appointmentId" = a.id
+                AND m.type = 'CONSULTATION'
+                AND m.status = 'ONGOING'
+            )
+          RETURNING a.id`,
+      );
+
+    const closedConsultations = await this.completeStaleConsultations();
+
+    const endedSessions = await this.videoSessionRepository
+      .createQueryBuilder()
+      .update(VideoSession)
+      .set({
+        status: VideoSessionStatus.ENDED,
+        endedAt: new Date(),
+      })
+      .where('status = :status', { status: VideoSessionStatus.ACTIVE })
+      .andWhere('"startedAt" < :cutoff', {
+        cutoff: new Date(Date.now() - SESSION_MAX_DURATION_MS),
+      })
+      .execute();
+
+    if (
+      completedAppointments.length > 0 ||
+      closedConsultations > 0 ||
+      (endedSessions.affected ?? 0) > 0
+    ) {
+      this.logger.log(
+        `Session-completion scan: ${completedAppointments.length} appointment(s) completed, ` +
+          `${closedConsultations} consultation(s) closed, ` +
+          `${endedSessions.affected ?? 0} call session(s) ended`,
+      );
+    }
+  }
+
+  private async completeStaleConsultations(): Promise<number> {
+    const ongoing = await this.medicalEventRepository.find({
+      where: {
+        type: MedicalEventType.CONSULTATION,
+        status: MedicalEventStatus.ONGOING,
+      },
+    });
+
+    const cutoff = Date.now() - SESSION_MAX_DURATION_MS;
+    const stale = ongoing.filter((event) => {
+      const rawStartedAt = event.data?.startedAt;
+      const startedAt =
+        typeof rawStartedAt === 'string' ? Date.parse(rawStartedAt) : NaN;
+      const startedMs = Number.isNaN(startedAt)
+        ? event.createdAt.getTime()
+        : startedAt;
+      return startedMs <= cutoff;
+    });
+    if (stale.length === 0) {
+      return 0;
+    }
+
+    await this.medicalEventRepository.update(
+      { id: In(stale.map((event) => event.id)) },
+      { status: MedicalEventStatus.COMPLETED },
+    );
+    return stale.length;
   }
 
   private async scanWindow(window: ReminderWindow): Promise<void> {

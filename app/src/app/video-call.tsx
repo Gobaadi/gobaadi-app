@@ -9,6 +9,7 @@ import {
   Alert,
   Platform,
   PermissionsAndroid,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -31,15 +32,33 @@ function formatTimer(seconds: number): string {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
-async function requestPermissions(): Promise<boolean> {
+/** Session length starts counting when the call connects (after join). */
+const SESSION_DURATION_S = 30 * 60;
+const SESSION_WARN_S = 25 * 60;
+
+/** Surface the backend's real message (e.g. call-gate errors) when present. */
+function joinErrorMessage(error: unknown): string {
+  const data = (error as { data?: { message?: string | string[] } })?.data;
+  const raw = data?.message;
+  const message = Array.isArray(raw) ? raw[0] : raw;
+  return message || 'Failed to join call';
+}
+
+async function requestPermissions(audioOnly: boolean): Promise<boolean> {
   if (Platform.OS === 'android') {
-    const result = await PermissionsAndroid.requestMultiple([
-      PermissionsAndroid.PERMISSIONS.CAMERA,
-      PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
-    ]);
+    const perms = audioOnly
+      ? [PermissionsAndroid.PERMISSIONS.RECORD_AUDIO]
+      : [
+          PermissionsAndroid.PERMISSIONS.CAMERA,
+          PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+        ];
+    const result = await PermissionsAndroid.requestMultiple(perms);
+    const micGranted =
+      result['android.permission.RECORD_AUDIO'] === PermissionsAndroid.RESULTS.GRANTED;
+    if (audioOnly) return micGranted;
     return (
-      result['android.permission.CAMERA'] === PermissionsAndroid.RESULTS.GRANTED &&
-      result['android.permission.RECORD_AUDIO'] === PermissionsAndroid.RESULTS.GRANTED
+      micGranted &&
+      result['android.permission.CAMERA'] === PermissionsAndroid.RESULTS.GRANTED
     );
   }
   return true;
@@ -49,10 +68,18 @@ export default function VideoCallScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{
     appointmentId?: string;
+    callType?: string;
+    patientName?: string;
+    animalImage?: string;
   }>();
   const user = useSelector((state: RootState) => state.auth.user);
 
   const appointmentId = params.appointmentId ? parseInt(params.appointmentId, 10) : 0;
+  const isAudioCall = params.callType === 'audio';
+  const peerName =
+    params.patientName ||
+    (user?.role === 'doctor' ? 'Patient' : 'Doctor');
+  const peerImage = params.animalImage || '';
 
   const { data: callData, isLoading: isJoining, error: joinError } = useJoinSessionQuery(appointmentId, {
     skip: !appointmentId,
@@ -84,22 +111,25 @@ export default function VideoCallScreen() {
     callData?.channelName || '',
     callData?.appId || '',
     uid,
+    isAudioCall,
   );
 
   useEffect(() => {
     if (permissionsRequested) return;
     setPermissionsRequested(true);
-    requestPermissions().then((granted) => {
+    requestPermissions(isAudioCall).then((granted) => {
       setHasPermission(granted);
       if (!granted) {
         Alert.alert(
           'Permissions Required',
-          'Camera and microphone permissions are needed for video calls. Please enable them in your device settings.',
+          isAudioCall
+            ? 'Microphone permission is needed for audio calls. Please enable it in your device settings.'
+            : 'Camera and microphone permissions are needed for video calls. Please enable them in your device settings.',
           [{ text: 'OK', onPress: () => router.back() }],
         );
       }
     });
-  }, [permissionsRequested, router]);
+  }, [permissionsRequested, isAudioCall, router]);
 
   useEffect(() => {
     if (!isConnected) return;
@@ -173,6 +203,24 @@ export default function VideoCallScreen() {
     };
   }, [appointmentId, handleEndCall]);
 
+  // Session timing (counts from join): warn at 25 min, auto-end at 30 min —
+  // neither party has to press end, the session closes itself.
+  const warnedRef = useRef(false);
+  useEffect(() => {
+    if (!isConnected || endedRef.current) return;
+    if (elapsed >= SESSION_DURATION_S) {
+      handleEndCall();
+      return;
+    }
+    if (elapsed >= SESSION_WARN_S && !warnedRef.current) {
+      warnedRef.current = true;
+      Alert.alert(
+        'Almost time',
+        'Only 5 minutes left in this session.',
+      );
+    }
+  }, [elapsed, isConnected, handleEndCall]);
+
   if (!appointmentId) {
     return (
       <View style={styles.loadingContainer}>
@@ -210,7 +258,7 @@ export default function VideoCallScreen() {
     return (
       <View style={styles.loadingContainer}>
         <Ionicons name="warning-outline" size={48} color="#E53935" />
-        <Text style={styles.loadingText}>Failed to join call</Text>
+        <Text style={styles.loadingText}>{joinErrorMessage(joinError)}</Text>
         <TouchableOpacity
           style={{ marginTop: 16, padding: 12, backgroundColor: '#BD632F', borderRadius: 12 }}
           onPress={() => router.back()}
@@ -223,26 +271,42 @@ export default function VideoCallScreen() {
 
   return (
     <View style={styles.container}>
-      {remoteUids.length > 0 && (
-        <RtcSurfaceView
-          style={styles.videoBackground}
-          canvas={{
-            uid: remoteUids[0],
-            renderMode: RenderModeType.RenderModeFit,
-          }}
-        />
-      )}
-
-      {localUid !== null && (
-        <View style={styles.pipContainer}>
-          <RtcSurfaceView
-            style={styles.pipBox}
-            canvas={{
-              uid: localUid,
-              renderMode: RenderModeType.RenderModeFit,
-            }}
-          />
+      {isAudioCall ? (
+        <View style={styles.audioStage}>
+          <View style={styles.audioAvatar}>
+            {peerImage ? (
+              <Image source={{ uri: peerImage }} style={styles.audioAvatarImage} />
+            ) : (
+              <Ionicons name="person" size={56} color="#FFFFFF" />
+            )}
+          </View>
+          <Text style={styles.audioPeerName}>{peerName}</Text>
+          <Text style={styles.audioCallLabel}>Audio call</Text>
         </View>
+      ) : (
+        <>
+          {remoteUids.length > 0 && (
+            <RtcSurfaceView
+              style={styles.videoBackground}
+              canvas={{
+                uid: remoteUids[0],
+                renderMode: RenderModeType.RenderModeFit,
+              }}
+            />
+          )}
+
+          {localUid !== null && (
+            <View style={styles.pipContainer}>
+              <RtcSurfaceView
+                style={styles.pipBox}
+                canvas={{
+                  uid: localUid,
+                  renderMode: RenderModeType.RenderModeFit,
+                }}
+              />
+            </View>
+          )}
+        </>
       )}
 
       <SafeAreaView style={styles.statusBar} />
@@ -270,6 +334,7 @@ export default function VideoCallScreen() {
         onToggleCamera={toggleCamera}
         onSwitchCamera={switchCamera}
         onEndCall={handleEndCall}
+        hideVideoControls={isAudioCall}
       />
 
       <Modal visible={callEnded} transparent animationType="fade">
@@ -312,6 +377,28 @@ const styles = StyleSheet.create({
   },
   loadingText: { color: '#FFF', marginTop: 12, fontSize: 16 },
   videoBackground: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
+  audioStage: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 12,
+  },
+  audioAvatar: {
+    width: 132,
+    height: 132,
+    borderRadius: 66,
+    backgroundColor: '#BD632F',
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  audioAvatarImage: { width: 132, height: 132 },
+  audioPeerName: { fontSize: 22, fontWeight: '800', color: '#FFFFFF' },
+  audioCallLabel: { fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,0.6)' },
   statusBar: { position: 'absolute', top: 0, left: 0, right: 0 },
   backBtnTop: {
     position: 'absolute',

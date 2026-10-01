@@ -1,7 +1,7 @@
 import React, { createContext, useContext } from 'react';
 import { useSelector } from 'react-redux';
 import type { RootState } from '@/store/store';
-import { useCallSignaling, type OutgoingCallState } from '@/hooks/use-call-signaling';
+import { useCallSignaling, type OutgoingCallState, type CallType } from '@/hooks/use-call-signaling';
 import { IncomingCallModal } from '@/components/IncomingCallModal';
 
 interface CallSignalingContextValue {
@@ -16,8 +16,9 @@ interface CallSignalingContextValue {
     callerName: string,
     callerRole: 'FARMER' | 'PATIENT' | 'DOCTOR',
     channelName: string,
+    callType?: CallType,
   ) => void;
-  ringCall: (appointmentId: number) => void;
+  ringCall: (appointmentId: number, callType?: CallType) => void;
   cancelCall: () => void;
   resetOutgoingState: () => void;
 }
@@ -42,6 +43,7 @@ export function IncomingCallProvider({ children }: { children: React.ReactNode }
       <IncomingCallModal
         visible={!!signaling.incomingCall}
         callerName={signaling.incomingCall?.callerName ?? ''}
+        callType={signaling.incomingCall?.callType ?? 'video'}
         onAccept={signaling.acceptCall}
         onReject={signaling.rejectCall}
       />

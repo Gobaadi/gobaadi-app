@@ -166,9 +166,13 @@ export class MedicalEventsService {
   }
 
   /**
-   * Find-or-create the CONSULTATION record for an appointment and return it
-   * in ONGOING state. Keyed by appointment (patient user <-> doctor), never by
-   * animal — either appointment participant may call it.
+   * Find-or-create the CONSULTATION record for an appointment. Keyed by
+   * appointment (patient user <-> doctor), never by animal — either
+   * appointment participant may call it.
+   *
+   * One consultation per appointment: if a record already exists it is always
+   * returned as-is (ONGOING resumes the session, COMPLETED stays ended) —
+   * a finished session can never be resurrected by starting again.
    */
   async startForAppointment(
     requesterUserId: number,
@@ -187,16 +191,15 @@ export class MedicalEventsService {
       requesterDoctorId,
     );
 
-    const ongoing = await this.medicalEventRepository.findOne({
+    const existing = await this.medicalEventRepository.findOne({
       where: {
         appointmentId,
         type: MedicalEventType.CONSULTATION,
-        status: MedicalEventStatus.ONGOING,
       },
       order: { createdAt: 'DESC' },
     });
-    if (ongoing) {
-      return ongoing;
+    if (existing) {
+      return existing;
     }
 
     return this.medicalEventRepository.save(

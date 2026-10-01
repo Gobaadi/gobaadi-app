@@ -22,7 +22,14 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import PrescriptionBottomSheet from '@/components/PrescriptionBottomSheet';
 import { useCallSignalingContext } from '@/components/IncomingCallProvider';
-import { useGetMessagesQuery, useSendMessageMutation, useSendAttachmentMessageMutation } from '@/store/chatApi';
+import type { CallType } from '@/hooks/use-call-signaling';
+import {
+  useGetMessagesQuery,
+  useSendMessageMutation,
+  useSendAttachmentMessageMutation,
+  useCreateConversationMutation,
+  type ChatMessage,
+} from '@/store/chatApi';
 import { compressImageForUpload } from '@/utils/compress-image';
 import {
   useGetByIdQuery as useGetConsultationQuery,
@@ -49,16 +56,77 @@ interface ChatMessageUI {
   prescriptionDate?: string;
   prescriptionSize?: string;
   attachmentUrl?: string;
+  attachmentType?: 'image' | 'document';
   isPdf?: boolean;
   pdfUri?: string;
 }
 
 const CONSULTATION_DURATION_SECONDS = 30 * 60;
+const CONSULTATION_WARN_SECONDS = 25 * 60;
+
+function toUIMessage(msg: ChatMessage): ChatMessageUI {
+  const isPdf =
+    msg.attachmentType === 'document' && !!msg.attachmentMimeType?.includes('pdf');
+  return {
+    id: msg.id.toString(),
+    sender: msg.sender === 'doctor' ? 'doctor' : 'patient',
+    text: msg.text,
+    time: new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    isPrescription: !!(
+      msg.attachmentType === 'document' ||
+      (msg.text?.startsWith('Prescription -') && msg.attachmentUrl)
+    ),
+    isPdf: msg.attachmentType === 'document' ? isPdf : undefined,
+    prescriptionDate: msg.attachmentUrl ? new Date(msg.createdAt).toLocaleDateString() : undefined,
+    prescriptionSize:
+      msg.attachmentType === 'document' ? (isPdf ? `PDF` : 'File') : undefined,
+    attachmentUrl: msg.attachmentUrl || undefined,
+    attachmentType: msg.attachmentType || undefined,
+  };
+}
 
 function formatTimeRemaining(seconds: number): string {
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
+function ChatImageBubble({
+  uri,
+  isMine,
+  time,
+  caption,
+}: {
+  uri: string;
+  isMine: boolean;
+  time: string;
+  caption?: string;
+}) {
+  const [failed, setFailed] = useState(false);
+
+  return (
+    <View style={isMine ? styles.imageBubble : styles.imageBubbleLeft}>
+      <TouchableOpacity activeOpacity={0.8} onPress={() => Linking.openURL(uri)}>
+        {failed ? (
+          <View style={styles.imageFallback}>
+            <Ionicons name="image-outline" size={36} color="#BD632F" />
+            <Text style={styles.imageFallbackText}>Tap to open image</Text>
+          </View>
+        ) : (
+          <Image
+            source={{ uri }}
+            style={styles.messageImage}
+            resizeMode="cover"
+            onError={() => setFailed(true)}
+          />
+        )}
+      </TouchableOpacity>
+      {!!caption && (
+        <Text style={isMine ? styles.imageCaptionMine : styles.imageCaption}>{caption}</Text>
+      )}
+      <Text style={isMine ? styles.imageTimeMine : styles.imageTime}>{time}</Text>
+    </View>
+  );
 }
 
 export default function ChatScreen() {
@@ -73,7 +141,9 @@ export default function ChatScreen() {
   }>();
 
   const [consultationId, setConsultationId] = useState(params.consultationId || '');
-  const conversationId = params.conversationId ? parseInt(params.conversationId, 10) : undefined;
+  const [conversationId, setConversationId] = useState<number | undefined>(
+    params.conversationId ? parseInt(params.conversationId, 10) : undefined,
+  );
   const patientName = params.patientName || 'Patient';
   const animalImage = params.animalImage || '';
   const animalId = params.animalId || '';
@@ -89,6 +159,12 @@ export default function ChatScreen() {
     skip: !appointmentId,
   });
   const activeConsultation = consultation ?? appointmentConsultation ?? undefined;
+  // params.consultationId is rarely passed — fall back to the appointment's
+  // consultation so End / auto-end / prescription always hit the API. Without
+  // this, ending was local-only and a reload resurrected the session.
+  const resolvedConsultationId =
+    consultationId ||
+    (appointmentConsultation?.id ? String(appointmentConsultation.id) : '');
   const { data: apiMessages, isLoading: messagesLoading } = useGetMessagesQuery(conversationId, { skip: !conversationId });
   const [sendMessage, { isLoading: sending }] = useSendMessageMutation();
   const [startConsultation, { isLoading: starting }] = useStartForAppointmentMutation();
@@ -96,6 +172,25 @@ export default function ChatScreen() {
   const [createPrescription] = useCreatePrescriptionMutation();
   const [sendPrescriptionApi] = useSendPrescriptionMutation();
   const [sendAttachment, { isLoading: sendingAttachment }] = useSendAttachmentMessageMutation();
+  const [createConversation] = useCreateConversationMutation();
+
+  useEffect(() => {
+    if (conversationId || !appointmentId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const conv = await createConversation({
+          appointmentId: parseInt(appointmentId, 10),
+        }).unwrap();
+        if (!cancelled && conv?.id) setConversationId(conv.id);
+      } catch {
+        // leave undefined — backend still auto-resolves for the farmer
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [conversationId, appointmentId, createConversation]);
 
   useChatSocket(conversationId);
   const { ringCall } = useCallSignalingContext();
@@ -128,32 +223,48 @@ export default function ChatScreen() {
 
   useEffect(() => {
     if (consultationState !== 'active') return;
+    // Auto-end at 0: nobody has to press "End Consultation". finish() runs
+    // from a deferred timeout so it stays out of the effect body (lint) and
+    // after the updater flushes; the `finished` guard makes double fires safe.
+    let finished = false;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      setConsultationState('ended');
+      if (resolvedConsultationId) {
+        endConsultation(resolvedConsultationId).unwrap().catch(() => {});
+      }
+    };
     const interval = setInterval(() => {
       setRemainingTime((prev) => {
         if (prev <= 1) {
           clearInterval(interval);
+          setTimeout(finish, 0);
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [consultationState]);
+  }, [consultationState, resolvedConsultationId, endConsultation]);
+
+  // Warn once when 5 minutes remain.
+  const consultationWarnedRef = useRef(false);
+  useEffect(() => {
+    if (consultationState !== 'active') return;
+    if (
+      remainingTime > 0 &&
+      remainingTime <= CONSULTATION_WARN_SECONDS &&
+      !consultationWarnedRef.current
+    ) {
+      consultationWarnedRef.current = true;
+      Alert.alert('Almost time', 'Only 5 minutes left in this consultation.');
+    }
+  }, [remainingTime, consultationState]);
 
   useEffect(() => {
     if (apiMessages) {
-      const mapped: ChatMessageUI[] = apiMessages.map((msg) => ({
-        id: msg.id.toString(),
-        sender: msg.sender === 'doctor' ? 'doctor' : 'patient',
-        text: msg.text,
-        time: new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        isPrescription: !!(msg.attachmentType === 'document' || (msg.text?.startsWith('Prescription -') && msg.attachmentUrl)),
-        isPdf: msg.attachmentType === 'document' && msg.attachmentMimeType?.includes('pdf') ? true : undefined,
-        prescriptionDate: msg.attachmentUrl ? new Date(msg.createdAt).toLocaleDateString() : undefined,
-        prescriptionSize: msg.attachmentType === 'document' ? (msg.attachmentMimeType?.includes('pdf') ? `PDF` : 'File') : undefined,
-        attachmentUrl: msg.attachmentUrl || undefined,
-      }));
-      setLocalMessages(mapped);
+      setLocalMessages(apiMessages.map(toUIMessage));
     }
   }, [apiMessages]);
 
@@ -168,6 +279,12 @@ export default function ChatScreen() {
     try {
       const started = await startConsultation(appointmentId).unwrap();
       setConsultationId(String(started.id));
+      if (started.status === 'COMPLETED') {
+        // One consultation per appointment — a finished session stays ended.
+        setRemainingTime(0);
+        setConsultationState('ended');
+        return;
+      }
       setConsultationState('active');
       const elapsed = Math.floor(
         (Date.now() - new Date(consultationStartedAt(started)).getTime()) / 1000,
@@ -179,9 +296,9 @@ export default function ChatScreen() {
   };
 
   const handleEndConsultation = async () => {
-    if (consultationId) {
+    if (resolvedConsultationId) {
       try {
-        await endConsultation(consultationId).unwrap();
+        await endConsultation(resolvedConsultationId).unwrap();
       } catch {
         Alert.alert('Error', 'Failed to end consultation. Please try again.');
       }
@@ -190,7 +307,7 @@ export default function ChatScreen() {
     router.push({
       pathname: '/consultation-ended',
       params: {
-        consultationId,
+        consultationId: resolvedConsultationId,
         patientName,
         startedAt: consultation ? consultationStartedAt(consultation) : '',
         conversationId: conversationId ? String(conversationId) : '',
@@ -208,7 +325,7 @@ export default function ChatScreen() {
    * Ring the other party (socket callStarted), then join the call screen
    * immediately and wait in the Agora channel.
    */
-  const handleStartCall = () => {
+  const handleStartCall = (callType: CallType = 'video') => {
     if (!appointmentId) {
       Alert.alert(
         'Error',
@@ -216,11 +333,12 @@ export default function ChatScreen() {
       );
       return;
     }
-    ringCall(parseInt(appointmentId, 10));
+    ringCall(parseInt(appointmentId, 10), callType);
     router.push({
       pathname: '/video-call',
       params: {
         appointmentId,
+        callType,
         conversationId: conversationId ? String(conversationId) : '',
         patientName,
         animalImage,
@@ -352,23 +470,23 @@ export default function ChatScreen() {
   };
 
   const handleSendAttachment = async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert('Permission Required', 'Please allow access to your photo library to send images.');
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      quality: 0.8,
-    });
-
-    if (result.canceled || !result.assets[0]) return;
-
-    const asset = result.assets[0];
-    const fileName = asset.fileName || `photo-${Date.now()}.jpg`;
-
     try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert('Permission Required', 'Please allow access to your photo library to send images.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        quality: 0.8,
+      });
+
+      if (result.canceled || !result.assets[0]) return;
+
+      const asset = result.assets[0];
+      const fileName = asset.fileName || `photo-${Date.now()}.jpg`;
+
       const isImage = (asset.mimeType || 'image/jpeg').startsWith('image/');
       const file = isImage
         ? await compressImageForUpload(asset.uri, {
@@ -376,10 +494,28 @@ export default function ChatScreen() {
             mimeType: asset.mimeType || 'image/jpeg',
           })
         : { uri: asset.uri, name: fileName, type: asset.mimeType || 'application/octet-stream' };
-      await sendAttachment({
-        conversationId,
+
+      let targetConversationId = conversationId;
+      if (!targetConversationId) {
+        if (!appointmentId) {
+          Alert.alert('Error', 'Open this chat from an appointment to send images.');
+          return;
+        }
+        const conv = await createConversation({
+          appointmentId: parseInt(appointmentId, 10),
+        }).unwrap();
+        targetConversationId = conv.id;
+        setConversationId(conv.id);
+      }
+
+      const saved = await sendAttachment({
+        conversationId: targetConversationId,
         file: { uri: file.uri, name: file.name, type: file.type },
       }).unwrap();
+
+      setLocalMessages((prev) =>
+        prev.some((m) => m.id === String(saved.id)) ? prev : [...prev, toUIMessage(saved)],
+      );
     } catch (err) {
       const status = (err as { status?: number | string })?.status;
       Alert.alert(
@@ -412,6 +548,32 @@ export default function ChatScreen() {
 
   const renderMessage = ({ item }: { item: ChatMessageUI }) => {
     const isMine = isViewerDoctor ? item.sender === 'doctor' : item.sender === 'patient';
+
+    if (item.attachmentType === 'image' && item.attachmentUrl && !item.isPrescription) {
+      return (
+        <View style={isMine ? styles.messageRowRight : styles.messageRowLeft}>
+          {!isMine && (
+            <View style={styles.patientAvatar}>
+              {item.sender === 'patient' ? (
+                animalImage ? (
+                  <Image source={{ uri: animalImage }} style={styles.patientAvatarImage} />
+                ) : (
+                  <Ionicons name="paw" size={16} color="#BD632F" />
+                )
+              ) : (
+                <Ionicons name="person" size={16} color="#BD632F" />
+              )}
+            </View>
+          )}
+          <ChatImageBubble
+            uri={item.attachmentUrl}
+            isMine={isMine}
+            time={item.time}
+            caption={item.text}
+          />
+        </View>
+      );
+    }
 
     if (item.isPrescription) {
       return (
@@ -483,7 +645,7 @@ export default function ChatScreen() {
                 style={[styles.headerActionBtn, consultationState !== 'active' && styles.headerActionBtnDisabled]}
                 activeOpacity={0.7}
                 disabled={consultationState !== 'active'}
-                onPress={handleStartCall}
+                onPress={() => handleStartCall('audio')}
               >
                 <Ionicons name="call" size={18} color="#FFFFFF" />
               </TouchableOpacity>
@@ -491,7 +653,7 @@ export default function ChatScreen() {
                 style={[styles.headerActionBtn, consultationState !== 'active' && styles.headerActionBtnDisabled]}
                 activeOpacity={0.7}
                 disabled={consultationState !== 'active'}
-                onPress={handleStartCall}
+                onPress={() => handleStartCall('video')}
               >
                 <Ionicons name="videocam" size={18} color="#FFFFFF" />
               </TouchableOpacity>
@@ -553,7 +715,7 @@ export default function ChatScreen() {
           <TouchableOpacity
             style={styles.upcomingBannerJoin}
             activeOpacity={0.85}
-            onPress={handleStartCall}
+            onPress={() => handleStartCall('video')}
           >
             <Text style={styles.upcomingBannerJoinText}>Join</Text>
           </TouchableOpacity>
@@ -748,6 +910,66 @@ const styles = StyleSheet.create({
   mineBubble: { backgroundColor: '#BD632F', borderRadius: 18, borderBottomRightRadius: 4, paddingHorizontal: 14, paddingVertical: 10, maxWidth: '100%' },
   mineBubbleText: { fontSize: 14, fontWeight: '500', color: '#FFFFFF', lineHeight: 19 },
   mineTimeText: { fontSize: 10, fontWeight: '500', color: 'rgba(255,255,255,0.7)', marginTop: 4, alignSelf: 'flex-end' },
+  imageBubble: {
+    backgroundColor: '#FFF2EB',
+    borderRadius: 18,
+    borderBottomRightRadius: 4,
+    overflow: 'hidden',
+    maxWidth: '100%',
+  },
+  imageBubbleLeft: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    borderBottomLeftRadius: 4,
+    borderWidth: 1,
+    borderColor: '#F0EAE1',
+    overflow: 'hidden',
+    maxWidth: '100%',
+  },
+  messageImage: { width: 200, height: 200, backgroundColor: '#E6E1DC' },
+  imageFallback: {
+    width: 200,
+    height: 200,
+    backgroundColor: '#F0EAE1',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 6,
+  },
+  imageFallbackText: { fontSize: 12, fontWeight: '600', color: '#BD632F' },
+  imageCaption: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#BD632F',
+    lineHeight: 19,
+    paddingHorizontal: 12,
+    paddingTop: 8,
+  },
+  imageCaptionMine: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#FFFFFF',
+    lineHeight: 19,
+    paddingHorizontal: 12,
+    paddingTop: 8,
+  },
+  imageTime: {
+    fontSize: 10,
+    fontWeight: '500',
+    color: 'rgba(189, 99, 47, 0.6)',
+    paddingHorizontal: 12,
+    paddingBottom: 8,
+    paddingTop: 4,
+    alignSelf: 'flex-end',
+  },
+  imageTimeMine: {
+    fontSize: 10,
+    fontWeight: '500',
+    color: 'rgba(189, 99, 47, 0.7)',
+    paddingHorizontal: 12,
+    paddingBottom: 8,
+    paddingTop: 4,
+    alignSelf: 'flex-end',
+  },
   prescriptionBubble: { backgroundColor: '#BD632F', borderRadius: 18, borderBottomRightRadius: 4, paddingHorizontal: 14, paddingVertical: 12, maxWidth: '100%', minWidth: 220 },
   prescriptionBubbleLeft: { backgroundColor: '#BD632F', borderRadius: 18, borderBottomLeftRadius: 4, borderBottomRightRadius: 18, paddingHorizontal: 14, paddingVertical: 12, maxWidth: '100%', minWidth: 220 },
   prescriptionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },

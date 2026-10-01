@@ -4038,7 +4038,7 @@ const socket = io('http://localhost:3000', {
 | `sendMessage` | `{ conversationId: number, text: string }` | Persist a text message and broadcast it to the room; the saved message is emitted back to the room as `messageReceived`. |
 | `typing` | `{ conversationId: number, isTyping: boolean }` | Broadcast a typing indicator to the room. |
 | `markRead` | `{ messageId: number }` | Mark a message read; the status update is broadcast to the room. |
-| `callStarted` | `{ appointmentId, callerId, callerName, callerRole: 'FARMER'\|'PATIENT'\|'DOCTOR', channelName }` | Notify the other party of an incoming video call (Agora channel name included). Only the appointment's doctor/patient may emit it. |
+| `callStarted` | `{ appointmentId, callerId, callerName, callerRole: 'FARMER'\|'PATIENT'\|'DOCTOR', channelName, callType: 'audio'\|'video' }` | Notify the other party of an incoming call (Agora channel name included). Only the appointment's doctor/patient may emit it. `callType` defaults to `video` when omitted. |
 | `callResponse` | `{ appointmentId, accepted: boolean, responderId }` | Accept or decline an incoming call. |
 | `callEnded` | `{ appointmentId, endedBy }` | Signal that the call has ended. |
 
@@ -4050,7 +4050,7 @@ const socket = io('http://localhost:3000', {
 | `conversationUpdated` | `ChatMessageClientView` | `user:{id}` (both participants) | Conversation-list refresh for screens that have not joined the conversation room. |
 | `messageStatusUpdate` | `{ id, status: 'SENT'\|'DELIVERED'\|'READ' }` | `conversation:{id}` | Delivery/read receipt. |
 | `typingIndicator` | `{ userId, isTyping: boolean }` | `conversation:{id}` | Peer typing state. |
-| `callStarted` | `{ appointmentId, callerId, callerName, callerRole, channelName }` | `user:{targetUserId}` | Incoming call. |
+| `callStarted` | `{ appointmentId, callerId, callerName, callerRole, channelName, callType: 'audio'\|'video' }` | `user:{targetUserId}` | Incoming call; `callType` distinguishes audio from video so the callee shows the right UI. |
 | `callResponse` | `{ appointmentId, accepted, responderId }` | `user:{targetUserId}` | Call accepted/declined. |
 | `callEnded` | `{ appointmentId, endedBy }` | `user:{targetUserId}` | Call finished. |
 

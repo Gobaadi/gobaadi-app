@@ -1,10 +1,9 @@
 import * as SecureStore from "expo-secure-store";
 // for production deployment
-export const API_URL =
-  process.env.EXPO_PUBLIC_API_URL || "https://backend.gobaadi.com";
+// export const API_URL = process.env.EXPO_PUBLIC_API_URL || "https://backend.gobaadi.com";
 
 // for local development
-// export const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000";
+export const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://10.0.2.2:3000";
 
 const AUTH_TOKEN_KEY = "gobadi_jwt";
 const REFRESH_TOKEN_KEY = "gobadi_refresh_jwt";

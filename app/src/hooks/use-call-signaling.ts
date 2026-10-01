@@ -2,12 +2,15 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { socketManager } from '@/lib/socket-manager';
 import { useRouter } from 'expo-router';
 
+export type CallType = 'audio' | 'video';
+
 export interface IncomingCall {
   appointmentId: number;
   callerId: number;
   callerName: string;
   callerRole: 'FARMER' | 'PATIENT' | 'DOCTOR';
   channelName: string;
+  callType: CallType;
 }
 
 export type OutgoingCallState = 'idle' | 'calling' | 'accepted' | 'rejected' | 'timeout' | 'error';
@@ -25,6 +28,7 @@ export function useCallSignaling(user: SignalingUser | null | undefined) {
   const [outgoingAppointmentId, setOutgoingAppointmentId] = useState<number | null>(null);
   const router = useRouter();
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const outgoingCallTypeRef = useRef<CallType>('video');
 
   useEffect(() => {
     if (!userId) return;
@@ -35,8 +39,9 @@ export function useCallSignaling(user: SignalingUser | null | undefined) {
       callerName: string;
       callerRole: 'FARMER' | 'PATIENT' | 'DOCTOR';
       channelName: string;
+      callType?: CallType;
     }) => {
-      setIncomingCall(payload);
+      setIncomingCall({ ...payload, callType: payload.callType === 'audio' ? 'audio' : 'video' });
     };
 
     const handleCallEnded = () => {
@@ -63,7 +68,10 @@ export function useCallSignaling(user: SignalingUser | null | undefined) {
         setOutgoingState('accepted');
         router.push({
           pathname: '/video-call',
-          params: { appointmentId: String(payload.appointmentId) },
+          params: {
+            appointmentId: String(payload.appointmentId),
+            callType: outgoingCallTypeRef.current,
+          },
         });
       } else {
         setOutgoingState('rejected');
@@ -91,9 +99,11 @@ export function useCallSignaling(user: SignalingUser | null | undefined) {
       callerName: string,
       callerRole: 'FARMER' | 'PATIENT' | 'DOCTOR',
       channelName: string,
+      callType: CallType = 'video',
     ) => {
       setOutgoingState('calling');
       setOutgoingAppointmentId(appointmentId);
+      outgoingCallTypeRef.current = callType;
 
       socketManager.emit('callStarted', {
         appointmentId,
@@ -101,6 +111,7 @@ export function useCallSignaling(user: SignalingUser | null | undefined) {
         callerName,
         callerRole,
         channelName,
+        callType,
       });
 
       timeoutRef.current = setTimeout(() => {
@@ -118,11 +129,12 @@ export function useCallSignaling(user: SignalingUser | null | undefined) {
    * (channelName convention matches backend video-call.service).
    */
   const ringCall = useCallback(
-    (appointmentId: number) => {
+    (appointmentId: number, callType: CallType = 'video') => {
       if (!userId || !appointmentId) return;
       const callerRole = user?.role === 'doctor'
         ? ('DOCTOR' as const)
         : ('PATIENT' as const);
+      outgoingCallTypeRef.current = callType;
       socketManager.emit('callStarted', {
         appointmentId,
         callerId: userId,
@@ -130,6 +142,7 @@ export function useCallSignaling(user: SignalingUser | null | undefined) {
           user?.name || (callerRole === 'DOCTOR' ? 'Doctor' : 'Patient'),
         callerRole,
         channelName: `appointment-${appointmentId}`,
+        callType,
       });
     },
     [userId, user],
@@ -160,7 +173,10 @@ export function useCallSignaling(user: SignalingUser | null | undefined) {
       setIncomingCall(null);
       router.push({
         pathname: '/video-call',
-        params: { appointmentId: String(incomingCall.appointmentId) },
+        params: {
+          appointmentId: String(incomingCall.appointmentId),
+          callType: incomingCall.callType,
+        },
       });
     }
   }, [incomingCall, userId, router]);

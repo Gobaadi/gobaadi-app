@@ -10,7 +10,12 @@ import { RtcTokenBuilder, RtcRole } from 'agora-token';
 import { VideoSession, VideoSessionStatus } from './video-call.entity';
 import { Appointment } from '../appointments/appointment.entity';
 import { Doctor } from '../doctors/doctor.entity';
-import { assertCanCall } from '../common/call-gate';
+import {
+  MedicalEvent,
+  MedicalEventStatus,
+  MedicalEventType,
+} from '../medical-events/medical-event.entity';
+import { assertCanCall, ConsultationGateState } from '../common/call-gate';
 
 @Injectable()
 export class VideoCallService {
@@ -21,7 +26,22 @@ export class VideoCallService {
     private readonly appointmentRepo: Repository<Appointment>,
     @InjectRepository(Doctor)
     private readonly doctorRepo: Repository<Doctor>,
+    @InjectRepository(MedicalEvent)
+    private readonly medicalEventRepo: Repository<MedicalEvent>,
   ) {}
+
+  private async consultationGateState(
+    appointmentId: number,
+  ): Promise<ConsultationGateState> {
+    const consultation = await this.medicalEventRepo.findOne({
+      where: { appointmentId, type: MedicalEventType.CONSULTATION },
+      order: { createdAt: 'DESC' },
+    });
+    if (!consultation) return 'none';
+    return consultation.status === MedicalEventStatus.ONGOING
+      ? 'ONGOING'
+      : 'COMPLETED';
+  }
 
   /**
    * Appointment.doctorId is a Doctor.id (profile), while callers send
@@ -98,7 +118,9 @@ export class VideoCallService {
     }
 
     await this.assertParticipant(appointment, userId);
-    assertCanCall(appointment);
+    assertCanCall(appointment, {
+      consultationState: await this.consultationGateState(appointmentId),
+    });
 
     return this.getOrCreateSession(appointmentId);
   }
@@ -115,7 +137,9 @@ export class VideoCallService {
     }
 
     await this.assertParticipant(appointment, userId);
-    assertCanCall(appointment);
+    assertCanCall(appointment, {
+      consultationState: await this.consultationGateState(appointmentId),
+    });
 
     let session = await this.findLatestSession(appointmentId);
     if (!session) {
