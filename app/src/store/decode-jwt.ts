@@ -4,6 +4,7 @@ interface DecodedJwt {
   sub: number;
   role: string;
   phone?: string;
+  name?: string;
   exp: number;
 }
 
@@ -21,5 +22,5 @@ export function jwtToAuthUser(token: string): AuthUser | null {
   const decoded = decodeJwt(token);
   if (!decoded) return null;
   if (decoded.exp * 1000 < Date.now()) return null;
-  return { id: decoded.sub, phone: decoded.phone, role: decoded.role };
+  return { id: decoded.sub, phone: decoded.phone, role: decoded.role, name: decoded.name };
 }

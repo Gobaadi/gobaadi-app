@@ -17,6 +17,7 @@ import {
   useRescheduleBookingMutation,
 } from '@/store/doctorPortalApi';
 import { useGetSlotsQuery } from '@/store/doctorsApi';
+import { apiErrorMessage } from '@/utils/api-error';
 
 function getDaysInMonth(year: number, month: number): number {
   return new Date(year, month + 1, 0).getDate();
@@ -52,9 +53,16 @@ export default function AppointmentRescheduleScreen() {
 
   const appointment = bookings.find((b) => String(b.id) === id);
 
-  const [selectedDate, setSelectedDate] = useState<Date | null>(
-    appointment ? new Date(appointment.startAt) : new Date()
-  );
+  const [selectedDate, setSelectedDate] = useState<Date | null>(() => {
+    // Past appointments can't be rescheduled to their old date — default to today.
+    if (appointment) {
+      const start = new Date(appointment.startAt);
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      if (start >= todayStart) return start;
+    }
+    return new Date();
+  });
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
@@ -98,6 +106,8 @@ export default function AppointmentRescheduleScreen() {
   const daysInMonth = getDaysInMonth(year, month);
   const firstDay = getFirstDayOfMonth(year, month);
   const blanks = Array.from({ length: firstDay }, (_, i) => i);
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
 
   const goToPreviousMonth = () => {
     const prev = new Date(year, month - 1, 1);
@@ -121,9 +131,13 @@ export default function AppointmentRescheduleScreen() {
         date: dateStr,
         time: selectedTime,
       }).unwrap();
+      Alert.alert('Success', 'Appointment rescheduled successfully.');
       router.replace('/appointments');
-    } catch {
-      Alert.alert('Error', 'Failed to reschedule appointment. Please try again.');
+    } catch (err) {
+      Alert.alert(
+        'Error',
+        apiErrorMessage(err, 'Failed to reschedule appointment. Please try again.'),
+      );
     }
   };
 
@@ -213,14 +227,16 @@ export default function AppointmentRescheduleScreen() {
             {Array.from({ length: daysInMonth }, (_, i) => {
               const day = i + 1;
               const date = new Date(year, month, day);
+              const isPastDate = date < startOfToday;
               const isTodayDate = isSameDay(date, new Date());
               const isSelected = selectedDate && isSameDay(date, selectedDate);
 
               return (
                 <TouchableOpacity
                   key={day}
-                  style={styles.dayCell}
-                  onPress={() => setSelectedDate(date)}
+                  style={[styles.dayCell, isPastDate && styles.dayCellDisabled]}
+                  onPress={isPastDate ? undefined : () => setSelectedDate(date)}
+                  disabled={isPastDate}
                   activeOpacity={0.7}
                 >
                   <View
@@ -235,6 +251,7 @@ export default function AppointmentRescheduleScreen() {
                         styles.dayNumberText,
                         isTodayDate && !isSelected && styles.dayNumberTextToday,
                         isSelected && styles.dayNumberTextSelected,
+                        isPastDate && !isSelected && styles.dayNumberTextDisabled,
                       ]}
                     >
                       {day}
@@ -385,6 +402,8 @@ const styles = StyleSheet.create({
   dayNumberText: { fontSize: 14, fontWeight: '500', color: '#1A1817' },
   dayNumberTextToday: { color: '#BD632F', fontWeight: '700' },
   dayNumberTextSelected: { color: '#FFFFFF', fontWeight: '700' },
+  dayNumberTextDisabled: { color: '#C9C3BD' },
+  dayCellDisabled: { opacity: 0.5 },
   timeSlotsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',

@@ -161,8 +161,15 @@ export const doctorPortalApi = createApi({
       }),
       invalidatesTags: ['DoctorBookings'],
     }),
-    cancelBooking: builder.mutation<DoctorAppointment, string>({
-      query: (id) => ({ url: `/doctors/bookings/${id}/cancel`, method: 'PATCH' }),
+    cancelBooking: builder.mutation<
+      DoctorAppointment,
+      { id: string; reason: string; note?: string }
+    >({
+      query: ({ id, reason, note }) => ({
+        url: `/doctors/bookings/${id}/cancel`,
+        method: 'PATCH',
+        body: note ? { reason, note } : { reason },
+      }),
       invalidatesTags: ['DoctorBookings'],
     }),
     rescheduleBooking: builder.mutation<

@@ -17,7 +17,11 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSelector } from 'react-redux';
 import type { RootState } from '@/store/store';
-import { useGetDoctorBookingsQuery, useGetTodayStatsQuery } from '@/store/doctorPortalApi';
+import {
+  useGetDoctorBookingsQuery,
+  useGetTodayStatsQuery,
+  useGetMyDoctorProfileQuery,
+} from '@/store/doctorPortalApi';
 import { useGetConversationsQuery, useCreateConversationMutation } from '@/store/chatApi';
 import { useLanguage } from '@/hooks/use-language';
 
@@ -46,6 +50,7 @@ export default function DoctorHomeScreen() {
   const user = useSelector((state: RootState) => state.auth.user);
   const { languageCode } = useLanguage();
 
+  const { data: doctorProfile } = useGetMyDoctorProfileQuery(undefined, { skip: !isDoctor });
   const { data: bookings = [], isLoading } = useGetDoctorBookingsQuery();
   const { data: todayStats } = useGetTodayStatsQuery();
   const { data: conversations = [] } = useGetConversationsQuery();
@@ -107,7 +112,9 @@ export default function DoctorHomeScreen() {
             <View style={styles.headerTop}>
               <View>
                 <Text style={styles.greetingText}>{getGreeting()}</Text>
-                <Text style={styles.doctorName}>Dr. {user?.name || 'Nirmala Azalea'}</Text>
+                <Text style={styles.doctorName}>
+                  {doctorProfile?.name || user?.name || 'Doctor'}
+                </Text>
               </View>
 
               <View style={styles.headerActions}>

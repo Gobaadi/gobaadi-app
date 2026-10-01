@@ -157,7 +157,7 @@ export async function bootstrapAuth() {
   // the first request rather than forcing a fresh login here.
   const decoded = token ? decodeJwt(token) : null;
   const user: AuthUser | null = decoded
-    ? { id: decoded.sub, phone: decoded.phone, role: decoded.role }
+    ? { id: decoded.sub, phone: decoded.phone, role: decoded.role, name: decoded.name }
     : null;
   if (token && user && (refreshToken || decoded!.exp * 1000 > Date.now())) {
     store.dispatch(setCredentials({ user, token, refreshToken: refreshToken ?? undefined }));

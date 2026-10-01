@@ -47,6 +47,12 @@ function formatTaskTime(scheduledTime: string): string {
   return new Date(scheduledTime).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 }
 
+function animalImage(breed: string) {
+  return breed?.toLowerCase().includes('buffalo')
+    ? require('@/assets/images/albino_buffalo.png')
+    : require('@/assets/images/bangladeshi_cow.png');
+}
+
 export default function HomeDashboard() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -278,9 +284,11 @@ export default function HomeDashboard() {
                 })}
               >
                 <View style={styles.listItemLeft}>
-                  <View style={styles.checkeredIcon}>
-                    <View style={styles.checkeredGrid} />
-                  </View>
+                  <Image
+                    source={item.image ? { uri: item.image } : animalImage(item.breed)}
+                    style={styles.checkeredIcon}
+                    contentFit="cover"
+                  />
                   <View>
                     <Text style={styles.animalName}>{item.name}</Text>
                     <Text style={styles.animalBreed}>{item.breed}</Text>
@@ -451,66 +459,6 @@ export default function HomeDashboard() {
             style={styles.referImage}
             contentFit="contain"
           />
-        </View>
-
-        {/* Marketplace Section */}
-        <Text style={[styles.sectionTitle, { marginHorizontal: 24, marginTop: 24, marginBottom: 16 }]}>Marketplace</Text>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.marketCategoriesRow}
-        >
-          {[
-            { label: 'Feeds', icon: '🌾' },
-            { label: 'Milk', icon: '🥛' },
-            { label: 'Meat', icon: '🥩' },
-            { label: 'Animals', icon: '🐂' }
-          ].map((item, idx) => (
-            <TouchableOpacity
-              key={idx}
-              style={styles.marketCategoryCard}
-              onPress={() => router.push('/market')}
-              activeOpacity={0.8}
-            >
-              <View style={styles.marketCategoryIconContainer}>
-                <Text style={styles.marketCategoryIconText}>{item.icon}</Text>
-              </View>
-              <Text style={styles.marketCategoryLabel}>{item.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-
-        {/* Today's Market Rates */}
-        <View style={styles.marketRatesCard}>
-          <View style={styles.ratesHeader}>
-            <Text style={styles.ratesTitle}>Today's Market Rates</Text>
-            <View style={styles.ratesDropdown}>
-              <Text style={styles.ratesDropdownText}>Feeds ∨</Text>
-            </View>
-          </View>
-
-          <View style={styles.ratesList}>
-            {[1, 2, 3].map((_, idx) => (
-              <View key={idx} style={styles.ratesItem}>
-                <View style={styles.ratesItemLeft}>
-                  <View style={styles.ratesItemDot} />
-                  <View>
-                    <Text style={styles.ratesItemTitle}>CATTLE BHUSHI MIX FEED</Text>
-                    <Text style={styles.ratesItemPrice}>Tk 1,350</Text>
-                  </View>
-                </View>
-                <Text style={styles.ratesChevron}>➔</Text>
-              </View>
-            ))}
-          </View>
-
-          <TouchableOpacity
-            style={styles.viewMarketBtn}
-            onPress={() => router.push('/market')}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.viewMarketBtnText}>View Market</Text>
-          </TouchableOpacity>
         </View>
 
       </ScrollView>
@@ -988,121 +936,5 @@ const styles = StyleSheet.create({
     height: 70,
     marginLeft: 10,
     flex: 1,
-  },
-  marketCategoriesRow: {
-    paddingLeft: 24,
-    paddingRight: 8,
-    gap: 12,
-    paddingBottom: 4,
-  },
-  marketCategoryCard: {
-    width: 100,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E6E1DC',
-    borderRadius: 20,
-    paddingVertical: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  marketCategoryIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#FAF9F6',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  marketCategoryIconText: {
-    fontSize: 20,
-  },
-  marketCategoryLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#1A1817',
-  },
-  marketRatesCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 28,
-    borderWidth: 1,
-    borderColor: '#E6E1DC',
-    marginHorizontal: 24,
-    marginTop: 24,
-    padding: 20,
-  },
-  ratesHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  ratesTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#1A1817',
-  },
-  ratesDropdown: {
-    backgroundColor: '#FAF9F6',
-    borderWidth: 1,
-    borderColor: '#E6E1DC',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  ratesDropdownText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#7C7672',
-  },
-  ratesList: {
-    gap: 12,
-    marginBottom: 20,
-  },
-  ratesItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 8,
-  },
-  ratesItemLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  ratesItemDot: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#F3EFE9',
-    marginRight: 12,
-    borderWidth: 1,
-    borderColor: '#E6E1DC',
-    borderStyle: 'dashed',
-  },
-  ratesItemTitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#1A1817',
-    marginBottom: 2,
-  },
-  ratesItemPrice: {
-    fontSize: 11,
-    color: '#7C7672',
-  },
-  ratesChevron: {
-    fontSize: 12,
-    color: '#BD632F',
-  },
-  viewMarketBtn: {
-    backgroundColor: '#BD632F',
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  viewMarketBtnText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '700',
   },
 });
