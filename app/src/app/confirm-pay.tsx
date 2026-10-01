@@ -5,18 +5,20 @@ import {
   Text,
   TouchableOpacity,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 
 import { useGetDoctorByIdQuery } from '@/store/doctorsApi';
+import { doctorImageSource } from '@/utils/doctor-image';
 
 export default function ConfirmPayScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const doctorId = String(params.id || '');
 
-  const { data: doctorData } = useGetDoctorByIdQuery(doctorId, { skip: !doctorId });
+  const { data: doctorData, isLoading: doctorLoading } = useGetDoctorByIdQuery(doctorId, { skip: !doctorId });
 
   const doctor = doctorData
     ? {
@@ -26,18 +28,16 @@ export default function ConfirmPayScreen() {
       location: 'Uttar Badda, Dhaka',
       rating: doctorData.rating || 4.8,
       reviews: 124,
-      image: doctorData.avatar === 'jessica_doctor.png'
-        ? require('@/assets/images/jessica_doctor.png')
-        : require('@/assets/images/doctor.png'),
+      image: doctorImageSource(doctorData.avatar),
     }
     : {
       id: doctorId || '1',
-      name: 'Loading...',
+      name: 'Doctor',
       specialty: '',
       location: '',
       rating: 0,
       reviews: 0,
-      image: require('@/assets/images/doctor.png'),
+      image: null,
     };
 
   // Format Date value nicely
@@ -72,25 +72,42 @@ export default function ConfirmPayScreen() {
         <View style={styles.infoCard}>
           {/* Doctor Row */}
           <View style={styles.doctorRow}>
-            <Image source={doctor.image} style={styles.doctorPortrait} />
+            {doctorLoading ? (
+              <View style={[styles.doctorPortrait, styles.doctorPortraitPlaceholder]}>
+                <ActivityIndicator size="small" color="#BD632F" />
+              </View>
+            ) : (
+              <Image
+                source={doctor.image ?? doctorImageSource(undefined)}
+                style={styles.doctorPortrait}
+              />
+            )}
             <View style={styles.doctorDetails}>
-              <Text style={styles.doctorName}>{doctor.name}</Text>
-              <Text style={styles.doctorSpecialty}>{doctor.specialty}</Text>
-              <View style={styles.ratingLocationRow}>
-                <Text style={styles.locationPin}>📍</Text>
-                <Text style={styles.locationTextMeta}>{doctor.location}</Text>
-              </View>
-              <View style={styles.ratingRow}>
-                <Text style={styles.starIcon}>⭐</Text>
-                <Text style={styles.ratingValue}>{doctor.rating}</Text>
-                <Text style={styles.reviewsText}>| {doctor.reviews} Reviews</Text>
-              </View>
+              <Text style={styles.doctorName}>
+                {doctorLoading ? 'Loading…' : doctor.name}
+              </Text>
+              {!!doctor.specialty && (
+                <Text style={styles.doctorSpecialty}>{doctor.specialty}</Text>
+              )}
+              {!!doctor.location && (
+                <View style={styles.ratingLocationRow}>
+                  <Text style={styles.locationPin}>📍</Text>
+                  <Text style={styles.locationTextMeta}>{doctor.location}</Text>
+                </View>
+              )}
+              {!!doctorData && (
+                <View style={styles.ratingRow}>
+                  <Text style={styles.starIcon}>⭐</Text>
+                  <Text style={styles.ratingValue}>{doctor.rating}</Text>
+                  <Text style={styles.reviewsText}>| {doctor.reviews} Reviews</Text>
+                </View>
+              )}
             </View>
           </View>
 
           {/* Your Slot Section */}
           <Text style={styles.sectionHeader}>Booking Reason</Text>
-          <Text style={styles.reasonText}>{params.reason || 'The symptom was extreme fever'}</Text>
+          <Text style={styles.reasonText}>{params.reason || '—'}</Text>
 
           <View style={styles.dashedDivider} />
 
@@ -216,6 +233,11 @@ const styles = StyleSheet.create({
     height: 72,
     borderRadius: 16,
     marginRight: 14,
+  },
+  doctorPortraitPlaceholder: {
+    backgroundColor: '#F3EFE9',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   doctorDetails: {
     flex: 1,

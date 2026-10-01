@@ -20,6 +20,7 @@ import { useGetDoctorBookingsQuery, useGetMyDoctorProfileQuery, useUpdateQualifi
 import { useGetMyProfileQuery } from '@/store/usersApi';
 import { useGetReviewsQuery } from '@/store/reviewsApi';
 import { compressImageForUpload } from '@/utils/compress-image';
+import { doctorImageSource } from '@/utils/doctor-image';
 
 type Tab = 'about' | 'experience' | 'credentials';
 
@@ -176,11 +177,10 @@ export default function ProfileDetailsScreen() {
         <View style={styles.doctorCard}>
           <View style={styles.doctorInfoRow}>
             <View style={styles.avatarContainer}>
-              {doctorProfile?.avatar ? (
-                <Image source={{ uri: doctorProfile.avatar }} style={styles.avatarPlaceholder} />
-              ) : (
-                <Image source={require('@/assets/images/doctor_avatar.png')} style={styles.avatarPlaceholder} />
-              )}
+              <Image
+                source={doctorImageSource(doctorProfile?.avatar, require('@/assets/images/doctor_avatar.png'))}
+                style={styles.avatarPlaceholder}
+              />
               <View style={styles.onlineDot} />
             </View>
             <View style={styles.doctorDetails}>

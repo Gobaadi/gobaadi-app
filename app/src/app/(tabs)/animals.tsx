@@ -27,10 +27,6 @@ function animalImage(breed: string) {
     : require('@/assets/images/bangladeshi_cow.png');
 }
 
-function animalStatus(id: number): 'Healthy' | 'Under Treatment' {
-  return id % 2 === 0 ? 'Under Treatment' : 'Healthy';
-}
-
 function isCalf(a: Animal): boolean {
   const text = `${a.name || ''} ${a.breed || ''} ${a.age || ''}`.toLowerCase();
   return /calf|baby|young|juvenile/.test(text);
@@ -115,7 +111,6 @@ export default function AnimalsListScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [genderFilter, setGenderFilter] = useState<'All' | 'Male' | 'Female'>('All');
-  const [statusFilter, setStatusFilter] = useState<'All' | 'Healthy' | 'Under Treatment'>('All');
   const debouncedSearch = useDebounce(searchQuery, 300);
   const { data: animals = [], isLoading } = useGetAnimalsQuery();
   const { languageCode } = useLanguage();
@@ -139,20 +134,17 @@ export default function AnimalsListScreen() {
       if (activeFilter === 'Calf' && !isCalf(a)) return false;
       if (activeFilter === 'Bull' && !isBull(a)) return false;
       if (genderFilter !== 'All' && (a.gender || '').toLowerCase() !== genderFilter.toLowerCase()) return false;
-      if (statusFilter !== 'All' && animalStatus(a.id) !== statusFilter) return false;
       return true;
     });
-  }, [animals, debouncedSearch, activeFilter, genderFilter, statusFilter]);
+  }, [animals, debouncedSearch, activeFilter, genderFilter]);
 
   const hasQuery =
     debouncedSearch.trim().length > 0 ||
     activeFilter !== 'All' ||
-    genderFilter !== 'All' ||
-    statusFilter !== 'All';
+    genderFilter !== 'All';
 
   const resetAdvancedFilters = () => {
     setGenderFilter('All');
-    setStatusFilter('All');
     setActiveFilter('All');
     setSearchQuery('');
   };
@@ -215,7 +207,7 @@ export default function AnimalsListScreen() {
         >
           <Ionicons name="options-outline" size={16} color="#7C7672" style={{ marginRight: 6 }} />
           <Text style={styles.filterIconText}>Filter</Text>
-          {(genderFilter !== 'All' || statusFilter !== 'All') && <View style={styles.filterDot} />}
+          {genderFilter !== 'All' && <View style={styles.filterDot} />}
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -297,21 +289,6 @@ export default function AnimalsListScreen() {
                     <Text style={styles.cardName} numberOfLines={1}>
                       {item.name || item.breed || 'Unnamed Animal'}
                     </Text>
-                    <View
-                      style={[
-                        styles.statusBadge,
-                        animalStatus(item.id) === 'Healthy' ? styles.statusHealthy : styles.statusTreatment,
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.statusText,
-                          animalStatus(item.id) === 'Healthy' ? styles.statusTextHealthy : styles.statusTextTreatment,
-                        ]}
-                      >
-                        {animalStatus(item.id)}
-                      </Text>
-                    </View>
                   </View>
 
                   <Text style={styles.cardDesc} numberOfLines={1}>
@@ -385,23 +362,6 @@ export default function AnimalsListScreen() {
                     activeOpacity={0.7}
                   >
                     <Text style={[styles.modalChipText, isActive && styles.modalChipTextActive]}>{g}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-
-            <Text style={[styles.modalSectionTitle, { marginTop: 24 }]}>Status</Text>
-            <View style={styles.modalChipRow}>
-              {(['All', 'Healthy', 'Under Treatment'] as const).map((s) => {
-                const isActive = statusFilter === s;
-                return (
-                  <TouchableOpacity
-                    key={s}
-                    style={[styles.modalChip, isActive && styles.modalChipActive]}
-                    onPress={() => setStatusFilter(s)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.modalChipText, isActive && styles.modalChipTextActive]}>{s}</Text>
                   </TouchableOpacity>
                 );
               })}
@@ -602,27 +562,6 @@ const styles = StyleSheet.create({
     color: '#1A1817',
     flex: 1,
     marginRight: 8,
-  },
-  statusBadge: {
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-  },
-  statusHealthy: {
-    backgroundColor: '#EEF4E3',
-  },
-  statusTreatment: {
-    backgroundColor: '#FFF3E0',
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  statusTextHealthy: {
-    color: '#608030',
-  },
-  statusTextTreatment: {
-    color: '#E65100',
   },
   cardDesc: {
     fontSize: 12.5,

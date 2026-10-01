@@ -6,6 +6,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  MaxLength,
 } from 'class-validator';
 import { ConsultationType } from '../appointment.entity';
 
@@ -51,10 +52,11 @@ export class BookSlotDto {
   @IsEnum(ConsultationType)
   consultationType?: ConsultationType;
 
-  @ApiPropertyOptional({ example: 'High fever for 3 days' })
-  @IsOptional()
+  @ApiProperty({ example: 'High fever for 3 days' })
   @IsString()
-  reasonForConsultation?: string;
+  @IsNotEmpty()
+  @MaxLength(500)
+  reasonForConsultation: string;
 
   @ApiPropertyOptional({ example: ['Fever', 'weakness', 'reduced appetite'] })
   @IsOptional()

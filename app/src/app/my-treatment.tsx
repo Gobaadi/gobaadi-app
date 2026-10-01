@@ -28,6 +28,7 @@ import { useCreateSessionMutation } from '@/store/videoCallApi';
 import { useLazyGetForAppointmentQuery } from '@/store/consultationsApi';
 import { useCallSignalingContext } from '@/components/IncomingCallProvider';
 import { apiErrorMessage } from '@/utils/api-error';
+import { doctorImageSource } from '@/utils/doctor-image';
 
 interface Treatment {
   id: string;
@@ -307,7 +308,7 @@ export default function MyTreatmentScreen() {
                 {/* Top Card Row */}
                 <View style={styles.cardHeader}>
                   <Image
-                    source={item.avatar ? { uri: item.avatar } : require('@/assets/images/doctor.png')}
+                    source={doctorImageSource(item.avatar)}
                     style={styles.cardImage}
                   />
                   <View style={styles.cardInfo}>

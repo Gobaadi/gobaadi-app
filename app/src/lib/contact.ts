@@ -1,6 +1,6 @@
 import { Alert, Linking, Platform } from 'react-native';
 
-export const SUPPORT_EMAIL = 'support@gobaadi.com';
+export const SUPPORT_EMAIL = 'ceo.gobaadi@gmail.com';
 export const SUPPORT_PHONE = '+8801911418977';
 
 function openExternalUrl(url: string, fallbackMessage: string) {

@@ -297,6 +297,24 @@ export class DoctorsService {
     return this.doctorRepository.save(doctor);
   }
 
+  async uploadPhoto(
+    doctorUserId: number,
+    file: Express.Multer.File,
+  ): Promise<Doctor> {
+    const doctor = await this.doctorRepository.findOneBy({
+      userId: doctorUserId,
+    });
+    if (!doctor) {
+      throw new ForbiddenException('No doctor profile linked to this account');
+    }
+    const result = await this.s3Service.uploadFile(file.buffer, {
+      folder: 'gobadi/avatars',
+      contentType: file.mimetype,
+    });
+    doctor.avatar = result.url;
+    return this.doctorRepository.save(doctor);
+  }
+
   async uploadCredentialDocument(
     doctorUserId: number,
     file: Express.Multer.File,

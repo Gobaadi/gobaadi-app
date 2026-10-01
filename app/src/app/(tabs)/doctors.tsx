@@ -25,6 +25,7 @@ import { useDebounce } from '@/hooks/use-debounce';
 import { useLanguage } from '@/hooks/use-language';
 import { useLocation } from '@/hooks/use-location';
 import LocationBottomSheet from '@/components/LocationBottomSheet';
+import { doctorImageSource } from '@/utils/doctor-image';
 
 interface Category {
   id: string;
@@ -208,9 +209,7 @@ export default function DoctorsScreen() {
         location: 'Uttar Badda, Dhaka',
         rating: d.rating || 4.8,
         reviews: 124,
-        image: d.avatar === 'jessica_doctor.png'
-          ? require('@/assets/images/jessica_doctor.png')
-          : require('@/assets/images/michael_doctor.png'),
+        image: doctorImageSource(d.avatar),
       }));
   }, [doctors, debouncedSearch, activeCategory]);
 
@@ -330,7 +329,10 @@ export default function DoctorsScreen() {
 
                   <View style={styles.doctorQuickInfo}>
                     {treatmentDoctor?.avatar ? (
-                      <Image source={{ uri: treatmentDoctor.avatar }} style={styles.doctorThumb} />
+                      <Image
+                        source={doctorImageSource(treatmentDoctor.avatar)}
+                        style={styles.doctorThumb}
+                      />
                     ) : (
                       <View style={[styles.doctorThumb, styles.doctorThumbPlaceholder]}>
                         <Text style={{ fontSize: 20 }}>👨‍⚕️</Text>

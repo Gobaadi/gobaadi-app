@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useGetDoctorByIdQuery, useGetSlotsQuery, useBookSlotMutation } from '@/store/doctorsApi';
 import { useRescheduleBookingMutation } from '@/store/doctorPortalApi';
+import { doctorImageSource } from '@/utils/doctor-image';
 
 function pad(n: number): string {
   return String(n).padStart(2, '0');
@@ -68,9 +69,7 @@ export default function BookSlotScreen() {
       location: 'Uttar Badda, Dhaka',
       rating: doctorData.rating || 4.8,
       reviews: 124,
-      image: doctorData.avatar === 'jessica_doctor.png'
-        ? require('@/assets/images/jessica_doctor.png')
-        : require('@/assets/images/michael_doctor.png'),
+      image: doctorImageSource(doctorData.avatar),
     };
   }, [doctorData]);
 
@@ -100,6 +99,7 @@ export default function BookSlotScreen() {
         date: selectedDateStr,
         time: selectedTimeSlot,
         consultationType: selectedVisitType === 'Online' ? 'online_video' : 'physical',
+        reasonForConsultation: bookingReason.trim(),
       }).unwrap();
     } catch (err) {
       console.log('Error booking slot:', err);
@@ -237,7 +237,9 @@ export default function BookSlotScreen() {
             )}
 
             {/* Booking Reason */}
-            <Text style={styles.sectionTitle}>Booking Reason</Text>
+            <Text style={styles.sectionTitle}>
+              Booking Reason <Text style={{ color: '#E53935' }}>(Required)</Text>
+            </Text>
             <TextInput
               style={styles.reasonInput}
               placeholder="Description of symptoms"
