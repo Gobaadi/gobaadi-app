@@ -94,9 +94,9 @@ export class RemindersProcessor extends WorkerHost {
    *    (safety net when a client dies instead of ending the call cleanly).
    */
   private async completePastSessions(): Promise<void> {
-    const completedAppointments: { id: number }[] =
-      await this.appointmentRepository.query(
-        `UPDATE appointments a
+    // TypeORM's raw .query() returns [rows, rowCount] for UPDATE/DELETE on Postgres.
+    const completedRaw: unknown = await this.appointmentRepository.query(
+      `UPDATE appointments a
             SET status = 'COMPLETED'
           WHERE a.status IN ('CONFIRMED', 'RESCHEDULED')
             AND a."endAt" < now()
@@ -107,7 +107,11 @@ export class RemindersProcessor extends WorkerHost {
                 AND m.status = 'ONGOING'
             )
           RETURNING a.id`,
-      );
+    );
+    const completedAppointments: { id: number }[] =
+      Array.isArray(completedRaw) && Array.isArray(completedRaw[0])
+        ? (completedRaw[0] as { id: number }[])
+        : (completedRaw as { id: number }[]);
 
     const closedConsultations = await this.completeStaleConsultations();
 
@@ -183,7 +187,7 @@ export class RemindersProcessor extends WorkerHost {
       .returning('*')
       .execute();
 
-    const dueAppointments: Appointment[] = result.raw;
+    const dueAppointments = result.raw as Appointment[];
     for (const appointment of dueAppointments) {
       await this.dispatchReminder(appointment, window.label);
     }
