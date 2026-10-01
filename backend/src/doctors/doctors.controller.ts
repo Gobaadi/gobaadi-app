@@ -7,11 +7,16 @@ import {
   Body,
   Query,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
   ApiBody,
+  ApiConsumes,
   ApiOperation,
   ApiParam,
   ApiQuery,
@@ -92,6 +97,63 @@ export class DoctorsController {
     @Body() dto: UpdateDoctorProfileDto,
   ): Promise<Doctor> {
     return this.doctorsService.updateProfile(user.sub, dto);
+  }
+
+  @Post('me/credential-documents')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.DOCTOR)
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiBearerAuth()
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { file: { type: 'string', format: 'binary' } },
+    },
+  })
+  @ApiOperation({
+    summary:
+      "Upload a credential document for the current doctor's profile and save it",
+  })
+  @ApiResponse({ status: 201, description: 'Document uploaded and saved' })
+  async uploadMyCredentialDocument(
+    @CurrentUser() user: JwtPayload,
+    @UploadedFile() file: Express.Multer.File,
+  ): Promise<Doctor> {
+    if (!file) {
+      throw new BadRequestException('A file is required');
+    }
+    return this.doctorsService.uploadCredentialDocument(user.sub, file);
+  }
+
+  @Patch('me/credential-documents')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.DOCTOR)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "Replace the current doctor's saved credential documents",
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        documents: {
+          type: 'array',
+          items: { type: 'string' },
+          example: ['https://bucket.s3.amazonaws.com/doctor-credentials/x.jpg'],
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 200, description: 'Credential documents updated' })
+  async updateMyCredentialDocuments(
+    @CurrentUser() user: JwtPayload,
+    @Body('documents') documents: string[],
+  ): Promise<Doctor> {
+    if (!Array.isArray(documents)) {
+      throw new BadRequestException('documents must be an array of strings');
+    }
+    return this.doctorsService.updateCredentialDocuments(user.sub, documents);
   }
 
   @Get(':id')
