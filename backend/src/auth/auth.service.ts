@@ -77,6 +77,7 @@ export class AuthService {
         sub: user.id,
         role: user.role,
         phone: user.phone,
+        name: user.name,
       },
       { expiresIn: ACCESS_TOKEN_EXPIRES_IN },
     );

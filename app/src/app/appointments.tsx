@@ -19,6 +19,26 @@ import { useRequireDoctor } from '@/hooks/use-require-doctor';
 
 type Tab = 'today' | 'previous';
 
+type FilterParamKey = 'filterDate' | 'filterStatus' | 'filterConsultationType';
+
+const FILTER_LABELS: Record<FilterParamKey, Record<string, string>> = {
+  filterDate: { today: 'Today', tomorrow: 'Tomorrow', this_week: 'This week' },
+  filterStatus: { CONFIRMED: 'Upcoming', COMPLETED: 'Completed', CANCELLED: 'Cancelled' },
+  filterConsultationType: {
+    video: 'Online - Video',
+    voice: 'Online - Voice',
+    chat: 'Online - Chat',
+    physical: 'Physical',
+  },
+};
+
+const CONSULTATION_TYPE_MAP: Record<string, string> = {
+  video: 'online_video',
+  voice: 'online_voice',
+  chat: 'online_chat',
+  physical: 'physical',
+};
+
 function isSameDay(a: Date, b: Date): boolean {
   return (
     a.getFullYear() === b.getFullYear() &&
@@ -150,37 +170,71 @@ export default function AppointmentsScreen() {
     filterConsultationType?: string;
   }>();
   const isDoctor = useRequireDoctor();
-  if (!isDoctor) return null;
 
   const [activeTab, setActiveTab] = useState<Tab>('today');
+  const [tabTouched, setTabTouched] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+
+  const selectTab = (tab: Tab) => {
+    setTabTouched(true);
+    setActiveTab(tab);
+  };
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300);
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  const consultationTypeMap: Record<string, string> = {
-    video: 'online_video',
-    voice: 'online_voice',
-    chat: 'online_chat',
-    physical: 'physical',
-  };
-
+  // Date ranges are always filtered client-side (see filteredBookings) so the
+  // result is consistent with what the tabs show, regardless of server timezone.
   const apiFilter = useMemo(() => {
-    if (params.filterDate === 'today') return 'today';
     if (params.filterStatus === 'COMPLETED') return 'completed';
     if (params.filterStatus === 'CANCELLED') return 'cancelled';
     return undefined;
-  }, [params.filterDate, params.filterStatus]);
+  }, [params.filterStatus]);
 
   const apiConsultationType = useMemo(() => {
     if (params.filterConsultationType && params.filterConsultationType !== 'all') {
-      return consultationTypeMap[params.filterConsultationType] ?? params.filterConsultationType;
+      return CONSULTATION_TYPE_MAP[params.filterConsultationType] ?? params.filterConsultationType;
     }
     return undefined;
   }, [params.filterConsultationType]);
+
+  const activeFilters: { key: FilterParamKey; label: string }[] = [];
+  if (params.filterDate) {
+    activeFilters.push({
+      key: 'filterDate',
+      label: FILTER_LABELS.filterDate[params.filterDate] ?? params.filterDate,
+    });
+  }
+  if (params.filterStatus && params.filterStatus !== 'all') {
+    activeFilters.push({
+      key: 'filterStatus',
+      label: FILTER_LABELS.filterStatus[params.filterStatus] ?? params.filterStatus,
+    });
+  }
+  if (params.filterConsultationType && params.filterConsultationType !== 'all') {
+    activeFilters.push({
+      key: 'filterConsultationType',
+      label:
+        FILTER_LABELS.filterConsultationType[params.filterConsultationType] ??
+        params.filterConsultationType,
+    });
+  }
+  const hasActiveFilters = activeFilters.length > 0;
+
+  const clearFilter = (key: FilterParamKey) => {
+    router.setParams({ [key]: '' });
+  };
+
+  const clearAllFilters = () => {
+    router.setParams({
+      filterDate: '',
+      filterStatus: '',
+      filterConsultationType: '',
+    });
+  };
 
   const { data: bookings = [] } = useGetDoctorBookingsQuery({
     filter: apiFilter,
@@ -191,7 +245,10 @@ export default function AppointmentsScreen() {
   const filteredBookings = useMemo(() => {
     let result = [...bookings];
 
-    if (params.filterDate === 'tomorrow') {
+    if (params.filterDate === 'today') {
+      const now = new Date();
+      result = result.filter((b) => isSameDay(new Date(b.startAt), now));
+    } else if (params.filterDate === 'tomorrow') {
       const tmr = new Date();
       tmr.setDate(tmr.getDate() + 1);
       result = result.filter((b) => isSameDay(new Date(b.startAt), tmr));
@@ -258,6 +315,17 @@ export default function AppointmentsScreen() {
     return groups;
   }, [previousAppointments]);
 
+  // A freshly pushed (filtered) screen opens on "Today's". If that tab has no
+  // matches but "Previous" does, show "Previous" until the user picks a tab —
+  // pure derivation so a filtered result never looks empty.
+  const displayedTab: Tab =
+    !tabTouched &&
+    hasActiveFilters &&
+    todayAppointments.length === 0 &&
+    previousAppointments.length > 0
+      ? 'previous'
+      : activeTab;
+
   const inProgressCount = todayAppointments.filter(
     (b) =>
       b.status === 'CONFIRMED' &&
@@ -276,6 +344,8 @@ export default function AppointmentsScreen() {
     },
     [router]
   );
+
+  if (!isDoctor) return null;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -308,30 +378,46 @@ export default function AppointmentsScreen() {
         />
       </View>
 
+      {activeFilters.length > 0 && (
+        <View style={styles.activeFilterRow}>
+          {activeFilters.map((f) => (
+            <TouchableOpacity
+              key={f.key}
+              style={styles.activeFilterChip}
+              onPress={() => clearFilter(f.key)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.activeFilterChipText}>{f.label}</Text>
+              <Ionicons name="close" size={14} color="#BD632F" />
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+
       <View style={styles.tabBar}>
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'today' && styles.tabActive]}
-          onPress={() => setActiveTab('today')}
+          style={[styles.tab, displayedTab === 'today' && styles.tabActive]}
+          onPress={() => selectTab('today')}
           activeOpacity={0.7}
         >
           <Text
             style={[
               styles.tabText,
-              activeTab === 'today' && styles.tabTextActive,
+              displayedTab === 'today' && styles.tabTextActive,
             ]}
           >
-            Today's
+            {"Today's"}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'previous' && styles.tabActive]}
-          onPress={() => setActiveTab('previous')}
+          style={[styles.tab, displayedTab === 'previous' && styles.tabActive]}
+          onPress={() => selectTab('previous')}
           activeOpacity={0.7}
         >
           <Text
             style={[
               styles.tabText,
-              activeTab === 'previous' && styles.tabTextActive,
+              displayedTab === 'previous' && styles.tabTextActive,
             ]}
           >
             Previous
@@ -343,7 +429,7 @@ export default function AppointmentsScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {activeTab === 'today' ? (
+        {displayedTab === 'today' ? (
           <>
             {inProgressCount > 0 && (
               <>
@@ -392,7 +478,20 @@ export default function AppointmentsScreen() {
             {todayAppointments.length === 0 && (
               <View style={styles.emptyContainer}>
                 <Ionicons name="calendar-outline" size={48} color="#E6E1DC" />
-                <Text style={styles.emptyText}>No appointments for today</Text>
+                <Text style={styles.emptyText}>
+                  {hasActiveFilters
+                    ? 'No appointments match your filters'
+                    : 'No appointments for today'}
+                </Text>
+                {hasActiveFilters && (
+                  <TouchableOpacity
+                    style={styles.clearFiltersBtn}
+                    onPress={clearAllFilters}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.clearFiltersText}>Clear filters</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             )}
           </>
@@ -414,7 +513,20 @@ export default function AppointmentsScreen() {
             ) : (
               <View style={styles.emptyContainer}>
                 <Ionicons name="calendar-outline" size={48} color="#E6E1DC" />
-                <Text style={styles.emptyText}>No previous appointments</Text>
+                <Text style={styles.emptyText}>
+                  {hasActiveFilters
+                    ? 'No appointments match your filters'
+                    : 'No previous appointments'}
+                </Text>
+                {hasActiveFilters && (
+                  <TouchableOpacity
+                    style={styles.clearFiltersBtn}
+                    onPress={clearAllFilters}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.clearFiltersText}>Clear filters</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             )}
           </>
@@ -553,4 +665,33 @@ const styles = StyleSheet.create({
   cardTime: { fontSize: 12, fontWeight: '500', color: '#9C9690' },
   emptyContainer: { alignItems: 'center', marginTop: 60, gap: 12 },
   emptyText: { fontSize: 15, fontWeight: '500', color: '#9C9690' },
+  activeFilterRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginHorizontal: 20,
+    marginBottom: 12,
+  },
+  activeFilterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#FFF2EB',
+    borderColor: '#BD632F',
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  activeFilterChipText: { fontSize: 13, fontWeight: '600', color: '#BD632F' },
+  clearFiltersBtn: {
+    marginTop: 4,
+    backgroundColor: '#FFF2EB',
+    borderColor: '#BD632F',
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  clearFiltersText: { fontSize: 14, fontWeight: '700', color: '#BD632F' },
 });

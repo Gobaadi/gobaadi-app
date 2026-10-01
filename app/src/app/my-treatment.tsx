@@ -27,6 +27,7 @@ import {
 import { useCreateSessionMutation } from '@/store/videoCallApi';
 import { useLazyGetForAppointmentQuery } from '@/store/consultationsApi';
 import { useCallSignalingContext } from '@/components/IncomingCallProvider';
+import { apiErrorMessage } from '@/utils/api-error';
 
 interface Treatment {
   id: string;
@@ -82,9 +83,15 @@ export default function MyTreatmentScreen() {
 
   async function cancelBooking(id: number) {
     try {
-      await cancelBookingMutation(String(id)).unwrap();
+      await cancelBookingMutation({
+        id: String(id),
+        reason: 'Cancelled by patient',
+      }).unwrap();
     } catch (err) {
-      Alert.alert('Could not cancel', 'Appointments can only be cancelled more than 2 hours before the start time.');
+      Alert.alert(
+        'Could not cancel',
+        apiErrorMessage(err, 'Failed to cancel appointment. Please try again.'),
+      );
     }
   }
 

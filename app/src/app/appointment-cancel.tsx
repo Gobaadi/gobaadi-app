@@ -16,6 +16,7 @@ import {
   useGetDoctorBookingsQuery,
   useCancelBookingMutation,
 } from '@/store/doctorPortalApi';
+import { apiErrorMessage } from '@/utils/api-error';
 
 function formatTimeRange(start: string, end: string): string {
   const s = new Date(start);
@@ -76,13 +77,20 @@ export default function AppointmentCancelScreen() {
       return;
     }
     try {
-      await cancelBooking(String(appointment.id)).unwrap();
+      await cancelBooking({
+        id: String(appointment.id),
+        reason: selectedReason,
+        note: note.trim() || undefined,
+      }).unwrap();
       router.replace({
         pathname: '/appointment-cancelled',
         params: { id: String(appointment.id) },
       });
-    } catch {
-      Alert.alert('Error', 'Failed to cancel appointment. Please try again.');
+    } catch (err) {
+      Alert.alert(
+        'Error',
+        apiErrorMessage(err, 'Failed to cancel appointment. Please try again.'),
+      );
     }
   };
 

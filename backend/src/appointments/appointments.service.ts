@@ -867,10 +867,10 @@ export class AppointmentsService {
   }
 
   private enforceReschedulableBuffer(appointment: Appointment): void {
-    if (
-      appointment.startAt.getTime() - Date.now() <
-      RESCHEDULE_CANCEL_BUFFER_MS
-    ) {
+    const msUntilStart = appointment.startAt.getTime() - Date.now();
+    // Only future appointments need advance notice; appointments that already
+    // started (or passed) may always be cancelled/rescheduled for cleanup.
+    if (msUntilStart > 0 && msUntilStart < RESCHEDULE_CANCEL_BUFFER_MS) {
       throw new BadRequestException(
         'Appointments can only be rescheduled or cancelled at least 1 hour in advance',
       );
