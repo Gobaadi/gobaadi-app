@@ -7,6 +7,7 @@ import { Availability } from './availability.entity';
 import { Appointment } from '../appointments/appointment.entity';
 import { DoctorTimeOff } from '../time-off/doctor-time-off.entity';
 import { User } from '../users/user.entity';
+import { S3Module } from '../s3/s3.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { User } from '../users/user.entity';
       DoctorTimeOff,
       User,
     ]),
+    S3Module,
   ],
   controllers: [DoctorsController],
   providers: [DoctorsService],

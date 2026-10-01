@@ -11,6 +11,7 @@ import { Availability } from './availability.entity';
 import { User } from '../users/user.entity';
 import { PaginatedResult } from '../common/paginated-result.interface';
 import { MeilisearchService } from '../meilisearch/meilisearch.service';
+import { S3Service } from '../s3/s3.service';
 import { UpdateSingleDayDto } from './dto/update-single-day.dto';
 export { Doctor } from './doctor.entity';
 export { Availability } from './availability.entity';
@@ -35,6 +36,7 @@ export class DoctorsService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly meilisearchService: MeilisearchService,
+    private readonly s3Service: S3Service,
   ) {}
 
   async getDoctors(
@@ -292,6 +294,41 @@ export class DoctorsService {
       throw new ForbiddenException('No doctor profile linked to this account');
     }
     doctor.specializations = specializations;
+    return this.doctorRepository.save(doctor);
+  }
+
+  async uploadCredentialDocument(
+    doctorUserId: number,
+    file: Express.Multer.File,
+  ): Promise<Doctor> {
+    const doctor = await this.doctorRepository.findOneBy({
+      userId: doctorUserId,
+    });
+    if (!doctor) {
+      throw new ForbiddenException('No doctor profile linked to this account');
+    }
+    const result = await this.s3Service.uploadFile(file.buffer, {
+      folder: 'doctor-credentials',
+      contentType: file.mimetype,
+    });
+    doctor.credentialDocuments = [
+      ...(doctor.credentialDocuments || []),
+      result.url,
+    ];
+    return this.doctorRepository.save(doctor);
+  }
+
+  async updateCredentialDocuments(
+    doctorUserId: number,
+    documents: string[],
+  ): Promise<Doctor> {
+    const doctor = await this.doctorRepository.findOneBy({
+      userId: doctorUserId,
+    });
+    if (!doctor) {
+      throw new ForbiddenException('No doctor profile linked to this account');
+    }
+    doctor.credentialDocuments = documents;
     return this.doctorRepository.save(doctor);
   }
 

@@ -48,6 +48,9 @@ export class Doctor {
   @Column('text', { array: true, default: '{}' })
   specializations: string[];
 
+  @Column('text', { array: true, default: '{}' })
+  credentialDocuments: string[];
+
   @Column('jsonb', { default: '[]' })
   experiences: Array<{
     title: string;

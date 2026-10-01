@@ -10,14 +10,16 @@ import {
   ScrollView,
   Image,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { useGetDoctorBookingsQuery, useGetMyDoctorProfileQuery, useUpdateQualificationsMutation, useUpdateSpecializationsMutation } from '@/store/doctorPortalApi';
+import { useGetDoctorBookingsQuery, useGetMyDoctorProfileQuery, useUpdateQualificationsMutation, useUpdateSpecializationsMutation, useUploadCredentialDocumentMutation, useUpdateCredentialDocumentsMutation } from '@/store/doctorPortalApi';
 import { useGetMyProfileQuery } from '@/store/usersApi';
 import { useGetReviewsQuery } from '@/store/reviewsApi';
+import { compressImageForUpload } from '@/utils/compress-image';
 
 type Tab = 'about' | 'experience' | 'credentials';
 
@@ -25,7 +27,6 @@ export default function ProfileDetailsScreen() {
   // Doctor data
   const router = useRouter();
   const isDoctor = useRequireDoctor();
-  if (!isDoctor) return null;
   const [activeTab, setActiveTab] = useState<Tab>('about');
 
   const { data: doctorProfile } = useGetMyDoctorProfileQuery(undefined, { skip: !isDoctor });
@@ -38,6 +39,8 @@ export default function ProfileDetailsScreen() {
 
   const [updateQualifications] = useUpdateQualificationsMutation();
   const [updateSpecializations] = useUpdateSpecializationsMutation();
+  const [uploadCredentialDocument] = useUploadCredentialDocumentMutation();
+  const [updateCredentialDocuments] = useUpdateCredentialDocumentsMutation();
 
   const doctorPhone = userProfile?.phone || 'Not provided';
 
@@ -46,7 +49,16 @@ export default function ProfileDetailsScreen() {
   const [startYear, setStartYear] = useState('2024');
   const [endMonth, setEndMonth] = useState('August');
   const [endYear, setEndYear] = useState('2026');
-  const [uploadedFiles, setUploadedFiles] = useState<{ uri: string; name: string }[]>([]);
+  const [pendingFiles, setPendingFiles] = useState<{ uri: string; name: string }[]>([]);
+  const [isSavingDocs, setIsSavingDocs] = useState(false);
+
+  const savedDocuments = doctorProfile?.credentialDocuments ?? [];
+  const displayDocumentUri =
+    pendingFiles.length > 0
+      ? pendingFiles[pendingFiles.length - 1].uri
+      : savedDocuments.length > 0
+        ? savedDocuments[savedDocuments.length - 1]
+        : undefined;
 
   const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   const YEARS = ['2020', '2021', '2022', '2023', '2024', '2025', '2026', '2027', '2028'];
@@ -64,6 +76,8 @@ export default function ProfileDetailsScreen() {
             try {
               await updateQualifications([]).unwrap();
               await updateSpecializations([]).unwrap();
+              await updateCredentialDocuments([]).unwrap();
+              setPendingFiles([]);
               Alert.alert('Success', 'Credentials deleted successfully');
             } catch {
               Alert.alert('Error', 'Failed to delete credentials. Please try again.');
@@ -89,7 +103,40 @@ export default function ProfileDetailsScreen() {
     if (result.canceled || !result.assets[0]) return;
 
     const asset = result.assets[0];
-    setUploadedFiles((prev) => [...prev, { uri: asset.uri, name: asset.fileName || `document-${Date.now()}.jpg` }]);
+    setPendingFiles((prev) => [...prev, { uri: asset.uri, name: asset.fileName || `document-${Date.now()}.jpg` }]);
+  };
+
+  const handleSaveDocuments = async () => {
+    if (pendingFiles.length === 0 || isSavingDocs) return;
+    setIsSavingDocs(true);
+    try {
+      for (const file of [...pendingFiles]) {
+        const compressed = await compressImageForUpload(file.uri, {
+          fileName: `credential-${Date.now()}.jpg`,
+          mimeType: 'image/jpeg',
+        });
+        const formData = new FormData();
+        formData.append('file', {
+          uri: compressed.uri,
+          name: compressed.name,
+          type: compressed.type,
+        } as any);
+        await uploadCredentialDocument(formData).unwrap();
+        setPendingFiles((prev) => prev.filter((f) => f !== file));
+      }
+      Alert.alert('Success', 'Credential photo saved successfully');
+    } catch (err: any) {
+      Alert.alert(
+        'Save failed',
+        err?.status === 413
+          ? 'The photo is too large. Please try a smaller image.'
+          : err?.data?.message ||
+            err?.message ||
+            'Failed to save photo. Please try again.',
+      );
+    } finally {
+      setIsSavingDocs(false);
+    }
   };
 
   const showMonthPicker = (onSelect: (month: string) => void) => {
@@ -108,6 +155,8 @@ export default function ProfileDetailsScreen() {
   const completedConsultations = useMemo(() => {
     return doctorBookings.filter((b) => b.status === 'COMPLETED').length;
   }, [doctorBookings]);
+
+  if (!isDoctor) return null;
 
   const doctorName = doctorProfile?.name || 'Doctor';
 
@@ -227,10 +276,16 @@ export default function ProfileDetailsScreen() {
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Experiences</Text>
               <View style={styles.sectionActions}>
-                <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/profile-edit' as any)}>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => router.push({ pathname: '/profile-edit', params: { tab: 'experience' } } as any)}
+                >
                   <Ionicons name="add-circle-outline" size={22} color="#7C7672" />
                 </TouchableOpacity>
-                <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/profile-edit' as any)}>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => router.push({ pathname: '/profile-edit', params: { tab: 'experience' } } as any)}
+                >
                   <Ionicons name="pencil-outline" size={20} color="#7C7672" />
                 </TouchableOpacity>
               </View>
@@ -271,10 +326,20 @@ export default function ProfileDetailsScreen() {
             <View style={[styles.sectionHeader, { marginTop: 20 }]}>
               <Text style={styles.sectionTitle}>Qualifications</Text>
               <View style={styles.sectionActions}>
-                <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/profile-edit' as any)}>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() =>
+                    router.push({ pathname: '/profile-edit', params: { tab: 'credentials', section: 'qualifications' } } as any)
+                  }
+                >
                   <Ionicons name="add-circle-outline" size={22} color="#7C7672" />
                 </TouchableOpacity>
-                <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/profile-edit' as any)}>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() =>
+                    router.push({ pathname: '/profile-edit', params: { tab: 'credentials', section: 'qualifications' } } as any)
+                  }
+                >
                   <Ionicons name="pencil-outline" size={20} color="#7C7672" />
                 </TouchableOpacity>
               </View>
@@ -404,7 +469,10 @@ export default function ProfileDetailsScreen() {
                 <TouchableOpacity activeOpacity={0.7} onPress={handleDeleteCredentials}>
                   <Ionicons name="trash-outline" size={20} color="#E53935" />
                 </TouchableOpacity>
-                <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/profile-edit' as any)}>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => router.push({ pathname: '/profile-edit', params: { tab: 'credentials' } } as any)}
+                >
                   <Ionicons name="pencil-outline" size={20} color="#7C7672" />
                 </TouchableOpacity>
               </View>
@@ -464,8 +532,8 @@ export default function ProfileDetailsScreen() {
 
             <Text style={[styles.fieldLabel, { marginTop: 16, marginBottom: 8 }]}>Academic Credentials*</Text>
             <TouchableOpacity style={styles.uploadArea} activeOpacity={0.7} onPress={handleUploadDocument}>
-              {uploadedFiles.length > 0 ? (
-                <Image source={{ uri: uploadedFiles[uploadedFiles.length - 1].uri }} style={{ width: '100%', height: '100%', borderRadius: 14 }} resizeMode="cover" />
+              {displayDocumentUri ? (
+                <Image source={{ uri: displayDocumentUri }} style={{ width: '100%', height: '100%', borderRadius: 14 }} resizeMode="cover" />
               ) : (
                 <>
                   <Ionicons name="camera-outline" size={36} color="#D1CCC7" />
@@ -478,6 +546,24 @@ export default function ProfileDetailsScreen() {
               <Ionicons name="image-outline" size={18} color="#7C7672" />
               <Text style={styles.addMoreBtnText}>Add More</Text>
             </TouchableOpacity>
+
+            {pendingFiles.length > 0 && (
+              <TouchableOpacity
+                style={[styles.saveBtn, isSavingDocs && { opacity: 0.6 }]}
+                activeOpacity={0.8}
+                onPress={handleSaveDocuments}
+                disabled={isSavingDocs}
+              >
+                {isSavingDocs ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <>
+                    <Ionicons name="checkmark-circle-outline" size={18} color="#FFFFFF" />
+                    <Text style={styles.saveBtnText}>Save Photo</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            )}
           </View>
         )}
       </ScrollView>
@@ -590,4 +676,6 @@ const styles = StyleSheet.create({
   uploadText: { fontSize: 12, fontWeight: '500', color: '#D1CCC7', marginTop: 6 },
   addMoreBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start' },
   addMoreBtnText: { fontSize: 13, fontWeight: '600', color: '#7C7672' },
+  saveBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#BD632F', borderRadius: 12, height: 48, marginTop: 16 },
+  saveBtnText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
 });
