@@ -145,6 +145,7 @@ export default function AppTabs() {
   return (
     <Tabs
       initialRouteName={isDoctor ? 'doctor-home' : 'index'}
+      backBehavior="initialRoute"
       screenOptions={{
         headerShown: false,
       }}

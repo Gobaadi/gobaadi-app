@@ -71,8 +71,12 @@ export default function DoctorHomeScreen() {
         pathname: '/chat',
         params: {
           conversationId: String(conversationId),
-          patientName: booking.patientName || booking.animalName || 'Patient',
+          patientName: booking.patientName || `Patient #${booking.patientId}`,
+          theirAvatar: booking.patientAvatar,
           appointmentId: String(booking.id),
+          animalId: booking.animalId != null ? String(booking.animalId) : undefined,
+          animalName: booking.animalName,
+          appointmentTime: booking.startAt,
         },
       });
     } catch {

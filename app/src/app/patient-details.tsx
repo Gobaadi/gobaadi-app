@@ -293,7 +293,12 @@ export default function PatientDetailsScreen() {
           conversationId: String(conversationId),
           patientName: booking?.patientName || animal?.name || 'Patient',
           animalImage: booking?.animalImage || animal?.image || '',
-          ...(booking ? { appointmentId: String(booking.id) } : {}),
+          theirAvatar: booking?.patientAvatar,
+          animalId: String(booking?.animalId ?? animalId),
+          animalName: booking?.animalName || animal?.name,
+          ...(booking
+            ? { appointmentId: String(booking.id), appointmentTime: booking.startAt }
+            : {}),
         },
       });
     } catch {

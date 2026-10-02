@@ -41,9 +41,27 @@ export class PrescriptionsService {
       throw new NotFoundException('Appointment not found');
     }
 
+    // Older bookings were saved without animalId — resolve it in priority
+    // order: request value → appointment animal → the owner's only animal.
+    let animalId = dto.animalId ?? appointment.animalId ?? null;
+    if (!animalId) {
+      const ownerAnimals = await this.animalRepository.find({
+        where: { userId: appointment.patientId },
+      });
+      if (ownerAnimals.length === 1) {
+        animalId = ownerAnimals[0].id;
+      } else {
+        throw new BadRequestException(
+          ownerAnimals.length === 0
+            ? 'No animal found for this appointment owner'
+            : 'Owner has multiple animals — animalId is required',
+        );
+      }
+    }
+
     // Verify animal exists
     const animal = await this.animalRepository.findOneBy({
-      id: dto.animalId,
+      id: animalId,
     });
     if (!animal) {
       throw new NotFoundException('Animal not found');
@@ -53,7 +71,7 @@ export class PrescriptionsService {
       this.prescriptionRepository.create({
         appointmentId: dto.appointmentId,
         doctorId: doctorUserId,
-        animalId: dto.animalId,
+        animalId: animal.id,
         ownerId: animal.userId,
         medicines: dto.medicines,
       }),

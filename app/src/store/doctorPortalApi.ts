@@ -47,7 +47,7 @@ export interface DoctorAppointment {
   animalId?: number;
   patientName?: string;
   patientPhone?: string;
-  patientImage?: string;
+  patientAvatar?: string;
   animalName?: string;
   animalSpecies?: string;
   animalBreed?: string;

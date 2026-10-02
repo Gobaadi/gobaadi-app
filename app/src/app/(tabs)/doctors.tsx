@@ -19,9 +19,9 @@ import { useGetClinicsQuery } from '@/store/clinicsApi';
 import { useGetDoctorBookingsQuery } from '@/store/doctorPortalApi';
 import { useGetDoctorsQuery } from '@/store/doctorsApi';
 import { useGetConversationsQuery, useCreateConversationMutation } from '@/store/chatApi';
+import { useDebounce } from '@/hooks/use-debounce';
 import { useGetForAppointmentQuery } from '@/store/consultationsApi';
 import { useCallSignalingContext } from '@/components/IncomingCallProvider';
-import { useDebounce } from '@/hooks/use-debounce';
 import { useLanguage } from '@/hooks/use-language';
 import { useLocation } from '@/hooks/use-location';
 import LocationBottomSheet from '@/components/LocationBottomSheet';
@@ -120,6 +120,7 @@ export default function DoctorsScreen() {
         patientName: appointment.patientName || 'Patient',
         peerName: appointment.doctorName || treatmentDoctor?.name || 'Doctor',
         animalImage: appointment.animalImage || '',
+        theirAvatar: appointment.doctorAvatar || '',
       },
     });
   }, [activeTreatment, conversations, treatmentDoctor, createConversation, router]);

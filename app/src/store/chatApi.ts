@@ -33,6 +33,7 @@ export interface Conversation {
   patientName?: string;
   patientPhone?: string;
   patientPhoto?: string;
+  patientEmail?: string;
   animalName?: string;
   animalImage?: string;
 }
@@ -41,6 +42,7 @@ export interface ChatAppointment {
   id: number;
   doctorId: number;
   patientId: number;
+  animalId?: number;
   patientName?: string;
   animalName?: string;
   startAt: string;
@@ -122,6 +124,13 @@ export const chatApi = createApi({
       }),
       invalidatesTags: ['Conversation'],
     }),
+    markMessageRead: builder.mutation<ChatMessage, number>({
+      // REST fallback for marking read when the socket is not connected.
+      query: (messageId) => ({
+        url: `/chat/messages/${messageId}/read`,
+        method: 'PATCH',
+      }),
+    }),
   }),
 });
 
@@ -133,4 +142,5 @@ export const {
   useSendAttachmentMessageMutation,
   useCreateConversationMutation,
   useMarkConversationReadMutation,
+  useMarkMessageReadMutation,
 } = chatApi;

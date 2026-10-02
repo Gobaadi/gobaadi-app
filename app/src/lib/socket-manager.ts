@@ -127,6 +127,11 @@ class SocketManager {
 
   private localHandlers = new Map<string, Set<SocketEventHandler>>();
 
+  /** Whether the socket currently has a live server connection. */
+  get isConnected(): boolean {
+    return this.socket?.connected ?? false;
+  }
+
   private emitLocal(event: string, ...args: any[]) {
     this.localHandlers.get(event)?.forEach((handler) => handler(...args));
   }

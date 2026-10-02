@@ -13,6 +13,7 @@ import { UserRole } from '../users/user.entity';
 export interface EnrichedConversation extends Conversation {
   patientName?: string;
   patientPhone?: string;
+  patientEmail?: string;
   patientPhoto?: string;
   animalName?: string;
   animalImage?: string;
@@ -122,37 +123,31 @@ export class ConversationService {
       return [];
     }
 
-    // Per-viewer unread: messages sent by the OTHER party that are not yet
-    // READ. The stored conversation.unreadCount column is shared by both
-    // participants and cannot represent two independent read states, so the
-    // value returned here is always recomputed from chat_messages.
-    const unreadByConversation = new Map<number, number>();
-    const unreadRows: Array<{ conversationId: number; count: string }> =
+    // Per-viewer unread: messages sent by the OTHER side that this viewer
+    // has not read yet. The stored conversations.unreadCount column is a
+    // single shared counter (bumped on every send, including the sender's
+    // own message), so it can never be correct for both participants —
+    // derive from message status instead.
+    const unreadRows: { conversationId: number; unread: string }[] =
       await this.chatMessageRepository
         .createQueryBuilder('m')
         .select('m.conversationId', 'conversationId')
-        .addSelect('COUNT(*)', 'count')
-        .where('m.conversationId IN (:...ids)', {
-          ids: conversations.map((c) => c.id),
+        .addSelect('COUNT(*)', 'unread')
+        .where('m.conversationId IN (:...conversationIds)', {
+          conversationIds: conversations.map((c) => c.id),
         })
-        .andWhere('m.senderRole != :role', { role })
-        .andWhere('m.status != :status', { status: MessageStatus.READ })
+        .andWhere('m.senderRole != :viewerRole', { viewerRole: role })
+        .andWhere('m.status != :readStatus', { readStatus: MessageStatus.READ })
         .groupBy('m.conversationId')
         .getRawMany();
-    unreadRows.forEach((row) =>
-      unreadByConversation.set(Number(row.conversationId), Number(row.count)),
+    const unreadByConversation = new Map(
+      unreadRows.map((row) => [Number(row.conversationId), Number(row.unread)]),
     );
 
     const patientIds = [...new Set(conversations.map((c) => c.patientId))];
     const patients = await this.userRepository.find({
       where: { id: In(patientIds) },
-      select: {
-        id: true,
-        name: true,
-        phone: true,
-        profilePhoto: true,
-        avatar: true,
-      },
+      select: { id: true, name: true, phone: true, email: true, profilePhoto: true, avatar: true },
     });
     const patientsById = new Map(patients.map((p) => [p.id, p]));
 
@@ -206,6 +201,7 @@ export class ConversationService {
         unreadCount: unreadByConversation.get(conversation.id) ?? 0,
         patientName: patient?.name,
         patientPhone: patient?.phone,
+        patientEmail: patient?.email,
         patientPhoto: patient?.profilePhoto || patient?.avatar || undefined,
         animalName: animal?.name,
         animalImage: animal?.image,

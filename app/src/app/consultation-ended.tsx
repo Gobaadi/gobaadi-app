@@ -1,9 +1,21 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { formatTime12h } from '@/utils/date';
+import {
+  useGetForAppointmentQuery,
+  consultationStartedAt,
+} from '@/store/consultationsApi';
+import { useGetConversationsQuery } from '@/store/chatApi';
+
+const CONSULTATION_DURATION_SECONDS = 30 * 60;
+
+function formatTimeRemaining(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
 
 export default function ConsultationEndedScreen() {
   const router = useRouter();
@@ -26,7 +38,53 @@ export default function ConsultationEndedScreen() {
 
   const displayName = peerName || patientName;
 
-  const startTimeStr = startedAt ? formatTime12h(startedAt) : '';
+  // Fallback when the caller (video-call screen) could not pass startedAt —
+  // re-derive it so Start time / Remaining time bullets still render.
+  const { data: consultation } = useGetForAppointmentQuery(appointmentId, {
+    skip: !appointmentId,
+  });
+  const resolvedStartedAt =
+    startedAt || (consultation ? consultationStartedAt(consultation) : '');
+
+  const { data: conversations } = useGetConversationsQuery();
+  const ownerEmail =
+    conversations?.find((c) => String(c.id) === String(conversationId))
+      ?.patientEmail || '';
+
+  const [remaining, setRemaining] = useState(() => {
+    if (!resolvedStartedAt) return CONSULTATION_DURATION_SECONDS;
+    const elapsed = Math.floor(
+      (Date.now() - new Date(resolvedStartedAt).getTime()) / 1000,
+    );
+    return Math.max(0, CONSULTATION_DURATION_SECONDS - elapsed);
+  });
+
+  // Tick only while the consultation is still live; completed sessions freeze
+  // the value shown at entry.
+  useEffect(() => {
+    if (!resolvedStartedAt || consultation?.status === 'COMPLETED') return;
+    const interval = setInterval(() => {
+      const elapsed = Math.floor(
+        (Date.now() - new Date(resolvedStartedAt).getTime()) / 1000,
+      );
+      setRemaining(Math.max(0, CONSULTATION_DURATION_SECONDS - elapsed));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [resolvedStartedAt, consultation?.status]);
+
+  const startTimeStr = resolvedStartedAt
+    ? new Date(resolvedStartedAt).toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    : '';
+
+  const chatParams = {
+    conversationId,
+    patientName,
+    appointmentId,
+    animalId,
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -56,6 +114,9 @@ export default function ConsultationEndedScreen() {
             <Text style={styles.summaryBullet}>•  Start time: {startTimeStr}</Text>
           ) : null}
           <Text style={styles.summaryBullet}>•  Max Duration: 30 min</Text>
+          <Text style={styles.summaryRemaining}>
+            •  Remaining time: {formatTimeRemaining(remaining)}
+          </Text>
         </View>
 
         <View style={styles.nextStepCard}>
@@ -74,14 +135,14 @@ export default function ConsultationEndedScreen() {
           style={styles.primaryBtn}
           activeOpacity={0.8}
           onPress={() => {
-            router.replace({
-              pathname: '/chat',
+            router.push({
+              pathname: '/send-prescription',
               params: {
-                conversationId,
-                patientName,
-                peerName,
                 appointmentId,
+                conversationId,
                 animalId,
+                patientName,
+                userEmail: ownerEmail,
               },
             });
           }}
@@ -92,7 +153,7 @@ export default function ConsultationEndedScreen() {
         <TouchableOpacity
           style={styles.secondaryBtn}
           activeOpacity={0.8}
-          onPress={() => router.back()}
+          onPress={() => router.replace({ pathname: '/chat', params: chatParams })}
         >
           <Text style={styles.secondaryBtnText}>Back to Chat</Text>
         </TouchableOpacity>
@@ -185,6 +246,12 @@ const styles = StyleSheet.create({
     color: '#1A1817',
     lineHeight: 22,
   },
+  summaryRemaining: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#BD632F',
+    lineHeight: 22,
+  },
   nextStepCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 14,
@@ -246,15 +313,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   secondaryBtn: {
-    backgroundColor: 'transparent',
-    borderWidth: 1.5,
-    borderColor: '#E6E1DC',
+    backgroundColor: '#B7B2AC',
     borderRadius: 18,
     paddingVertical: 16,
     alignItems: 'center',
   },
   secondaryBtnText: {
-    color: '#1A1817',
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
   },

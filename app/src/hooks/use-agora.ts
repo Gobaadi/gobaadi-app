@@ -9,6 +9,7 @@ interface AgoraState {
   isMuted: boolean;
   isCameraOff: boolean;
   isFrontCamera: boolean;
+  isSpeakerOn: boolean;
   joinError: string | null;
 }
 
@@ -29,6 +30,8 @@ export function useAgora(
     isMuted: false,
     isCameraOff: startCameraOff,
     isFrontCamera: true,
+    // Loudspeaker on by default — earpiece is far too quiet for consultations.
+    isSpeakerOn: true,
     joinError: null,
   });
   const [joinAttempt, setJoinAttempt] = useState(0);
@@ -105,7 +108,17 @@ export function useAgora(
       // Audio call: never publish camera. Also resets the singleton engine
       // after a previous audio call so later video calls start with camera on.
       await agoraManager.muteVideo(startCameraOff);
+      // Video call: start local preview so own face renders in the PiP
+      // (Agora does not show self-view until startPreview is called).
+      // Audio call: stop preview left running by a previous video call.
+      if (startCameraOff) {
+        await agoraManager.stopPreview();
+      } else {
+        await agoraManager.startPreview();
+      }
       await agoraManager.join(token, channelName, uid);
+      // Speaker route is channel-scoped — re-apply after every (re)join.
+      agoraManager.setSpeaker(stateRef.current.isSpeakerOn);
     };
 
     setup().catch((err: unknown) => {
@@ -150,12 +163,22 @@ export function useAgora(
   const toggleCamera = useCallback(async () => {
     const newCameraOff = !stateRef.current.isCameraOff;
     await agoraManager.muteVideo(newCameraOff);
+    // Re-enable self-view after camera-off (preview may have been halted).
+    if (!newCameraOff) {
+      await agoraManager.startPreview();
+    }
     setState(prev => ({ ...prev, isCameraOff: newCameraOff }));
   }, []);
 
   const switchCamera = useCallback(async () => {
     await agoraManager.switchCamera();
     setState(prev => ({ ...prev, isFrontCamera: !prev.isFrontCamera }));
+  }, []);
+
+  const toggleSpeaker = useCallback(() => {
+    const newSpeakerOn = !stateRef.current.isSpeakerOn;
+    agoraManager.setSpeaker(newSpeakerOn);
+    setState(prev => ({ ...prev, isSpeakerOn: newSpeakerOn }));
   }, []);
 
   const retryJoin = useCallback(() => {
@@ -168,6 +191,7 @@ export function useAgora(
     toggleMute,
     toggleCamera,
     switchCamera,
+    toggleSpeaker,
     retryJoin,
   };
 }
