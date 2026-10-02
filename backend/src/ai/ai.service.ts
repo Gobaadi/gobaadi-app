@@ -2,6 +2,12 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { Injectable, Logger } from '@nestjs/common';
 import Groq from 'groq-sdk';
 
+// gemini-1.5-flash was retired by Google (404 on v1beta) — use the
+// rolling alias so the pipeline does not break on future model sunsets.
+const GEMINI_MODEL = 'gemini-flash-latest';
+// llama-3.3-70b-versatile was decommissioned by Groq (404 model_not_found).
+const GROQ_MODEL = 'openai/gpt-oss-120b';
+
 export interface ImageAnalysisResult {
   rawText: string;
   success: boolean;
@@ -62,39 +68,71 @@ export class AiService {
 
   /**
    * Try Gemini with primary key, fallback to secondary on failure.
+   * Transient errors (429/5xx overload) are retried per key with backoff —
+   * the flash endpoint frequently answers 503 under load and a single miss
+   * used to drop the whole pipeline to the keyword fallback.
    */
   private async callGeminiWithFallback(
     imageParts: { inlineData: { data: string; mimeType: string } }[],
     prompt: string,
   ): Promise<ImageAnalysisResult> {
-    // Try primary first
-    if (this.geminiPrimary) {
-      try {
-        return await this.callGemini(this.geminiPrimary, imageParts, prompt);
-      } catch (err) {
-        this.logger.warn('Primary Gemini failed, trying secondary', err);
+    const maxAttemptsPerKey = 3;
+    const keys: { label: string; client: GoogleGenerativeAI | null }[] = [
+      { label: 'Primary', client: this.geminiPrimary },
+      { label: 'Secondary', client: this.geminiSecondary },
+    ];
+
+    let lastError: unknown = null;
+    let configured = false;
+
+    for (const { label, client } of keys) {
+      if (!client) continue;
+      configured = true;
+
+      for (let attempt = 1; attempt <= maxAttemptsPerKey; attempt++) {
+        try {
+          return await this.callGemini(client, imageParts, prompt);
+        } catch (err) {
+          lastError = err;
+          const retryable = this.isRetryableGeminiError(err);
+          if (!retryable || attempt === maxAttemptsPerKey) break;
+          const delayMs = 1500 * attempt;
+          this.logger.warn(
+            `${label} Gemini attempt ${attempt}/${maxAttemptsPerKey} failed (retryable), retrying in ${delayMs}ms`,
+          );
+          await new Promise((resolve) => setTimeout(resolve, delayMs));
+        }
       }
+
+      this.logger.warn(`${label} Gemini failed, trying next key`, lastError);
     }
 
-    // Fallback to secondary
-    if (this.geminiSecondary) {
-      try {
-        return await this.callGemini(this.geminiSecondary, imageParts, prompt);
-      } catch (err) {
-        this.logger.error('Secondary Gemini also failed', err);
-        return {
-          rawText: '',
-          success: false,
-          error: err instanceof Error ? err.message : 'Both Gemini keys failed',
-        };
-      }
+    if (!configured) {
+      return {
+        rawText: '',
+        success: false,
+        error: 'No Gemini API key configured',
+      };
     }
 
+    this.logger.error('All Gemini keys failed', lastError);
     return {
       rawText: '',
       success: false,
-      error: 'No Gemini API key configured',
+      error:
+        lastError instanceof Error
+          ? lastError.message
+          : 'Both Gemini keys failed',
     };
+  }
+
+  private isRetryableGeminiError(err: unknown): boolean {
+    const status = (err as { status?: number })?.status;
+    if (typeof status === 'number') {
+      return [429, 500, 502, 503, 504].includes(status);
+    }
+    const message = err instanceof Error ? err.message : '';
+    return /\b(429|503|502|504|overloaded|Unavailable|deadline)/i.test(message);
   }
 
   /**
@@ -105,7 +143,7 @@ export class AiService {
     imageParts: { inlineData: { data: string; mimeType: string } }[],
     prompt: string,
   ): Promise<ImageAnalysisResult> {
-    const model = client.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = client.getGenerativeModel({ model: GEMINI_MODEL });
     const result = await model.generateContent([prompt, ...imageParts]);
     const text = result.response.text();
     return { rawText: text, success: true };
@@ -205,7 +243,7 @@ export class AiService {
 
     try {
       const completion = await this.groq.chat.completions.create({
-        model: 'llama-3.3-70b-versatile',
+        model: GROQ_MODEL,
         response_format: { type: 'json_object' },
         messages: [
           {
@@ -334,7 +372,7 @@ export class AiService {
 
     try {
       const completion = await this.groq.chat.completions.create({
-        model: 'llama-3.3-70b-versatile',
+        model: GROQ_MODEL,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: prompt },
@@ -362,7 +400,7 @@ export class AiService {
 
     try {
       const completion = await this.groq.chat.completions.create({
-        model: 'llama-3.3-70b-versatile',
+        model: GROQ_MODEL,
         response_format: { type: 'json_object' },
         messages: [
           { role: 'system', content: systemPrompt },
