@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -9,6 +10,7 @@ import { Animal } from './animal.entity';
 import { PaginatedResult } from '../common/paginated-result.interface';
 import { MeilisearchService } from '../meilisearch/meilisearch.service';
 import { S3Service } from '../s3/s3.service';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 export { Animal } from './animal.entity';
 
 const ANIMALS_INDEX = 'animals';
@@ -20,6 +22,7 @@ export class AnimalsService {
     private readonly animalRepository: Repository<Animal>,
     private readonly meilisearchService: MeilisearchService,
     private readonly s3Service: S3Service,
+    private readonly cloudinaryService: CloudinaryService,
   ) {}
 
   async getAnimals(
@@ -82,11 +85,23 @@ export class AnimalsService {
   }
 
   async uploadPhoto(file: Express.Multer.File): Promise<string> {
-    const result = await this.s3Service.uploadFile(file.buffer, {
-      folder: 'animals',
-      contentType: file.mimetype,
-    });
-    return result.url;
+    if (this.s3Service.isConfigured) {
+      const result = await this.s3Service.uploadFile(file.buffer, {
+        folder: 'animals',
+        contentType: file.mimetype,
+      });
+      return result.url;
+    }
+    if (this.cloudinaryService.isConfigured) {
+      const result = await this.cloudinaryService.uploadFile(file.buffer, {
+        folder: 'animals',
+        resourceType: 'image',
+      });
+      return result.url;
+    }
+    throw new InternalServerErrorException(
+      'Image upload is not configured on this server',
+    );
   }
 
   async addAnimal(

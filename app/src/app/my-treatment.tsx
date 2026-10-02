@@ -6,7 +6,6 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Image,
   Alert,
   ActivityIndicator,
 } from 'react-native';
@@ -28,7 +27,7 @@ import { useCreateSessionMutation } from '@/store/videoCallApi';
 import { useLazyGetForAppointmentQuery } from '@/store/consultationsApi';
 import { useCallSignalingContext } from '@/components/IncomingCallProvider';
 import { apiErrorMessage } from '@/utils/api-error';
-import { doctorImageSource } from '@/utils/doctor-image';
+import { DoctorAvatar } from '@/components/doctor-avatar';
 
 interface Treatment {
   id: string;
@@ -307,8 +306,11 @@ export default function MyTreatmentScreen() {
               >
                 {/* Top Card Row */}
                 <View style={styles.cardHeader}>
-                  <Image
-                    source={doctorImageSource(item.avatar)}
+                  <DoctorAvatar
+                    name={item.name}
+                    avatar={item.avatar}
+                    size={68}
+                    radius={16}
                     style={styles.cardImage}
                   />
                   <View style={styles.cardInfo}>

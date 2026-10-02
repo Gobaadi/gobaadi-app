@@ -62,6 +62,7 @@ export class UsersService {
     userId: number,
     data: {
       name?: string;
+      phone?: string | null;
       email?: string;
       profilePhoto?: string;
       dateOfBirth?: string;
@@ -85,6 +86,18 @@ export class UsersService {
       });
       if (existing && existing.id !== userId) {
         throw new ConflictException('Email already in use');
+      }
+    }
+    if (data.phone !== undefined) {
+      // Normalise blank values to NULL so empty strings never collide in the
+      // partial unique index on "phone".
+      const phone = data.phone?.trim() || null;
+      data.phone = phone;
+      if (phone && phone !== user.phone) {
+        const existing = await this.userRepository.findOneBy({ phone });
+        if (existing && existing.id !== userId) {
+          throw new ConflictException('Phone already in use');
+        }
       }
     }
     Object.assign(user, data);

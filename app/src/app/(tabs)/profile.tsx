@@ -18,7 +18,7 @@ import { useGetMyDoctorProfileQuery, useGetDoctorBookingsQuery } from '@/store/d
 import { useGetAnimalsQuery } from '@/store/animalsApi';
 import { useGetBalanceQuery } from '@/store/walletApi';
 import type { RootState, AppDispatch } from '@/store/store';
-import { doctorImageSource } from '@/utils/doctor-image';
+import { DoctorAvatar } from '@/components/doctor-avatar';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -85,10 +85,12 @@ export default function ProfileScreen() {
             <View style={styles.card}>
               <View style={styles.doctorInfoRow}>
                 <View style={styles.avatarWrapper}>
-                  <Image
-                    source={doctorImageSource(doctorProfile?.avatar, require('@/assets/images/doctor_avatar.png'))}
+                  <DoctorAvatar
+                    name={doctorProfile?.name || user?.name}
+                    avatar={doctorProfile?.avatar}
+                    size={68}
+                    radius={34}
                     style={styles.doctorAvatar}
-                    contentFit="cover"
                   />
                   <View style={styles.onlineBadge} />
                 </View>

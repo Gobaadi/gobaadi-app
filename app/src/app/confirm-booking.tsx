@@ -4,14 +4,13 @@ import {
   View,
   Text,
   TouchableOpacity,
-  Image,
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useGetDoctorByIdQuery } from '@/store/doctorsApi';
-import { doctorImageSource } from '@/utils/doctor-image';
+import { DoctorAvatar } from '@/components/doctor-avatar';
 
 function pad(n: number): string {
   return String(n).padStart(2, '0');
@@ -37,7 +36,7 @@ export default function ConfirmBookingScreen() {
         location: '',
         rating: 0,
         reviews: 0,
-        image: null,
+        avatar: null,
       };
     }
     return {
@@ -47,7 +46,7 @@ export default function ConfirmBookingScreen() {
       location: 'Uttar Badda, Dhaka',
       rating: doctorData.rating || 4.8,
       reviews: 124,
-      image: doctorImageSource(doctorData.avatar),
+      avatar: doctorData.avatar ?? '',
     };
   }, [doctorData, doctorId]);
 
@@ -102,8 +101,11 @@ export default function ConfirmBookingScreen() {
                 <ActivityIndicator size="small" color="#BD632F" />
               </View>
             ) : (
-              <Image
-                source={doctor.image ?? doctorImageSource(undefined)}
+              <DoctorAvatar
+                name={doctor.name}
+                avatar={doctor.avatar}
+                size={72}
+                radius={16}
                 style={styles.doctorPortrait}
               />
             )}

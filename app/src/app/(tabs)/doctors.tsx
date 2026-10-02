@@ -25,7 +25,7 @@ import { useDebounce } from '@/hooks/use-debounce';
 import { useLanguage } from '@/hooks/use-language';
 import { useLocation } from '@/hooks/use-location';
 import LocationBottomSheet from '@/components/LocationBottomSheet';
-import { doctorImageSource } from '@/utils/doctor-image';
+import { DoctorAvatar } from '@/components/doctor-avatar';
 
 interface Category {
   id: string;
@@ -46,7 +46,7 @@ interface DoctorView {
   location: string;
   rating: number;
   reviews: number;
-  image: any;
+  avatar: string;
 }
 
 export default function DoctorsScreen() {
@@ -209,7 +209,7 @@ export default function DoctorsScreen() {
         location: 'Uttar Badda, Dhaka',
         rating: d.rating || 4.8,
         reviews: 124,
-        image: doctorImageSource(d.avatar),
+        avatar: d.avatar ?? '',
       }));
   }, [doctors, debouncedSearch, activeCategory]);
 
@@ -328,16 +328,13 @@ export default function DoctorsScreen() {
                   <View style={styles.cardDividerDashed} />
 
                   <View style={styles.doctorQuickInfo}>
-                    {treatmentDoctor?.avatar ? (
-                      <Image
-                        source={doctorImageSource(treatmentDoctor.avatar)}
-                        style={styles.doctorThumb}
-                      />
-                    ) : (
-                      <View style={[styles.doctorThumb, styles.doctorThumbPlaceholder]}>
-                        <Text style={{ fontSize: 20 }}>👨‍⚕️</Text>
-                      </View>
-                    )}
+                    <DoctorAvatar
+                      name={treatmentDoctor?.name}
+                      avatar={treatmentDoctor?.avatar}
+                      size={48}
+                      radius={18}
+                      style={styles.doctorThumb}
+                    />
                     <View style={styles.doctorMeta}>
                       <Text style={styles.quickDocName}>
                         {treatmentDoctor?.name ?? 'Doctor'}
@@ -466,7 +463,13 @@ export default function DoctorsScreen() {
         ) : (
           nearbyDoctors.map((doc) => (
             <View key={doc.id} style={styles.doctorCard}>
-              <Image source={doc.image} style={styles.doctorPortrait} />
+              <DoctorAvatar
+                name={doc.name}
+                avatar={doc.avatar}
+                size={100}
+                radius={18}
+                style={styles.doctorPortrait}
+              />
               <View style={styles.doctorDetails}>
                 <Text style={styles.doctorName}>{doc.name}</Text>
 
@@ -715,11 +718,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E6E1DC',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  doctorThumbPlaceholder: {
-    backgroundColor: '#FFF2EB',
     justifyContent: 'center',
     alignItems: 'center',
   },
