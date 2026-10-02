@@ -14,6 +14,8 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import { useCreateTicketMutation } from '@/store/supportApi';
+import { compressImageForUpload, getLocalFileSize, MAX_UPLOAD_BYTES } from '@/utils/compress-image';
+import { apiErrorMessage } from '@/utils/api-error';
 
 const ISSUE_TYPES = [
   'App Not Working',
@@ -22,6 +24,15 @@ const ISSUE_TYPES = [
   'Doctor Consultation Problem',
   'Other Technical Bug',
 ];
+
+// Images above this are refused outright; anything smaller is compressed to
+// fit under MAX_UPLOAD_BYTES at submit time.
+const MAX_PICK_BYTES = 15 * 1024 * 1024;
+const IMAGE_PATTERN = /\.(png|jpe?g|webp|gif)$/i;
+
+function isImageAttachment(name: string, mimeType?: string): boolean {
+  return (mimeType ?? '').startsWith('image/') || IMAGE_PATTERN.test(name);
+}
 
 export default function ReportIssuesScreen() {
   const router = useRouter();
@@ -45,6 +56,20 @@ export default function ReportIssuesScreen() {
       });
       if (result.canceled || !result.assets?.length) return;
       const file = result.assets[0];
+      const isImage = isImageAttachment(file.name, file.mimeType);
+      const size = typeof file.size === 'number' ? file.size : null;
+      if (isImage) {
+        if (size !== null && size > MAX_PICK_BYTES) {
+          Alert.alert('File Too Large', 'Images must be under 15 MB.');
+          return;
+        }
+      } else if (size !== null && size > MAX_UPLOAD_BYTES) {
+        Alert.alert(
+          'File Too Large',
+          'Files must be under 900 KB. Images are compressed automatically.',
+        );
+        return;
+      }
       setAttachment({
         uri: file.uri,
         name: file.name,
@@ -66,22 +91,46 @@ export default function ReportIssuesScreen() {
       return;
     }
     try {
+      let fileField: { uri: string; name: string; type: string } | null = null;
+      if (attachment) {
+        fileField = isImageAttachment(attachment.name, attachment.mimeType)
+          ? await compressImageForUpload(attachment.uri, {
+              fileName: attachment.name,
+              mimeType: attachment.mimeType || 'image/jpeg',
+            })
+          : {
+              uri: attachment.uri,
+              name: attachment.name,
+              type: attachment.mimeType || 'application/octet-stream',
+            };
+        const finalSize = getLocalFileSize(fileField.uri);
+        if (finalSize !== null && finalSize > MAX_UPLOAD_BYTES) {
+          Alert.alert(
+            'Attachment Too Large',
+            'This attachment is still too large after compression. Please choose a smaller file.',
+          );
+          return;
+        }
+      }
+
       const form = new FormData();
       form.append('subject', selectedIssue);
       form.append('message', description);
-      if (attachment) {
-        form.append('file', {
-          uri: attachment.uri,
-          name: attachment.name,
-          type: attachment.mimeType || 'application/octet-stream',
-        } as any);
+      if (fileField) {
+        form.append('file', { ...fileField } as any);
       }
       await createTicket(form).unwrap();
       Alert.alert('Report Submitted', 'Thank you for reporting. Our team will inspect it promptly.', [
         { text: 'OK', onPress: () => router.back() },
       ]);
-    } catch {
-      Alert.alert('Error', 'Failed to submit report. Please try again.');
+    } catch (err) {
+      const status = (err as { status?: number | string })?.status;
+      Alert.alert(
+        'Error',
+        status === 413
+          ? 'Attachment is too large — files must be under 1 MB. Please choose a smaller file.'
+          : apiErrorMessage(err, 'Failed to submit report. Please try again.'),
+      );
     }
   }
 

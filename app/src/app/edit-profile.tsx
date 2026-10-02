@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -21,6 +21,7 @@ import {
 } from '@/store/usersApi';
 import { useLocation } from '@/hooks/use-location';
 import { compressImageForUpload } from '@/utils/compress-image';
+import { apiErrorMessage } from '@/utils/api-error';
 
 export default function EditProfileScreen() {
   const router = useRouter();
@@ -34,11 +35,16 @@ export default function EditProfileScreen() {
   const [locationInput, setLocationInput] = useState<string | null>(null);
   const [pickedPhotoUri, setPickedPhotoUri] = useState<string | null>(null);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [profileSynced, setProfileSynced] = useState(false);
 
-  useEffect(() => {
-    if (profile?.name) setName(profile.name);
-    if (profile?.phone) setPhone(profile.phone);
-  }, [profile]);
+  // Fill the form once, when the profile first arrives. Syncing in an effect
+  // would also wipe in-progress edits whenever a background refetch lands
+  // (e.g. the Profile tag invalidating after a photo upload).
+  if (!profileSynced && profile) {
+    setProfileSynced(true);
+    if (profile.name) setName(profile.name);
+    if (profile.phone) setPhone(profile.phone);
+  }
 
   const avatarSource = pickedPhotoUri
     ? { uri: pickedPhotoUri }
@@ -119,13 +125,15 @@ export default function EditProfileScreen() {
       return;
     }
     try {
-      await updateProfile({ name: name.trim(), phone }).unwrap();
-      await setLocation((locationInput ?? '').trim() || location);
-      Alert.alert('Success', 'Profile updated successfully.');
-      router.back();
+      await updateProfile({ name: name.trim(), phone: phone.trim() }).unwrap();
     } catch (err) {
-      Alert.alert('Error', 'Failed to update profile. Please try again.');
+      Alert.alert('Error', apiErrorMessage(err, 'Failed to update profile. Please try again.'));
+      return;
     }
+    await setLocation((locationInput ?? '').trim() || location);
+    Alert.alert('Success', 'Profile updated successfully.', [
+      { text: 'OK', onPress: () => router.back() },
+    ]);
   };
 
   return (

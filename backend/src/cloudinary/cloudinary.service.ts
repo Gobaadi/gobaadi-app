@@ -14,7 +14,7 @@ export interface UploadFileResult {
 @Injectable()
 export class CloudinaryService {
   private readonly logger = new Logger(CloudinaryService.name);
-  private isConfigured = false;
+  readonly isConfigured: boolean = false;
 
   constructor() {
     const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
@@ -61,36 +61,31 @@ export class CloudinaryService {
     buffer: Buffer,
     opts: UploadFileOptions = {},
   ): Promise<UploadFileResult> {
-    if (this.isConfigured) {
-      try {
-        return await new Promise<UploadFileResult>((resolve, reject) => {
-          const stream = cloudinary.uploader.upload_stream(
-            {
-              folder: opts.folder || 'gobadi',
-              resource_type: opts.resourceType || 'auto',
-            },
-            (error, result) => {
-              if (error || !result) {
-                reject(
-                  error || new Error('Cloudinary upload returned no result'),
-                );
-                return;
-              }
-              resolve({ url: result.secure_url, publicId: result.public_id });
-            },
-          );
-          stream.end(buffer);
-        });
-      } catch (err) {
-        this.logger.error(
-          'Failed to upload file to Cloudinary, falling back to mock URL',
-          err,
-        );
-      }
+    if (!this.isConfigured) {
+      throw new Error('Cloudinary is not configured');
     }
-    return {
-      url: 'https://res.cloudinary.com/demo/raw/upload/v1570979139/sample.pdf',
-      publicId: 'mock-public-id',
-    };
+    try {
+      return await new Promise<UploadFileResult>((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          {
+            folder: opts.folder || 'gobadi',
+            resource_type: opts.resourceType || 'auto',
+          },
+          (error, result) => {
+            if (error || !result) {
+              reject(
+                error || new Error('Cloudinary upload returned no result'),
+              );
+              return;
+            }
+            resolve({ url: result.secure_url, publicId: result.public_id });
+          },
+        );
+        stream.end(buffer);
+      });
+    } catch (err) {
+      this.logger.error('Failed to upload file to Cloudinary', err);
+      throw err;
+    }
   }
 }

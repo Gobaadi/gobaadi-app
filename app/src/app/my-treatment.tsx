@@ -6,7 +6,6 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Image,
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -21,6 +20,7 @@ import {
   type AppointmentStatus,
 } from '@/store/doctorPortalApi';
 import { apiErrorMessage } from '@/utils/api-error';
+import { DoctorAvatar } from '@/components/doctor-avatar';
 
 interface Treatment {
   id: string;
@@ -244,8 +244,11 @@ export default function MyTreatmentScreen() {
               >
                 {/* Top Card Row */}
                 <View style={styles.cardHeader}>
-                  <Image
-                    source={item.avatar ? { uri: item.avatar } : require('@/assets/images/doctor.png')}
+                  <DoctorAvatar
+                    name={item.name}
+                    avatar={item.avatar}
+                    size={68}
+                    radius={16}
                     style={styles.cardImage}
                   />
                   <View style={styles.cardInfo}>

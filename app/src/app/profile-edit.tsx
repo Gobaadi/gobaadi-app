@@ -10,11 +10,11 @@ import {
   Switch,
   ActivityIndicator,
   Alert,
-  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import {
   useGetMyDoctorProfileQuery,
   useGetDoctorBookingsQuery,
@@ -22,7 +22,10 @@ import {
   useUpdateExperiencesMutation,
   useUpdateQualificationsMutation,
   useUpdateSpecializationsMutation,
+  useUploadMyPhotoMutation,
 } from '@/store/doctorPortalApi';
+import { compressImageForUpload } from '@/utils/compress-image';
+import { DoctorAvatar } from '@/components/doctor-avatar';
 
 type Tab = 'about' | 'experience' | 'credentials';
 
@@ -78,6 +81,11 @@ export default function ProfileEditScreen() {
   // License
   const [licenseNumber, setLicenseNumber] = useState('');
 
+  // Profile photo
+  const [uploadMyPhoto] = useUploadMyPhotoMutation();
+  const [pickedPhotoUri, setPickedPhotoUri] = useState<string | null>(null);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+
   // Pre-fill fields from API
   useEffect(() => {
     if (doctorProfile) {
@@ -110,6 +118,73 @@ export default function ProfileEditScreen() {
   }, [doctorBookings]);
 
   const isSaving = savingProfile || savingExperiences || savingQualifications || savingSpecializations;
+
+  const openPhotoPicker = () => {
+    Alert.alert('Change Profile Photo', 'Choose an option', [
+      { text: 'Take Photo', onPress: () => pickPhoto('camera') },
+      { text: 'Choose from Library', onPress: () => pickPhoto('library') },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
+
+  const pickPhoto = async (source: 'camera' | 'library') => {
+    try {
+      const permission =
+        source === 'camera'
+          ? await ImagePicker.requestCameraPermissionsAsync()
+          : await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert(
+          'Permission required',
+          source === 'camera'
+            ? 'Camera access is required to take a profile photo.'
+            : 'Photo library access is required to choose a profile photo.',
+        );
+        return;
+      }
+      const result =
+        source === 'camera'
+          ? await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.8 })
+          : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
+      if (result.canceled || !result.assets?.length) return;
+      await uploadPhoto(result.assets[0].uri);
+    } catch {
+      Alert.alert(
+        'Photo selection failed',
+        'Could not open the camera or photo gallery. Please try again.',
+      );
+    }
+  };
+
+  const uploadPhoto = async (uri: string) => {
+    try {
+      setIsUploadingPhoto(true);
+      setPickedPhotoUri(uri);
+      const file = await compressImageForUpload(uri, {
+        fileName: `doctor-avatar-${Date.now()}.jpg`,
+        mimeType: 'image/jpeg',
+      });
+      const formData = new FormData();
+      formData.append('file', {
+        uri: file.uri,
+        name: file.name,
+        type: file.type,
+      } as any);
+      await uploadMyPhoto(formData).unwrap();
+    } catch (err: any) {
+      setPickedPhotoUri(null);
+      Alert.alert(
+        'Upload failed',
+        err?.status === 413
+          ? 'The photo is too large. Please try a smaller image.'
+          : err?.data?.message ||
+            err?.message ||
+            'Failed to upload photo. Please try again.',
+      );
+    } finally {
+      setIsUploadingPhoto(false);
+    }
+  };
 
   const handleSaveAbout = async () => {
     await updateProfile({
@@ -269,16 +344,28 @@ export default function ProfileEditScreen() {
         {/* Doctor Card */}
         <View style={styles.doctorCard}>
           <View style={styles.doctorInfoRow}>
-            <View style={styles.avatarContainer}>
-              {doctorProfile?.avatar ? (
-                <Image source={{ uri: doctorProfile.avatar }} style={styles.avatarPlaceholder} />
-              ) : (
-                <View style={styles.avatarPlaceholder}>
-                  <Ionicons name="person" size={40} color="#BD632F" />
-                </View>
-              )}
+            <TouchableOpacity
+              style={styles.avatarContainer}
+              onPress={openPhotoPicker}
+              disabled={isUploadingPhoto}
+              activeOpacity={0.8}
+            >
+              <DoctorAvatar
+                name={doctorProfile?.name}
+                avatar={pickedPhotoUri ?? doctorProfile?.avatar}
+                size={64}
+                radius={32}
+                style={styles.avatarPlaceholder}
+              />
               <View style={styles.onlineDot} />
-            </View>
+              <View style={styles.cameraBadge}>
+                {isUploadingPhoto ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Ionicons name="camera" size={12} color="#FFFFFF" />
+                )}
+              </View>
+            </TouchableOpacity>
             <View style={styles.doctorDetails}>
               <Text style={styles.doctorName}>Dr {doctorProfile?.name || 'Doctor'}</Text>
               <Text style={styles.doctorSpecialty}>{doctorProfile?.specialty || 'No specialty'}</Text>
@@ -539,6 +626,19 @@ const styles = StyleSheet.create({
   doctorCard: { backgroundColor: '#FFFFFF', borderRadius: 20, borderWidth: 1, borderColor: '#E6E1DC', padding: 16, marginBottom: 16 },
   doctorInfoRow: { flexDirection: 'row', marginBottom: 14 },
   avatarContainer: { position: 'relative', marginRight: 14 },
+  cameraBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#BD632F',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
   avatarPlaceholder: { width: 64, height: 64, borderRadius: 32, backgroundColor: '#FFF2EB', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
   onlineDot: { position: 'absolute', bottom: 2, right: 2, width: 12, height: 12, borderRadius: 6, backgroundColor: '#4CAF50', borderWidth: 2, borderColor: '#FFFFFF' },
   doctorDetails: { flex: 1 },

@@ -14,6 +14,7 @@ import {
   useGetDoctorBookingsQuery,
   type DoctorAppointment,
 } from '@/store/doctorPortalApi';
+import { DoctorAvatar } from '@/components/doctor-avatar';
 
 type Tab = 'upcoming' | 'past';
 
@@ -80,7 +81,9 @@ interface AppointmentCardProps {
 function AppointmentCard({ appointment, onPress }: AppointmentCardProps) {
   const statusStyle = getStatusStyle(appointment.status);
   const displayName =
-    appointment.animalName || `Animal #${appointment.animalId}`;
+    appointment.animalName ||
+    appointment.patientName ||
+    (appointment.animalId != null ? `Animal #${appointment.animalId}` : null);
   const doctorDisplayName =
     appointment.doctorName || `Doctor #${appointment.doctorId}`;
 
@@ -108,13 +111,26 @@ function AppointmentCard({ appointment, onPress }: AppointmentCardProps) {
           </Text>
         </View>
 
-        <Text style={styles.cardName}>{doctorDisplayName}</Text>
+        <View style={styles.cardDoctorRow}>
+          <DoctorAvatar
+            name={doctorDisplayName}
+            avatar={appointment.doctorAvatar}
+            size={36}
+            radius={18}
+            style={styles.cardDoctorAvatar}
+          />
+          <View style={styles.cardDoctorInfo}>
+            <Text style={styles.cardName}>{doctorDisplayName}</Text>
 
-        {appointment.doctorSpecialty && (
-          <Text style={styles.cardSpecialty}>{appointment.doctorSpecialty}</Text>
-        )}
+            {appointment.doctorSpecialty && (
+              <Text style={styles.cardSpecialty}>{appointment.doctorSpecialty}</Text>
+            )}
+          </View>
+        </View>
 
-        <Text style={styles.cardAnimal}>{displayName}</Text>
+        {displayName ? (
+          <Text style={styles.cardAnimal}>{displayName}</Text>
+        ) : null}
       </View>
     </TouchableOpacity>
   );
@@ -352,6 +368,14 @@ const styles = StyleSheet.create({
   cardTime: { fontSize: 12, fontWeight: '500', color: '#9C9690' },
   cardName: { fontSize: 15, fontWeight: '700', color: '#1A1817', marginBottom: 2 },
   cardSpecialty: { fontSize: 13, fontWeight: '500', color: '#BD632F', marginBottom: 2 },
+  cardDoctorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 6,
+  },
+  cardDoctorAvatar: { width: 36, height: 36, borderRadius: 18 },
+  cardDoctorInfo: { flex: 1 },
   cardAnimal: { fontSize: 13, fontWeight: '500', color: '#7C7672' },
   emptyContainer: { alignItems: 'center', marginTop: 60, gap: 12 },
   emptyText: { fontSize: 15, fontWeight: '500', color: '#9C9690' },

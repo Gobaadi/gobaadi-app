@@ -1020,7 +1020,7 @@ const styles = StyleSheet.create({
   plusBtn: { width: 32, height: 32, borderRadius: 16, borderWidth: 1.5, borderColor: '#BD632F', justifyContent: 'center', alignItems: 'center' },
   micBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#BD632F', justifyContent: 'center', alignItems: 'center' },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  actionsMenuBackdrop: { ...StyleSheet.absoluteFillObject, zIndex: 100 },
+  actionsMenuBackdrop: { ...StyleSheet.absoluteFill, zIndex: 100 },
   actionsMenuContainer: {
     position: 'absolute',
     top: 56,

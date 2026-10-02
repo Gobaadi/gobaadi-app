@@ -5,7 +5,6 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  Image,
   TextInput,
   Alert,
   ActivityIndicator,
@@ -15,6 +14,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useGetDoctorByIdQuery, useGetSlotsQuery, useBookSlotMutation } from '@/store/doctorsApi';
 import { useRescheduleBookingMutation } from '@/store/doctorPortalApi';
 import { useGetAnimalsQuery } from '@/store/animalsApi';
+import { DoctorAvatar } from '@/components/doctor-avatar';
 
 function pad(n: number): string {
   return String(n).padStart(2, '0');
@@ -78,9 +78,7 @@ export default function BookSlotScreen() {
       location: 'Uttar Badda, Dhaka',
       rating: doctorData.rating || 4.8,
       reviews: 124,
-      image: doctorData.avatar === 'jessica_doctor.png'
-        ? require('@/assets/images/jessica_doctor.png')
-        : require('@/assets/images/michael_doctor.png'),
+      avatar: doctorData.avatar ?? '',
     };
   }, [doctorData]);
 
@@ -199,7 +197,13 @@ export default function BookSlotScreen() {
           <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
             {/* Doctor Summary Card */}
             <View style={styles.doctorCard}>
-              <Image source={doctor.image} style={styles.doctorPortrait} />
+              <DoctorAvatar
+                name={doctor.name}
+                avatar={doctor.avatar}
+                size={64}
+                radius={14}
+                style={styles.doctorPortrait}
+              />
               <View style={styles.doctorDetails}>
                 <Text style={styles.doctorName}>{doctor.name}</Text>
                 <Text style={styles.doctorSpecialty}>{doctor.specialty}</Text>
@@ -303,7 +307,9 @@ export default function BookSlotScreen() {
             )}
 
             {/* Booking Reason */}
-            <Text style={styles.sectionTitle}>Booking Reason</Text>
+            <Text style={styles.sectionTitle}>
+              Booking Reason <Text style={{ color: '#E53935' }}>(Required)</Text>
+            </Text>
             <TextInput
               style={styles.reasonInput}
               placeholder="Description of symptoms"

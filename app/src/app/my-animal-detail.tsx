@@ -17,6 +17,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useGetAnimalByIdQuery, useDeleteAnimalMutation } from '@/store/animalsApi';
+import { isRenderableImageUri } from '@/utils/photo-uri';
 
 const { width } = Dimensions.get('window');
 const AUTO_SCROLL_MS = 3000;
@@ -30,6 +31,7 @@ export default function MyAnimalDetailScreen() {
   const { data: animal } = useGetAnimalByIdQuery(id, { skip: !id });
   const [deleteAnimal] = useDeleteAnimalMutation();
   const [activeIndex, setActiveIndex] = useState(0);
+  const [failedUris, setFailedUris] = useState<string[]>([]);
   const listRef = useRef<FlatList<ImageSourcePropType>>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -38,25 +40,41 @@ export default function MyAnimalDetailScreen() {
     : require('@/assets/images/bangladeshi_cow.png');
 
   const photos: ImageSourcePropType[] = (() => {
-    const fromPhotos = (animal?.photos || []).filter(Boolean).map((uri) => ({ uri }));
+    const fromPhotos = (animal?.photos || [])
+      .filter(isRenderableImageUri)
+      .map((uri) => ({ uri }));
     if (fromPhotos.length > 0) return fromPhotos;
-    if (animal?.image) return [{ uri: animal.image }];
+    if (animal?.image && isRenderableImageUri(animal.image)) {
+      return [{ uri: animal.image }];
+    }
     return [fallbackImage];
   })();
 
   const photoCount = photos.length;
   const dotIndex = photoCount > 0 ? activeIndex % photoCount : 0;
 
+  const markSlideFailed = useCallback((uri: string) => {
+    setFailedUris((prev) => (prev.includes(uri) ? prev : [...prev, uri]));
+  }, []);
+
+  const safeScrollToIndex = useCallback((index: number) => {
+    try {
+      listRef.current?.scrollToIndex({ index, animated: true });
+    } catch {
+      // Index can be stale right after the photo list changes shape.
+    }
+  }, []);
+
   const startAutoScroll = useCallback(() => {
     if (intervalRef.current) clearInterval(intervalRef.current);
     intervalRef.current = setInterval(() => {
       setActiveIndex((prev) => {
         const next = (prev + 1) % photoCount;
-        listRef.current?.scrollToIndex({ index: next, animated: true });
+        safeScrollToIndex(next);
         return next;
       });
     }, AUTO_SCROLL_MS);
-  }, [photoCount]);
+  }, [photoCount, safeScrollToIndex]);
 
   useEffect(() => {
     if (photoCount <= 1) return;
@@ -138,6 +156,8 @@ export default function MyAnimalDetailScreen() {
             key={id}
             data={photos}
             keyExtractor={(_, index) => `photo-${index}`}
+            style={styles.gallery}
+            extraData={failedUris}
             horizontal
             pagingEnabled
             showsHorizontalScrollIndicator={false}
@@ -145,9 +165,21 @@ export default function MyAnimalDetailScreen() {
             onScroll={handleScroll}
             onMomentumScrollEnd={handleMomentumEnd}
             scrollEventThrottle={16}
-            renderItem={({ item }) => (
-              <Image source={item} style={styles.mainImage} resizeMode="cover" />
-            )}
+            renderItem={({ item }) => {
+              const uri =
+                typeof item === 'object' && item !== null && !Array.isArray(item)
+                  ? item.uri
+                  : undefined;
+              const failed = !!uri && failedUris.includes(uri);
+              return (
+                <Image
+                  source={!failed && uri ? item : fallbackImage}
+                  style={styles.mainImage}
+                  resizeMode="cover"
+                  onError={uri && !failed ? () => markSlideFailed(uri) : undefined}
+                />
+              );
+            }}
           />
 
           {/* Carousel Pagination Dots */}
@@ -261,10 +293,15 @@ const styles = StyleSheet.create({
     height: SLIDE_HEIGHT,
     position: 'relative',
     backgroundColor: '#EBE5DF',
+    overflow: 'hidden',
+  },
+  gallery: {
+    width: '100%',
+    height: SLIDE_HEIGHT,
   },
   mainImage: {
-    width: '100%',
-    height: '100%',
+    width,
+    height: SLIDE_HEIGHT,
   },
   paginationRow: {
     position: 'absolute',

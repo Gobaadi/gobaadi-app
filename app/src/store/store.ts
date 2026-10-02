@@ -1,4 +1,5 @@
 import { configureStore } from '@reduxjs/toolkit';
+import { setupListeners } from '@reduxjs/toolkit/query';
 import authReducer, { setCredentials, setBootstrapped } from './authSlice';
 import { authApi } from './authApi';
 import { medicalRecordsApi } from './medicalRecordsApi';
@@ -144,6 +145,7 @@ export const store = configureStore({
 });
 
 setStoreRef(store);
+setupListeners(store.dispatch);
 
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;

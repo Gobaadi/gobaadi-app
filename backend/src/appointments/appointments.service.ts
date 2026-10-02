@@ -45,6 +45,8 @@ export interface AppointmentWithPatient extends Appointment {
   patientAvatar?: string;
   animalName?: string;
   animalImage?: string;
+  animalBreed?: string;
+  animalAge?: string;
   doctorName?: string;
   doctorSpecialty?: string;
   doctorAvatar?: string;
@@ -756,6 +758,33 @@ export class AppointmentsService {
         : [];
     const animalsById = new Map(animals.map((a) => [a.id, a]));
 
+    const distinctPatientIds = [
+      ...new Set(appointments.map((a) => a.patientId)),
+    ];
+    const patients = await Promise.all(
+      distinctPatientIds.map((id) => this.usersService.findById(id)),
+    );
+    const patientsById = new Map(
+      patients
+        .filter((p): p is NonNullable<typeof p> => !!p)
+        .map((p) => [p.id, p]),
+    );
+
+    const animalFields = (appointment: Appointment) => ({
+      animalName: appointment.animalId
+        ? animalsById.get(appointment.animalId)?.name
+        : undefined,
+      animalImage: appointment.animalId
+        ? animalsById.get(appointment.animalId)?.image
+        : undefined,
+      animalBreed: appointment.animalId
+        ? animalsById.get(appointment.animalId)?.breed
+        : undefined,
+      animalAge: appointment.animalId
+        ? animalsById.get(appointment.animalId)?.age
+        : undefined,
+    });
+
     if (role !== UserRole.DOCTOR) {
       const distinctDoctorIds = [
         ...new Set(appointments.map((a) => a.doctorId)),
@@ -771,29 +800,14 @@ export class AppointmentsService {
 
       return appointments.map((appointment) => ({
         ...appointment,
-        animalName: appointment.animalId
-          ? animalsById.get(appointment.animalId)?.name
-          : undefined,
-        animalImage: appointment.animalId
-          ? animalsById.get(appointment.animalId)?.image
-          : undefined,
+        patientName: patientsById.get(appointment.patientId)?.name,
+        patientPhone: patientsById.get(appointment.patientId)?.phone,
+        ...animalFields(appointment),
         doctorName: doctorsById.get(appointment.doctorId)?.name,
         doctorSpecialty: doctorsById.get(appointment.doctorId)?.specialty,
         doctorAvatar: doctorsById.get(appointment.doctorId)?.avatar,
       }));
     }
-
-    const distinctPatientIds = [
-      ...new Set(appointments.map((a) => a.patientId)),
-    ];
-    const patients = await Promise.all(
-      distinctPatientIds.map((id) => this.usersService.findById(id)),
-    );
-    const patientsById = new Map(
-      patients
-        .filter((p): p is NonNullable<typeof p> => !!p)
-        .map((p) => [p.id, p]),
-    );
 
     return appointments.map((appointment) => ({
       ...appointment,
@@ -803,12 +817,7 @@ export class AppointmentsService {
         patientsById.get(appointment.patientId)?.profilePhoto ||
         patientsById.get(appointment.patientId)?.avatar ||
         undefined,
-      animalName: appointment.animalId
-        ? animalsById.get(appointment.animalId)?.name
-        : undefined,
-      animalImage: appointment.animalId
-        ? animalsById.get(appointment.animalId)?.image
-        : undefined,
+      ...animalFields(appointment),
     }));
   }
 

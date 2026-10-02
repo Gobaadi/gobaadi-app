@@ -187,9 +187,9 @@ export default function AddTaskScreen() {
 
         <Text style={styles.headerTitle}>Add Task</Text>
 
-        <TouchableOpacity style={styles.headerSquareBtn} activeOpacity={0.8}>
+        {/* <TouchableOpacity style={styles.headerSquareBtn} activeOpacity={0.8}>
           <Ionicons name="calendar-outline" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
 
       <ScrollView
@@ -281,7 +281,7 @@ export default function AddTaskScreen() {
           <View style={styles.customTaskWrapper}>
             <TextInput
               style={styles.customTaskInput}
-              placeholder="Custom Task"
+              placeholder="Enter Your Task Heading"
               placeholderTextColor="#A39E99"
               value={customTask}
               onChangeText={setCustomTask}

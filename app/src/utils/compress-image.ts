@@ -24,7 +24,7 @@ const LADDER: { maxEdge: number; quality: number }[] = [
   { maxEdge: 1024, quality: 0.4 },
 ];
 
-function getLocalFileSize(uri: string): number | null {
+export function getLocalFileSize(uri: string): number | null {
   try {
     const info = new File(uri).info();
     return typeof info.size === 'number' ? info.size : null;

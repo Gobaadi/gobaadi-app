@@ -9,29 +9,86 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { openSupportEmail, SUPPORT_EMAIL } from '@/lib/contact';
 
-const LOREM_A =
-  'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ' +
-  'ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco ' +
-  'laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in ' +
-  'voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat ' +
-  'non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.';
+const LAST_UPDATED = 'October 1, 2026';
 
-const LOREM_B =
-  'Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, ' +
-  'totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae ' +
-  'dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, ' +
-  'sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt neque porro quisquam ' +
-  'est, qui dolorem ipsum quia dolor sit amet.';
+type Section = {
+  heading: string;
+  body?: string;
+  bullets?: string[];
+  contact?: { label: string; value: string };
+};
 
-const SECTIONS: { heading: string; body: string }[] = [
-  { heading: '1. Acceptance of Terms', body: `${LOREM_A} ${LOREM_B}` },
-  { heading: '2. Account Registration', body: `${LOREM_A} ${LOREM_B}` },
-  { heading: '3. User Responsibilities', body: `${LOREM_A} ${LOREM_B}` },
-  { heading: '4. Marketplace & Orders', body: `${LOREM_A} ${LOREM_B}` },
-  { heading: '5. Veterinary Consultations', body: `${LOREM_A} ${LOREM_B}` },
-  { heading: '6. Limitation of Liability', body: `${LOREM_A} ${LOREM_B}` },
-  { heading: '7. Termination & Contact', body: `${LOREM_A} ${LOREM_B}` },
+const SECTIONS: Section[] = [
+  {
+    heading: '1. Use of Gobaadi',
+    body:
+      'Gobaadi provides agricultural technology services, including AI-powered tools, animal ' +
+      'health information, professional consultations, marketplace services, tracking, and task ' +
+      'management.\n\nYou agree to provide accurate information and use the app only for lawful purposes.',
+  },
+  {
+    heading: '2. AI Information',
+    body:
+      'Gobaadi may provide AI-generated animal health or agricultural information. AI results are ' +
+      'for informational purposes only and are not a substitute for a qualified veterinarian or ' +
+      'agricultural professional.\n\nGobaadi does not guarantee that AI results will always be accurate.',
+  },
+  {
+    heading: '3. Professional Consultation',
+    body:
+      'Information or advice provided by veterinarians or other professionals is the responsibility ' +
+      'of the respective professional. For emergencies, contact an appropriate local professional or ' +
+      'service directly.',
+  },
+  {
+    heading: '4. Marketplace',
+    body:
+      'Products and services may be provided by third-party sellers. Gobaadi does not guarantee the ' +
+      'quality, safety, availability, or suitability of third-party products or services.\n\n' +
+      'Users are responsible for reviewing product and seller information before making a purchase.',
+  },
+  {
+    heading: '5. Payments and Refunds',
+    bullets: [
+      'Payments, cancellations, refunds, and returns are subject to the applicable transaction, seller, or Gobaadi policy.',
+      'Additional charges will be shown before applicable transactions.',
+    ],
+  },
+  {
+    heading: '6. User Content',
+    body:
+      'You are responsible for information, images, videos, and other content you submit to Gobaadi. ' +
+      'You must have the necessary rights or permission to submit such content.',
+  },
+  {
+    heading: '7. Prohibited Use',
+    body:
+      'You must not use Gobaadi for illegal activities, fraud, harassment, unauthorized access, ' +
+      'spreading malicious software, or activities that may harm other users or the Platform.',
+  },
+  {
+    heading: '8. Privacy',
+    body: 'Your personal information is handled according to the Gobaadi Privacy Policy and applicable law.',
+  },
+  {
+    heading: '9. Availability',
+    body:
+      'We aim to keep Gobaadi available and reliable, but we do not guarantee uninterrupted or ' +
+      'error-free service.',
+  },
+  {
+    heading: '10. Changes and Termination',
+    body:
+      'We may update these Terms or modify, suspend, or discontinue features when necessary. ' +
+      'We may also suspend or terminate accounts that violate these Terms.',
+  },
+  {
+    heading: '11. Contact',
+    body: 'For questions or support:',
+    contact: { label: 'Email:', value: SUPPORT_EMAIL },
+  },
 ];
 
 export default function TermsOfServiceScreen() {
@@ -52,12 +109,39 @@ export default function TermsOfServiceScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <Text style={styles.intro}>
+          By using the Gobaadi app, you agree to these Terms & Conditions.
+        </Text>
+        <Text style={styles.lastUpdated}>Last Updated: {LAST_UPDATED}</Text>
+
         {SECTIONS.map((section) => (
           <View key={section.heading}>
             <Text style={styles.sectionHeading}>{section.heading}</Text>
-            <Text style={styles.paragraph}>{section.body}</Text>
+
+            {section.body ? <Text style={styles.paragraph}>{section.body}</Text> : null}
+
+            {section.bullets?.map((bullet) => (
+              <View key={bullet} style={styles.bulletRow}>
+                <Text style={styles.bulletDot}>•</Text>
+                <Text style={styles.bulletText}>{bullet}</Text>
+              </View>
+            ))}
+
+            {section.contact ? (
+              <View style={styles.contactRow}>
+                <Text style={styles.paragraph}>{section.contact.label} </Text>
+                <TouchableOpacity activeOpacity={0.7} onPress={openSupportEmail}>
+                  <Text style={styles.contactLink}>{section.contact.value}</Text>
+                </TouchableOpacity>
+              </View>
+            ) : null}
           </View>
         ))}
+
+        <Text style={styles.closing}>
+          By continuing to use Gobaadi, you acknowledge that you have read and agreed to these
+          Terms & Conditions.
+        </Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -93,6 +177,18 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 40,
   },
+  intro: {
+    fontSize: 14,
+    color: '#7C7672',
+    lineHeight: 22,
+  },
+  lastUpdated: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#9C9690',
+    marginTop: 6,
+    marginBottom: 4,
+  },
   sectionHeading: {
     fontSize: 16,
     fontWeight: '700',
@@ -104,5 +200,39 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#7C7672',
     lineHeight: 22,
+  },
+  bulletRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    marginBottom: 6,
+  },
+  bulletDot: {
+    fontSize: 14,
+    color: '#7C7672',
+    lineHeight: 22,
+  },
+  bulletText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#7C7672',
+    lineHeight: 22,
+  },
+  contactRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+  },
+  contactLink: {
+    fontSize: 14,
+    color: '#BD632F',
+    lineHeight: 22,
+    textDecorationLine: 'underline',
+  },
+  closing: {
+    fontSize: 14,
+    color: '#7C7672',
+    lineHeight: 22,
+    marginTop: 20,
   },
 });

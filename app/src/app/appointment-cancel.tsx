@@ -8,11 +8,13 @@ import {
   ScrollView,
   Image,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import {
+  useGetBookingByIdQuery,
   useGetDoctorBookingsQuery,
   useCancelBookingMutation,
 } from '@/store/doctorPortalApi';
@@ -39,13 +41,38 @@ type CancellationReason = 'emergency' | 'schedule_conflict' | 'other' | null;
 export default function AppointmentCancelScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { data: bookings = [] } = useGetDoctorBookingsQuery();
+  const {
+    data: fetchedAppointment,
+    isLoading: idLoading,
+  } = useGetBookingByIdQuery(String(id ?? ''), { skip: !id });
+  const { data: bookings = [], isLoading: listLoading } = useGetDoctorBookingsQuery();
   const [cancelBooking, { isLoading }] = useCancelBookingMutation();
 
   const [selectedReason, setSelectedReason] = useState<CancellationReason>(null);
   const [note, setNote] = useState('');
 
-  const appointment = bookings.find((b) => String(b.id) === id);
+  const appointment = fetchedAppointment ?? bookings.find((b) => String(b.id) === id);
+
+  if (!appointment && (idLoading || listLoading)) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backBtn}
+            onPress={() => router.back()}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="arrow-back" size={20} color="#BD632F" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Cancel Appointment</Text>
+          <View style={{ width: 40 }} />
+        </View>
+        <View style={styles.emptyContainer}>
+          <ActivityIndicator size="small" color="#BD632F" />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (!appointment) {
     return (
@@ -123,14 +150,18 @@ export default function AppointmentCancelScreen() {
             )}
             <View style={styles.cardInfo}>
               <Text style={styles.cardName}>{displayName}</Text>
-              {appointment.animalSpecies && (
+              {(appointment.animalSpecies || appointment.animalBreed || appointment.animalAge) && (
                 <Text style={styles.cardDetail}>
-                  {appointment.animalSpecies}
-                  {appointment.animalAge ? ` · ${appointment.animalAge}` : ''}
-                  {appointment.animalBreed ? ` · ${appointment.animalBreed}` : ''}
+                  {[
+                    appointment.animalSpecies,
+                    appointment.animalAge,
+                    appointment.animalBreed,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
                 </Text>
               )}
-              {appointment.patientName && (
+              {appointment.animalName && appointment.patientName && (
                 <Text style={styles.cardOwner}>Owner: {appointment.patientName}</Text>
               )}
             </View>

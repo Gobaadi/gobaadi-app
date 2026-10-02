@@ -8,7 +8,6 @@ import {
   TouchableOpacity,
   Modal,
 } from 'react-native';
-import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,6 +16,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { MediaCardSkeleton } from '@/components/ui/skeleton';
 import { useLocation } from '@/hooks/use-location';
 import LocationBottomSheet from '@/components/LocationBottomSheet';
+import { DoctorAvatar } from '@/components/doctor-avatar';
 
 interface DoctorView {
   id: number;
@@ -25,7 +25,7 @@ interface DoctorView {
   location: string;
   rating: number;
   reviews: number;
-  image: any;
+  avatar: string;
 }
 
 export default function AllDoctorsScreen() {
@@ -46,9 +46,7 @@ export default function AllDoctorsScreen() {
       location: 'Uttar Badda, Dhaka',
       rating: d.rating || 4.8,
       reviews: 124,
-      image: d.avatar === 'jessica_doctor.png'
-        ? require('@/assets/images/jessica_doctor.png')
-        : require('@/assets/images/michael_doctor.png'),
+      avatar: d.avatar ?? '',
     }));
 
     if (activeFilter !== 'All') {
@@ -195,7 +193,13 @@ export default function AllDoctorsScreen() {
         doctors.map((doc) => (
           <View key={doc.id} style={styles.doctorCard}>
             <View style={styles.doctorCardMain}>
-              <Image source={doc.image} style={styles.doctorPortrait} />
+              <DoctorAvatar
+                name={doc.name}
+                avatar={doc.avatar}
+                size={80}
+                radius={16}
+                style={styles.doctorPortrait}
+              />
               <View style={styles.doctorDetails}>
                 <Text style={styles.doctorName}>{doc.name}</Text>
                 <Text style={styles.doctorSpecialty}>{doc.specialty}</Text>

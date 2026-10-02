@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -12,7 +12,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSelector } from 'react-redux';
+import type { RootState } from '@/store/store';
 import {
+  useGetBookingByIdQuery,
   useGetDoctorBookingsQuery,
   useRescheduleBookingMutation,
 } from '@/store/doctorPortalApi';
@@ -48,10 +51,15 @@ const DAY_LETTERS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 export default function AppointmentRescheduleScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { data: bookings = [] } = useGetDoctorBookingsQuery();
+  const isDoctor = useSelector((state: RootState) => state.auth.user?.role) === 'doctor';
+  const {
+    data: fetchedAppointment,
+    isLoading: idLoading,
+  } = useGetBookingByIdQuery(String(id ?? ''), { skip: !id });
+  const { data: bookings = [], isLoading: listLoading } = useGetDoctorBookingsQuery();
   const [rescheduleBooking, { isLoading }] = useRescheduleBookingMutation();
 
-  const appointment = bookings.find((b) => String(b.id) === id);
+  const appointment = fetchedAppointment ?? bookings.find((b) => String(b.id) === id);
 
   const [selectedDate, setSelectedDate] = useState<Date | null>(() => {
     // Past appointments can't be rescheduled to their old date — default to today.
@@ -73,9 +81,26 @@ export default function AppointmentRescheduleScreen() {
     { skip: !doctorId || !selectedDateStr }
   );
 
-  useEffect(() => {
-    setSelectedTime(null);
-  }, [selectedDate]);
+  if (!appointment && (idLoading || listLoading)) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backBtn}
+            onPress={() => router.back()}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="arrow-back" size={20} color="#BD632F" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Reschedule Appointment</Text>
+          <View style={{ width: 40 }} />
+        </View>
+        <View style={styles.emptyContainer}>
+          <ActivityIndicator size="small" color="#BD632F" />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (!appointment) {
     return (
@@ -88,7 +113,7 @@ export default function AppointmentRescheduleScreen() {
           >
             <Ionicons name="arrow-back" size={20} color="#BD632F" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Appointments Details</Text>
+          <Text style={styles.headerTitle}>Reschedule Appointment</Text>
           <View style={{ width: 40 }} />
         </View>
         <View style={styles.emptyContainer}>
@@ -132,7 +157,15 @@ export default function AppointmentRescheduleScreen() {
         time: selectedTime,
       }).unwrap();
       Alert.alert('Success', 'Appointment rescheduled successfully.');
-      router.replace('/appointments');
+      const target = isDoctor ? '/appointments' : '/my-appointments';
+      try {
+        // Drop the details/reschedule screens from the stack so Back from the
+        // list returns to where the flow started instead of the old booking.
+        router.dismissAll();
+        router.navigate(target);
+      } catch {
+        router.replace(target);
+      }
     } catch (err) {
       Alert.alert(
         'Error',
@@ -151,7 +184,7 @@ export default function AppointmentRescheduleScreen() {
         >
           <Ionicons name="arrow-back" size={20} color="#BD632F" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Appointments Details</Text>
+        <Text style={styles.headerTitle}>Reschedule Appointment</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -170,14 +203,18 @@ export default function AppointmentRescheduleScreen() {
             )}
             <View style={styles.cardInfo}>
               <Text style={styles.cardName}>{displayName}</Text>
-              {appointment.animalSpecies && (
+              {(appointment.animalSpecies || appointment.animalBreed || appointment.animalAge) && (
                 <Text style={styles.cardDetail}>
-                  {appointment.animalSpecies}
-                  {appointment.animalAge ? ` · ${appointment.animalAge}` : ''}
-                  {appointment.animalBreed ? ` · ${appointment.animalBreed}` : ''}
+                  {[
+                    appointment.animalSpecies,
+                    appointment.animalAge,
+                    appointment.animalBreed,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
                 </Text>
               )}
-              {appointment.patientName && (
+              {appointment.animalName && appointment.patientName && (
                 <Text style={styles.cardOwner}>Owner: {appointment.patientName}</Text>
               )}
             </View>
@@ -235,7 +272,14 @@ export default function AppointmentRescheduleScreen() {
                 <TouchableOpacity
                   key={day}
                   style={[styles.dayCell, isPastDate && styles.dayCellDisabled]}
-                  onPress={isPastDate ? undefined : () => setSelectedDate(date)}
+                  onPress={
+                    isPastDate
+                      ? undefined
+                      : () => {
+                          setSelectedDate(date);
+                          setSelectedTime(null);
+                        }
+                  }
                   disabled={isPastDate}
                   activeOpacity={0.7}
                 >

@@ -44,8 +44,11 @@ export interface DoctorAppointment {
   animalBreed?: string;
   animalAge?: string;
   animalImage?: string;
-  symptoms?: string;
+  symptoms?: string | string[];
   consultationType?: string;
+  reasonForConsultation?: string;
+  price?: number;
+  paymentStatus?: 'pending' | 'paid' | 'failed' | 'refunded';
   consultationNotes?: string;
   startAt: string;
   endAt: string;
@@ -267,6 +270,14 @@ export const doctorPortalApi = createApi({
       }),
       invalidatesTags: ['Dashboard', 'DoctorProfile'],
     }),
+    uploadMyPhoto: builder.mutation<{ url: string }, FormData>({
+      query: (formData) => ({
+        url: '/doctors/me/photo',
+        method: 'POST',
+        body: formData,
+      }),
+      invalidatesTags: ['Dashboard', 'DoctorProfile'],
+    }),
     updateCredentialDocuments: builder.mutation<DoctorProfile, string[]>({
       query: (documents) => ({
         url: '/doctors/me/credential-documents',
@@ -312,6 +323,7 @@ export const {
   useUpdateExperiencesMutation,
   useUpdateProfileMutation,
   useUploadCredentialDocumentMutation,
+  useUploadMyPhotoMutation,
   useUpdateCredentialDocumentsMutation,
   useGetAvailabilityQuery,
   useSetAvailabilityMutation,

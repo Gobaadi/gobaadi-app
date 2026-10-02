@@ -4,12 +4,12 @@ import {
   View,
   Text,
   TouchableOpacity,
-  Image,
   ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useGetDoctorByIdQuery } from '@/store/doctorsApi';
+import { DoctorAvatar } from '@/components/doctor-avatar';
 
 function pad(n: number): string {
   return String(n).padStart(2, '0');
@@ -35,7 +35,7 @@ export default function BookingDetailsScreen() {
         location: 'Cardiology Center, USA',
         rating: 5,
         reviews: 1872,
-        image: require('@/assets/images/doctor.png'),
+        avatar: '',
       };
     }
     return {
@@ -45,9 +45,7 @@ export default function BookingDetailsScreen() {
       location: 'Uttar Badda, Dhaka',
       rating: doctorData.rating || 4.8,
       reviews: 124,
-      image: doctorData.avatar === 'jessica_doctor.png'
-        ? require('@/assets/images/jessica_doctor.png')
-        : require('@/assets/images/michael_doctor.png'),
+      avatar: doctorData.avatar ?? '',
     };
   }, [doctorData, doctorId]);
 
@@ -83,7 +81,13 @@ export default function BookingDetailsScreen() {
 
           {/* Doctor Row */}
           <View style={styles.doctorRow}>
-            <Image source={doctor.image} style={styles.doctorPortrait} />
+            <DoctorAvatar
+              name={doctor.name}
+              avatar={doctor.avatar}
+              size={68}
+              radius={14}
+              style={styles.doctorPortrait}
+            />
             <View style={styles.doctorDetails}>
               <Text style={styles.doctorName}>{doctor.name}</Text>
               <Text style={styles.doctorSpecialty}>{doctor.specialty}</Text>
@@ -101,7 +105,7 @@ export default function BookingDetailsScreen() {
 
           {/* Booking Reason */}
           <Text style={styles.sectionHeader}>Booking Reason</Text>
-          <Text style={styles.reasonText}>{bookingReason || 'The symptom was extreme fever'}</Text>
+          <Text style={styles.reasonText}>{bookingReason || '—'}</Text>
 
           <View style={styles.divider} />
 

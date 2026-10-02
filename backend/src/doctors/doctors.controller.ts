@@ -99,6 +99,30 @@ export class DoctorsController {
     return this.doctorsService.updateProfile(user.sub, dto);
   }
 
+  @Post('me/photo')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.DOCTOR)
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiBearerAuth()
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { file: { type: 'string', format: 'binary' } },
+    },
+  })
+  @ApiOperation({ summary: 'Upload a profile photo for the current doctor' })
+  @ApiResponse({ status: 201, description: 'Photo uploaded and saved' })
+  async uploadMyPhoto(
+    @CurrentUser() user: JwtPayload,
+    @UploadedFile() file: Express.Multer.File,
+  ): Promise<Doctor> {
+    if (!file) {
+      throw new BadRequestException('A file is required');
+    }
+    return this.doctorsService.uploadPhoto(user.sub, file);
+  }
+
   @Post('me/credential-documents')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.DOCTOR)

@@ -52,6 +52,7 @@ test.describe('Doctors & Appointments API Tests', () => {
       doctorId: doctorId.toString(),
       date: mondayDate,
       time: firstSlot,
+      reasonForConsultation: 'Test reason',
     });
     expect(bookRes.status()).toBe(201);
     const appointment = await bookRes.json();
@@ -63,6 +64,7 @@ test.describe('Doctors & Appointments API Tests', () => {
       doctorId: doctorId.toString(),
       date: mondayDate,
       time: firstSlot,
+      reasonForConsultation: 'Test reason',
     });
     expect(doubleBookRes.status()).toBe(409); // Conflict
 

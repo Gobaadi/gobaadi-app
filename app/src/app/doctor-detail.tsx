@@ -5,12 +5,13 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useGetDoctorByIdQuery } from '@/store/doctorsApi';
 import { useGetServicesQuery } from '@/store/servicesApi';
+import { DoctorAvatar } from '@/components/doctor-avatar';
 
 export default function DoctorDetailScreen() {
   const router = useRouter();
@@ -32,7 +33,7 @@ export default function DoctorDetailScreen() {
         location: 'Cardiology Center, USA',
         rating: 5,
         reviews: 1872,
-        image: require('@/assets/images/doctor.png'),
+        avatar: '',
         availability: '6 AM - 9 PM',
       };
     }
@@ -43,9 +44,7 @@ export default function DoctorDetailScreen() {
       location: 'Uttar Badda, Dhaka',
       rating: doctorData.rating || 4.8,
       reviews: 124,
-      image: doctorData.avatar === 'jessica_doctor.png'
-        ? require('@/assets/images/jessica_doctor.png')
-        : require('@/assets/images/michael_doctor.png'),
+      avatar: doctorData.avatar ?? '',
       availability: doctorData.avatar === 'jessica_doctor.png' ? '8 AM - 5 PM' : '6 AM - 9 PM',
     };
   }, [doctorData]);
@@ -76,15 +75,25 @@ export default function DoctorDetailScreen() {
 
         <Text style={styles.headerTitle}>Doctor Detail</Text>
 
-        <TouchableOpacity style={styles.circleButton} activeOpacity={0.8}>
-          <Text style={styles.buttonText}>🔔</Text>
+        <TouchableOpacity
+          style={styles.circleButton}
+          activeOpacity={0.8}
+          onPress={() => router.push('/notifications')}
+        >
+          <Ionicons name="notifications-outline" size={20} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         {/* Doctor Main Card */}
         <View style={styles.doctorCard}>
-          <Image source={doctor.image} style={styles.doctorPortrait} />
+          <DoctorAvatar
+            name={doctor.name}
+            avatar={doctor.avatar}
+            size={88}
+            radius={20}
+            style={styles.doctorPortrait}
+          />
           <View style={styles.doctorDetails}>
             <Text style={styles.doctorName}>{doctor.name}</Text>
             <Text style={styles.doctorSpecialty}>{doctor.specialty}</Text>

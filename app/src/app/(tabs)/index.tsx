@@ -27,6 +27,7 @@ import Svg, { Path } from 'react-native-svg';
 import { EmptyState } from '@/components/ui/empty-state';
 import { RowSkeleton, SkeletonBox } from '@/components/ui/skeleton';
 import { localDateKey } from '@/utils/date';
+import { DoctorAvatar } from '@/components/doctor-avatar';
 
 const { width } = Dimensions.get('window');
 
@@ -58,7 +59,10 @@ export default function HomeDashboard() {
   const insets = useSafeAreaInsets();
 
   const { data: allAnimals, isLoading: isAnimalsLoading } = useGetAnimalsQuery();
-  const { data: tasks = [], isLoading: isTasksLoading } = useGetTasksQuery(todayDateKey());
+  const { data: tasks = [], isLoading: isTasksLoading } = useGetTasksQuery(todayDateKey(), {
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
+  });
   const { data: weather, isLoading: isWeatherLoading } = useGetWeatherQuery();
   const { data: referral } = useGetMyReferralQuery();
   const [claimReferral, { isLoading: isClaiming }] = useClaimReferralMutation();
@@ -66,6 +70,7 @@ export default function HomeDashboard() {
   const [showLangSheet, setShowLangSheet] = useState(false);
 
   const [toggleTaskMutation] = useToggleTaskMutation();
+  const visibleTasks = tasks.filter((task) => !task.isDone);
 
   const [showClaimInput, setShowClaimInput] = useState(false);
   const [claimCode, setClaimCode] = useState('');
@@ -113,8 +118,13 @@ export default function HomeDashboard() {
     }
   }
 
-  function toggleTask(id: number) {
-    toggleTaskMutation(String(id));
+  async function toggleTask(id: number) {
+    try {
+      await toggleTaskMutation(String(id)).unwrap();
+      Alert.alert('Task marked', 'Your task has been marked.');
+    } catch {
+      Alert.alert('Could not mark task', 'Please try again.');
+    }
   }
 
   return (
@@ -331,9 +341,13 @@ export default function HomeDashboard() {
                 })}
               >
                 <View style={styles.listItemLeft}>
-                  <View style={styles.checkeredIcon}>
-                    <View style={styles.checkeredGrid} />
-                  </View>
+                  <DoctorAvatar
+                    name={appt.doctorName || `Doctor #${appt.doctorId}`}
+                    avatar={appt.doctorAvatar}
+                    size={44}
+                    radius={22}
+                    style={styles.checkeredIcon}
+                  />
                   <View>
                     <Text style={styles.animalName}>
                       {appt.doctorName || `Doctor #${appt.doctorId}`}
@@ -358,20 +372,15 @@ export default function HomeDashboard() {
               <RowSkeleton />
               <RowSkeleton />
             </>
-          ) : tasks.length === 0 ? (
+          ) : visibleTasks.length === 0 ? (
             <EmptyState compact title="No tasks scheduled for today" />
           ) : (
-            tasks.map((task, idx) => (
-              <TouchableOpacity
+            visibleTasks.map((task, idx) => (
+              <View
                 key={idx}
-                activeOpacity={0.7}
-                onPress={() => toggleTask(task.id)}
-                style={[styles.taskItem, idx === tasks.length - 1 && { borderBottomWidth: 0 }]}
+                style={[styles.taskItem, idx === visibleTasks.length - 1 && { borderBottomWidth: 0 }]}
               >
                 <View style={styles.taskItemLeft}>
-                  <View style={styles.checkeredIcon}>
-                    <View style={styles.checkeredGrid} />
-                  </View>
                   <View style={styles.taskTextCol}>
                     <Text style={styles.taskTitle} numberOfLines={1}>
                       {task.title}
@@ -386,11 +395,15 @@ export default function HomeDashboard() {
 
                 <View style={styles.taskItemRight}>
                   <Text style={styles.taskTime}>{formatTaskTime(task.scheduledTime)}</Text>
-                  <View style={[styles.checkbox, task.isDone ? styles.checkboxChecked : styles.checkboxUnchecked]}>
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={() => toggleTask(task.id)}
+                    style={[styles.checkbox, task.isDone ? styles.checkboxChecked : styles.checkboxUnchecked]}
+                  >
                     {task.isDone ? <Text style={styles.checkIcon}>✓</Text> : null}
-                  </View>
+                  </TouchableOpacity>
                 </View>
-              </TouchableOpacity>
+              </View>
             ))
           )}
         </View>
@@ -797,14 +810,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 16,
     overflow: 'hidden',
-  },
-  checkeredGrid: {
-    width: '80%',
-    height: '80%',
-    borderColor: '#E6E1DC',
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderRadius: 18,
   },
   animalName: {
     fontSize: 15,
