@@ -22,7 +22,6 @@ export interface MedicationEntry {
   quantity: string;
   quantityUnit: string;
   isExpanded: boolean;
-  searchQuery: string;
 }
 
 export interface PrescriptionFormData {
@@ -35,17 +34,6 @@ interface PrescriptionFormProps {
   onSend: (data: PrescriptionFormData) => void;
   sending?: boolean;
 }
-
-const MOCK_MEDICATIONS = [
-  { name: 'Enrofloxacin 10% Injection', type: 'Antibiotic' },
-  { name: 'Oxytetracycline 20% Injection', type: 'Antibiotic' },
-  { name: 'Flunixin Meglumine Injection', type: 'Anti-inflammatory' },
-  { name: 'Ivermectin 1% Injection', type: 'Antiparasitic' },
-  { name: 'Meloxicam Injection', type: 'NSAID' },
-  { name: 'Ceftiofur Hydrochloride Injection', type: 'Antibiotic' },
-  { name: 'Gentamicin Injection', type: 'Antibiotic' },
-  { name: 'Dexamethasone Injection', type: 'Corticosteroid' },
-];
 
 function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).substr(2);
@@ -69,7 +57,6 @@ function createEmptyMedication(): MedicationEntry {
     quantity: '',
     quantityUnit: 'vial',
     isExpanded: true,
-    searchQuery: '',
   };
 }
 
@@ -79,7 +66,6 @@ export default function PrescriptionForm({ onSend, sending }: PrescriptionFormPr
   ]);
   const [instructions, setInstructions] = useState('');
   const [note, setNote] = useState('');
-  const [showMedPicker, setShowMedPicker] = useState<string | null>(null);
 
   const addMedication = useCallback(() => {
     setMedications((prev) => [
@@ -103,26 +89,6 @@ export default function PrescriptionForm({ onSend, sending }: PrescriptionFormPr
       prev.map((m) => (m.id === id ? { ...m, ...updates } : m))
     );
   }, []);
-
-  const selectMedication = useCallback((id: string, med: { name: string; type: string }) => {
-    setMedications((prev) =>
-      prev.map((m) =>
-        m.id === id
-          ? { ...m, name: med.name, type: med.type, searchQuery: '', isExpanded: true }
-          : m
-      )
-    );
-    setShowMedPicker(null);
-  }, []);
-
-  const getFilteredMeds = (query: string) => {
-    if (!query) return MOCK_MEDICATIONS;
-    return MOCK_MEDICATIONS.filter(
-      (m) =>
-        m.name.toLowerCase().includes(query.toLowerCase()) ||
-        m.type.toLowerCase().includes(query.toLowerCase())
-    );
-  };
 
   const handleSend = () => {
     if (sending) return;
@@ -172,52 +138,13 @@ export default function PrescriptionForm({ onSend, sending }: PrescriptionFormPr
               ) : null}
             </View>
 
-            {med.name ? (
-              <View style={styles.medSelectedCard}>
-                <Text style={styles.medSelectedName}>{med.name}</Text>
-                <Text style={styles.medSelectedType}>{med.type}</Text>
-              </View>
-            ) : (
-              <TouchableOpacity
-                style={styles.medDropdown}
-                onPress={() => setShowMedPicker(showMedPicker === med.id ? null : med.id)}
-                activeOpacity={0.7}
-              >
-                <TextInput
-                  style={styles.medDropdownInput}
-                  placeholder="Med name"
-                  placeholderTextColor="#A39E99"
-                  value={med.searchQuery}
-                  onChangeText={(text) => {
-                    updateMedication(med.id, { searchQuery: text });
-                    setShowMedPicker(med.id);
-                  }}
-                  onFocus={() => setShowMedPicker(med.id)}
-                />
-                <Ionicons name="chevron-down" size={18} color="#9C9690" />
-              </TouchableOpacity>
-            )}
-
-            {showMedPicker === med.id && !med.name && (
-              <View style={styles.medPickerDropdown}>
-                {getFilteredMeds(med.searchQuery).map((m, i) => (
-                  <TouchableOpacity
-                    key={i}
-                    style={styles.medPickerItem}
-                    onPress={() => selectMedication(med.id, m)}
-                    activeOpacity={0.7}
-                  >
-                    <View style={styles.medPickerItemInfo}>
-                      <Text style={styles.medPickerItemName}>{m.name}</Text>
-                      <Text style={styles.medPickerItemType}>{m.type}</Text>
-                    </View>
-                    <View style={styles.medPickerItemAdd}>
-                      <Ionicons name="add" size={16} color="#FFFFFF" />
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
+            <TextInput
+              style={styles.medNameInput}
+              placeholder="Type medication name"
+              placeholderTextColor="#A39E99"
+              value={med.name}
+              onChangeText={(text) => updateMedication(med.id, { name: text })}
+            />
 
             {med.isExpanded && med.name && (
               <View style={styles.medFields}>
@@ -364,19 +291,7 @@ const styles = StyleSheet.create({
   medActions: { flexDirection: 'row', gap: 4 },
   medActionBtn: { width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
 
-  medDropdown: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 14, borderWidth: 1, borderColor: '#E6E1DC', paddingHorizontal: 14, height: 48 },
-  medDropdownInput: { flex: 1, fontSize: 14, color: '#1A1817', height: '100%' },
-
-  medPickerDropdown: { backgroundColor: '#FFFFFF', borderRadius: 14, borderWidth: 1, borderColor: '#E6E1DC', marginTop: 4, overflow: 'hidden' },
-  medPickerItem: { flexDirection: 'row', alignItems: 'center', padding: 12, borderBottomWidth: 1, borderBottomColor: '#F0ECE8' },
-  medPickerItemInfo: { flex: 1 },
-  medPickerItemName: { fontSize: 13, fontWeight: '600', color: '#1A1817' },
-  medPickerItemType: { fontSize: 11, fontWeight: '500', color: '#9C9690', marginTop: 1 },
-  medPickerItemAdd: { width: 26, height: 26, borderRadius: 13, backgroundColor: '#BD632F', justifyContent: 'center', alignItems: 'center' },
-
-  medSelectedCard: { backgroundColor: '#FFFFFF', borderRadius: 14, borderWidth: 1, borderColor: '#E6E1DC', padding: 14 },
-  medSelectedName: { fontSize: 14, fontWeight: '700', color: '#1A1817' },
-  medSelectedType: { fontSize: 12, fontWeight: '500', color: '#9C9690', marginTop: 2 },
+  medNameInput: { backgroundColor: '#FFFFFF', borderRadius: 14, borderWidth: 1, borderColor: '#E6E1DC', paddingHorizontal: 14, height: 48, fontSize: 14, color: '#1A1817' },
 
   medFields: { marginTop: 12 },
   fieldLabel: { fontSize: 13, fontWeight: '700', color: '#1A1817', marginBottom: 6 },

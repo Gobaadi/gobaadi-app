@@ -30,6 +30,8 @@ export interface SendPrescriptionInput {
   animalId?: string;
   conversationId?: number;
   patientName: string;
+  /** Optional — owner/farmer email; when set, PDF service also emails the PDF. */
+  userEmail?: string;
   medications: PrescriptionFormMedication[];
   instructions: string;
   note: string;
@@ -63,6 +65,7 @@ export function useSendPrescription() {
         animalId,
         conversationId,
         patientName,
+        userEmail,
         medications,
         instructions,
         note,
@@ -94,7 +97,7 @@ export function useSendPrescription() {
       try {
         const pdfResult = await sendPrescriptionPdf({
           patientName,
-          userEmail: '',
+          userEmail: userEmail || '',
           medications,
           instructions,
           note,

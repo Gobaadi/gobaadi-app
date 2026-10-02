@@ -71,7 +71,6 @@ export class ChatService {
       conversationId,
       text || (attachment ? '[Attachment]' : ''),
     );
-    await this.conversationService.incrementUnread(conversationId);
     return this.toClientView(saved);
   }
 
@@ -107,7 +106,6 @@ export class ChatService {
       status: MessageStatus.READ,
       readAt: new Date(),
     });
-    await this.conversationService.resetUnread(message.conversationId);
     return this.chatMessageRepository.findOneByOrFail({ id: messageId });
   }
 
