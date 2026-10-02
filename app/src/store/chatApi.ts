@@ -115,6 +115,13 @@ export const chatApi = createApi({
       }),
       invalidatesTags: ['Conversation'],
     }),
+    markConversationRead: builder.mutation<{ updatedIds: number[] }, number>({
+      query: (conversationId) => ({
+        url: `/chat/conversations/${conversationId}/read`,
+        method: 'PATCH',
+      }),
+      invalidatesTags: ['Conversation'],
+    }),
   }),
 });
 
@@ -125,4 +132,5 @@ export const {
   useSendMessageMutation,
   useSendAttachmentMessageMutation,
   useCreateConversationMutation,
+  useMarkConversationReadMutation,
 } = chatApi;

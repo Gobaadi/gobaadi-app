@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { FindOptionsWhere, In, IsNull, Repository } from 'typeorm';
 import {
   MedicalEvent,
   MedicalEventStatus,
@@ -28,26 +28,56 @@ export class MedicalEventsService {
     private readonly animalRepository: Repository<Animal>,
   ) {}
 
-  async list(
+  /**
+   * Animal-scoped history for the doctor/patient detail screens. The route
+   * path carries an animal id, but medical events are keyed by the pet owner
+   * (MedicalEvent.patientId), so the animal is resolved to its owner first
+   * and results are restricted to appointments that are actually linked to
+   * this animal. Owner bookings made without an animal id cannot be
+   * attributed to any other animal, so they are included as well.
+   */
+  async listByAnimal(
     requesterUserId: number,
     requesterDoctorId: number | null,
-    patientId: number,
+    animalId: number,
     type?: MedicalEventType,
     page?: number,
     limit?: number,
   ): Promise<PaginatedResult<MedicalEvent>> {
-    await this.assertCanAccessPatient(
+    const animal = await this.animalRepository.findOneBy({ id: animalId });
+    if (!animal) {
+      throw new NotFoundException('Animal not found');
+    }
+    await this.assertCanAccessAnimal(
       requesterUserId,
       requesterDoctorId,
-      patientId,
+      animal,
     );
 
-    const where: Record<string, unknown> = { patientId };
+    const appointmentWhere: FindOptionsWhere<Appointment>[] = [
+      { animalId: animal.id },
+    ];
+    if (typeof animal.userId === 'number') {
+      appointmentWhere.push({ patientId: animal.userId, animalId: IsNull() });
+    }
+    const appointments = await this.appointmentRepository.find({
+      where: appointmentWhere,
+      select: { id: true },
+    });
+    const appointmentIds = appointments.map((a) => a.id);
+
+    const currentPage = page && page > 0 ? page : 1;
+    const pageSize = limit && limit > 0 ? limit : 20;
+    if (appointmentIds.length === 0) {
+      return { data: [], page: currentPage, limit: pageSize, total: 0 };
+    }
+
+    const where: Record<string, unknown> = {
+      appointmentId: In(appointmentIds),
+    };
     if (type) {
       where.type = type;
     }
-    const currentPage = page && page > 0 ? page : 1;
-    const pageSize = limit && limit > 0 ? limit : 20;
     const [data, total] = await this.medicalEventRepository.findAndCount({
       where,
       order: { createdAt: 'DESC' },
@@ -101,19 +131,34 @@ export class MedicalEventsService {
     });
   }
 
+  /**
+   * Create a record for an appointment. The second argument is the **animal**
+   * id (the route/DTO shape is animal-based); the stored `patientId` is the
+   * appointment's owner, per the entity contract.
+   */
   async create(
     doctorId: number,
-    patientId: number,
+    animalId: number,
     dto: CreateMedicalEventDto,
   ): Promise<MedicalEvent> {
+    const animal = await this.animalRepository.findOneBy({ id: animalId });
+    if (!animal) {
+      throw new NotFoundException('Animal not found');
+    }
     const appointment = await this.appointmentRepository.findOneBy({
       id: dto.appointmentId,
     });
-    if (
-      !appointment ||
-      appointment.doctorId !== doctorId ||
-      appointment.patientId !== patientId
-    ) {
+    if (!appointment || appointment.doctorId !== doctorId) {
+      throw new ForbiddenException(
+        'The appointment must belong to you and this patient',
+      );
+    }
+    const appointmentMatchesAnimal =
+      appointment.animalId === animalId ||
+      (appointment.animalId == null &&
+        typeof animal.userId === 'number' &&
+        appointment.patientId === animal.userId);
+    if (!appointmentMatchesAnimal) {
       throw new ForbiddenException(
         'The appointment must belong to you and this patient',
       );
@@ -121,7 +166,7 @@ export class MedicalEventsService {
 
     return this.medicalEventRepository.save(
       this.medicalEventRepository.create({
-        patientId,
+        patientId: appointment.patientId,
         appointmentId: dto.appointmentId,
         doctorId,
         type: dto.type,
@@ -250,6 +295,35 @@ export class MedicalEventsService {
     }
     throw new ForbiddenException(
       'You are not a participant of this appointment',
+    );
+  }
+
+  /** Read access to an animal: its owner, or a doctor with an appointment for the animal/its owner. */
+  private async assertCanAccessAnimal(
+    requesterUserId: number,
+    requesterDoctorId: number | null,
+    animal: Animal,
+  ): Promise<void> {
+    if (animal.userId === requesterUserId) {
+      return;
+    }
+    if (requesterDoctorId) {
+      const where: FindOptionsWhere<Appointment>[] = [
+        { doctorId: requesterDoctorId, animalId: animal.id },
+      ];
+      if (typeof animal.userId === 'number') {
+        where.push({
+          doctorId: requesterDoctorId,
+          patientId: animal.userId,
+        });
+      }
+      const treated = await this.appointmentRepository.findOne({ where });
+      if (treated) {
+        return;
+      }
+    }
+    throw new ForbiddenException(
+      'You may only access medical records for your own animals or patients you have treated',
     );
   }
 

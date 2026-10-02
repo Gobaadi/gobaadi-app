@@ -7,7 +7,6 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Switch,
   ActivityIndicator,
   Alert,
 } from 'react-native';
@@ -23,7 +22,14 @@ import {
   useUpdateQualificationsMutation,
   useUpdateSpecializationsMutation,
   useUploadMyPhotoMutation,
+  type DoctorExperience,
 } from '@/store/doctorPortalApi';
+import { useGetMyProfileQuery } from '@/store/usersApi';
+import {
+  useGetAddressesQuery,
+  useCreateAddressMutation,
+  useUpdateAddressMutation,
+} from '@/store/addressesApi';
 import { compressImageForUpload } from '@/utils/compress-image';
 import { DoctorAvatar } from '@/components/doctor-avatar';
 
@@ -40,11 +46,20 @@ export default function ProfileEditScreen() {
 
   const { data: doctorProfile, isLoading: profileLoading } = useGetMyDoctorProfileQuery(undefined, { skip: !isDoctor });
   const { data: doctorBookings = [] } = useGetDoctorBookingsQuery(undefined, { skip: !isDoctor });
+  const { data: userProfile } = useGetMyProfileQuery(undefined, { skip: !isDoctor });
+  const { data: addresses = [] } = useGetAddressesQuery(undefined, { skip: !isDoctor });
+  const [createAddress, { isLoading: creatingAddress }] = useCreateAddressMutation();
+  const [updateAddress, { isLoading: updatingAddress }] = useUpdateAddressMutation();
 
   const [updateProfile, { isLoading: savingProfile }] = useUpdateProfileMutation();
   const [updateExperiences, { isLoading: savingExperiences }] = useUpdateExperiencesMutation();
   const [updateQualifications, { isLoading: savingQualifications }] = useUpdateQualificationsMutation();
   const [updateSpecializations, { isLoading: savingSpecializations }] = useUpdateSpecializationsMutation();
+
+  const defaultAddress = useMemo(
+    () => addresses.find((a) => a.isDefault) ?? addresses[0] ?? null,
+    [addresses]
+  );
 
   const [activeTab, setActiveTab] = useState<Tab>(() => parseTab(tab));
 
@@ -52,6 +67,7 @@ export default function ProfileEditScreen() {
   const qualificationInputRef = useRef<TextInput>(null);
   const specializationInputRef = useRef<TextInput>(null);
   const didScrollToSection = useRef(false);
+  const didPrefill = useRef(false);
   const [credentialsContentY, setCredentialsContentY] = useState<number | null>(null);
   const [qualificationsHeaderY, setQualificationsHeaderY] = useState<number | null>(null);
   const [highlightedSection, setHighlightedSection] = useState<string | null>(null);
@@ -64,7 +80,15 @@ export default function ProfileEditScreen() {
   const [specialty, setSpecialty] = useState('');
   const [experience, setExperience] = useState('');
 
+  // Location (from the user's address book)
+  const [district, setDistrict] = useState('');
+  const [upazila, setUpazila] = useState('');
+  const didPrefillAddress = useRef(false);
+
   // Experience fields
+  const [experiences, setExperiences] = useState<DoctorExperience[]>([]);
+  const [editingExpIndex, setEditingExpIndex] = useState<number | null>(null);
+  const [expError, setExpError] = useState('');
   const [expTitle, setExpTitle] = useState('');
   const [expInstitute, setExpInstitute] = useState('');
   const [expDuration, setExpDuration] = useState('');
@@ -73,6 +97,8 @@ export default function ProfileEditScreen() {
   // Qualifications
   const [qualifications, setQualifications] = useState<string[]>([]);
   const [newQualification, setNewQualification] = useState('');
+  // qualifications[0] and [1] edit the Certifications / Institute Name fields.
+  const otherQualifications = qualifications.slice(2);
 
   // Specializations
   const [specializations, setSpecializations] = useState<string[]>([]);
@@ -86,27 +112,29 @@ export default function ProfileEditScreen() {
   const [pickedPhotoUri, setPickedPhotoUri] = useState<string | null>(null);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
-  // Pre-fill fields from API
+  // Pre-fill fields from API, once. Re-running on every background refetch
+  // (e.g. after a photo upload invalidates the profile) would wipe in-progress
+  // edits, including experiences the doctor is about to add.
   useEffect(() => {
-    if (doctorProfile) {
-      setName(doctorProfile.name || '');
-      setBio(doctorProfile.bio || '');
-      setSpecialty(doctorProfile.specialty || '');
-      setExperience(doctorProfile.experience || '');
-      setQualifications(doctorProfile.qualifications || []);
-      setSpecializations(doctorProfile.specializations || []);
-      setLicenseNumber(doctorProfile.licenseNumber || '');
-
-      // Pre-fill first experience if exists
-      if (doctorProfile.experiences && doctorProfile.experiences.length > 0) {
-        const exp = doctorProfile.experiences[0];
-        setExpTitle(exp.title || '');
-        setExpInstitute(exp.organization || '');
-        setExpDuration(exp.duration || '');
-        setExpDescription(exp.description || '');
-      }
-    }
+    if (!doctorProfile || didPrefill.current) return;
+    didPrefill.current = true;
+    setName(doctorProfile.name || '');
+    setBio(doctorProfile.bio || '');
+    setSpecialty(doctorProfile.specialty || '');
+    setExperience(doctorProfile.experience || '');
+    setQualifications(doctorProfile.qualifications || []);
+    setSpecializations(doctorProfile.specializations || []);
+    setLicenseNumber(doctorProfile.licenseNumber || '');
+    setExperiences(doctorProfile.experiences || []);
   }, [doctorProfile]);
+
+  // Pre-fill location from the saved address once.
+  useEffect(() => {
+    if (!defaultAddress || didPrefillAddress.current) return;
+    didPrefillAddress.current = true;
+    setDistrict(defaultAddress.district || '');
+    setUpazila(defaultAddress.upazila || '');
+  }, [defaultAddress]);
 
   const uniquePatients = useMemo(() => {
     const patientIds = new Set(doctorBookings.map((b) => b.patientId));
@@ -117,7 +145,13 @@ export default function ProfileEditScreen() {
     return doctorBookings.filter((b) => b.status === 'COMPLETED').length;
   }, [doctorBookings]);
 
-  const isSaving = savingProfile || savingExperiences || savingQualifications || savingSpecializations;
+  const isSaving =
+    savingProfile ||
+    savingExperiences ||
+    savingQualifications ||
+    savingSpecializations ||
+    creatingAddress ||
+    updatingAddress;
 
   const openPhotoPicker = () => {
     Alert.alert('Change Profile Photo', 'Choose an option', [
@@ -193,27 +227,95 @@ export default function ProfileEditScreen() {
       specialty,
       experience,
     }).unwrap();
+
+    const nextDistrict = district.trim();
+    const nextUpazila = upazila.trim();
+    // Location cannot be fully cleared from here — at least one part is required.
+    if (!nextDistrict && !nextUpazila) return;
+
+    const changed =
+      nextDistrict !== (defaultAddress?.district || '') ||
+      nextUpazila !== (defaultAddress?.upazila || '');
+    if (!changed) return;
+
+    if (defaultAddress) {
+      await updateAddress({
+        id: defaultAddress.id,
+        data: { district: nextDistrict, upazila: nextUpazila },
+      }).unwrap();
+    } else {
+      await createAddress({
+        label: 'Home',
+        contactName: name.trim(),
+        phone: userProfile?.phone || '',
+        division: '',
+        district: nextDistrict,
+        upazila: nextUpazila,
+        postalCode: '',
+        isDefault: true,
+      }).unwrap();
+    }
   };
 
   const handleSaveExperience = async () => {
-    const experiences = [];
-    if (expTitle || expInstitute) {
-      experiences.push({
-        title: expTitle,
-        organization: expInstitute,
-        duration: expDuration,
-        description: expDescription,
-      });
-    }
-    if (doctorProfile?.experiences && doctorProfile.experiences.length > 1) {
-      experiences.push(...doctorProfile.experiences.slice(1));
-    }
     await updateExperiences(experiences).unwrap();
+  };
+
+  const resetExpForm = () => {
+    setExpTitle('');
+    setExpInstitute('');
+    setExpDuration('');
+    setExpDescription('');
+    setEditingExpIndex(null);
+    setExpError('');
+  };
+
+  const addOrUpdateExperience = () => {
+    if (!expTitle.trim() && !expInstitute.trim()) {
+      setExpError('Enter a position title or institute name first');
+      return;
+    }
+    const entry: DoctorExperience = {
+      title: expTitle.trim(),
+      organization: expInstitute.trim(),
+      duration: expDuration.trim(),
+      description: expDescription.trim() || undefined,
+    };
+    if (editingExpIndex !== null) {
+      setExperiences((prev) => prev.map((exp, i) => (i === editingExpIndex ? entry : exp)));
+    } else {
+      setExperiences((prev) => [...prev, entry]);
+    }
+    resetExpForm();
+  };
+
+  const editExperience = (index: number) => {
+    const exp = experiences[index];
+    setExpTitle(exp.title || '');
+    setExpInstitute(exp.organization || '');
+    setExpDuration(exp.duration || '');
+    setExpDescription(exp.description || '');
+    setEditingExpIndex(index);
+    setExpError('');
+  };
+
+  const removeExperience = (index: number) => {
+    setExperiences((prev) => prev.filter((_, i) => i !== index));
+    if (editingExpIndex === index) {
+      resetExpForm();
+    } else if (editingExpIndex !== null && index < editingExpIndex) {
+      setEditingExpIndex(editingExpIndex - 1);
+    }
   };
 
   const handleSaveQualifications = async () => {
     try {
-      await updateQualifications(qualifications).unwrap();
+      // qualifications[0] = Certifications, qualifications[1] = Institute Name.
+      const payload = qualifications.map((q) => q.trim());
+      while (payload.length && payload[payload.length - 1] === '') {
+        payload.pop();
+      }
+      await updateQualifications(payload).unwrap();
     } catch {
       throw new Error('Failed to update qualifications');
     }
@@ -253,9 +355,24 @@ export default function ProfileEditScreen() {
     }
   };
 
+  const setQualificationAt = (index: number, value: string) => {
+    setQualifications((prev) => {
+      const next = [...prev];
+      while (next.length <= index) next.push('');
+      next[index] = value;
+      return next;
+    });
+  };
+
   const addQualification = () => {
     if (newQualification.trim()) {
-      setQualifications([...qualifications, newQualification.trim()]);
+      setQualifications((prev) => {
+        const next = [...prev];
+        // Keep indices 0 (Certifications) and 1 (Institute Name) reserved.
+        while (next.length < 2) next.push('');
+        next.push(newQualification.trim());
+        return next;
+      });
       setNewQualification('');
       setQualificationError('');
     } else {
@@ -431,6 +548,16 @@ export default function ProfileEditScreen() {
               <TextInput style={styles.input} value={experience} onChangeText={setExperience} placeholder="e.g. 5 Years" placeholderTextColor="#A39E99" />
             </View>
 
+            <Text style={styles.fieldLabel}>District</Text>
+            <View style={styles.inputRow}>
+              <TextInput style={styles.input} value={district} onChangeText={setDistrict} placeholder="e.g. Narayanganj" placeholderTextColor="#A39E99" />
+            </View>
+
+            <Text style={styles.fieldLabel}>Upazila / Village</Text>
+            <View style={styles.inputRow}>
+              <TextInput style={styles.input} value={upazila} onChangeText={setUpazila} placeholder="e.g. Bandar" placeholderTextColor="#A39E99" />
+            </View>
+
             <Text style={[styles.fieldLabel, { marginTop: 8 }]}>About / Bio</Text>
             <TextInput
               style={styles.textarea}
@@ -451,8 +578,8 @@ export default function ProfileEditScreen() {
               <Text style={styles.sectionTitle}>Experiences</Text>
             </View>
 
-            {doctorProfile?.experiences && doctorProfile.experiences.length > 0 ? (
-              doctorProfile.experiences.map((exp, i) => (
+            {experiences.length > 0 ? (
+              experiences.map((exp, i) => (
                 <View key={i} style={styles.existingItem}>
                   <View style={styles.existingItemContent}>
                     <Ionicons name="briefcase-outline" size={18} color="#BD632F" />
@@ -460,10 +587,28 @@ export default function ProfileEditScreen() {
                       <Text style={styles.existingItemTitle}>{exp.title}</Text>
                       <Text style={styles.existingItemSubtitle}>{exp.organization} · {exp.duration}</Text>
                     </View>
+                    <TouchableOpacity
+                      onPress={() => editExperience(i)}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      activeOpacity={0.7}
+                      accessibilityLabel="Edit experience"
+                    >
+                      <Ionicons name="create-outline" size={20} color="#7C7672" />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => removeExperience(i)}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      activeOpacity={0.7}
+                      accessibilityLabel="Delete experience"
+                    >
+                      <Ionicons name="trash-outline" size={20} color="#E53935" />
+                    </TouchableOpacity>
                   </View>
                 </View>
               ))
-            ) : null}
+            ) : (
+              <Text style={styles.emptyText}>No experiences added yet</Text>
+            )}
 
             <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Position Title</Text>
             <View style={styles.inputRow}>
@@ -490,34 +635,76 @@ export default function ProfileEditScreen() {
               placeholder="Describe your role and achievements..."
               placeholderTextColor="#A39E99"
             />
+
+            <View style={styles.expFormActions}>
+              <TouchableOpacity style={styles.expPrimaryBtn} onPress={addOrUpdateExperience} activeOpacity={0.8}>
+                <Ionicons name={editingExpIndex !== null ? 'checkmark' : 'add'} size={18} color="#FFFFFF" />
+                <Text style={styles.expPrimaryBtnText}>
+                  {editingExpIndex !== null ? 'Update Experience' : 'Add Experience'}
+                </Text>
+              </TouchableOpacity>
+              {editingExpIndex !== null && (
+                <TouchableOpacity style={styles.expCancelBtn} onPress={resetExpForm} activeOpacity={0.8}>
+                  <Text style={styles.expCancelBtnText}>Cancel</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            {expError ? <Text style={styles.errorText}>{expError}</Text> : null}
           </View>
         )}
 
         {/* Credentials Tab - Edit */}
         {activeTab === 'credentials' && (
           <View onLayout={(e) => setCredentialsContentY(e.nativeEvent.layout.y)}>
-            {/* Qualifications */}
+            {/* Certifications (qualifications[0]) */}
             <View
               style={[styles.sectionHeader, highlightedSection === 'qualifications' && styles.sectionHeaderHighlight]}
               onLayout={(e) => setQualificationsHeaderY(e.nativeEvent.layout.y)}
             >
-              <Text style={styles.sectionTitle}>Qualifications</Text>
+              <Text style={styles.sectionTitle}>Certifications</Text>
             </View>
 
-            {qualifications.length > 0 ? (
-              qualifications.map((qual, i) => (
-                <View key={i} style={styles.tagEditRow}>
+            <View style={styles.inputRow}>
+              <TextInput
+                style={styles.input}
+                value={qualifications[0] ?? ''}
+                onChangeText={(text) => setQualificationAt(0, text)}
+                placeholder="e.g. DVM, BAU"
+                placeholderTextColor="#A39E99"
+              />
+            </View>
+
+            {/* Institute Name (qualifications[1]) */}
+            <Text style={styles.fieldLabel}>Institute Name</Text>
+            <View style={styles.inputRow}>
+              <TextInput
+                style={styles.input}
+                value={qualifications[1] ?? ''}
+                onChangeText={(text) => setQualificationAt(1, text)}
+                placeholder="e.g. Bangladesh Agricultural University"
+                placeholderTextColor="#A39E99"
+              />
+            </View>
+
+            {/* Other Qualifications (qualifications[2+]) */}
+            <View style={[styles.sectionHeader, { marginTop: 24 }]}>
+              <Text style={styles.sectionTitle}>Other Qualifications</Text>
+            </View>
+
+            {otherQualifications.length > 0 ? (
+              otherQualifications.map((qual, i) => (
+                <View key={i + 2} style={styles.tagEditRow}>
                   <View style={styles.tagEditItem}>
                     <Ionicons name="school-outline" size={16} color="#BD632F" />
                     <Text style={styles.tagEditText}>{qual}</Text>
                   </View>
-                  <TouchableOpacity onPress={() => removeQualification(i)} activeOpacity={0.7}>
+                  <TouchableOpacity onPress={() => removeQualification(i + 2)} activeOpacity={0.7}>
                     <Ionicons name="close-circle" size={20} color="#E53935" />
                   </TouchableOpacity>
                 </View>
               ))
             ) : (
-              <Text style={styles.emptyText}>No qualifications added yet</Text>
+              <Text style={styles.emptyText}>No other qualifications added yet</Text>
             )}
 
             <View style={styles.addRow}>
@@ -686,4 +873,24 @@ const styles = StyleSheet.create({
   // Add row
   addRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 },
   addBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#BD632F', justifyContent: 'center', alignItems: 'center' },
+  expFormActions: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4, marginBottom: 8 },
+  expPrimaryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#BD632F',
+    borderRadius: 20,
+    paddingHorizontal: 18,
+    paddingVertical: 11,
+  },
+  expPrimaryBtnText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
+  expCancelBtn: {
+    paddingHorizontal: 18,
+    paddingVertical: 11,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#E6E1DC',
+    backgroundColor: '#FFFFFF',
+  },
+  expCancelBtnText: { fontSize: 14, fontWeight: '700', color: '#7C7672' },
 });

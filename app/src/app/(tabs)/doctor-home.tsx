@@ -24,6 +24,7 @@ import {
 import { useGetConversationsQuery, useCreateConversationMutation } from '@/store/chatApi';
 import { useLanguage } from '@/hooks/use-language';
 import { PatientAvatar } from '@/components/patient-avatar';
+import { formatTime12h } from '@/utils/date';
 
 function getGreeting(): string {
   const h = new Date().getHours();
@@ -33,7 +34,7 @@ function getGreeting(): string {
 }
 
 function formatBookingTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+  return formatTime12h(iso);
 }
 
 const QUICK_TILES = [

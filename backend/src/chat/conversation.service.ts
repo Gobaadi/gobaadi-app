@@ -2,6 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { Conversation } from './conversation.entity';
+import { ChatMessage, MessageStatus } from './chat-message.entity';
 import { Appointment } from '../appointments/appointment.entity';
 import { Doctor } from '../doctors/doctor.entity';
 import { User } from '../users/user.entity';
@@ -22,6 +23,8 @@ export class ConversationService {
   constructor(
     @InjectRepository(Conversation)
     private readonly conversationRepository: Repository<Conversation>,
+    @InjectRepository(ChatMessage)
+    private readonly chatMessageRepository: Repository<ChatMessage>,
     @InjectRepository(Appointment)
     private readonly appointmentRepository: Repository<Appointment>,
     @InjectRepository(Doctor)
@@ -110,17 +113,46 @@ export class ConversationService {
   ): Promise<EnrichedConversation[]> {
     const conversations = await this.conversationRepository.find({
       where:
-        role === UserRole.USER ? { patientId: userId } : { doctorUserId: userId },
+        role === UserRole.USER
+          ? { patientId: userId }
+          : { doctorUserId: userId },
       order: { lastMessageAt: 'DESC' },
     });
     if (conversations.length === 0) {
       return [];
     }
 
+    // Per-viewer unread: messages sent by the OTHER party that are not yet
+    // READ. The stored conversation.unreadCount column is shared by both
+    // participants and cannot represent two independent read states, so the
+    // value returned here is always recomputed from chat_messages.
+    const unreadByConversation = new Map<number, number>();
+    const unreadRows: Array<{ conversationId: number; count: string }> =
+      await this.chatMessageRepository
+        .createQueryBuilder('m')
+        .select('m.conversationId', 'conversationId')
+        .addSelect('COUNT(*)', 'count')
+        .where('m.conversationId IN (:...ids)', {
+          ids: conversations.map((c) => c.id),
+        })
+        .andWhere('m.senderRole != :role', { role })
+        .andWhere('m.status != :status', { status: MessageStatus.READ })
+        .groupBy('m.conversationId')
+        .getRawMany();
+    unreadRows.forEach((row) =>
+      unreadByConversation.set(Number(row.conversationId), Number(row.count)),
+    );
+
     const patientIds = [...new Set(conversations.map((c) => c.patientId))];
     const patients = await this.userRepository.find({
       where: { id: In(patientIds) },
-      select: { id: true, name: true, phone: true, profilePhoto: true, avatar: true },
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        profilePhoto: true,
+        avatar: true,
+      },
     });
     const patientsById = new Map(patients.map((p) => [p.id, p]));
 
@@ -166,14 +198,12 @@ export class ConversationService {
 
     return conversations.map((conversation) => {
       const patient = patientsById.get(conversation.patientId);
-      const appointment = conversation.appointmentId
-        ? appointmentById.get(conversation.appointmentId)
-        : undefined;
       const animal = conversation.appointmentId
         ? animalsById.get(conversation.appointmentId)
         : undefined;
       return {
         ...conversation,
+        unreadCount: unreadByConversation.get(conversation.id) ?? 0,
         patientName: patient?.name,
         patientPhone: patient?.phone,
         patientPhoto: patient?.profilePhoto || patient?.avatar || undefined,
@@ -187,7 +217,9 @@ export class ConversationService {
     conversationId: number,
     messageText?: string,
   ): Promise<void> {
-    const update: any = { lastMessageAt: new Date() };
+    const update: { lastMessageAt: Date; lastMessageText?: string } = {
+      lastMessageAt: new Date(),
+    };
     if (messageText !== undefined) {
       update.lastMessageText =
         messageText.length > 200
@@ -195,20 +227,5 @@ export class ConversationService {
           : messageText;
     }
     await this.conversationRepository.update(conversationId, update);
-  }
-
-  async incrementUnread(conversationId: number): Promise<void> {
-    await this.conversationRepository
-      .createQueryBuilder()
-      .update(Conversation)
-      .set({ unreadCount: () => '"unreadCount" + 1' })
-      .where('id = :id', { id: conversationId })
-      .execute();
-  }
-
-  async resetUnread(conversationId: number): Promise<void> {
-    await this.conversationRepository.update(conversationId, {
-      unreadCount: 0,
-    });
   }
 }

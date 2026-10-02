@@ -26,7 +26,7 @@ import LanguageBottomSheet from '@/components/LanguageBottomSheet';
 import Svg, { Path } from 'react-native-svg';
 import { EmptyState } from '@/components/ui/empty-state';
 import { RowSkeleton, SkeletonBox } from '@/components/ui/skeleton';
-import { localDateKey } from '@/utils/date';
+import { localDateKey, formatTime12h } from '@/utils/date';
 import { DoctorAvatar } from '@/components/doctor-avatar';
 
 const { width } = Dimensions.get('window');
@@ -45,7 +45,7 @@ function formatFullDate(): string {
 }
 
 function formatTaskTime(scheduledTime: string): string {
-  return new Date(scheduledTime).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  return formatTime12h(scheduledTime);
 }
 
 function animalImage(breed: string) {

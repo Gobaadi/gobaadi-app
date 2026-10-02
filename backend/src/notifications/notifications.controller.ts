@@ -108,7 +108,7 @@ export class NotificationsController {
   }
 
   @Post('push-token')
-  @ApiOperation({ summary: "Register the current device's Expo push token" })
+  @ApiOperation({ summary: "Register the current device's push token" })
   @ApiResponse({ status: 201, description: 'Push token registered' })
   async registerPushToken(
     @CurrentUser() user: JwtPayload,
@@ -118,6 +118,7 @@ export class NotificationsController {
       user.sub,
       body.token,
       body.deviceId,
+      body.platform,
     );
     return { success: true };
   }

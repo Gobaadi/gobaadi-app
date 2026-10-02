@@ -39,7 +39,10 @@ export const notificationsApi = createApi({
       }),
       invalidatesTags: [{ type: 'Notification', id: 'LIST' }],
     }),
-    registerPushToken: builder.mutation<{ success: boolean }, { token: string; deviceId?: string }>({
+    registerPushToken: builder.mutation<
+      { success: boolean },
+      { token: string; deviceId?: string; platform?: string }
+    >({
       query: (body) => ({
         url: '/notifications/push-token',
         method: 'POST',

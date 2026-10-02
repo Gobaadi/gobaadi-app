@@ -28,6 +28,7 @@ import {
   useSendMessageMutation,
   useSendAttachmentMessageMutation,
   useCreateConversationMutation,
+  useMarkConversationReadMutation,
   type ChatMessage,
 } from '@/store/chatApi';
 import { compressImageForUpload } from '@/utils/compress-image';
@@ -44,6 +45,7 @@ import {
 } from '@/store/prescriptionsApi';
 import { useChatSocket } from '@/hooks/use-chat-socket';
 import { sendPrescriptionPdf, savePdfToTempFile } from '@/lib/pdf-service';
+import { formatTime12h } from '@/utils/date';
 
 type ConsultationState = 'idle' | 'active' | 'ended' | 'prescription_sent';
 
@@ -71,7 +73,7 @@ function toUIMessage(msg: ChatMessage): ChatMessageUI {
     id: msg.id.toString(),
     sender: msg.sender === 'doctor' ? 'doctor' : 'patient',
     text: msg.text,
-    time: new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    time: formatTime12h(msg.createdAt),
     isPrescription: !!(
       msg.attachmentType === 'document' ||
       (msg.text?.startsWith('Prescription -') && msg.attachmentUrl)
@@ -135,6 +137,7 @@ export default function ChatScreen() {
     consultationId?: string;
     conversationId?: string;
     patientName?: string;
+    peerName?: string;
     animalImage?: string;
     animalId?: string;
     appointmentId?: string;
@@ -151,6 +154,9 @@ export default function ChatScreen() {
 
   const viewerRole = useSelector((state: RootState) => state.auth.user?.role);
   const isViewerDoctor = viewerRole === 'doctor';
+  // Counterparty shown in the header/banners: the doctor sees the patient,
+  // the farmer sees the doctor (peerName supplied by the entry point).
+  const peerName = isViewerDoctor ? patientName : params.peerName || 'Doctor';
 
   const { data: consultation } = useGetConsultationQuery(consultationId, { skip: !consultationId });
   // Re-attach to an already-running consultation when the chat is (re)opened —
@@ -173,6 +179,16 @@ export default function ChatScreen() {
   const [sendPrescriptionApi] = useSendPrescriptionMutation();
   const [sendAttachment, { isLoading: sendingAttachment }] = useSendAttachmentMessageMutation();
   const [createConversation] = useCreateConversationMutation();
+  const [markConversationRead] = useMarkConversationReadMutation();
+
+  // Opening the chat means the messages are seen: mark everything received in
+  // this conversation READ so the list badge (unreadCount, computed server-side
+  // from message status) disappears as soon as the screen opens. Invalidating
+  // the Conversation tag refetches the list even while this screen is pushed.
+  useEffect(() => {
+    if (!conversationId) return;
+    markConversationRead(conversationId);
+  }, [conversationId, markConversationRead]);
 
   useEffect(() => {
     if (conversationId || !appointmentId) return;
@@ -309,6 +325,7 @@ export default function ChatScreen() {
       params: {
         consultationId: resolvedConsultationId,
         patientName,
+        peerName,
         startedAt: consultation ? consultationStartedAt(consultation) : '',
         conversationId: conversationId ? String(conversationId) : '',
         animalId,
@@ -341,6 +358,7 @@ export default function ChatScreen() {
         callType,
         conversationId: conversationId ? String(conversationId) : '',
         patientName,
+        peerName,
         animalImage,
       },
     });
@@ -440,7 +458,7 @@ export default function ChatScreen() {
         id: `presc-${Date.now()}`,
         sender: 'doctor',
         text: summary,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        time: formatTime12h(new Date()),
         isPrescription: true,
         isPdf: pdfUri !== null,
         prescriptionDate: new Date().toLocaleDateString(),
@@ -535,7 +553,7 @@ export default function ChatScreen() {
       id: `temp-${Date.now()}`,
       sender: isViewerDoctor ? 'doctor' : 'patient',
       text,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      time: formatTime12h(new Date()),
     };
     setLocalMessages((prev) => [...prev, optimistic]);
     try {
@@ -637,7 +655,7 @@ export default function ChatScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
           <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{patientName}</Text>
+        <Text style={styles.headerTitle}>{peerName}</Text>
         <View style={styles.headerActions}>
           {!!appointmentId && (
             <>
@@ -707,9 +725,9 @@ export default function ChatScreen() {
             </View>
             <View>
               <Text style={styles.upcomingBannerTime}>
-                {new Date(consultationStartedAt(activeConsultation)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · Today
+                {formatTime12h(consultationStartedAt(activeConsultation))} · Today
               </Text>
-              <Text style={styles.upcomingBannerName}>{patientName}</Text>
+              <Text style={styles.upcomingBannerName}>{peerName}</Text>
             </View>
           </View>
           <TouchableOpacity
@@ -725,8 +743,8 @@ export default function ChatScreen() {
       {consultationState === 'active' && (
         <View style={styles.consultationBanner}>
           <Text style={styles.consultationBannerTitle}>Consultation started</Text>
-          <Text style={styles.consultationBannerDesc}>You are now in consultation with {patientName}</Text>
-          <Text style={styles.consultationBannerBullet}>•  Start time: {consultation ? new Date(consultationStartedAt(consultation)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</Text>
+          <Text style={styles.consultationBannerDesc}>You are now in consultation with {peerName}</Text>
+          <Text style={styles.consultationBannerBullet}>•  Start time: {consultation ? formatTime12h(consultationStartedAt(consultation)) : ''}</Text>
           <Text style={styles.consultationBannerBullet}>•  Max Duration: 30 min</Text>
           <Text style={styles.consultationBannerRemaining}>•  Remaining time: {formatTimeRemaining(remainingTime)}</Text>
           <TouchableOpacity style={styles.endConsultationBtn} onPress={handleEndConsultation} activeOpacity={0.85} disabled={ending}>
@@ -742,8 +760,8 @@ export default function ChatScreen() {
       {(consultationState === 'ended' || consultationState === 'prescription_sent') && (
         <View style={styles.consultationBanner}>
           <Text style={styles.consultationBannerEndedTitle}>Consultation ended!</Text>
-          <Text style={styles.consultationBannerDesc}>Your consultation with {patientName} has ended.</Text>
-          <Text style={styles.consultationBannerBullet}>•  Start time: {consultation ? new Date(consultationStartedAt(consultation)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</Text>
+          <Text style={styles.consultationBannerDesc}>Your consultation with {peerName} has ended.</Text>
+          <Text style={styles.consultationBannerBullet}>•  Start time: {consultation ? formatTime12h(consultationStartedAt(consultation)) : ''}</Text>
           <Text style={styles.consultationBannerBullet}>•  Max Duration: 30 min</Text>
           <Text style={styles.consultationBannerRemaining}>•  Remaining time: {formatTimeRemaining(remainingTime)}</Text>
         </View>

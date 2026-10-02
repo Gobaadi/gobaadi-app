@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { socketManager } from '@/lib/socket-manager';
-import { chatApi, ChatMessage } from '@/store/chatApi';
+import { chatApi, ChatMessage, useMarkConversationReadMutation } from '@/store/chatApi';
 import type { AppDispatch } from '@/store/store';
 
 interface TypingPayload {
@@ -24,6 +24,7 @@ interface MessageStatusPayload {
 export function useChatSocket(conversationId: number | undefined) {
   const dispatch = useDispatch<AppDispatch>();
   const [typingUserId, setTypingUserId] = useState<number | null>(null);
+  const [markConversationRead] = useMarkConversationReadMutation();
 
   useEffect(() => {
     if (!conversationId) return;
@@ -44,12 +45,13 @@ export function useChatSocket(conversationId: number | undefined) {
           if (conversation) {
             conversation.lastMessageAt = message.createdAt;
             conversation.lastMessageText = message.text;
-            if (message.sender === 'user') {
-              conversation.unreadCount = (conversation.unreadCount || 0) + 1;
-            }
           }
         }),
       );
+      // This hook only runs while the chat screen is OPEN, so the message is
+      // being read right now — mark the conversation read instead of bumping
+      // the unread badge (the server recomputes unreadCount from message status).
+      markConversationRead(conversationId);
     };
 
     const handleTyping = (payload: TypingPayload) => {
@@ -69,6 +71,7 @@ export function useChatSocket(conversationId: number | undefined) {
 
     const handleReconnected = () => {
       dispatch(chatApi.util.invalidateTags(['ChatMessage', 'Conversation']));
+      markConversationRead(conversationId);
     };
 
     socketManager.on('messageReceived', handleMessageReceived);
@@ -82,7 +85,7 @@ export function useChatSocket(conversationId: number | undefined) {
       socketManager.off('messageStatusUpdate', handleStatusUpdate);
       socketManager.off('reconnected', handleReconnected);
     };
-  }, [conversationId, dispatch]);
+  }, [conversationId, dispatch, markConversationRead]);
 
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const emitTyping = (isTyping: boolean) => {

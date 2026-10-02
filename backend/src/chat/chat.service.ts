@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Not, Repository } from 'typeorm';
 import { ChatMessage, MessageStatus } from './chat-message.entity';
 import { ConversationService } from './conversation.service';
 import { UserRole } from '../users/user.entity';
@@ -71,7 +71,6 @@ export class ChatService {
       conversationId,
       text || (attachment ? '[Attachment]' : ''),
     );
-    await this.conversationService.incrementUnread(conversationId);
     return this.toClientView(saved);
   }
 
@@ -107,8 +106,48 @@ export class ChatService {
       status: MessageStatus.READ,
       readAt: new Date(),
     });
-    await this.conversationService.resetUnread(message.conversationId);
     return this.chatMessageRepository.findOneByOrFail({ id: messageId });
+  }
+
+  /**
+   * Marks every message the viewer has RECEIVED in the conversation as READ.
+   * Messages sent by the viewer are untouched — read status belongs to the
+   * recipient, and each participant's unread count is derived from messages
+   * sent by the other party (see ConversationService.listForUser).
+   * Returns the ids of the messages that changed so callers can broadcast
+   * status updates to the other participant.
+   */
+  async markConversationRead(
+    conversationId: number,
+    userId: number,
+    role: UserRole,
+  ): Promise<number[]> {
+    const isParticipant = await this.conversationService.isParticipant(
+      conversationId,
+      userId,
+      role,
+    );
+    if (!isParticipant) {
+      throw new ForbiddenException('Not a participant in this conversation');
+    }
+
+    const unread = await this.chatMessageRepository.find({
+      where: {
+        conversationId,
+        senderRole: Not(role),
+        status: Not(MessageStatus.READ),
+      },
+      select: { id: true },
+    });
+    if (unread.length === 0) {
+      return [];
+    }
+
+    await this.chatMessageRepository.update(
+      { id: In(unread.map((m) => m.id)) },
+      { status: MessageStatus.READ, readAt: new Date() },
+    );
+    return unread.map((m) => m.id);
   }
 
   private toClientView(message: ChatMessage): ChatMessageClientView {

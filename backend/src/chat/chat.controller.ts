@@ -24,6 +24,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { ChatService, ChatMessageClientView } from './chat.service';
+import { MessageStatus } from './chat-message.entity';
 import { ConversationService } from './conversation.service';
 import { ChatGateway } from './chat.gateway';
 import { SendMessageDto } from './dto/send-message.dto';
@@ -253,6 +254,40 @@ export class ChatController {
       },
     );
     return updated;
+  }
+
+  @Patch('conversations/:id/read')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Mark all received messages in a conversation as read',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Updated message ids (empty if none)',
+  })
+  async markConversationRead(
+    @Param('id') id: string,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<{ updatedIds: number[] }> {
+    const conversationId = parseInt(id, 10);
+    const updatedIds = await this.chatService.markConversationRead(
+      conversationId,
+      user.sub,
+      user.role,
+    );
+    updatedIds.forEach((messageId) => {
+      this.chatGateway.notifyConversation(
+        conversationId,
+        'messageStatusUpdate',
+        {
+          id: messageId,
+          status: MessageStatus.READ,
+        },
+      );
+    });
+    await this.chatGateway.notifyConversationParticipants(conversationId, {});
+    return { updatedIds };
   }
 
   @Get('appointments')

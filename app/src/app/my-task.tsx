@@ -18,16 +18,12 @@ import {
   Task,
 } from '@/store/tasksApi';
 import { RowSkeleton } from '@/components/ui/skeleton';
-import { formatLocalDateKey, localDateKey } from '@/utils/date';
+import { formatLocalDateKey, localDateKey, formatTime12h } from '@/utils/date';
 import { apiErrorMessage } from '@/utils/api-error';
 
 function formatTaskTime(scheduledTime?: string): string {
   if (!scheduledTime) return '07:00 PM';
-  try {
-    return new Date(scheduledTime).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-  } catch {
-    return '07:00 PM';
-  }
+  return formatTime12h(scheduledTime) || '07:00 PM';
 }
 
 function parseEndTime(detail?: string): string {

@@ -6,6 +6,7 @@ import { useColorScheme } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useEffect } from 'react';
 import { Provider, useSelector } from 'react-redux';
+import type { NotificationResponse } from 'expo-notifications';
 
 let Notifications: typeof import('expo-notifications') | null = null;
 try {
@@ -44,13 +45,37 @@ function RootNavigator() {
 
   useEffect(() => {
     if (!Notifications) return;
-    const subscription = Notifications.addNotificationResponseReceivedListener(() => {
+
+    const lastHandled = { key: '', at: 0 };
+    const handleResponse = (response: NotificationResponse) => {
+      // The same response can arrive twice right after a cold start (stored
+      // response replayed by getLastNotificationResponse + live listener) —
+      // dedupe within a short window, still allowing later re-taps.
+      const key = `${response.notification.request.identifier}:${response.actionIdentifier}`;
+      const now = Date.now();
+      if (lastHandled.key === key && now - lastHandled.at < 3000) return;
+      lastHandled.key = key;
+      lastHandled.at = now;
+
       if (user?.role === 'doctor') {
         router.push('/doctor-notifications');
       } else {
         router.push('/notifications');
       }
-    });
+    };
+
+    const subscription =
+      Notifications.addNotificationResponseReceivedListener(handleResponse);
+
+    // Cold start: app launched from a notification tap — the listener above
+    // does not receive the response that opened the app, so read it once.
+    // Skipped until the user is known (handled on the next run after login).
+    const initial = Notifications.getLastNotificationResponse();
+    if (initial && user) {
+      handleResponse(initial);
+      Notifications.clearLastNotificationResponse();
+    }
+
     return () => subscription.remove();
   }, [router, user]);
 
@@ -129,6 +154,7 @@ function RootNavigator() {
         <Stack.Screen name="faqs" />
         <Stack.Screen name="contact-support" />
         <Stack.Screen name="report-issues" />
+        <Stack.Screen name="my-reports" />
         <Stack.Screen name="subscription" />
         <Stack.Screen name="select-language" />
         <Stack.Screen name="wallet" />

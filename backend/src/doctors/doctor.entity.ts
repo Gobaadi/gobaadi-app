@@ -59,6 +59,15 @@ export class Doctor {
     description?: string;
   }>;
 
+  @Column('jsonb', { nullable: true })
+  credentialPeriod?: {
+    startMonth?: string;
+    startYear?: string;
+    endMonth?: string;
+    endYear?: string;
+    isCurrentlyStudying?: boolean;
+  } | null;
+
   @Column({ nullable: true })
   licenseNumber?: string;
 

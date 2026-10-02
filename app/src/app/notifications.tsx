@@ -12,6 +12,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useGetNotificationsQuery, useMarkNotificationReadMutation } from '@/store/notificationsApi';
 import type { Notification } from '@/store/notificationsApi';
+import { formatNotificationTime } from '@/utils/date';
 
 type FilterTab = 'all' | 'tasks' | 'hygiene' | 'health' | 'help';
 
@@ -48,14 +49,6 @@ function isThisWeek(dateStr: string): boolean {
   const now = new Date();
   const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   return date >= weekAgo && !isToday(dateStr);
-}
-
-function formatTime(dateStr: string): string {
-  const date = new Date(dateStr);
-  if (isToday(dateStr)) {
-    return `Today, ${date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`;
-  }
-  return date.toLocaleDateString('en-US', { weekday: 'short', hour: 'numeric', minute: '2-digit', hour12: true });
 }
 
 export default function NotificationsScreen() {
@@ -111,7 +104,7 @@ export default function NotificationsScreen() {
         <View style={styles.notifInfo}>
           <Text style={styles.notifTitle}>{item.title}</Text>
           <Text style={styles.notifDesc}>{item.body}</Text>
-          <Text style={styles.notifTime}>{formatTime(item.createdAt)}</Text>
+          <Text style={styles.notifTime}>{formatNotificationTime(item.createdAt)}</Text>
         </View>
         {!item.isRead && <View style={styles.unreadDot} />}
       </TouchableOpacity>

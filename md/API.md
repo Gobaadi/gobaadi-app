@@ -1,7 +1,7 @@
 ﻿# Gobadi Backend — API Reference
 
 Complete REST API reference for the NestJS backend (`backend/`), generated directly from the
-source code. **324 REST endpoints** across 55+ controllers, plus the Socket.IO chat/video events.
+source code. **325 REST endpoints** across 55+ controllers, plus the Socket.IO chat/video events.
 
 - **Base URL:** `http://localhost:3000` (override with the `PORT` env var)
 - **Interactive docs (Swagger):** `http://localhost:3000/api/docs`
@@ -2944,7 +2944,7 @@ Returns `null` when the appointment has no prescription.
 ### Chat
 
 ### `GET /chat/conversations`
-- **Purpose:** List the current user's conversations.
+- **Purpose:** List the current user's conversations. `unreadCount` is computed per viewer (messages sent by the other party that are not `READ`), not the stored shared counter.
 - **Auth:** JWT
 - **Response `200`:**
 ```json
@@ -2998,6 +2998,15 @@ Returns `null` when the appointment has no prescription.
 - **Response `200`:**
 ```json
 { "id": 42, "conversationId": 7, "senderId": 15, "senderRole": "doctor", "text": "Hello, how is Bella doing?", "createdAt": "2026-09-27T10:32:11.000Z", "status": "READ", "deliveredAt": "2026-09-27T10:32:12.000Z", "readAt": "2026-09-27T10:33:00.000Z", "attachmentUrl": null }
+```
+
+### `PATCH /chat/conversations/:id/read`
+- **Purpose:** Mark every message the caller has **received** in the conversation as `READ` (bulk). Sent by the chat screen on open so the list badge clears. Emits `messageStatusUpdate` per changed message and `conversationUpdated` to both participants.
+- **Auth:** JWT (participant only)
+- **Request:** `id (path param)` — conversation id
+- **Response `200`:**
+```json
+{ "updatedIds": [43, 44] }
 ```
 
 ### `GET /chat/appointments`

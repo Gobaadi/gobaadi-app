@@ -21,6 +21,7 @@ import {
   useGetDoctorBookingsQuery,
   type DoctorAppointment,
 } from '@/store/doctorPortalApi';
+import { PatientAvatar } from '@/components/patient-avatar';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -148,7 +149,7 @@ function MonthGrid({
                   style={[
                     styles.dayNumberText,
                     hasAppointment && styles.dayNumberTextAppointment,
-                    isToday && styles.dayNumberTextToday,
+                    isToday && !hasAppointment && styles.dayNumberTextToday,
                   ]}
                 >
                   {day}
@@ -316,11 +317,11 @@ function DayAppointmentCard({ appointment, isPast, isUpcoming }: { appointment: 
   return (
     <View style={[styles.dayAppointmentCard, isPast && styles.dayAppointmentCardPast]}>
       <View style={styles.dayAppointmentAvatar}>
-        {appointment.animalImage ? (
-          <View style={styles.dayAppointmentAvatarImage} />
-        ) : (
-          <Ionicons name="paw" size={20} color="#BD632F" />
-        )}
+        <PatientAvatar
+          name={appointment.animalName || appointment.patientName || 'Patient'}
+          image={appointment.animalImage || appointment.patientImage}
+          size={44}
+        />
         {isUpcoming && <View style={styles.greenDot} />}
       </View>
       <View style={styles.dayAppointmentInfo}>
@@ -357,8 +358,9 @@ function ListView({
   }, [appointments]);
 
   const totalCount = appointments.length;
-  const currentMonth = new Date().getMonth();
-  const currentYear = new Date().getFullYear();
+  const firstGroupDate = grouped.length > 0 ? new Date(grouped[0][0] + 'T12:00:00') : new Date();
+  const currentMonth = firstGroupDate.getMonth();
+  const currentYear = firstGroupDate.getFullYear();
 
   if (grouped.length === 0) {
     return (
@@ -419,11 +421,11 @@ function ListAppointmentCard({ appointment }: { appointment: DoctorAppointment }
       </View>
       <View style={styles.listAppointmentCardBody}>
         <View style={styles.listAppointmentAvatar}>
-          {appointment.animalImage ? (
-            <View style={styles.listAppointmentAvatarImage} />
-          ) : (
-            <Ionicons name="paw" size={20} color="#BD632F" />
-          )}
+          <PatientAvatar
+            name={appointment.animalName || appointment.patientName || 'Patient'}
+            image={appointment.animalImage || appointment.patientImage}
+            size={44}
+          />
           <View style={styles.greenDot} />
         </View>
         <View style={styles.listAppointmentInfo}>
@@ -460,7 +462,10 @@ export default function ScheduleScreen() {
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
   const [filterConsultation, setFilterConsultation] = useState<FilterConsultation>('all');
 
-  const { data: bookings = [], isLoading } = useGetDoctorBookingsQuery();
+  const { data: bookings = [], isLoading } = useGetDoctorBookingsQuery(undefined, {
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
+  });
 
   const filteredBookings = useMemo(() => {
     return bookings.filter((b) => {
@@ -760,7 +765,7 @@ const styles = StyleSheet.create({
   viewToggleText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#9C9690',
+    color: '#6F6863',
   },
   viewToggleTextActive: {
     color: '#1A1817',
@@ -1150,12 +1155,6 @@ const styles = StyleSheet.create({
   dayAppointmentCardPast: {
     opacity: 0.6,
   },
-  dayAppointmentAvatarImage: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#E6E1DC',
-  },
   emptyDayContainer: {
     alignItems: 'center',
     paddingVertical: 40,
@@ -1278,12 +1277,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF2EB',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  listAppointmentAvatarImage: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#E6E1DC',
   },
   listAppointmentInfo: {
     flex: 1,

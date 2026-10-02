@@ -1,9 +1,23 @@
 export function apiErrorMessage(err: unknown, fallback: string): string {
   if (err && typeof err === 'object') {
     const e = err as {
-      data?: { message?: string | string[]; error?: string };
+      data?: {
+        message?: string | string[];
+        error?: string;
+        errorSources?: { message?: string }[];
+      };
       status?: number | string;
     };
+    const sources = e.data?.errorSources;
+    if (Array.isArray(sources) && sources.length > 0) {
+      const joined = sources
+        .map((s) => s.message)
+        .filter(Boolean)
+        .join('\n');
+      if (joined) {
+        return joined;
+      }
+    }
     const msg = e.data?.message;
     if (Array.isArray(msg) && msg.length > 0) {
       return msg.join('\n');

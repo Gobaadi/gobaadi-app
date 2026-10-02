@@ -69,7 +69,7 @@ export class MedicalEventsController {
       user.role === UserRole.DOCTOR
         ? await this.doctorsService.getDoctorByUserId(user.sub)
         : null;
-    return this.medicalEventsService.list(
+    return this.medicalEventsService.listByAnimal(
       user.sub,
       doctor?.id ?? null,
       parseInt(id, 10),
@@ -172,7 +172,7 @@ export class MedicalEventsController {
       user.role === UserRole.DOCTOR
         ? await this.doctorsService.getDoctorByUserId(user.sub)
         : null;
-    const result = await this.medicalEventsService.list(
+    const result = await this.medicalEventsService.listByAnimal(
       user.sub,
       doctor?.id ?? null,
       parseInt(animalId, 10),
@@ -230,7 +230,7 @@ export class MedicalEventsController {
       user.role === UserRole.DOCTOR
         ? await this.doctorsService.getDoctorByUserId(user.sub)
         : null;
-    const result = await this.medicalEventsService.list(
+    const result = await this.medicalEventsService.listByAnimal(
       user.sub,
       doctor?.id ?? null,
       parseInt(animalId, 10),
@@ -305,7 +305,7 @@ export class MedicalEventsController {
       user.role === UserRole.DOCTOR
         ? await this.doctorsService.getDoctorByUserId(user.sub)
         : null;
-    const result = await this.medicalEventsService.list(
+    const result = await this.medicalEventsService.listByAnimal(
       user.sub,
       doctor?.id ?? null,
       parseInt(animalId, 10),

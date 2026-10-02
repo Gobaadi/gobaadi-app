@@ -1,7 +1,5 @@
 import React, { useState, useMemo } from 'react';
 import { useRequireDoctor } from '@/hooks/use-require-doctor';
-import { useSelector } from 'react-redux';
-import type { RootState } from '@/store/store';
 import {
   StyleSheet,
   View,
@@ -16,11 +14,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { useGetDoctorBookingsQuery, useGetMyDoctorProfileQuery, useUpdateQualificationsMutation, useUpdateSpecializationsMutation, useUploadCredentialDocumentMutation, useUpdateCredentialDocumentsMutation } from '@/store/doctorPortalApi';
+import { useGetDoctorBookingsQuery, useGetMyDoctorProfileQuery, useUpdateQualificationsMutation, useUpdateSpecializationsMutation, useUploadCredentialDocumentMutation, useUpdateCredentialDocumentsMutation, useUpdateProfileMutation } from '@/store/doctorPortalApi';
 import { useGetMyProfileQuery } from '@/store/usersApi';
+import { useGetAddressesQuery } from '@/store/addressesApi';
 import { useGetReviewsQuery } from '@/store/reviewsApi';
 import { compressImageForUpload } from '@/utils/compress-image';
 import { DoctorAvatar } from '@/components/doctor-avatar';
+import { MonthYearPickerModal } from '@/components/month-year-picker';
 
 type Tab = 'about' | 'experience' | 'credentials';
 
@@ -42,6 +42,8 @@ export default function ProfileDetailsScreen() {
   const [updateSpecializations] = useUpdateSpecializationsMutation();
   const [uploadCredentialDocument] = useUploadCredentialDocumentMutation();
   const [updateCredentialDocuments] = useUpdateCredentialDocumentsMutation();
+  const [updateProfile] = useUpdateProfileMutation();
+  const { data: addresses = [] } = useGetAddressesQuery(undefined, { skip: !isDoctor });
 
   const doctorPhone = userProfile?.phone || 'Not provided';
 
@@ -50,8 +52,35 @@ export default function ProfileDetailsScreen() {
   const [startYear, setStartYear] = useState('2024');
   const [endMonth, setEndMonth] = useState('August');
   const [endYear, setEndYear] = useState('2026');
+  const [pickerTarget, setPickerTarget] = useState<'start' | 'end' | null>(null);
+  const [periodSynced, setPeriodSynced] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<{ uri: string; name: string }[]>([]);
   const [isSavingDocs, setIsSavingDocs] = useState(false);
+
+  // Fill the credential period once, when the profile first arrives. Re-running
+  // on a background refetch (e.g. after a photo upload invalidates the profile)
+  // would wipe dates the doctor just picked.
+  if (!periodSynced && doctorProfile) {
+    setPeriodSynced(true);
+    const period = doctorProfile.credentialPeriod;
+    if (period) {
+      if (period.startMonth) setStartMonth(period.startMonth);
+      if (period.startYear) setStartYear(period.startYear);
+      if (period.endMonth) setEndMonth(period.endMonth);
+      if (period.endYear) setEndYear(period.endYear);
+      if (period.isCurrentlyStudying) setIsCurrentlyStudying(true);
+    }
+  }
+
+  const defaultAddress = useMemo(
+    () => addresses.find((a) => a.isDefault) ?? addresses[0],
+    [addresses]
+  );
+  const locationText = defaultAddress
+    ? [defaultAddress.upazila, defaultAddress.district].filter(Boolean).join(', ')
+    : 'No data';
+  const locationStyle =
+    locationText === 'No data' ? [styles.fieldText, styles.noDataText] : styles.fieldText;
 
   const savedDocuments = doctorProfile?.credentialDocuments ?? [];
   const displayDocumentUri =
@@ -61,8 +90,15 @@ export default function ProfileDetailsScreen() {
         ? savedDocuments[savedDocuments.length - 1]
         : undefined;
 
+  // qualifications[0]/[1] back the Certifications / Institute Name fields and may
+  // be left blank — hide empty slots from the full list.
+  const displayQualifications = (doctorProfile?.qualifications ?? []).filter((q) => q && q.trim());
+
   const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  const YEARS = ['2020', '2021', '2022', '2023', '2024', '2025', '2026', '2027', '2028'];
+  const YEARS = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    return Array.from({ length: 14 }, (_, i) => String(currentYear - 10 + i));
+  }, []);
 
   const handleDeleteCredentials = () => {
     Alert.alert(
@@ -140,12 +176,55 @@ export default function ProfileDetailsScreen() {
     }
   };
 
-  const showMonthPicker = (onSelect: (month: string) => void) => {
-    Alert.alert('Select Month', '', MONTHS.map((m) => ({ text: m, onPress: () => onSelect(m) })));
+  const savePeriod = async (period: {
+    startMonth: string;
+    startYear: string;
+    endMonth: string;
+    endYear: string;
+    isCurrentlyStudying: boolean;
+  }) => {
+    try {
+      await updateProfile({ credentialPeriod: period }).unwrap();
+    } catch {
+      Alert.alert('Error', 'Failed to save your dates. Please try again.');
+    }
   };
 
-  const showYearPicker = (onSelect: (year: string) => void) => {
-    Alert.alert('Select Year', '', YEARS.map((y) => ({ text: y, onPress: () => onSelect(y) })));
+  const confirmPeriodPicker = (month: string, year: string) => {
+    if (pickerTarget === 'start') {
+      setStartMonth(month);
+      setStartYear(year);
+      void savePeriod({
+        startMonth: month,
+        startYear: year,
+        endMonth,
+        endYear,
+        isCurrentlyStudying,
+      });
+    } else if (pickerTarget === 'end') {
+      setEndMonth(month);
+      setEndYear(year);
+      void savePeriod({
+        startMonth,
+        startYear,
+        endMonth: month,
+        endYear: year,
+        isCurrentlyStudying,
+      });
+    }
+    setPickerTarget(null);
+  };
+
+  const toggleCurrentlyStudying = () => {
+    const next = !isCurrentlyStudying;
+    setIsCurrentlyStudying(next);
+    void savePeriod({
+      startMonth,
+      startYear,
+      endMonth,
+      endYear,
+      isCurrentlyStudying: next,
+    });
   };
 
   const uniquePatients = useMemo(() => {
@@ -246,7 +325,6 @@ export default function ProfileDetailsScreen() {
               <Text style={styles.fieldLabel}>Your Name</Text>
               <View style={styles.fieldValue}>
                 <Text style={styles.fieldText}>{doctorProfile?.name}</Text>
-                <Ionicons name="mic-outline" size={18} color="#BD632F" />
               </View>
             </View>
 
@@ -261,7 +339,7 @@ export default function ProfileDetailsScreen() {
             <View style={styles.fieldCard}>
               <Text style={styles.fieldLabel}>Location (Village/District)</Text>
               <View style={styles.fieldValue}>
-                <Text style={[styles.fieldText, styles.noDataText]}>No data</Text>
+                <Text style={locationStyle}>{locationText}</Text>
                 <Ionicons name="location-outline" size={18} color="#BD632F" />
               </View>
             </View>
@@ -349,8 +427,8 @@ export default function ProfileDetailsScreen() {
             </View>
 
             <View style={styles.qualificationCard}>
-              {doctorProfile?.qualifications && doctorProfile.qualifications.length > 0 ? (
-                doctorProfile.qualifications.map((qual, i) => (
+              {displayQualifications.length > 0 ? (
+                displayQualifications.map((qual, i) => (
                   <View key={i} style={[styles.qualHeader, i > 0 && { marginTop: 10 }]}>
                     <View style={styles.qualLogo}>
                       <Ionicons name="school-outline" size={24} color="#BD632F" />
@@ -487,7 +565,6 @@ export default function ProfileDetailsScreen() {
                 <Text style={[styles.fieldText, doctorProfile?.qualifications?.[0] ? undefined : styles.noDataText]}>
                   {doctorProfile?.qualifications?.[0] || 'No data'}
                 </Text>
-                <Ionicons name="mic-outline" size={18} color="#BD632F" />
               </View>
             </View>
 
@@ -504,33 +581,46 @@ export default function ProfileDetailsScreen() {
             <View style={styles.fieldCard}>
               <Text style={styles.fieldLabel}>Location (Village/District)</Text>
               <View style={styles.fieldValue}>
-                <Text style={[styles.fieldText, styles.noDataText]}>No data</Text>
+                <Text style={locationStyle}>{locationText}</Text>
                 <Ionicons name="location-outline" size={18} color="#BD632F" />
               </View>
             </View>
 
             <View style={styles.halfRow}>
               <View style={styles.halfField}>
-                <Text style={styles.fieldLabel}>Start year</Text>
-                <TouchableOpacity style={styles.dropdownField} onPress={() => showMonthPicker(setStartMonth)} activeOpacity={0.7}>
-                  <Text style={styles.fieldText}>{startMonth}</Text>
+                <Text style={styles.fieldLabel}>Start date</Text>
+                <TouchableOpacity
+                  style={styles.dropdownField}
+                  onPress={() => setPickerTarget('start')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.fieldText}>{`${startMonth} ${startYear}`}</Text>
                   <Ionicons name="chevron-down" size={16} color="#9C9690" />
                 </TouchableOpacity>
               </View>
               <View style={styles.halfField}>
-                <Text style={styles.fieldLabel}>End year</Text>
-                <TouchableOpacity style={styles.dropdownField} onPress={() => showYearPicker(setEndYear)} activeOpacity={0.7}>
-                  <Text style={styles.fieldText}>{endYear}</Text>
-                  <Ionicons name="chevron-down" size={16} color="#9C9690" />
+                <Text style={styles.fieldLabel}>End date</Text>
+                <TouchableOpacity
+                  style={[styles.dropdownField, isCurrentlyStudying && styles.dropdownFieldDisabled]}
+                  onPress={() => {
+                    if (!isCurrentlyStudying) setPickerTarget('end');
+                  }}
+                  disabled={isCurrentlyStudying}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.fieldText}>
+                    {isCurrentlyStudying ? 'Present' : `${endMonth} ${endYear}`}
+                  </Text>
+                  {!isCurrentlyStudying && <Ionicons name="chevron-down" size={16} color="#9C9690" />}
                 </TouchableOpacity>
               </View>
             </View>
 
-            <TouchableOpacity style={styles.checkboxRow} activeOpacity={0.7} onPress={() => setIsCurrentlyStudying((prev) => !prev)}>
+            <TouchableOpacity style={styles.checkboxRow} activeOpacity={0.7} onPress={toggleCurrentlyStudying}>
               <View style={styles.checkbox}>
                 {isCurrentlyStudying && <View style={[styles.checkboxInner, { backgroundColor: '#BD632F' }]} />}
               </View>
-              <Text style={styles.checkboxLabel}>I'm currently studying here</Text>
+              <Text style={styles.checkboxLabel}>{"I'm currently studying here"}</Text>
             </TouchableOpacity>
 
             <Text style={[styles.fieldLabel, { marginTop: 16, marginBottom: 8 }]}>Academic Credentials*</Text>
@@ -570,6 +660,17 @@ export default function ProfileDetailsScreen() {
           </View>
         )}
       </ScrollView>
+
+      <MonthYearPickerModal
+        visible={pickerTarget !== null}
+        title={pickerTarget === 'start' ? 'Start date' : 'End date'}
+        month={pickerTarget === 'start' ? startMonth : endMonth}
+        year={pickerTarget === 'start' ? startYear : endYear}
+        months={MONTHS}
+        years={YEARS}
+        onConfirm={confirmPeriodPicker}
+        onClose={() => setPickerTarget(null)}
+      />
     </SafeAreaView>
   );
 }
@@ -671,6 +772,7 @@ const styles = StyleSheet.create({
   halfRow: { flexDirection: 'row', gap: 10, marginBottom: 10 },
   halfField: { flex: 1 },
   dropdownField: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 12, borderWidth: 1, borderColor: '#E6E1DC', paddingHorizontal: 14, height: 44 },
+  dropdownFieldDisabled: { opacity: 0.6 },
   checkboxRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
   checkbox: { width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: '#E6E1DC', justifyContent: 'center', alignItems: 'center' },
   checkboxInner: { width: 12, height: 12, borderRadius: 3, backgroundColor: 'transparent' },

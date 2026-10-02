@@ -3,17 +3,20 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { formatTime12h } from '@/utils/date';
 
 export default function ConsultationEndedScreen() {
   const router = useRouter();
   const {
     patientName = 'Patient',
+    peerName = '',
     startedAt = '',
     conversationId = '',
     animalId = '',
     appointmentId = '',
   } = useLocalSearchParams<{
     patientName?: string;
+    peerName?: string;
     consultationId?: string;
     startedAt?: string;
     conversationId?: string;
@@ -21,9 +24,9 @@ export default function ConsultationEndedScreen() {
     appointmentId?: string;
   }>();
 
-  const startTimeStr = startedAt
-    ? new Date(startedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    : '';
+  const displayName = peerName || patientName;
+
+  const startTimeStr = startedAt ? formatTime12h(startedAt) : '';
 
   return (
     <SafeAreaView style={styles.container}>
@@ -43,12 +46,12 @@ export default function ConsultationEndedScreen() {
         </View>
         <Text style={styles.title}>Consultation ended!</Text>
         <Text style={styles.subtitle}>
-          Your consultation with {patientName} has ended.
+          Your consultation with {displayName} has ended.
         </Text>
 
         <View style={styles.summaryCard}>
           <Text style={styles.summaryTitle}>Consultation Ended</Text>
-          <Text style={styles.summaryDesc}>You were in consultation with {patientName}</Text>
+          <Text style={styles.summaryDesc}>You were in consultation with {displayName}</Text>
           {startTimeStr ? (
             <Text style={styles.summaryBullet}>•  Start time: {startTimeStr}</Text>
           ) : null}
@@ -76,6 +79,7 @@ export default function ConsultationEndedScreen() {
               params: {
                 conversationId,
                 patientName,
+                peerName,
                 appointmentId,
                 animalId,
               },

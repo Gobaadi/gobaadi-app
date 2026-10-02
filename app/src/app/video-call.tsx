@@ -70,6 +70,7 @@ export default function VideoCallScreen() {
     appointmentId?: string;
     callType?: string;
     patientName?: string;
+    peerName?: string;
     animalImage?: string;
   }>();
   const user = useSelector((state: RootState) => state.auth.user);
@@ -77,6 +78,7 @@ export default function VideoCallScreen() {
   const appointmentId = params.appointmentId ? parseInt(params.appointmentId, 10) : 0;
   const isAudioCall = params.callType === 'audio';
   const peerName =
+    params.peerName ||
     params.patientName ||
     (user?.role === 'doctor' ? 'Patient' : 'Doctor');
   const peerImage = params.animalImage || '';

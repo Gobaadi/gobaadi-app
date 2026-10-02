@@ -5,6 +5,37 @@ export function localDateKey(d: Date = new Date()): string {
   return `${y}-${m}-${day}`;
 }
 
+/**
+ * "3:05 PM" — always 12-hour clock time with AM/PM, independent of the
+ * device locale. Returns '' for missing/invalid input.
+ */
+export function formatTime12h(
+  value: string | number | Date | null | undefined,
+): string {
+  if (value == null || value === '') return '';
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+}
+
+/**
+ * Notification-list timestamp — "Today, 3:05 PM" for today's items,
+ * "Mon, 3:05 PM" otherwise (always 12-hour via formatTime12h).
+ */
+export function formatNotificationTime(value: string | Date): string {
+  const date = typeof value === 'string' ? new Date(value) : value;
+  if (Number.isNaN(date.getTime())) return '';
+  const dayLabel =
+    date.toDateString() === new Date().toDateString()
+      ? 'Today'
+      : date.toLocaleDateString('en-US', { weekday: 'short' });
+  return `${dayLabel}, ${formatTime12h(date)}`;
+}
+
 export function formatRelativeTime(iso: string | Date | undefined): string {
   if (!iso) return 'just now';
   const date = typeof iso === 'string' ? new Date(iso) : iso;
