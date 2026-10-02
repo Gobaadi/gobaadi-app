@@ -42,6 +42,7 @@ const RESCHEDULE_CANCEL_BUFFER_MS = 1 * 60 * 60 * 1000; // 1 hour
 export interface AppointmentWithPatient extends Appointment {
   patientName?: string;
   patientPhone?: string;
+  patientAvatar?: string;
   animalName?: string;
   animalImage?: string;
   animalBreed?: string;
@@ -812,6 +813,10 @@ export class AppointmentsService {
       ...appointment,
       patientName: patientsById.get(appointment.patientId)?.name,
       patientPhone: patientsById.get(appointment.patientId)?.phone,
+      patientAvatar:
+        patientsById.get(appointment.patientId)?.profilePhoto ||
+        patientsById.get(appointment.patientId)?.avatar ||
+        undefined,
       ...animalFields(appointment),
     }));
   }

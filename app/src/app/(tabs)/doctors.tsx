@@ -19,8 +19,6 @@ import { useGetClinicsQuery } from '@/store/clinicsApi';
 import { useGetDoctorBookingsQuery } from '@/store/doctorPortalApi';
 import { useGetDoctorsQuery } from '@/store/doctorsApi';
 import { useGetConversationsQuery, useCreateConversationMutation } from '@/store/chatApi';
-import { useGetForAppointmentQuery } from '@/store/consultationsApi';
-import { useCallSignalingContext } from '@/components/IncomingCallProvider';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useLanguage } from '@/hooks/use-language';
 import { useLocation } from '@/hooks/use-location';
@@ -110,39 +108,13 @@ export default function DoctorsScreen() {
       params: {
         conversationId: String(conversationId),
         appointmentId: String(appointment.id),
-        patientName: appointment.patientName || 'Patient',
-        animalImage: appointment.animalImage || '',
+        // Farmer chat header shows the doctor (counterparty), not themselves.
+        patientName: appointment.doctorName || 'Doctor',
+        animalImage: appointment.doctorAvatar || '',
+        theirAvatar: appointment.doctorAvatar || '',
       },
     });
   }, [upcomingTreatment, conversations, createConversation, router]);
-
-  const { ringCall } = useCallSignalingContext();
-
-  // Calls are gated on an active (ONGOING) consultation — same rule as chat.
-  const { data: treatmentConsultation } = useGetForAppointmentQuery(
-    upcomingTreatment ? String(upcomingTreatment.id) : '',
-    { skip: !upcomingTreatment },
-  );
-
-  /**
-   * Ring the doctor (socket callStarted), then join the call screen and
-   * wait in the Agora channel until the doctor accepts.
-   */
-  const handleStartCall = useCallback(() => {
-    if (!upcomingTreatment) return;
-    if (treatmentConsultation?.status !== 'ONGOING') {
-      Alert.alert(
-        'Consultation not started',
-        'Start the consultation in the chat before placing a call.',
-      );
-      return;
-    }
-    ringCall(upcomingTreatment.id);
-    router.push({
-      pathname: '/video-call',
-      params: { appointmentId: String(upcomingTreatment.id) },
-    });
-  }, [upcomingTreatment, treatmentConsultation, ringCall, router]);
 
   const slideCount = hasUpcoming ? 2 : 1;
   const effectiveSlide = hasUpcoming ? activeSlide : 0;
@@ -313,14 +285,6 @@ export default function DoctorsScreen() {
                         onPress={handleOpenChat}
                       >
                         <Text style={styles.actionEmoji}>💬</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.callButton}
-                        activeOpacity={0.8}
-                        onPress={handleStartCall}
-                      >
-                        <Text style={styles.callIcon}>📹</Text>
-                        <Text style={styles.callText}>Start Call</Text>
                       </TouchableOpacity>
                     </View>
                   </View>

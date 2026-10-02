@@ -23,7 +23,7 @@ export interface Prescription {
 
 export interface CreatePrescriptionInput {
   appointmentId: number;
-  animalId: number;
+  animalId?: number;
   medicines: Medicine[];
 }
 

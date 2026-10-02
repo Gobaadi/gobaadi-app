@@ -36,6 +36,7 @@ export interface ChatAppointment {
   id: number;
   doctorId: number;
   patientId: number;
+  animalId?: number;
   patientName?: string;
   animalName?: string;
   startAt: string;

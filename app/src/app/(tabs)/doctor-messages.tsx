@@ -26,12 +26,15 @@ interface EnrichedChat {
   unreadCount: number;
   isPending: boolean;
   animalImage?: string;
+  patientAvatar?: string;
   patientId: number;
   conversationId?: number;
   appointmentId?: number;
   appointmentStatus?: string;
   consultationType?: string;
   startAt?: string;
+  animalId?: number;
+  animalName?: string;
 }
 
 function formatChatTime(iso?: string | null): string {
@@ -105,9 +108,13 @@ export default function DoctorMessagesScreen() {
         unreadCount: conv.unreadCount || 0,
         isPending: false,
         animalImage: appointment?.animalImage,
+        patientAvatar: appointment?.patientAvatar,
         patientId: conv.patientId,
         conversationId: conv.id,
         appointmentId: appointment?.id != null ? Number(appointment.id) : undefined,
+        animalId: appointment?.animalId,
+        animalName: appointment?.animalName,
+        startAt: appointment?.startAt,
       });
     });
 
@@ -120,12 +127,15 @@ export default function DoctorMessagesScreen() {
           time: formatAppointmentTime(b.startAt),
           unreadCount: 0,
           isPending: true,
-          animalImage: b.animalImage,
-          patientId: b.patientId,
+              animalImage: b.animalImage,
+              patientAvatar: b.patientAvatar,
+              patientId: b.patientId,
           appointmentId: Number(b.id),
           appointmentStatus: b.status,
           consultationType: b.consultationType,
           startAt: b.startAt,
+          animalId: b.animalId,
+          animalName: b.animalName,
         });
       }
     });
@@ -151,8 +161,12 @@ export default function DoctorMessagesScreen() {
       const baseParams = {
         patientName: chat.name,
         animalImage: chat.animalImage || '',
+        theirAvatar: chat.patientAvatar,
         appointmentId:
           chat.appointmentId != null ? String(chat.appointmentId) : undefined,
+        animalId: chat.animalId != null ? String(chat.animalId) : undefined,
+        animalName: chat.animalName,
+        appointmentTime: chat.startAt,
       };
       if (chat.conversationId) {
         router.push({
@@ -192,7 +206,12 @@ export default function DoctorMessagesScreen() {
             conversationId: String(result.id),
             patientName: appointment.patientName || `Patient #${appointment.patientId}`,
             animalImage: appointment.animalImage || '',
+            theirAvatar: appointment.patientAvatar,
             appointmentId: String(appointment.id),
+            animalId:
+              appointment.animalId != null ? String(appointment.animalId) : undefined,
+            animalName: appointment.animalName,
+            appointmentTime: appointment.startAt,
           },
         });
       } catch {}

@@ -51,9 +51,14 @@ export class CreatePrescriptionDto {
   @IsNumber()
   appointmentId: number;
 
-  @ApiProperty({ example: 1 })
+  @ApiPropertyOptional({
+    example: 1,
+    description:
+      'Animal being prescribed for. Optional — falls back to the appointment animal, then the owner’s single animal.',
+  })
+  @IsOptional()
   @IsNumber()
-  animalId: number;
+  animalId?: number;
 
   @ApiProperty({ type: [MedicineDto] })
   @IsArray()
