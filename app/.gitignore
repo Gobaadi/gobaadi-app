@@ -48,4 +48,5 @@ gobaadi.apk
 # sync status
 BACKEND_SYNC_STATUS.md
 
-app.jsonmetro.log
+app.json
+metro.log
