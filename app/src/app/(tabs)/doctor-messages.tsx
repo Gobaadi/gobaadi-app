@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useRef } from 'react';
 import { useRequireDoctor } from '@/hooks/use-require-doctor';
 import {
   StyleSheet,
@@ -8,6 +8,7 @@ import {
   ScrollView,
   Image,
   ActivityIndicator,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -19,6 +20,8 @@ import {
   type DoctorAppointment,
 } from '@/store/doctorPortalApi';
 import { PatientAvatar } from '@/components/patient-avatar';
+import { EmptyState } from '@/components/ui/empty-state';
+import { formatTime12h } from '@/utils/date';
 
 interface EnrichedChat {
   id: string;
@@ -54,15 +57,27 @@ function formatChatTime(iso?: string | null): string {
 
 function formatAppointmentTime(iso?: string): string {
   if (!iso) return '';
-  const d = new Date(iso);
-  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return formatTime12h(iso);
 }
 
 export default function DoctorMessagesScreen() {
   const router = useRouter();
   const isDoctor = useRequireDoctor();
-  const [searchQuery] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const searchInputRef = useRef<TextInput>(null);
   const [creatingId, setCreatingId] = useState<number | null>(null);
+
+  const openSearch = useCallback(() => {
+    setSearchOpen(true);
+    requestAnimationFrame(() => searchInputRef.current?.focus());
+  }, []);
+
+  const closeSearch = useCallback(() => {
+    setSearchQuery('');
+    setSearchOpen(false);
+    searchInputRef.current?.blur();
+  }, []);
 
   const { data: conversations = [] } = useGetConversationsQuery();
   // Live badge updates: refetch conversations when the other party sends a
@@ -70,6 +85,9 @@ export default function DoctorMessagesScreen() {
   useConversationListSocket();
   const { data: bookings = [] } = useGetDoctorBookingsQuery();
   const [createConversation] = useCreateConversationMutation();
+  // Live-refresh the list (incl. unread badges) when the gateway broadcasts
+  // conversationUpdated — e.g. a new patient message or a read receipt.
+  useConversationListSocket();
 
   const conversationByPatientId = useMemo(() => {
     const map = new Map<number, number>();
@@ -154,9 +172,11 @@ export default function DoctorMessagesScreen() {
   }, [conversations, bookings, patientLookup]);
 
   const filteredChats = useMemo(() => {
-    if (!searchQuery.trim()) return enrichedChats;
-    const q = searchQuery.toLowerCase();
-    return enrichedChats.filter((c) => c.name.toLowerCase().includes(q));
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return enrichedChats;
+    return enrichedChats.filter(
+      (c) => c.name.toLowerCase().includes(q) || c.lastMessage.toLowerCase().includes(q),
+    );
   }, [enrichedChats, searchQuery]);
 
   const nextAppointment = useMemo(() => {
@@ -235,14 +255,48 @@ export default function DoctorMessagesScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Chat</Text>
-        <TouchableOpacity style={styles.searchBtn} activeOpacity={0.7}>
-          <Ionicons name="search" size={20} color="#1A1817" />
+        {searchOpen ? (
+          <View style={styles.searchField}>
+            <Ionicons name="search" size={18} color="#9C9690" />
+            <TextInput
+              ref={searchInputRef}
+              style={styles.searchInput}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Search chats..."
+              placeholderTextColor="#9C9690"
+              returnKeyType="search"
+              autoCorrect={false}
+              autoFocus
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity
+                onPress={() => setSearchQuery('')}
+                activeOpacity={0.7}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons name="close-circle" size={18} color="#9C9690" />
+              </TouchableOpacity>
+            )}
+          </View>
+        ) : (
+          <Text style={styles.headerTitle}>Chat</Text>
+        )}
+        <TouchableOpacity
+          style={styles.searchBtn}
+          activeOpacity={0.7}
+          onPress={searchOpen ? closeSearch : openSearch}
+        >
+          <Ionicons
+            name={searchOpen ? 'close' : 'search'}
+            size={20}
+            color="#1A1817"
+          />
         </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-        {nextAppointment && (
+        {nextAppointment && !searchQuery && (
           <TouchableOpacity
             style={styles.upcomingCard}
             activeOpacity={0.85}
@@ -269,7 +323,7 @@ export default function DoctorMessagesScreen() {
                   ) : (
                     <PatientAvatar
                       name={nextAppointment.patientName || nextAppointment.animalName}
-                      image={nextAppointment.patientImage}
+                      image={nextAppointment.patientAvatar}
                       size={64}
                       radius={16}
                     />
@@ -285,45 +339,52 @@ export default function DoctorMessagesScreen() {
 
         <Text style={styles.sectionTitle}>Recent chats</Text>
 
-        {filteredChats.map((chat) => (
-          <TouchableOpacity
-            key={chat.id}
-            style={styles.chatItem}
-            activeOpacity={0.7}
-            onPress={() => handleChatPress(chat)}
-            disabled={creatingId === chat.patientId}
-          >
-            <PatientAvatar
-              name={chat.name}
-              image={chat.animalImage || chat.patientPhoto}
-              size={48}
-              radius={24}
-              style={styles.chatAvatarSpacing}
-            />
-            <View style={styles.chatInfo}>
-              <View style={styles.chatTopRow}>
-                <Text style={styles.chatName}>{chat.name}</Text>
-                <Text style={styles.chatTime}>{chat.time}</Text>
+        {searchQuery && filteredChats.length === 0 ? (
+          <EmptyState
+            title="No chats found"
+            description="Try a different name or message."
+          />
+        ) : (
+          filteredChats.map((chat) => (
+            <TouchableOpacity
+              key={chat.id}
+              style={styles.chatItem}
+              activeOpacity={0.7}
+              onPress={() => handleChatPress(chat)}
+              disabled={creatingId === chat.patientId}
+            >
+              <PatientAvatar
+                name={chat.name}
+                image={chat.animalImage || chat.patientAvatar}
+                size={48}
+                radius={24}
+                style={styles.chatAvatarSpacing}
+              />
+              <View style={styles.chatInfo}>
+                <View style={styles.chatTopRow}>
+                  <Text style={styles.chatName}>{chat.name}</Text>
+                  <Text style={styles.chatTime}>{chat.time}</Text>
+                </View>
+                <View style={styles.chatBottomRow}>
+                  {creatingId === chat.patientId ? (
+                    <ActivityIndicator size="small" color="#BD632F" />
+                  ) : chat.isPending ? (
+                    <Text style={styles.pendingText}>
+                      Tap to start chatting
+                    </Text>
+                  ) : (
+                    <Text style={styles.chatLastMessage} numberOfLines={1}>{chat.lastMessage}</Text>
+                  )}
+                  {chat.unreadCount > 0 && (
+                    <View style={styles.unreadBadge}>
+                      <Text style={styles.unreadText}>{chat.unreadCount}</Text>
+                    </View>
+                  )}
+                </View>
               </View>
-              <View style={styles.chatBottomRow}>
-                {creatingId === chat.patientId ? (
-                  <ActivityIndicator size="small" color="#BD632F" />
-                ) : chat.isPending ? (
-                  <Text style={styles.pendingText}>
-                    Tap to start chatting
-                  </Text>
-                ) : (
-                  <Text style={styles.chatLastMessage} numberOfLines={1}>{chat.lastMessage}</Text>
-                )}
-                {chat.unreadCount > 0 && (
-                  <View style={styles.unreadBadge}>
-                    <Text style={styles.unreadText}>{chat.unreadCount}</Text>
-                  </View>
-                )}
-              </View>
-            </View>
-          </TouchableOpacity>
-        ))}
+            </TouchableOpacity>
+          ))
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -333,6 +394,20 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FAF9F6' },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 4, paddingBottom: 12 },
   headerTitle: { fontSize: 20, fontWeight: '800', color: '#1A1817' },
+  searchField: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    height: 40,
+    marginRight: 10,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E6E1DC',
+  },
+  searchInput: { flex: 1, fontSize: 15, fontWeight: '500', color: '#1A1817', paddingVertical: 0 },
   searchBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#FFF2EB', justifyContent: 'center', alignItems: 'center' },
   scrollContainer: { paddingHorizontal: 20, paddingBottom: 100 },
   upcomingCard: { backgroundColor: '#E6D5C3', borderRadius: 20, padding: 16, marginBottom: 24 },

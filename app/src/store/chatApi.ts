@@ -117,6 +117,13 @@ export const chatApi = createApi({
       }),
       invalidatesTags: ['Conversation'],
     }),
+    markConversationRead: builder.mutation<{ updatedIds: number[] }, number>({
+      query: (conversationId) => ({
+        url: `/chat/conversations/${conversationId}/read`,
+        method: 'PATCH',
+      }),
+      invalidatesTags: ['Conversation'],
+    }),
     markMessageRead: builder.mutation<ChatMessage, number>({
       // REST fallback for marking read when the socket is not connected.
       query: (messageId) => ({
@@ -134,5 +141,6 @@ export const {
   useSendMessageMutation,
   useSendAttachmentMessageMutation,
   useCreateConversationMutation,
+  useMarkConversationReadMutation,
   useMarkMessageReadMutation,
 } = chatApi;

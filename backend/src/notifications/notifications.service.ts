@@ -112,17 +112,20 @@ export class NotificationsService {
     userId: number,
     token: string,
     deviceId?: string,
+    os?: string,
   ): Promise<PushToken> {
     const existing = await this.pushTokenRepository.findOneBy({ token });
     if (existing) {
       existing.userId = userId;
       existing.deviceId = deviceId;
+      if (os) existing.os = os;
       return this.pushTokenRepository.save(existing);
     }
     const pushToken = this.pushTokenRepository.create({
       userId,
       token,
       deviceId,
+      os,
     });
     return this.pushTokenRepository.save(pushToken);
   }

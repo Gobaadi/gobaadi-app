@@ -20,6 +20,8 @@ import { useGetDoctorBookingsQuery } from '@/store/doctorPortalApi';
 import { useGetDoctorsQuery } from '@/store/doctorsApi';
 import { useGetConversationsQuery, useCreateConversationMutation } from '@/store/chatApi';
 import { useDebounce } from '@/hooks/use-debounce';
+import { useGetForAppointmentQuery } from '@/store/consultationsApi';
+import { useCallSignalingContext } from '@/components/IncomingCallProvider';
 import { useLanguage } from '@/hooks/use-language';
 import { useLocation } from '@/hooks/use-location';
 import LocationBottomSheet from '@/components/LocationBottomSheet';
@@ -61,7 +63,7 @@ export default function DoctorsScreen() {
   const { data: appointments = [], isLoading: appointmentsLoading } = useGetDoctorBookingsQuery();
   const { data: doctors = [] } = useGetDoctorsQuery();
 
-  const upcomingTreatment = useMemo(() => {
+  const upcomingTreatments = useMemo(() => {
     const now = new Date();
     return appointments
       .filter(
@@ -69,22 +71,29 @@ export default function DoctorsScreen() {
           (a.status === 'PENDING' || a.status === 'CONFIRMED' || a.status === 'RESCHEDULED') &&
           new Date(a.endAt) > now,
       )
-      .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime())[0] ?? null;
+      .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
   }, [appointments]);
 
-  const treatmentDoctor = useMemo(() => {
-    if (!upcomingTreatment) return null;
-    return doctors.find((d) => d.id === upcomingTreatment.doctorId) ?? null;
-  }, [upcomingTreatment, doctors]);
+  // Carousel layout: one slide per upcoming appointment, AI banner last.
+  const treatmentCount = upcomingTreatments.length;
+  const slideCount = treatmentCount + 1;
+  const effectiveSlide =
+    activeSlide >= 0 && activeSlide < slideCount ? activeSlide : 0;
 
-  const hasUpcoming = upcomingTreatment !== null;
+  // The appointment shown on the current treatment slide (slides 0..treatmentCount-1).
+  const activeTreatment = upcomingTreatments[effectiveSlide] ?? null;
+
+  const treatmentDoctor = useMemo(() => {
+    if (!activeTreatment) return null;
+    return doctors.find((d) => d.id === activeTreatment.doctorId) ?? null;
+  }, [activeTreatment, doctors]);
 
   const { data: conversations = [] } = useGetConversationsQuery();
   const [createConversation] = useCreateConversationMutation();
 
   const handleOpenChat = useCallback(async () => {
-    if (!upcomingTreatment) return;
-    const appointment = upcomingTreatment;
+    if (!activeTreatment) return;
+    const appointment = activeTreatment;
     const existing = conversations.find(
       (c) =>
         c.appointmentId === appointment.id ||
@@ -108,16 +117,49 @@ export default function DoctorsScreen() {
       params: {
         conversationId: String(conversationId),
         appointmentId: String(appointment.id),
-        // Farmer chat header shows the doctor (counterparty), not themselves.
-        patientName: appointment.doctorName || 'Doctor',
-        animalImage: appointment.doctorAvatar || '',
+        patientName: appointment.patientName || 'Patient',
+        peerName: appointment.doctorName || treatmentDoctor?.name || 'Doctor',
+        animalImage: appointment.animalImage || '',
         theirAvatar: appointment.doctorAvatar || '',
       },
     });
-  }, [upcomingTreatment, conversations, createConversation, router]);
+  }, [activeTreatment, conversations, treatmentDoctor, createConversation, router]);
 
-  const slideCount = hasUpcoming ? 2 : 1;
-  const effectiveSlide = hasUpcoming ? activeSlide : 0;
+  const { ringCall } = useCallSignalingContext();
+
+  // Calls are gated on an active (ONGOING) consultation — same rule as chat.
+  const { data: treatmentConsultation } = useGetForAppointmentQuery(
+    activeTreatment ? String(activeTreatment.id) : '',
+    { skip: !activeTreatment },
+  );
+
+  /**
+   * Ring the doctor (socket callStarted), then join the call screen and
+   * wait in the Agora channel until the doctor accepts.
+   */
+  const handleStartCall = useCallback(() => {
+    if (!activeTreatment) return;
+    if (treatmentConsultation?.status !== 'ONGOING') {
+      Alert.alert(
+        'Consultation not started',
+        'Start the consultation in the chat before placing a call.',
+      );
+      return;
+    }
+    ringCall(activeTreatment.id);
+    router.push({
+      pathname: '/video-call',
+      params: { appointmentId: String(activeTreatment.id) },
+    });
+  }, [activeTreatment, treatmentConsultation, ringCall, router]);
+
+  // Keep the slide index in range when the list shrinks (e.g. an appointment
+  // is completed/cancelled while the user is on a later treatment slide).
+  // Corrected during render — not in an effect — so the visible slide is never
+  // stale; React re-runs the render immediately with the fixed index.
+  if (activeSlide > slideCount - 1) {
+    setActiveSlide(0);
+  }
 
   useEffect(() => {
     if (slideCount <= 1) return;
@@ -144,6 +186,31 @@ export default function DoctorsScreen() {
       }),
     [slideCount, activeSlide],
   );
+
+  // One dot per slide (each upcoming appointment + the AI banner).
+  const renderDots = () => {
+    if (slideCount <= 1) return null;
+    return (
+      <View style={styles.slideDots}>
+        {Array.from({ length: slideCount }, (_, i) => (
+          <TouchableOpacity
+            key={i}
+            onPress={() => setActiveSlide(i)}
+            disabled={i === effectiveSlide}
+            hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
+            accessibilityLabel={`Go to slide ${i + 1}`}
+          >
+            <View
+              style={[
+                styles.slideDot,
+                i === effectiveSlide ? styles.slideDotActive : styles.slideDotInactive,
+              ]}
+            />
+          </TouchableOpacity>
+        ))}
+      </View>
+    );
+  };
 
   function formatTreatmentDate(iso: string): string {
     const d = new Date(iso);
@@ -270,66 +337,69 @@ export default function DoctorsScreen() {
             </View>
           ) : (
             <View {...(slideCount > 1 ? panResponder.panHandlers : {})}>
-              {effectiveSlide === 0 && hasUpcoming && (
-                /* Slide: Upcoming Treatment */
-                <TouchableOpacity
-                  style={styles.upcomingCard}
-                  activeOpacity={0.95}
-                  onPress={handleOpenChat}
-                >
-                  <View style={styles.upcomingHeader}>
-                    <Text style={styles.upcomingTitle}>Upcoming Treatment</Text>
-                    <View style={styles.upcomingActions}>
-                      <TouchableOpacity
-                        style={styles.chatButton}
-                        onPress={handleOpenChat}
-                      >
-                        <Text style={styles.actionEmoji}>💬</Text>
-                      </TouchableOpacity>
+              {upcomingTreatments.map((appointment, index) =>
+                effectiveSlide === index ? (
+                  /* Slide: Upcoming Treatment (one per booked appointment) */
+                  <TouchableOpacity
+                    key={appointment.id}
+                    style={styles.upcomingCard}
+                    activeOpacity={0.95}
+                    onPress={handleOpenChat}
+                  >
+                    <View style={styles.upcomingHeader}>
+                      <Text style={styles.upcomingTitle}>Upcoming Treatment</Text>
+                      <View style={styles.upcomingActions}>
+                        <TouchableOpacity
+                          style={styles.chatButton}
+                          onPress={handleOpenChat}
+                        >
+                          <Text style={styles.actionEmoji}>💬</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.callButton}
+                          activeOpacity={0.8}
+                          onPress={handleStartCall}
+                        >
+                          <Text style={styles.callIcon}>📹</Text>
+                          <Text style={styles.callText}>Start Call</Text>
+                        </TouchableOpacity>
+                      </View>
                     </View>
-                  </View>
 
-                  <View style={styles.cardDividerDashed} />
+                    <View style={styles.cardDividerDashed} />
 
-                  <View style={styles.doctorQuickInfo}>
-                    <DoctorAvatar
-                      name={treatmentDoctor?.name}
-                      avatar={treatmentDoctor?.avatar}
-                      size={48}
-                      radius={18}
-                      style={styles.doctorThumb}
-                    />
-                    <View style={styles.doctorMeta}>
-                      <Text style={styles.quickDocName}>
-                        {treatmentDoctor?.name ?? 'Doctor'}
-                      </Text>
-                      <Text style={styles.quickDocSpecialty}>
-                        {treatmentDoctor?.specialty ?? ''}
-                      </Text>
-                      {upcomingTreatment && (
-                        <Text style={styles.quickDocTime}>
-                          {formatTreatmentTime(upcomingTreatment.startAt)} •{' '}
-                          {formatTreatmentDate(upcomingTreatment.startAt)}
+                    <View style={styles.doctorQuickInfo}>
+                      <DoctorAvatar
+                        name={treatmentDoctor?.name}
+                        avatar={treatmentDoctor?.avatar}
+                        size={48}
+                        radius={18}
+                        style={styles.doctorThumb}
+                      />
+                      <View style={styles.doctorMeta}>
+                        <Text style={styles.quickDocName}>
+                          {treatmentDoctor?.name ?? 'Doctor'}
                         </Text>
-                      )}
+                        <Text style={styles.quickDocSpecialty}>
+                          {treatmentDoctor?.specialty ?? ''}
+                        </Text>
+                        <Text style={styles.quickDocTime}>
+                          {formatTreatmentTime(appointment.startAt)} •{' '}
+                          {formatTreatmentDate(appointment.startAt)}
+                        </Text>
+                      </View>
                     </View>
-                  </View>
 
-                  {/* Dots */}
-                  {slideCount > 1 && (
-                    <View style={styles.slideDots}>
-                      <View style={[styles.slideDot, styles.slideDotActive]} />
-                      <TouchableOpacity onPress={() => setActiveSlide(1)}>
-                        <View style={[styles.slideDot, styles.slideDotInactive]} />
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                </TouchableOpacity>
+                    {/* Dots */}
+                    {renderDots()}
+                  </TouchableOpacity>
+                ) : null,
               )}
 
-              {(effectiveSlide === 1 || !hasUpcoming) && (
+              {effectiveSlide === treatmentCount && (
                 /* Slide: Analyze with AI */
                 <TouchableOpacity
+                  key="ai-banner"
                   style={styles.aiCard}
                   activeOpacity={0.95}
                   disabled={slideCount <= 1}
@@ -357,14 +427,7 @@ export default function DoctorsScreen() {
                   </View>
 
                   {/* Dots */}
-                  {slideCount > 1 && (
-                    <View style={styles.slideDots}>
-                      <TouchableOpacity onPress={() => setActiveSlide(0)}>
-                        <View style={[styles.slideDot, styles.slideDotInactive]} />
-                      </TouchableOpacity>
-                      <View style={[styles.slideDot, styles.slideDotActive]} />
-                    </View>
-                  )}
+                  {renderDots()}
                 </TouchableOpacity>
               )}
             </View>

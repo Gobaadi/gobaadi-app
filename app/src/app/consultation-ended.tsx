@@ -21,18 +21,22 @@ export default function ConsultationEndedScreen() {
   const router = useRouter();
   const {
     patientName = 'Patient',
+    peerName = '',
     startedAt = '',
     conversationId = '',
     animalId = '',
     appointmentId = '',
   } = useLocalSearchParams<{
     patientName?: string;
+    peerName?: string;
     consultationId?: string;
     startedAt?: string;
     conversationId?: string;
     animalId?: string;
     appointmentId?: string;
   }>();
+
+  const displayName = peerName || patientName;
 
   // Fallback when the caller (video-call screen) could not pass startedAt —
   // re-derive it so Start time / Remaining time bullets still render.
@@ -100,12 +104,12 @@ export default function ConsultationEndedScreen() {
         </View>
         <Text style={styles.title}>Consultation ended!</Text>
         <Text style={styles.subtitle}>
-          Your consultation with {patientName} has ended.
+          Your consultation with {displayName} has ended.
         </Text>
 
         <View style={styles.summaryCard}>
           <Text style={styles.summaryTitle}>Consultation Ended</Text>
-          <Text style={styles.summaryDesc}>You were in consultation with {patientName}</Text>
+          <Text style={styles.summaryDesc}>You were in consultation with {displayName}</Text>
           {startTimeStr ? (
             <Text style={styles.summaryBullet}>•  Start time: {startTimeStr}</Text>
           ) : null}

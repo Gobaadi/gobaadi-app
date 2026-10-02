@@ -108,14 +108,6 @@ export default function MyTreatmentScreen() {
   );
 
   const filteredTreatments = treatments.filter((item) => {
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      const matches =
-        item.name.toLowerCase().includes(query) ||
-        item.specialty.toLowerCase().includes(query);
-      return matches;
-    }
-
     if (activeFilter === 'Upcoming' && !isUpcoming(item.status)) return false;
     if (activeFilter === 'Medicine' && !item.specialty?.toLowerCase().includes('medicine')) return false;
 
@@ -125,6 +117,14 @@ export default function MyTreatmentScreen() {
       if (!isOnline) return false;
     } else if (activeVisitTab === 'physical') {
       if (item.consultationType !== 'physical') return false;
+    }
+
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      const matches =
+        item.name.toLowerCase().includes(query) ||
+        item.specialty.toLowerCase().includes(query);
+      if (!matches) return false;
     }
 
     return true;

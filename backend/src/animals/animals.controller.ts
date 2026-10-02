@@ -66,7 +66,7 @@ export class AnimalsController {
     @Param('id') id: string,
     @CurrentUser() user: JwtPayload,
   ): Promise<Animal> {
-    return this.animalsService.getAnimalById(user.sub, id);
+    return this.animalsService.getAnimalById({ userId: user.sub }, id);
   }
 
   @Post('upload-photo')

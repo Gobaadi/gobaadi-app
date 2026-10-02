@@ -33,4 +33,10 @@ export class WeatherDataDto {
 
   @ApiProperty({ example: false })
   isCached: boolean;
+
+  @ApiProperty({ example: 0, required: false })
+  weatherCode?: number;
+
+  @ApiProperty({ example: 'Clear sky', required: false })
+  condition?: string;
 }

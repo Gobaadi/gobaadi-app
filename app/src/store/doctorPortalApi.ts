@@ -15,6 +15,15 @@ export interface DoctorProfile {
   experiences?: DoctorExperience[];
   licenseNumber?: string;
   credentialDocuments?: string[];
+  credentialPeriod?: CredentialPeriod | null;
+}
+
+export interface CredentialPeriod {
+  startMonth?: string;
+  startYear?: string;
+  endMonth?: string;
+  endYear?: string;
+  isCurrentlyStudying?: boolean;
 }
 
 export interface DoctorExperience {
@@ -57,6 +66,7 @@ export interface DoctorAppointment {
   doctorName?: string;
   doctorSpecialty?: string;
   doctorAvatar?: string;
+  patientImage?: string;
 }
 
 export interface TodayStats {
@@ -253,6 +263,7 @@ export const doctorPortalApi = createApi({
         bio?: string;
         consultationFee?: number;
         licenseNumber?: string;
+        credentialPeriod?: CredentialPeriod;
       }
     >({
       query: (dto) => ({

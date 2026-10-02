@@ -70,8 +70,6 @@ export default function BookSlotScreen() {
   const [rescheduleBooking] = useRescheduleBookingMutation();
 
   const { data: myAnimals = [] } = useGetAnimalsQuery();
-  // Derived at render (no effect) so the first animal is the default selection.
-  const effectiveAnimalId = selectedAnimalId ?? myAnimals[0]?.id ?? null;
 
   const doctor = useMemo(() => {
     if (!doctorData) return null;

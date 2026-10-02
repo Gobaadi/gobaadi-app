@@ -19,6 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { useRegisterMutation } from '@/store/authApi';
 import { useSocialAuth } from '@/hooks/use-social-auth';
+import { apiErrorMessage } from '@/utils/api-error';
 
 const BD_PHONE_REGEX = /^01[3-9]\d{8}$/;
 
@@ -112,6 +113,10 @@ export default function SignUpScreen() {
         setErrorMessage('Password is required.');
         return;
       }
+      if (password.length < 8) {
+        setErrorMessage('Password must be at least 8 characters.');
+        return;
+      }
       if (password !== confirmPassword) {
         setErrorMessage('Passwords do not match.');
         return;
@@ -145,7 +150,7 @@ export default function SignUpScreen() {
       router.push({ pathname: '/otp', params: { phone: identifier, purpose: 'verify', role: role || 'user' } });
     } catch (err: any) {
       console.log('[1/8][FE signup.tsx] Register API FAILED →', err?.data ?? err?.message ?? err);
-      setErrorMessage(err?.data?.message || 'Could not create account. Please try again.');
+      setErrorMessage(apiErrorMessage(err, 'Could not create account. Please try again.'));
     }
   };
 

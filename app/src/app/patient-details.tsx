@@ -239,12 +239,31 @@ export default function PatientDetailsScreen() {
   const animalId = params.id || '1';
 
   const { data: animal, isLoading: animalLoading } = useGetAnimalByIdQuery(animalId);
-  const { data: allEvents = [], isLoading: eventsLoading } = useGetByAnimalMedicalEventsQuery({ animalId });
-  const { data: prescriptions = [] } = useGetByAnimalPrescriptionsQuery(animalId);
-  const { data: records = [] } = useGetByPatientMedicalRecordsQuery(animalId);
-  const { data: conversations = [] } = useGetConversationsQuery();
+  const { data: eventsRes, isLoading: eventsLoading } = useGetByAnimalMedicalEventsQuery({ animalId });
+  const { data: prescriptionsRes } = useGetByAnimalPrescriptionsQuery(animalId);
+  const { data: conversationsRes } = useGetConversationsQuery();
   const [createConversation] = useCreateConversationMutation();
-  const { data: bookings = [] } = useGetDoctorBookingsQuery();
+  const { data: bookingsRes } = useGetDoctorBookingsQuery();
+
+  // Every list endpoint can hand back a non-array (paginated wrapper, error
+  // body). Normalise so a bad payload degrades to an empty tab instead of
+  // white-screening the whole screen with `undefined is not a function`.
+  const bookings = Array.isArray(bookingsRes) ? bookingsRes : [];
+  const conversations = Array.isArray(conversationsRes) ? conversationsRes : [];
+
+  // Bookings/animal carry the pet owner's user id, which is what the
+  // medical-records API expects (?patientId=). The animal id is not it.
+  const ownerId =
+    bookings.find((b) => b.animalId === Number(animalId))?.patientId ??
+    animal?.userId ??
+    null;
+  const { data: recordsRes } = useGetByPatientMedicalRecordsQuery(String(ownerId ?? ''), {
+    skip: ownerId == null,
+  });
+
+  const allEvents = Array.isArray(eventsRes) ? eventsRes : [];
+  const prescriptions = Array.isArray(prescriptionsRes) ? prescriptionsRes : [];
+  const records = Array.isArray(recordsRes) ? recordsRes : [];
 
   /**
    * Opens the chat for this animal's owner with the real conversation id and

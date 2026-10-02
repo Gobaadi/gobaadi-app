@@ -7,6 +7,8 @@ import { NotificationsService } from './notifications.service';
 import { NotificationsController } from './notifications.controller';
 import { NotificationsProcessor } from './notifications.processor';
 import { ExpoPushProvider } from './providers/expo-push.provider';
+import { FcmPushProvider } from './providers/fcm-push.provider';
+import { RoutingPushProvider } from './providers/routing-push.provider';
 import { PUSH_PROVIDER } from './push-provider.interface';
 import { BullModule } from '@nestjs/bullmq';
 import { UsersModule } from '../users/users.module';
@@ -23,7 +25,9 @@ import { UsersModule } from '../users/users.module';
     NotificationsService,
     NotificationsProcessor,
     ExpoPushProvider,
-    { provide: PUSH_PROVIDER, useExisting: ExpoPushProvider },
+    FcmPushProvider,
+    RoutingPushProvider,
+    { provide: PUSH_PROVIDER, useExisting: RoutingPushProvider },
   ],
   controllers: [NotificationsController],
   exports: [NotificationsService, TypeOrmModule],

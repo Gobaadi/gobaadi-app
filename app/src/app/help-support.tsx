@@ -17,6 +17,7 @@ export default function HelpSupportScreen() {
     { id: 'faqs', title: 'FAQs', subtitle: 'Common Question and Answer', icon: 'help-circle-outline' as const, route: '/faqs' },
     { id: 'contact', title: 'Contact Support', subtitle: 'Get Help From Our Team', icon: 'chatbubble-ellipses-outline' as const, route: '/contact-support' },
     { id: 'report', title: 'Report Issues', subtitle: 'Report Issues or Abuse', icon: 'flag-outline' as const, route: '/report-issues' },
+    { id: 'my-reports', title: 'My Reports', subtitle: 'View Your Submitted Reports', icon: 'document-text-outline' as const, route: '/my-reports' },
   ];
 
   return (

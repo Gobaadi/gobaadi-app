@@ -18,6 +18,7 @@ import {
 } from '@/store/doctorPortalApi';
 import { useGetBlockTimesQuery } from '@/store/blockTimesApi';
 import { PatientAvatar } from '@/components/patient-avatar';
+import { formatTime12h } from '@/utils/date';
 
 type ViewMode = 'monthly' | 'weekly';
 
@@ -54,11 +55,6 @@ function getWeekDates(reference: Date): Date[] {
     dates.push(d);
   }
   return dates;
-}
-
-function formatTime12h(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
 }
 
 function formatHourLabel(hour: number): string {
@@ -171,7 +167,7 @@ function MonthlyView({
 }
 
 function formatAgendaTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+  return formatTime12h(iso);
 }
 
 function WeeklyView({
@@ -270,7 +266,7 @@ function WeeklyView({
                 {appt.animalImage ? (
                   <Image source={{ uri: appt.animalImage }} style={styles.agendaAvatarImage} />
                 ) : (
-                  <PatientAvatar name={appt.patientName} image={appt.patientImage} size={50} />
+                  <PatientAvatar name={appt.patientName} image={appt.patientAvatar} size={50} />
                 )}
               </View>
 
@@ -308,6 +304,7 @@ export default function DoctorBookingsScreen() {
   const appointmentDates = useMemo(() => {
     const dates = new Set<string>();
     bookings.forEach((b) => {
+      if (b.status === 'CANCELLED') return;
       dates.add(formatDateKey(new Date(b.startAt)));
     });
     return dates;
@@ -520,11 +517,15 @@ const styles = StyleSheet.create({
   daysGrid: { flexDirection: 'row', flexWrap: 'wrap' },
   dayCell: { width: `${100 / 7}%`, alignItems: 'center', paddingVertical: 4 },
   dayNumber: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
-  dayNumberHasAppointment: { backgroundColor: '#BD632F' },
+  dayNumberHasAppointment: {
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+    borderColor: '#BD632F',
+  },
   dayNumberBlocked: { backgroundColor: '#F0EAE1' },
   dayNumberSelected: { backgroundColor: '#BD632F' },
   dayNumberText: { fontSize: 14, fontWeight: '500', color: '#1A1817' },
-  dayNumberTextAppointment: { color: '#FFFFFF', fontWeight: '700' },
+  dayNumberTextAppointment: { color: '#BD632F', fontWeight: '700' },
   dayNumberTextBlocked: { color: '#9C9690' },
   dayNumberTextSelected: { color: '#FFFFFF', fontWeight: '700' },
   statsRow: { flexDirection: 'row', backgroundColor: '#FFFFFF', borderRadius: 16, borderWidth: 1, borderColor: '#E6E1DC', padding: 16, marginBottom: 20 },

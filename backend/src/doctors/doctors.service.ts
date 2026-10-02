@@ -379,6 +379,13 @@ export class DoctorsService {
       bio?: string;
       consultationFee?: number;
       licenseNumber?: string;
+      credentialPeriod?: {
+        startMonth?: string;
+        startYear?: string;
+        endMonth?: string;
+        endYear?: string;
+        isCurrentlyStudying?: boolean;
+      };
     },
   ): Promise<Doctor> {
     const doctor = await this.doctorRepository.findOneBy({
@@ -396,6 +403,8 @@ export class DoctorsService {
       doctor.consultationFee = dto.consultationFee;
     if (dto.licenseNumber !== undefined)
       doctor.licenseNumber = dto.licenseNumber;
+    if (dto.credentialPeriod !== undefined)
+      doctor.credentialPeriod = dto.credentialPeriod;
     const saved = await this.doctorRepository.save(doctor);
     // Keep the account-level name in sync so auth-derived UI (home greeting,
     // JWT payload) matches the profile name.

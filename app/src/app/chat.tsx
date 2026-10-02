@@ -207,6 +207,7 @@ export default function ChatScreen() {
     consultationId?: string;
     conversationId?: string;
     patientName?: string;
+    peerName?: string;
     animalImage?: string;
     theirAvatar?: string;
     animalId?: string;
@@ -226,6 +227,9 @@ export default function ChatScreen() {
 
   const viewerRole = useSelector((state: RootState) => state.auth.user?.role);
   const isViewerDoctor = viewerRole === 'doctor';
+  // Counterparty shown in the header/banners: the doctor sees the patient,
+  // the farmer sees the doctor (peerName supplied by the entry point).
+  const peerName = isViewerDoctor ? patientName : params.peerName || 'Doctor';
 
   const { data: myProfile } = useGetMyProfileQuery();
   const { data: myDoctorProfile } = useGetMyDoctorProfileQuery(undefined, {
@@ -551,6 +555,7 @@ export default function ChatScreen() {
       params: {
         consultationId: resolvedConsultationId,
         patientName,
+        peerName,
         startedAt: activeConsultation ? consultationStartedAt(activeConsultation) : '',
         conversationId: conversationId ? String(conversationId) : '',
         animalId: resolvedAnimalId,
@@ -602,6 +607,7 @@ export default function ChatScreen() {
         callType,
         conversationId: conversationId ? String(conversationId) : '',
         patientName,
+        peerName,
         animalImage,
         animalId: resolvedAnimalId,
       },

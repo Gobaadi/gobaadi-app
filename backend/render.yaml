@@ -56,6 +56,12 @@ services:
         sync: false
       - key: GMAIL_API_REFRESH_TOKEN
         sync: false
+      - key: FIREBASE_SERVICE_ACCOUNT
+        sync: false
+      - key: FIREBASE_PROJECT_ID
+        value: ""
+      - key: PUSH_ANDROID_CHANNEL_ID
+        value: "default"
 
 databases:
   - name: gobadi-db

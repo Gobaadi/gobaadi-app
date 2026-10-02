@@ -114,7 +114,9 @@ export class ConversationService {
   ): Promise<EnrichedConversation[]> {
     const conversations = await this.conversationRepository.find({
       where:
-        role === UserRole.USER ? { patientId: userId } : { doctorUserId: userId },
+        role === UserRole.USER
+          ? { patientId: userId }
+          : { doctorUserId: userId },
       order: { lastMessageAt: 'DESC' },
     });
     if (conversations.length === 0) {
@@ -191,9 +193,6 @@ export class ConversationService {
 
     return conversations.map((conversation) => {
       const patient = patientsById.get(conversation.patientId);
-      const appointment = conversation.appointmentId
-        ? appointmentById.get(conversation.appointmentId)
-        : undefined;
       const animal = conversation.appointmentId
         ? animalsById.get(conversation.appointmentId)
         : undefined;
@@ -214,7 +213,9 @@ export class ConversationService {
     conversationId: number,
     messageText?: string,
   ): Promise<void> {
-    const update: any = { lastMessageAt: new Date() };
+    const update: { lastMessageAt: Date; lastMessageText?: string } = {
+      lastMessageAt: new Date(),
+    };
     if (messageText !== undefined) {
       update.lastMessageText =
         messageText.length > 200
