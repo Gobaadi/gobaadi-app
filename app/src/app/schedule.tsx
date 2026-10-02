@@ -319,7 +319,7 @@ function DayAppointmentCard({ appointment, isPast, isUpcoming }: { appointment: 
       <View style={styles.dayAppointmentAvatar}>
         <PatientAvatar
           name={appointment.animalName || appointment.patientName || 'Patient'}
-          image={appointment.animalImage || appointment.patientImage}
+          image={appointment.animalImage || appointment.patientAvatar}
           size={44}
         />
         {isUpcoming && <View style={styles.greenDot} />}
@@ -423,7 +423,7 @@ function ListAppointmentCard({ appointment }: { appointment: DoctorAppointment }
         <View style={styles.listAppointmentAvatar}>
           <PatientAvatar
             name={appointment.animalName || appointment.patientName || 'Patient'}
-            image={appointment.animalImage || appointment.patientImage}
+            image={appointment.animalImage || appointment.patientAvatar}
             size={44}
           />
           <View style={styles.greenDot} />

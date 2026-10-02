@@ -266,7 +266,7 @@ function WeeklyView({
                 {appt.animalImage ? (
                   <Image source={{ uri: appt.animalImage }} style={styles.agendaAvatarImage} />
                 ) : (
-                  <PatientAvatar name={appt.patientName} image={appt.patientImage} size={50} />
+                  <PatientAvatar name={appt.patientName} image={appt.patientAvatar} size={50} />
                 )}
               </View>
 

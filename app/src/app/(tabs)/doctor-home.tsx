@@ -174,7 +174,7 @@ export default function DoctorHomeScreen() {
                   <View style={styles.patientAvatar}>
                     <PatientAvatar
                       name={b.patientName}
-                      image={b.patientImage}
+                      image={b.patientAvatar}
                       size={50}
                     />
                   </View>

@@ -66,6 +66,7 @@ export interface DoctorAppointment {
   doctorName?: string;
   doctorSpecialty?: string;
   doctorAvatar?: string;
+  patientImage?: string;
 }
 
 export interface TodayStats {

@@ -323,7 +323,7 @@ export default function DoctorMessagesScreen() {
                   ) : (
                     <PatientAvatar
                       name={nextAppointment.patientName || nextAppointment.animalName}
-                      image={nextAppointment.patientImage}
+                      image={nextAppointment.patientAvatar}
                       size={64}
                       radius={16}
                     />
@@ -355,7 +355,7 @@ export default function DoctorMessagesScreen() {
             >
               <PatientAvatar
                 name={chat.name}
-                image={chat.animalImage || chat.patientPhoto}
+                image={chat.animalImage || chat.patientAvatar}
                 size={48}
                 radius={24}
                 style={styles.chatAvatarSpacing}
