@@ -6,9 +6,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 interface CallControlsProps {
   isMuted: boolean;
   isCameraOff: boolean;
+  isSpeakerOn: boolean;
   onToggleMute: () => void;
   onToggleCamera: () => void;
   onSwitchCamera: () => void;
+  onToggleSpeaker: () => void;
   onEndCall: () => void;
   hideVideoControls?: boolean;
   /** Optional row (e.g. quick-action chips) rendered above the button bar. */
@@ -52,9 +54,11 @@ function ControlButton({
 export function CallControls({
   isMuted,
   isCameraOff,
+  isSpeakerOn,
   onToggleMute,
   onToggleCamera,
   onSwitchCamera,
+  onToggleSpeaker,
   onEndCall,
   hideVideoControls = false,
   quickActions,
@@ -84,6 +88,13 @@ export function CallControls({
         label={isMuted ? 'Muted' : 'Mic'}
         active={!isMuted}
         onPress={onToggleMute}
+      />
+
+      <ControlButton
+        icon={isSpeakerOn ? 'volume-high' : 'ear'}
+        label={isSpeakerOn ? 'Speaker' : 'Earpiece'}
+        active={isSpeakerOn}
+        onPress={onToggleSpeaker}
       />
 
       {!hideVideoControls && (
@@ -127,9 +138,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'flex-start',
-    gap: 22,
+    // Tighter than before: speaker button makes it 5 controls on video calls,
+    // must still fit 360dp-wide phones.
+    gap: 10,
     paddingTop: 14,
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
   },
   btnWrap: {
     alignItems: 'center',

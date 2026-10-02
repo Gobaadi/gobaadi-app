@@ -200,15 +200,25 @@ export class ChatGateway
     if (!user) {
       return;
     }
-    const updated = await this.chatService.markRead(
-      data.messageId,
-      user.sub,
-      user.role,
-    );
-    this.notifyConversation(updated.conversationId, 'messageStatusUpdate', {
-      id: updated.id,
-      status: updated.status,
-    });
+    try {
+      const updated = await this.chatService.markRead(
+        data.messageId,
+        user.sub,
+        user.role,
+      );
+      this.notifyConversation(updated.conversationId, 'messageStatusUpdate', {
+        id: updated.id,
+        status: updated.status,
+      });
+    } catch (err) {
+      // Clients mark every unread message on chat open; a stale/deleted id
+      // must not break the socket handler.
+      this.logger.warn(
+        `markRead failed for message ${data.messageId}: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+    }
   }
 
   // ──────────────────────────────────────────────

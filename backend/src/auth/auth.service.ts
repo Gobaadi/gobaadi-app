@@ -501,6 +501,13 @@ export class AuthService {
   async forgotPassword(
     identifier: string,
   ): Promise<{ success: boolean; message: string }> {
+    // Password reset OTP is delivered by email only; phone-based reset has no
+    // SMS provider yet, so reject early instead of silently sending nothing.
+    if (!identifier.includes('@')) {
+      throw new BadRequestException(
+        'Password reset is only available via email address.',
+      );
+    }
     const user =
       (await this.usersService.findByPhone(identifier)) ??
       (await this.usersService.findByEmail(identifier));

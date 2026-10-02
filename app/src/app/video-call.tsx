@@ -31,6 +31,7 @@ import {
   useEndSessionMutation,
 } from '@/store/videoCallApi';
 import { socketManager } from '@/lib/socket-manager';
+import { useGetConversationsQuery } from '@/store/chatApi';
 
 function formatTimer(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -40,7 +41,6 @@ function formatTimer(seconds: number): string {
 
 /** Session length starts counting when the call connects (after join). */
 const SESSION_DURATION_S = 30 * 60;
-const SESSION_WARN_S = 25 * 60;
 
 /** Surface the backend's real message (e.g. call-gate errors) when present. */
 function joinErrorMessage(error: unknown): string {
@@ -103,6 +103,7 @@ export default function VideoCallScreen() {
     { skip: !appointmentId },
   );
   const [endConsultationApi] = useEndConsultationMutation();
+  const { data: conversations } = useGetConversationsQuery();
 
   const [callEnded, setCallEnded] = useState(false);
   const [elapsed, setElapsed] = useState(0);
@@ -121,10 +122,12 @@ export default function VideoCallScreen() {
     isConnected,
     isMuted,
     isCameraOff,
+    isSpeakerOn,
     joinError: agoraJoinError,
     toggleMute,
     toggleCamera,
     switchCamera,
+    toggleSpeaker,
     retryJoin,
   } = useAgora(
     callData?.token || '',
@@ -254,6 +257,8 @@ export default function VideoCallScreen() {
       Alert.alert('Error', 'Missing appointment information. Please try again.');
       return;
     }
+    const ownerEmail =
+      conversations?.find((c) => String(c.id) === String(conversationId))?.patientEmail || '';
     router.push({
       pathname: '/send-prescription',
       params: {
@@ -261,6 +266,7 @@ export default function VideoCallScreen() {
         conversationId: conversationId ? String(conversationId) : '',
         animalId,
         patientName: params.patientName || 'Patient',
+        userEmail: ownerEmail,
       },
     });
   };
@@ -284,21 +290,12 @@ export default function VideoCallScreen() {
     };
   }, [appointmentId, handleEndCall]);
 
-  // Session timing (counts from join): warn at 25 min, auto-end at 30 min —
-  // neither party has to press end, the session closes itself.
-  const warnedRef = useRef(false);
+  // Session timing (counts from join): auto-end at 30 min — neither party has
+  // to press end, the session closes itself.
   useEffect(() => {
     if (!isConnected || endedRef.current) return;
     if (elapsed >= SESSION_DURATION_S) {
       handleEndCall();
-      return;
-    }
-    if (elapsed >= SESSION_WARN_S && !warnedRef.current) {
-      warnedRef.current = true;
-      Alert.alert(
-        'Almost time',
-        'Only 5 minutes left in this session.',
-      );
     }
   }, [elapsed, isConnected, handleEndCall]);
 
@@ -457,9 +454,11 @@ export default function VideoCallScreen() {
       <CallControls
         isMuted={isMuted}
         isCameraOff={isCameraOff}
+        isSpeakerOn={isSpeakerOn}
         onToggleMute={toggleMute}
         onToggleCamera={toggleCamera}
         onSwitchCamera={switchCamera}
+        onToggleSpeaker={toggleSpeaker}
         onEndCall={handleEndCall}
         hideVideoControls={isAudioCall}
         quickActions={

@@ -9,6 +9,7 @@ interface AgoraState {
   isMuted: boolean;
   isCameraOff: boolean;
   isFrontCamera: boolean;
+  isSpeakerOn: boolean;
   joinError: string | null;
 }
 
@@ -29,6 +30,8 @@ export function useAgora(
     isMuted: false,
     isCameraOff: startCameraOff,
     isFrontCamera: true,
+    // Loudspeaker on by default — earpiece is far too quiet for consultations.
+    isSpeakerOn: true,
     joinError: null,
   });
   const [joinAttempt, setJoinAttempt] = useState(0);
@@ -114,6 +117,8 @@ export function useAgora(
         await agoraManager.startPreview();
       }
       await agoraManager.join(token, channelName, uid);
+      // Speaker route is channel-scoped — re-apply after every (re)join.
+      agoraManager.setSpeaker(stateRef.current.isSpeakerOn);
     };
 
     setup().catch((err: unknown) => {
@@ -170,6 +175,12 @@ export function useAgora(
     setState(prev => ({ ...prev, isFrontCamera: !prev.isFrontCamera }));
   }, []);
 
+  const toggleSpeaker = useCallback(() => {
+    const newSpeakerOn = !stateRef.current.isSpeakerOn;
+    agoraManager.setSpeaker(newSpeakerOn);
+    setState(prev => ({ ...prev, isSpeakerOn: newSpeakerOn }));
+  }, []);
+
   const retryJoin = useCallback(() => {
     setState(prev => ({ ...prev, joinError: null }));
     setJoinAttempt(prev => prev + 1);
@@ -180,6 +191,7 @@ export function useAgora(
     toggleMute,
     toggleCamera,
     switchCamera,
+    toggleSpeaker,
     retryJoin,
   };
 }

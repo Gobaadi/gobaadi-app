@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useGetConversationsQuery, useCreateConversationMutation } from '@/store/chatApi';
+import { useConversationListSocket } from '@/hooks/use-chat-socket';
 import {
   useGetDoctorBookingsQuery,
   type DoctorAppointment,
@@ -64,6 +65,9 @@ export default function DoctorMessagesScreen() {
   const [creatingId, setCreatingId] = useState<number | null>(null);
 
   const { data: conversations = [] } = useGetConversationsQuery();
+  // Live badge updates: refetch conversations when the other party sends a
+  // message (the gateway emits `conversationUpdated` to each user room).
+  useConversationListSocket();
   const { data: bookings = [] } = useGetDoctorBookingsQuery();
   const [createConversation] = useCreateConversationMutation();
 

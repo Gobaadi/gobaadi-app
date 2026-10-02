@@ -7,6 +7,7 @@ import {
   useGetForAppointmentQuery,
   consultationStartedAt,
 } from '@/store/consultationsApi';
+import { useGetConversationsQuery } from '@/store/chatApi';
 
 const CONSULTATION_DURATION_SECONDS = 30 * 60;
 
@@ -40,6 +41,11 @@ export default function ConsultationEndedScreen() {
   });
   const resolvedStartedAt =
     startedAt || (consultation ? consultationStartedAt(consultation) : '');
+
+  const { data: conversations } = useGetConversationsQuery();
+  const ownerEmail =
+    conversations?.find((c) => String(c.id) === String(conversationId))
+      ?.patientEmail || '';
 
   const [remaining, setRemaining] = useState(() => {
     if (!resolvedStartedAt) return CONSULTATION_DURATION_SECONDS;
@@ -132,6 +138,7 @@ export default function ConsultationEndedScreen() {
                 conversationId,
                 animalId,
                 patientName,
+                userEmail: ownerEmail,
               },
             });
           }}

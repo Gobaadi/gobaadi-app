@@ -5,14 +5,19 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import PrescriptionForm, { PrescriptionFormData } from '@/components/PrescriptionForm';
 import { useSendPrescription } from '@/hooks/use-send-prescription';
+import { useRequireDoctor } from '@/hooks/use-require-doctor';
 
 export default function SendPrescriptionScreen() {
+  // Destination of the doctor-only quick actions — block direct/deep-link
+  // entry from a farmer account too.
+  useRequireDoctor();
   const router = useRouter();
   const params = useLocalSearchParams<{
     appointmentId?: string;
     conversationId?: string;
     animalId?: string;
     patientName?: string;
+    userEmail?: string;
   }>();
 
   const appointmentId = params.appointmentId || '';
@@ -21,6 +26,7 @@ export default function SendPrescriptionScreen() {
     : undefined;
   const animalId = params.animalId || '';
   const patientName = params.patientName || 'Patient';
+  const userEmail = params.userEmail || '';
 
   const { sendPrescription } = useSendPrescription();
   const [sending, setSending] = useState(false);
@@ -40,6 +46,7 @@ export default function SendPrescriptionScreen() {
         animalId: animalId || undefined,
         conversationId,
         patientName,
+        userEmail,
         medications: data.medications,
         instructions: data.instructions,
         note: data.note,

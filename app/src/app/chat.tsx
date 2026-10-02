@@ -13,6 +13,7 @@ import {
   Image,
   Linking,
   Alert,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -20,6 +21,9 @@ import { useSelector } from 'react-redux';
 import type { RootState } from '@/store/store';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { File, Paths } from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
+import * as MediaLibrary from 'expo-media-library';
 import { useCallSignalingContext } from '@/components/IncomingCallProvider';
 import type { CallType } from '@/hooks/use-call-signaling';
 import {
@@ -28,6 +32,7 @@ import {
   useSendAttachmentMessageMutation,
   useCreateConversationMutation,
   useGetDoctorAppointmentsQuery,
+  useGetConversationsQuery,
   type ChatMessage,
 } from '@/store/chatApi';
 import { compressImageForUpload } from '@/utils/compress-image';
@@ -40,7 +45,7 @@ import {
 } from '@/store/consultationsApi';
 import { useGetByAppointmentQuery } from '@/store/prescriptionsApi';
 import { useGetMyProfileQuery } from '@/store/usersApi';
-import { useGetMyDoctorProfileQuery } from '@/store/doctorPortalApi';
+import { useGetMyDoctorProfileQuery, useGetDoctorBookingsQuery } from '@/store/doctorPortalApi';
 import { useChatSocket } from '@/hooks/use-chat-socket';
 
 type ConsultationState = 'idle' | 'active' | 'ended' | 'prescription_sent';
@@ -99,7 +104,6 @@ interface ChatMessageUI {
 }
 
 const CONSULTATION_DURATION_SECONDS = 30 * 60;
-const CONSULTATION_WARN_SECONDS = 25 * 60;
 
 function toUIMessage(msg: ChatMessage): ChatMessageUI {
   const isPdf =
@@ -158,18 +162,20 @@ function ChatImageBubble({
   time,
   caption,
   status,
+  onView,
 }: {
   uri: string;
   isMine: boolean;
   time: string;
   caption?: string;
   status?: ChatMessage['status'];
+  onView: (uri: string, mine: boolean) => void;
 }) {
   const [failed, setFailed] = useState(false);
 
   return (
     <View style={isMine ? styles.imageBubble : styles.imageBubbleLeft}>
-      <TouchableOpacity activeOpacity={0.8} onPress={() => Linking.openURL(uri)}>
+      <TouchableOpacity activeOpacity={0.8} onPress={() => onView(uri, isMine)}>
         {failed ? (
           <View style={styles.imageFallback}>
             <Ionicons name="image-outline" size={36} color="#BD632F" />
@@ -229,10 +235,41 @@ export default function ChatScreen() {
   const myAvatarUri = isViewerDoctor
     ? myDoctorProfile?.avatar || undefined
     : myProfile?.avatar || myProfile?.profilePhoto || undefined;
-  // Doctor: patient photo (passed by navigators) — never the animal photo.
-  // Farmer: navigators historically pass the doctor's photo as animalImage.
+  // Doctor: patient photo. Farmer: doctor photo. Resolve from API — several
+  // navigators pass nothing (or the animal photo), which showed a dummy avatar.
+  const { data: conversations } = useGetConversationsQuery();
+  const { data: myBookings } = useGetDoctorBookingsQuery(undefined, {
+    skip: isViewerDoctor,
+  });
+  const resolvedTheirAvatar = useMemo(() => {
+    if (isViewerDoctor) {
+      return (
+        conversations?.find((c) => String(c.id) === String(conversationId))
+          ?.patientPhoto || undefined
+      );
+    }
+    return (
+      myBookings?.find((a) => String(a.id) === appointmentId)?.doctorAvatar ||
+      undefined
+    );
+  }, [isViewerDoctor, conversations, conversationId, myBookings, appointmentId]);
   const theirAvatarUri =
-    params.theirAvatar || (!isViewerDoctor ? animalImage : undefined) || undefined;
+    params.theirAvatar || resolvedTheirAvatar || (!isViewerDoctor ? animalImage : undefined) || undefined;
+  // Counterparty NAME, resolved live from API (same sources as the avatar) —
+  // navigators pass a stale/missing name often; params stay as fallback only.
+  const resolvedTheirName = useMemo(() => {
+    if (isViewerDoctor) {
+      return (
+        conversations?.find((c) => String(c.id) === String(conversationId))
+          ?.patientName || undefined
+      );
+    }
+    return (
+      myBookings?.find((a) => String(a.id) === appointmentId)?.doctorName ||
+      undefined
+    );
+  }, [isViewerDoctor, conversations, conversationId, myBookings, appointmentId]);
+  const counterpartyName = resolvedTheirName || patientName;
 
   // Prescriptions need animalId, but most navigators only pass appointmentId —
   // resolve it (plus the appointment time / animal name for the session card)
@@ -312,6 +349,95 @@ export default function ChatScreen() {
   const flatListRef = useRef<FlatList>(null);
   const [showActionsMenu, setShowActionsMenu] = useState(false);
   const [localMessages, setLocalMessages] = useState<ChatMessageUI[]>([]);
+  // In-app full-screen viewer for chat images (never leaves to a browser).
+  const [viewerUri, setViewerUri] = useState<string | null>(null);
+  const [viewerMine, setViewerMine] = useState<boolean | null>(null);
+  const [viewerLoading, setViewerLoading] = useState(false);
+  const [viewerError, setViewerError] = useState(false);
+  const [sharingImage, setSharingImage] = useState(false);
+  const [savingImage, setSavingImage] = useState(false);
+  const [savedFlash, setSavedFlash] = useState(false);
+  const savedFlashTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (savedFlashTimeoutRef.current) clearTimeout(savedFlashTimeoutRef.current);
+    };
+  }, []);
+
+  const openImageViewer = (uri: string, mine: boolean) => {
+    setViewerError(false);
+    setViewerLoading(true);
+    setViewerMine(mine);
+    setViewerUri(uri);
+  };
+
+  const closeImageViewer = () => {
+    if (savedFlashTimeoutRef.current) clearTimeout(savedFlashTimeoutRef.current);
+    setSavedFlash(false);
+    setViewerUri(null);
+    setViewerMine(null);
+    setViewerLoading(false);
+    setViewerError(false);
+  };
+
+  /** Fetch the remote image into cache; returns local uri + extension. */
+  const downloadToCache = async (
+    uri: string,
+  ): Promise<{ cacheUri: string; ext: string }> => {
+    const rawExt = uri.split('?')[0].match(/\.([a-z0-9]+)$/i)?.[1]?.toLowerCase();
+    const ext = rawExt && ['png', 'webp', 'gif'].includes(rawExt) ? rawExt : 'jpg';
+    const file = await File.downloadFileAsync(
+      uri,
+      new File(Paths.cache, `chat-image-${Date.now()}.${ext}`),
+    );
+    return { cacheUri: file.uri, ext };
+  };
+
+  /** Download to cache, then open the native share sheet — stays in-app. */
+  const shareViewedImage = async () => {
+    if (!viewerUri || sharingImage) return;
+    setSharingImage(true);
+    try {
+      const { cacheUri, ext } = await downloadToCache(viewerUri);
+      if (!(await Sharing.isAvailableAsync())) {
+        throw new Error('Sharing is not available on this device');
+      }
+      await Sharing.shareAsync(cacheUri, {
+        mimeType: ext === 'jpg' ? 'image/jpeg' : `image/${ext}`,
+        dialogTitle: 'Share image',
+      });
+    } catch {
+      Alert.alert('Error', 'Could not share this image. Please try again.');
+    } finally {
+      setSharingImage(false);
+    }
+  };
+
+  /** Save the viewed image into the device gallery/photos. */
+  const downloadViewedImage = async () => {
+    if (!viewerUri || savingImage) return;
+    setSavingImage(true);
+    try {
+      const permission = await MediaLibrary.requestPermissionsAsync(true);
+      if (!permission.granted) {
+        Alert.alert(
+          'Permission required',
+          'Allow photo access so the image can be saved to your gallery.',
+        );
+        return;
+      }
+      const { cacheUri } = await downloadToCache(viewerUri);
+      await MediaLibrary.Asset.create(cacheUri);
+      setSavedFlash(true);
+      if (savedFlashTimeoutRef.current) clearTimeout(savedFlashTimeoutRef.current);
+      savedFlashTimeoutRef.current = setTimeout(() => setSavedFlash(false), 2000);
+    } catch {
+      Alert.alert('Error', 'Could not save this image. Please try again.');
+    } finally {
+      setSavingImage(false);
+    }
+  };
 
   useEffect(() => {
     if (!activeConsultation) return;
@@ -358,19 +484,25 @@ export default function ChatScreen() {
     return () => clearInterval(interval);
   }, [consultationState, resolvedConsultationId, endConsultation]);
 
-  // Warn once when 5 minutes remain.
-  const consultationWarnedRef = useRef(false);
+  // Farmer: consultation ended while chat is open (doctor pressed End, or the
+  // 30-min timer auto-ended) — congratulate once and offer a Home shortcut.
+  // Mounting into an already-ended consultation (history view) stays silent.
+  const farmerEndNotifiedRef = useRef(false);
+  const prevConsultationStateRef = useRef<ConsultationState>(consultationState);
   useEffect(() => {
-    if (consultationState !== 'active') return;
-    if (
-      remainingTime > 0 &&
-      remainingTime <= CONSULTATION_WARN_SECONDS &&
-      !consultationWarnedRef.current
-    ) {
-      consultationWarnedRef.current = true;
-      Alert.alert('Almost time', 'Only 5 minutes left in this consultation.');
-    }
-  }, [remainingTime, consultationState]);
+    const prev = prevConsultationStateRef.current;
+    prevConsultationStateRef.current = consultationState;
+    if (isViewerDoctor || farmerEndNotifiedRef.current) return;
+    if (prev !== 'active') return;
+    if (consultationState !== 'ended' && consultationState !== 'prescription_sent') return;
+    farmerEndNotifiedRef.current = true;
+    Alert.alert(
+      'Congratulations!',
+      'The consultation has ended.',
+      [{ text: 'Go to Home', onPress: () => router.replace('/(tabs)') }],
+      { cancelable: false },
+    );
+  }, [consultationState, isViewerDoctor, router]);
 
   useEffect(() => {
     if (apiMessages) {
@@ -435,6 +567,9 @@ export default function ChatScreen() {
       );
       return;
     }
+    const ownerEmail =
+      conversations?.find((c) => String(c.id) === String(conversationId))
+        ?.patientEmail || '';
     router.push({
       pathname: '/send-prescription',
       params: {
@@ -442,6 +577,7 @@ export default function ChatScreen() {
         conversationId: conversationId ? String(conversationId) : '',
         animalId: resolvedAnimalId,
         patientName,
+        userEmail: ownerEmail,
       },
     });
   };
@@ -558,7 +694,12 @@ export default function ChatScreen() {
     };
     setLocalMessages((prev) => [...prev, optimistic]);
     try {
-      await sendMessage({ text, conversationId }).unwrap();
+      const saved = await sendMessage({ text, conversationId }).unwrap();
+      // Replace the optimistic bubble with the server copy so the double-tick
+      // status updates patch the same id (avoids temp/real duplicates).
+      setLocalMessages((prev) =>
+        prev.map((m) => (m.id === optimistic.id ? toUIMessage(saved) : m)),
+      );
     } catch {
       setLocalMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
       Alert.alert('Error', 'Failed to send message. Please try again.');
@@ -588,6 +729,7 @@ export default function ChatScreen() {
             time={item.time}
             caption={item.text}
             status={item.status}
+            onView={openImageViewer}
           />
           {isMine && <MessageAvatar uri={myAvatarUri} mine />}
         </View>
@@ -662,11 +804,15 @@ export default function ChatScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
             <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
           </TouchableOpacity>
-          {!isViewerDoctor && !!animalImage && (
-            <Image source={{ uri: animalImage }} style={styles.headerAvatar} />
+          {theirAvatarUri ? (
+            <Image source={{ uri: theirAvatarUri }} style={styles.headerAvatar} />
+          ) : (
+            <View style={styles.headerAvatarFallback}>
+              <Ionicons name="person" size={18} color="#BD632F" />
+            </View>
           )}
           <Text style={styles.headerTitle} numberOfLines={1}>
-            {patientName}
+            {counterpartyName}
           </Text>
         </View>
         <View style={styles.headerActions}>
@@ -886,6 +1032,91 @@ export default function ChatScreen() {
           </View>
         </KeyboardAvoidingView>
       )}
+
+      {/* In-app full-screen viewer for chat images */}
+      <Modal
+        visible={!!viewerUri}
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={closeImageViewer}
+      >
+        <View style={styles.viewerContainer}>
+          <Image
+            source={{ uri: viewerUri ?? undefined }}
+            style={styles.viewerImage}
+            resizeMode="contain"
+            onLoad={() => setViewerLoading(false)}
+            onError={() => {
+              setViewerLoading(false);
+              setViewerError(true);
+            }}
+          />
+          {viewerLoading && !viewerError && (
+            <View style={styles.viewerCenter} pointerEvents="none">
+              <ActivityIndicator size="large" color="#FFFFFF" />
+            </View>
+          )}
+          {viewerError && (
+            <View style={styles.viewerCenter} pointerEvents="none">
+              <Ionicons name="image-outline" size={48} color="rgba(255,255,255,0.6)" />
+              <Text style={styles.viewerErrorText}>Could not load image</Text>
+            </View>
+          )}
+          <SafeAreaView style={styles.viewerTopBar} edges={['top']}>
+            <TouchableOpacity
+              style={styles.viewerIconBtn}
+              onPress={closeImageViewer}
+              activeOpacity={0.7}
+              accessibilityLabel="Close image"
+            >
+              <Ionicons name="close" size={26} color="#FFFFFF" />
+            </TouchableOpacity>
+            {viewerMine !== null && viewerUri && (
+              <View style={styles.viewerSenderRow}>
+                <MessageAvatar
+                  uri={viewerMine ? myAvatarUri : theirAvatarUri}
+                  mine={false}
+                />
+                <Text numberOfLines={1} ellipsizeMode="tail" style={styles.viewerSenderName}>
+                  {viewerMine ? 'You' : counterpartyName}
+                </Text>
+              </View>
+            )}
+            <View style={styles.viewerTopActions}>
+              <TouchableOpacity
+                style={styles.viewerIconBtn}
+                onPress={downloadViewedImage}
+                activeOpacity={0.7}
+                disabled={savingImage || sharingImage}
+                accessibilityLabel="Download image"
+              >
+                {savingImage ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Ionicons
+                    name={savedFlash ? 'checkmark' : 'download-outline'}
+                    size={24}
+                    color={savedFlash ? '#4CAF50' : '#FFFFFF'}
+                  />
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.viewerIconBtn}
+                onPress={shareViewedImage}
+                activeOpacity={0.7}
+                disabled={sharingImage || savingImage}
+                accessibilityLabel="Share image"
+              >
+                {sharingImage ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Ionicons name="share-outline" size={24} color="#FFFFFF" />
+                )}
+              </TouchableOpacity>
+            </View>
+          </SafeAreaView>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -895,6 +1126,7 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 4, paddingBottom: 12, backgroundColor: '#BD632F' },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, minWidth: 0, marginRight: 8 },
   headerAvatar: { width: 34, height: 34, borderRadius: 17, backgroundColor: '#FFF2EB' },
+  headerAvatarFallback: { width: 34, height: 34, borderRadius: 17, backgroundColor: '#FFF2EB', justifyContent: 'center', alignItems: 'center' },
   backBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
   headerTitle: { fontSize: 18, fontWeight: '800', color: '#FFFFFF', flexShrink: 1 },
   headerActions: { flexDirection: 'row', gap: 4 },
@@ -1046,4 +1278,55 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   actionsMenuItemText: { fontSize: 14, fontWeight: '600', color: '#1A1817' },
+  viewerContainer: { flex: 1, backgroundColor: '#000000', justifyContent: 'center' },
+  viewerImage: { width: '100%', height: '100%' },
+  viewerCenter: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 10,
+  },
+  viewerErrorText: { color: 'rgba(255,255,255,0.7)', fontSize: 14, fontWeight: '600' },
+  viewerTopBar: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    zIndex: 10,
+  },
+  viewerIconBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  viewerTopActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  viewerSenderRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 8,
+    minWidth: 0,
+  },
+  viewerSenderName: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '700',
+    flexShrink: 1,
+  },
 });

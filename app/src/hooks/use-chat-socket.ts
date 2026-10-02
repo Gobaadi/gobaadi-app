@@ -24,8 +24,10 @@ type ChatSender = ChatMessage['sender'];
  * / sockets-for-live-updates split.
  *
  * While the chat is open, every incoming message is immediately marked read
- * (socket `markRead` → backend resets `conversations.unreadCount`), and the
- * conversation-list cache is patched to badge 0.
+ * (socket `markRead`, REST PATCH as fallback when the socket is down), and the
+ * conversation-list cache is patched to badge 0. The backend derives each
+ * viewer's unread count from message status, so a reply never re-badges the
+ * sender.
  */
 export function useChatSocket(
   conversationId: number | undefined,
@@ -45,7 +47,16 @@ export function useChatSocket(
     (messageId: number) => {
       if (markedReadRef.current.has(messageId)) return;
       markedReadRef.current.add(messageId);
-      socketManager.emitMarkRead(messageId);
+      if (socketManager.isConnected) {
+        socketManager.emitMarkRead(messageId);
+      } else {
+        // Socket down: socket-manager would silently drop the emit, leaving
+        // the server's message status unread and the badge stuck. REST still
+        // marks the message read authoritatively.
+        dispatch(chatApi.endpoints.markMessageRead.initiate(messageId)).catch(
+          () => {},
+        );
+      }
       dispatch(
         chatApi.util.updateQueryData('getConversations', undefined, (draft) => {
           const conversation = draft.find((c) => c.id === conversationId);
@@ -99,6 +110,9 @@ export function useChatSocket(
     };
 
     const handleReconnected = () => {
+      // Any markRead emitted before the drop may have been lost — allow the
+      // catch-up effect to re-mark messages the refetch still reports unread.
+      markedReadRef.current.clear();
       dispatch(chatApi.util.invalidateTags(['ChatMessage', 'Conversation']));
     };
 
@@ -113,20 +127,23 @@ export function useChatSocket(
       socketManager.off('messageStatusUpdate', handleStatusUpdate);
       socketManager.off('reconnected', handleReconnected);
       // Leaving the chat: let the conversation list refetch the server's
-      // authoritative unreadCount (reset by our markRead emissions).
+      // authoritative (derived) unread count.
       dispatch(chatApi.util.invalidateTags(['Conversation']));
     };
   }, [conversationId, dispatch, viewerRole, markConversationRead]);
 
-  // Catch-up: history may load (or refetch) after mount — mark the latest
-  // message we received as read so the badge clears for prior unread messages.
+  // Catch-up: history may load (or refetch) after mount — mark every incoming
+  // message as read so the badge clears and the sender's ticks turn blue for
+  // the whole history, not just the newest message.
   const messages = messagesResult?.data;
   useEffect(() => {
     if (!conversationId || !messages?.length) return;
-    const lastIncoming = [...messages]
-      .reverse()
-      .find((m) => m.sender !== viewerRole);
-    if (lastIncoming) markConversationRead(lastIncoming.id);
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const m = messages[i];
+      if (m.sender !== viewerRole && m.status !== 'READ') {
+        markConversationRead(m.id);
+      }
+    }
   }, [messages, conversationId, viewerRole, markConversationRead]);
 
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
