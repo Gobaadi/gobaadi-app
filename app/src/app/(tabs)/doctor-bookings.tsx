@@ -17,6 +17,7 @@ import {
   type DoctorAppointment,
 } from '@/store/doctorPortalApi';
 import { useGetBlockTimesQuery } from '@/store/blockTimesApi';
+import { PatientAvatar } from '@/components/patient-avatar';
 
 type ViewMode = 'monthly' | 'weekly';
 
@@ -269,13 +270,13 @@ function WeeklyView({
                 {appt.animalImage ? (
                   <Image source={{ uri: appt.animalImage }} style={styles.agendaAvatarImage} />
                 ) : (
-                  <Image source={{ uri: 'https://i.pravatar.cc/150?img=44' }} style={styles.agendaAvatarImage} />
+                  <PatientAvatar name={appt.patientName} image={appt.patientImage} size={50} />
                 )}
               </View>
 
               <View style={styles.agendaInfo}>
                 <Text style={styles.agendaName}>
-                  {appt.animalName || appt.patientName || `Patient #${appt.patientId}`}
+                    {appt.animalName || appt.patientName || 'Patient'}
                 </Text>
                 <Text style={styles.agendaDetail}>
                   {appt.symptoms || 'General Checkup'}
@@ -478,7 +479,7 @@ export default function DoctorBookingsScreen() {
                     {new Date(appt.startAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })} · {formatTime12h(appt.startAt)}
                   </Text>
                   <Text style={styles.upcomingName}>
-                    {appt.animalName || appt.patientName || `Patient #${appt.patientId}`}
+                  {appt.animalName || appt.patientName || 'Patient'}
                     {appt.animalSpecies ? ` (${appt.animalSpecies})` : ''}
                   </Text>
                   <Text style={styles.upcomingType}>Physical Consultation</Text>

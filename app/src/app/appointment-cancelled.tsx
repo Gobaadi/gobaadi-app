@@ -24,7 +24,7 @@ export default function AppointmentCancelledScreen() {
   const appointment = fetchedAppointment ?? bookings.find((b) => String(b.id) === id);
 
   const displayName = appointment
-    ? appointment.animalName || appointment.patientName || `Patient #${appointment.patientId}`
+    ? appointment.animalName || appointment.patientName || 'Patient'
     : 'Unknown';
 
   return (

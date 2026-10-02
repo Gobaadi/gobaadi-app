@@ -124,7 +124,7 @@ export default function AppointmentRescheduleScreen() {
   }
 
   const displayName =
-    appointment.animalName || appointment.patientName || `Patient #${appointment.patientId}`;
+    appointment.animalName || appointment.patientName || 'Patient';
 
   const year = currentMonth.getFullYear();
   const month = currentMonth.getMonth();

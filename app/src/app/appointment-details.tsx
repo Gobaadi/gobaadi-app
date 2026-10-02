@@ -144,7 +144,7 @@ export default function AppointmentDetailsScreen() {
 
   const statusStyle = getStatusStyle(appointment.status);
   const displayName =
-    appointment.animalName || appointment.patientName || `Patient #${appointment.patientId}`;
+    appointment.animalName || appointment.patientName || 'Patient';
   const consultationType = consultationTypeLabel(appointment.consultationType);
   const reason = (appointment.reasonForConsultation ?? '').trim();
   const symptoms = formatSymptoms(appointment.symptoms);
@@ -212,7 +212,7 @@ export default function AppointmentDetailsScreen() {
 
           <View style={styles.cardRow}>
             <DoctorAvatar
-              name={appointment.doctorName || `Doctor #${appointment.doctorId}`}
+              name={appointment.doctorName || 'Doctor'}
               avatar={appointment.doctorAvatar}
               size={56}
               radius={28}
@@ -221,7 +221,7 @@ export default function AppointmentDetailsScreen() {
             <View style={styles.cardInfo}>
               <Text style={styles.cardLabel}>DOCTOR</Text>
               <Text style={styles.cardName}>
-                {appointment.doctorName || `Doctor #${appointment.doctorId}`}
+                {appointment.doctorName || 'Doctor'}
               </Text>
               {appointment.doctorSpecialty && (
                 <Text style={styles.cardDetail}>{appointment.doctorSpecialty}</Text>

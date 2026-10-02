@@ -22,6 +22,8 @@ export interface Patient {
   ownerName?: string;
   ownerAvatar?: string;
   discount?: PatientDiscount;
+  /** Row built from the booking owner because they own no animals. */
+  ownerOnly?: boolean;
 }
 
 export interface Discount {

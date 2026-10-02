@@ -325,7 +325,7 @@ function DayAppointmentCard({ appointment, isPast, isUpcoming }: { appointment: 
       </View>
       <View style={styles.dayAppointmentInfo}>
         <Text style={styles.dayAppointmentName}>
-          {appointment.animalName || appointment.patientName || `Patient #${appointment.patientId}`}
+            {appointment.animalName || appointment.patientName || 'Patient'}
         </Text>
         {appointment.animalSpecies && (
           <Text style={styles.dayAppointmentDetail}>
@@ -428,7 +428,7 @@ function ListAppointmentCard({ appointment }: { appointment: DoctorAppointment }
         </View>
         <View style={styles.listAppointmentInfo}>
           <Text style={styles.listAppointmentName}>
-            {appointment.animalName || appointment.patientName || `Patient #${appointment.patientId}`}
+          {appointment.animalName || appointment.patientName || 'Patient'}
           </Text>
           {appointment.animalSpecies && (
             <Text style={styles.listAppointmentDetail}>

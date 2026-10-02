@@ -11,41 +11,30 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import {
-  useGetMySubscriptionQuery,
-  useCancelSubscriptionMutation,
-} from '@/store/subscriptionsApi';
+import { useGetMySubscriptionQuery } from '@/store/subscriptionsApi';
 import { SUBSCRIPTION_PLANS } from '@/constants/subscription-plans';
 
 export default function SubscriptionScreen() {
   const router = useRouter();
   const { data: mySubscription, isLoading: subLoading } = useGetMySubscriptionQuery();
-  const [cancelSubscription, { isLoading: cancelling }] = useCancelSubscriptionMutation();
 
   const handleManageBillings = () => {
     Alert.alert('Manage Billings', 'Redirecting to payment billing management portal...');
   };
 
-  const handleCancelSubscription = () => {
+  const handlePlanPress = () => {
     Alert.alert(
-      'Cancel Subscriptions?',
-      'Are you sure you want to cancel your subscription? You will lose access to premium features.',
+      'Coming Soon',
+      'Subscription plans will be available in the future. Connect with us!',
       [
-        { text: 'Keep Plan', style: 'cancel' },
-        {
-          text: 'Confirm Cancel',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await cancelSubscription().unwrap();
-              Alert.alert('Cancelled', 'Subscription auto-renewal has been cancelled.');
-            } catch (err: any) {
-              Alert.alert('Error', err?.data?.message ?? 'Failed to cancel subscription');
-            }
-          },
-        },
+        { text: 'OK', style: 'cancel' },
+        { text: 'Contact Us', onPress: () => router.push('/help-support') },
       ]
     );
+  };
+
+  const handleCancelSubscription = () => {
+    router.back();
   };
 
   if (subLoading) {
@@ -87,7 +76,12 @@ export default function SubscriptionScreen() {
             : '';
 
           return (
-            <View key={plan.id} style={styles.planCard}>
+            <TouchableOpacity
+              key={plan.id}
+              style={styles.planCard}
+              activeOpacity={0.85}
+              onPress={handlePlanPress}
+            >
               <Text style={styles.planTitle}>{plan.name}</Text>
 
               {isCurrentPlan && mySubscription ? (
@@ -112,7 +106,7 @@ export default function SubscriptionScreen() {
                   </View>
                 ))}
               </View>
-            </View>
+            </TouchableOpacity>
           );
         })}
 
@@ -120,20 +114,9 @@ export default function SubscriptionScreen() {
           <Text style={styles.manageBtnText}>Manage Billings</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.cancelBtn, (cancelling || !mySubscription) && { opacity: 0.5 }]}
-          onPress={handleCancelSubscription}
-          activeOpacity={0.85}
-          disabled={cancelling || !mySubscription}
-        >
-          {cancelling ? (
-            <ActivityIndicator size="small" color="#E53935" />
-          ) : (
-            <>
-              <Ionicons name="trash-outline" size={18} color="#E53935" />
-              <Text style={styles.cancelBtnText}>Cancel Subscriptions</Text>
-            </>
-          )}
+        <TouchableOpacity style={styles.cancelBtn} onPress={handleCancelSubscription} activeOpacity={0.85}>
+          <Ionicons name="trash-outline" size={18} color="#E53935" />
+          <Text style={styles.cancelBtnText}>Cancel Subscriptions</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

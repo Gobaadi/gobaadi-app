@@ -28,8 +28,9 @@ export default function ApplyDiscountScreen() {
     discountGiven: activeTab === 'discountGiven' ? 'true' : undefined,
   });
 
-  const filteredPatients = patients || [];
-  const discountGivenCount = patients?.filter((p) => p.discount?.isActive).length || 0;
+  const filteredPatients = (patients || []).filter((p) => !p.ownerOnly);
+  const discountGivenCount =
+    filteredPatients.filter((p) => p.discount?.isActive).length;
 
   return (
     <SafeAreaView style={styles.container}>

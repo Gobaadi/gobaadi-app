@@ -102,7 +102,7 @@ function AppointmentCard({ appointment, onPress }: AppointmentCardProps) {
     endAt >= now;
 
   const displayName =
-    appointment.animalName || appointment.patientName || `Patient #${appointment.patientId}`;
+    appointment.animalName || appointment.patientName || 'Patient';
 
   return (
     <TouchableOpacity style={styles.card} activeOpacity={0.7} onPress={onPress}>

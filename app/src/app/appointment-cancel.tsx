@@ -96,7 +96,7 @@ export default function AppointmentCancelScreen() {
   }
 
   const displayName =
-    appointment.animalName || appointment.patientName || `Patient #${appointment.patientId}`;
+    appointment.animalName || appointment.patientName || 'Patient';
 
   const handleCancel = async () => {
     if (!selectedReason) {

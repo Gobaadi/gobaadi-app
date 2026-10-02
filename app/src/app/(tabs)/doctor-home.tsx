@@ -11,7 +11,6 @@ import {
   StatusBar,
   Alert,
 } from 'react-native';
-import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,6 +23,7 @@ import {
 } from '@/store/doctorPortalApi';
 import { useGetConversationsQuery, useCreateConversationMutation } from '@/store/chatApi';
 import { useLanguage } from '@/hooks/use-language';
+import { PatientAvatar } from '@/components/patient-avatar';
 
 function getGreeting(): string {
   const h = new Date().getHours();
@@ -171,16 +171,20 @@ export default function DoctorHomeScreen() {
                   </View>
 
                   <View style={styles.patientAvatar}>
-                    <Image
-                      source={{ uri: 'https://i.pravatar.cc/150?img=44' }}
-                      style={styles.avatarImage}
-                      contentFit="cover"
+                    <PatientAvatar
+                      name={b.patientName}
+                      image={b.patientImage}
+                      size={50}
                     />
                   </View>
 
                   <View style={styles.patientInfo}>
-                    <Text style={styles.patientName}>{b.patientName || `Patient #${b.patientId}`}</Text>
-                    <Text style={styles.patientDetail}>{b.patientPhone || 'Backache'}</Text>
+                    <Text style={styles.patientName}>{b.patientName || b.animalName || 'Patient'}</Text>
+                    {b.reasonForConsultation || b.patientPhone ? (
+                      <Text style={styles.patientDetail}>
+                        {b.reasonForConsultation || b.patientPhone}
+                      </Text>
+                    ) : null}
                   </View>
 
                   <TouchableOpacity style={styles.chatBtn} activeOpacity={0.8} onPress={() => openPatientChat(b)}>
@@ -346,10 +350,6 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     marginRight: 14,
     overflow: 'hidden',
-  },
-  avatarImage: {
-    width: '100%',
-    height: '100%',
   },
   patientInfo: {
     flex: 1,

@@ -770,6 +770,15 @@ export class AppointmentsService {
         .map((p) => [p.id, p]),
     );
 
+    const patientFields = (appointment: Appointment) => {
+      const patient = patientsById.get(appointment.patientId);
+      return {
+        patientName: patient?.name,
+        patientPhone: patient?.phone,
+        patientImage: patient?.profilePhoto || patient?.avatar,
+      };
+    };
+
     const animalFields = (appointment: Appointment) => ({
       animalName: appointment.animalId
         ? animalsById.get(appointment.animalId)?.name
@@ -800,8 +809,7 @@ export class AppointmentsService {
 
       return appointments.map((appointment) => ({
         ...appointment,
-        patientName: patientsById.get(appointment.patientId)?.name,
-        patientPhone: patientsById.get(appointment.patientId)?.phone,
+        ...patientFields(appointment),
         ...animalFields(appointment),
         doctorName: doctorsById.get(appointment.doctorId)?.name,
         doctorSpecialty: doctorsById.get(appointment.doctorId)?.specialty,

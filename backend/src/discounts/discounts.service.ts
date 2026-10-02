@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ILike, In, Repository } from 'typeorm';
+import { FindOptionsWhere, In, Repository } from 'typeorm';
 import { PatientDiscount } from './patient-discount.entity';
 import { Discount } from './discount.entity';
 import { Appointment } from '../appointments/appointment.entity';
@@ -18,6 +18,8 @@ export interface DoctorPatient extends Animal {
   ownerName?: string;
   ownerAvatar?: string;
   discount?: PatientDiscount;
+  /** Row built from the booking owner because they own no animals. */
+  ownerOnly?: boolean;
 }
 
 @Injectable()
@@ -41,28 +43,55 @@ export class DiscountsService {
   ): Promise<DoctorPatient[]> {
     const appointments = await this.appointmentRepository.find({
       where: { doctorId },
-      select: { animalId: true },
+      select: { animalId: true, patientId: true },
     });
-    const patientIds = [
-      ...new Set(appointments.map((a) => a.animalId).filter(Boolean)),
-    ] as number[];
-    if (patientIds.length === 0) {
+
+    const appointmentAnimalIds = [
+      ...new Set(
+        appointments
+          .map((a) => a.animalId)
+          .filter((id): id is number => typeof id === 'number'),
+      ),
+    ];
+    const bookingOwnerIds = [
+      ...new Set(
+        appointments
+          .map((a) => a.patientId)
+          .filter((id): id is number => typeof id === 'number'),
+      ),
+    ];
+    if (appointmentAnimalIds.length === 0 && bookingOwnerIds.length === 0) {
       return [];
     }
 
-    const animalWhere = search
-      ? { id: In(patientIds), name: ILike(`%${search}%`) }
-      : { id: In(patientIds) };
+    // Animals explicitly linked to an appointment, plus every animal owned by
+    // a patient who has booked — appointments booked through the app often
+    // have animalId = null, so the owner is the reliable link.
+    const animalWhere: FindOptionsWhere<Animal>[] = [];
+    if (appointmentAnimalIds.length > 0) {
+      animalWhere.push({ id: In(appointmentAnimalIds) });
+    }
+    if (bookingOwnerIds.length > 0) {
+      animalWhere.push({ userId: In(bookingOwnerIds) });
+    }
     const animals = await this.animalRepository.find({ where: animalWhere });
 
-    const discounts = await this.discountRepository.find({
-      where: { doctorId, patientId: In(patientIds) },
-    });
+    const animalIds = [...new Set(animals.map((a) => a.id))];
+    const discounts = animalIds.length
+      ? await this.discountRepository.find({
+          where: { doctorId, patientId: In(animalIds) },
+        })
+      : [];
     const discountByPatientId = new Map(discounts.map((d) => [d.patientId, d]));
 
     const ownerIds = [
-      ...new Set(animals.map((a) => a.userId).filter(Boolean)),
-    ] as number[];
+      ...new Set([
+        ...bookingOwnerIds,
+        ...animals
+          .map((a) => a.userId)
+          .filter((id): id is number => typeof id === 'number'),
+      ]),
+    ];
     const owners = await Promise.all(
       ownerIds.map((id) => this.usersService.findById(id)),
     );
@@ -82,6 +111,42 @@ export class DiscountsService {
         : undefined,
       discount: discountByPatientId.get(animal.id),
     }));
+
+    // Owners who booked but own no animals: surface the owner as the patient.
+    const coveredOwnerIds = new Set(
+      animals
+        .map((a) => a.userId)
+        .filter((id): id is number => typeof id === 'number'),
+    );
+    const ownerOnlyRows: DoctorPatient[] = [];
+    for (const ownerId of bookingOwnerIds) {
+      if (coveredOwnerIds.has(ownerId)) continue;
+      const owner = ownersById.get(ownerId);
+      if (!owner) continue;
+      ownerOnlyRows.push({
+        id: owner.id,
+        userId: owner.id,
+        name: owner.name || `Owner #${ownerId}`,
+        breed: '',
+        weight: '',
+        age: '',
+        color: '',
+        image: owner.avatar ?? undefined,
+        ownerOnly: true,
+        ownerName: owner.name,
+        ownerAvatar: owner.avatar ?? undefined,
+      });
+    }
+    patients = patients.concat(ownerOnlyRows);
+
+    const term = search?.trim().toLowerCase();
+    if (term) {
+      patients = patients.filter((p) =>
+        [p.name, p.ownerName]
+          .filter((v): v is string => typeof v === 'string')
+          .some((v) => v.toLowerCase().includes(term)),
+      );
+    }
 
     if (discountGiven !== undefined) {
       patients = patients.filter((p) => !!p.discount === discountGiven);
