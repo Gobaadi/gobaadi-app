@@ -34,6 +34,14 @@ export default function BookSlotScreen() {
   const [selectedTimeSlot, setSelectedTimeSlot] = useState('');
   const [bookingReason, setBookingReason] = useState('');
   const [selectedAnimalId, setSelectedAnimalId] = useState<number | null>(null);
+  const [showAnimalOptions, setShowAnimalOptions] = useState(false);
+
+  const { data: animals = [] } = useGetAnimalsQuery();
+
+  // Auto-select when the farmer owns a single animal — derived during render
+  // (no effect), so it updates as soon as the animals query resolves.
+  const effectiveAnimalId =
+    selectedAnimalId ?? (animals.length === 1 ? animals[0].id : null);
 
   const selectedDateStr = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(selectedDay)}`;
 
@@ -89,6 +97,12 @@ export default function BookSlotScreen() {
       return;
     }
 
+    // Prescription / consultation flow needs the animal this visit is for.
+    if (animals.length > 0 && !effectiveAnimalId) {
+      Alert.alert('Required', 'Please select the pet for this appointment.');
+      return;
+    }
+
     try {
       if (isReschedule) {
         await rescheduleBooking({
@@ -105,6 +119,7 @@ export default function BookSlotScreen() {
         time: selectedTimeSlot,
         animalId: effectiveAnimalId ?? undefined,
         consultationType: selectedVisitType === 'Online' ? 'online_video' : 'physical',
+        ...(effectiveAnimalId ? { animalId: effectiveAnimalId } : {}),
         reasonForConsultation: bookingReason.trim(),
       }).unwrap();
     } catch (err) {
@@ -248,6 +263,54 @@ export default function BookSlotScreen() {
               </View>
             )}
 
+            {/* Select Pet — needed so doctor-side prescriptions link the right animal */}
+            {animals.length > 0 && (
+              <>
+                <Text style={styles.sectionTitle}>Select Pet</Text>
+                <TouchableOpacity
+                  style={styles.dropdownTrigger}
+                  activeOpacity={0.8}
+                  onPress={() => setShowAnimalOptions((v) => !v)}
+                >
+                  <Text style={styles.dropdownValue}>
+                    {effectiveAnimalId
+                      ? animals.find((a) => a.id === effectiveAnimalId)?.name || 'Pet'
+                      : 'Choose your pet'}
+                  </Text>
+                  <Text style={styles.dropdownArrow}>{showAnimalOptions ? '▲' : '▼'}</Text>
+                </TouchableOpacity>
+
+                {showAnimalOptions && (
+                  <View style={styles.visitTypeMenu}>
+                    {animals.map((animal) => {
+                      const isSelected = animal.id === effectiveAnimalId;
+                      return (
+                        <TouchableOpacity
+                          key={animal.id}
+                          style={[styles.visitTypeItem, isSelected && styles.visitTypeItemActive]}
+                          activeOpacity={0.8}
+                          onPress={() => {
+                            setSelectedAnimalId(animal.id);
+                            setShowAnimalOptions(false);
+                          }}
+                        >
+                          <Text
+                            style={[
+                              styles.visitTypeItemText,
+                              isSelected && styles.visitTypeItemTextActive,
+                            ]}
+                          >
+                            {animal.name}
+                            {animal.breed ? ` · ${animal.breed}` : ''}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                )}
+              </>
+            )}
+
             {/* Booking Reason */}
             <Text style={styles.sectionTitle}>
               Booking Reason <Text style={{ color: '#E53935' }}>(Required)</Text>
@@ -382,9 +445,9 @@ export default function BookSlotScreen() {
           {/* Floating Bottom Confirm Button */}
           <View style={styles.bottomBar}>
             <TouchableOpacity
-              style={[styles.confirmButton, (!selectedTimeSlot || !bookingReason.trim() || !doctor) && { opacity: 0.5 }]}
+              style={[styles.confirmButton, (!selectedTimeSlot || !bookingReason.trim() || !doctor || (animals.length > 0 && !effectiveAnimalId)) && { opacity: 0.5 }]}
               onPress={handleConfirmSlot}
-              disabled={!selectedTimeSlot || !bookingReason.trim() || !doctor}
+              disabled={!selectedTimeSlot || !bookingReason.trim() || !doctor || (animals.length > 0 && !effectiveAnimalId)}
               activeOpacity={0.85}
             >
               <Text style={styles.confirmButtonText}>

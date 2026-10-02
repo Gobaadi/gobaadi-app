@@ -34,6 +34,14 @@ class AgoraManager {
     await this.engine?.muteLocalVideoStream(muted);
   }
 
+  async startPreview(): Promise<void> {
+    this.engine?.startPreview();
+  }
+
+  async stopPreview(): Promise<void> {
+    this.engine?.stopPreview();
+  }
+
   async switchCamera(): Promise<void> {
     await this.engine?.switchCamera();
   }

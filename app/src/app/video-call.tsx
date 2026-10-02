@@ -10,6 +10,7 @@ import {
   Platform,
   PermissionsAndroid,
   Image,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -20,6 +21,11 @@ import type { RootState } from '@/store/store';
 import { useAgora } from '@/hooks/use-agora';
 import { agoraManager } from '@/lib/agora-manager';
 import { CallControls } from '@/components/CallControls';
+import {
+  useGetForAppointmentQuery as useConsultationForAppointmentQuery,
+  useEndConsultationMutation,
+  consultationStartedAt,
+} from '@/store/consultationsApi';
 import {
   useJoinSessionQuery,
   useEndSessionMutation,
@@ -71,20 +77,32 @@ export default function VideoCallScreen() {
     callType?: string;
     patientName?: string;
     animalImage?: string;
+    animalId?: string;
+    conversationId?: string;
   }>();
   const user = useSelector((state: RootState) => state.auth.user);
 
   const appointmentId = params.appointmentId ? parseInt(params.appointmentId, 10) : 0;
   const isAudioCall = params.callType === 'audio';
+  const isDoctor = user?.role === 'doctor';
   const peerName =
     params.patientName ||
     (user?.role === 'doctor' ? 'Patient' : 'Doctor');
   const peerImage = params.animalImage || '';
+  const animalId = params.animalId || '';
+  const conversationId = params.conversationId
+    ? parseInt(params.conversationId, 10)
+    : undefined;
 
   const { data: callData, isLoading: isJoining, error: joinError } = useJoinSessionQuery(appointmentId, {
     skip: !appointmentId,
   });
   const [endSession] = useEndSessionMutation();
+  const { data: consultation } = useConsultationForAppointmentQuery(
+    appointmentId ? String(appointmentId) : '',
+    { skip: !appointmentId },
+  );
+  const [endConsultationApi] = useEndConsultationMutation();
 
   const [callEnded, setCallEnded] = useState(false);
   const [elapsed, setElapsed] = useState(0);
@@ -143,18 +161,59 @@ export default function VideoCallScreen() {
     if (isConnected) connectedRef.current = true;
   }, [isConnected]);
 
+  /**
+   * Doctor's video call IS the consultation session (Figma flow): ending it
+   * finishes the consultation and lands the doctor on the Consultation Ended
+   * page, where the prescription can be sent.
+   */
+  const finishDoctorVideoCall = useCallback(async () => {
+    try {
+      if (consultation && consultation.status === 'ONGOING') {
+        await endConsultationApi(String(consultation.id)).unwrap();
+      }
+    } catch {
+      // Best effort — the chat can still end the consultation from its banner.
+    }
+    router.replace({
+      pathname: '/consultation-ended',
+      params: {
+        patientName: params.patientName || '',
+        conversationId: conversationId ? String(conversationId) : '',
+        animalId,
+        appointmentId: String(appointmentId),
+        ...(consultation
+          ? { startedAt: consultationStartedAt(consultation) }
+          : {}),
+      },
+    });
+  }, [
+    consultation,
+    endConsultationApi,
+    router,
+    params.patientName,
+    conversationId,
+    animalId,
+    appointmentId,
+  ]);
+
   useEffect(() => {
     const handleCallEnded = (payload: { appointmentId: number; endedBy: number }) => {
       if (payload.appointmentId === appointmentId && payload.endedBy !== uid) {
-        setCallEnded(true);
+        if (endedRef.current) return;
+        endedRef.current = true;
         agoraManager.leave();
+        if (isDoctor && !isAudioCall) {
+          finishDoctorVideoCall();
+        } else {
+          setCallEnded(true);
+        }
       }
     };
     socketManager.on('callEnded', handleCallEnded);
     return () => {
       socketManager.off('callEnded', handleCallEnded);
     };
-  }, [appointmentId, uid]);
+  }, [appointmentId, uid, isDoctor, isAudioCall, finishDoctorVideoCall]);
 
   useEffect(() => {
     return () => {
@@ -183,8 +242,28 @@ export default function VideoCallScreen() {
     } catch {
       // ignore cleanup errors
     }
-    setCallEnded(true);
-  }, [appointmentId, uid, endSession, router]);
+    if (isDoctor && !isAudioCall) {
+      await finishDoctorVideoCall();
+    } else {
+      setCallEnded(true);
+    }
+  }, [appointmentId, uid, endSession, router, isDoctor, isAudioCall, finishDoctorVideoCall]);
+
+  const openSendPrescription = () => {
+    if (!appointmentId) {
+      Alert.alert('Error', 'Missing appointment information. Please try again.');
+      return;
+    }
+    router.push({
+      pathname: '/send-prescription',
+      params: {
+        appointmentId: String(appointmentId),
+        conversationId: conversationId ? String(conversationId) : '',
+        animalId,
+        patientName: params.patientName || 'Patient',
+      },
+    });
+  };
 
   // Callee declined: the caller is already waiting in this screen (ringCall
   // joins immediately), so surface the rejection and leave cleanly.
@@ -287,7 +366,7 @@ export default function VideoCallScreen() {
         </View>
       ) : (
         <>
-          {remoteUids.length > 0 && (
+          {remoteUids.length > 0 ? (
             <RtcSurfaceView
               style={styles.videoBackground}
               canvas={{
@@ -295,17 +374,49 @@ export default function VideoCallScreen() {
                 renderMode: RenderModeType.RenderModeFit,
               }}
             />
-          )}
-
-          {localUid !== null && (
-            <View style={styles.pipContainer}>
+          ) : (
+            // No peer yet — show own camera full-screen instead of black.
+            // uid 0 → setupLocalVideo (SDK routes non-zero uid to setupRemoteVideo).
+            !isCameraOff &&
+            localUid !== null && (
               <RtcSurfaceView
-                style={styles.pipBox}
+                style={styles.videoBackground}
                 canvas={{
-                  uid: localUid,
+                  uid: 0,
                   renderMode: RenderModeType.RenderModeFit,
                 }}
               />
+            )
+          )}
+
+          {remoteUids.length > 0 && localUid !== null && (
+            <View style={styles.pipContainer}>
+              {isCameraOff ? (
+                <View style={[styles.pipBox, styles.pipPlaceholder]}>
+                  <Ionicons
+                    name="videocam-off"
+                    size={22}
+                    color="rgba(255,255,255,0.85)"
+                  />
+                  <Text style={styles.pipPlaceholderText}>Camera off</Text>
+                </View>
+              ) : (
+                <RtcSurfaceView
+                  style={styles.pipBox}
+                  zOrderMediaOverlay
+                  canvas={{
+                    uid: 0,
+                    renderMode: RenderModeType.RenderModeFit,
+                  }}
+                />
+              )}
+            </View>
+          )}
+
+          {remoteUids.length === 0 && isCameraOff && (
+            <View style={styles.cameraOffStage}>
+              <Ionicons name="videocam-off" size={48} color="rgba(255,255,255,0.5)" />
+              <Text style={styles.cameraOffStageText}>Camera off</Text>
             </View>
           )}
         </>
@@ -351,6 +462,32 @@ export default function VideoCallScreen() {
         onSwitchCamera={switchCamera}
         onEndCall={handleEndCall}
         hideVideoControls={isAudioCall}
+        quickActions={
+          isDoctor && !isAudioCall ? (
+            <View style={styles.quickActionsRow}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.quickActions}
+              >
+                <TouchableOpacity
+                  style={styles.quickActionBtn}
+                  activeOpacity={0.8}
+                  onPress={openSendPrescription}
+                >
+                  <Text style={styles.quickActionText}>Send prescription</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.quickActionBtn}
+                  activeOpacity={0.8}
+                  onPress={openSendPrescription}
+                >
+                  <Text style={styles.quickActionText}>Send recommendation</Text>
+                </TouchableOpacity>
+              </ScrollView>
+            </View>
+          ) : undefined
+        }
       />
 
       <Modal visible={callEnded} transparent animationType="fade">
@@ -436,6 +573,32 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#FFFFFF',
   },
+  pipPlaceholder: {
+    backgroundColor: 'rgba(20,18,17,0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 6,
+  },
+  pipPlaceholderText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.85)',
+  },
+  cameraOffStage: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 10,
+  },
+  cameraOffStageText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.6)',
+  },
   callInfoOverlay: {
     position: 'absolute',
     bottom: 160,
@@ -444,6 +607,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   callTimer: { fontSize: 14, fontWeight: '500', color: 'rgba(255,255,255,0.7)' },
+  quickActionsRow: { paddingHorizontal: 16, paddingTop: 12 },
+  quickActions: { flexDirection: 'row', gap: 8, paddingHorizontal: 4 },
+  quickActionBtn: {
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    borderRadius: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  quickActionText: { fontSize: 13, fontWeight: '600', color: '#1A1817' },
   connectingText: { fontSize: 12, color: '#FFC107', marginTop: 4 },
   joinErrorBox: { alignItems: 'center', marginTop: 6, gap: 8 },
   joinErrorText: {
