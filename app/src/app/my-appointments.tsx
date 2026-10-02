@@ -81,17 +81,17 @@ interface AppointmentCardProps {
 function AppointmentCard({ appointment, onPress }: AppointmentCardProps) {
   const statusStyle = getStatusStyle(appointment.status);
   const displayName =
-    appointment.animalName ||
-    appointment.patientName ||
-    (appointment.animalId != null ? `Animal #${appointment.animalId}` : null);
-  const doctorDisplayName =
-    appointment.doctorName || `Doctor #${appointment.doctorId}`;
+    appointment.animalName || appointment.patientName || 'Animal';
+  const doctorDisplayName = appointment.doctorName || 'Doctor';
 
   return (
     <TouchableOpacity style={styles.card} activeOpacity={0.7} onPress={onPress}>
       <View style={styles.cardImageContainer}>
-        {appointment.animalImage ? (
-          <Image source={{ uri: appointment.animalImage }} style={styles.cardImage} />
+        {appointment.animalImage || appointment.patientImage ? (
+          <Image
+            source={{ uri: appointment.animalImage || appointment.patientImage }}
+            style={styles.cardImage}
+          />
         ) : (
           <View style={[styles.cardImage, styles.cardImagePlaceholder]}>
             <Ionicons name="paw" size={22} color="#BD632F" />

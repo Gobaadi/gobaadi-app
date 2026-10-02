@@ -36,6 +36,7 @@ export const doctorsApi = createApi({
       doctorId: string;
       date: string;
       time: string;
+      animalId?: number;
       consultationType?: string;
       reasonForConsultation?: string;
     }>({

@@ -80,15 +80,16 @@ export default function DoctorPatientsScreen() {
         ) : (
           patients.map((patient) => (
             <TouchableOpacity
-              key={patient.id}
+              key={patient.ownerOnly ? `owner-${patient.id}` : `animal-${patient.id}`}
               style={styles.patientCard}
               activeOpacity={0.7}
-              onPress={() =>
+              onPress={() => {
+                if (patient.ownerOnly) return;
                 router.push({
                   pathname: '/patient-details',
                   params: { id: patient.id.toString() },
-                })
-              }
+                });
+              }}
             >
               <View style={styles.patientAvatar}>
                 {patient.image ? (
@@ -98,24 +99,36 @@ export default function DoctorPatientsScreen() {
                     contentFit="cover"
                   />
                 ) : (
-                  <Ionicons name="paw" size={28} color="#BD632F" />
+                  <Ionicons
+                    name={patient.ownerOnly ? 'person' : 'paw'}
+                    size={28}
+                    color="#BD632F"
+                  />
                 )}
               </View>
 
               <View style={styles.patientInfo}>
                 <Text style={styles.patientName}>{patient.name}</Text>
-                <Text style={styles.patientBreed}>{patient.breed}</Text>
+                {patient.breed ? (
+                  <Text style={styles.patientBreed}>{patient.breed}</Text>
+                ) : null}
                 <View style={styles.patientMetaRow}>
-                  <View style={styles.metaItem}>
-                    <Text style={styles.metaLabel}>Age</Text>
-                    <Text style={styles.metaValue}>{patient.age}</Text>
-                  </View>
-                  <View style={styles.metaDivider} />
-                  <View style={styles.metaItem}>
-                    <Text style={styles.metaLabel}>Weight</Text>
-                    <Text style={styles.metaValue}>{patient.weight}</Text>
-                  </View>
-                  {patient.ownerName && (
+                  {patient.age ? (
+                    <View style={styles.metaItem}>
+                      <Text style={styles.metaLabel}>Age</Text>
+                      <Text style={styles.metaValue}>{patient.age}</Text>
+                    </View>
+                  ) : null}
+                  {patient.weight ? (
+                    <>
+                      <View style={styles.metaDivider} />
+                      <View style={styles.metaItem}>
+                        <Text style={styles.metaLabel}>Weight</Text>
+                        <Text style={styles.metaValue}>{patient.weight}</Text>
+                      </View>
+                    </>
+                  ) : null}
+                  {patient.ownerName ? (
                     <>
                       <View style={styles.metaDivider} />
                       <View style={styles.metaItem}>
@@ -125,11 +138,15 @@ export default function DoctorPatientsScreen() {
                         </Text>
                       </View>
                     </>
-                  )}
+                  ) : null}
                 </View>
               </View>
 
-              <Ionicons name="chevron-forward" size={18} color="#9C9690" />
+              {patient.ownerOnly ? (
+                <View style={{ width: 18 }} />
+              ) : (
+                <Ionicons name="chevron-forward" size={18} color="#9C9690" />
+              )}
             </TouchableOpacity>
           ))
         )}

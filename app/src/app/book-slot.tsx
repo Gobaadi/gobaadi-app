@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useGetDoctorByIdQuery, useGetSlotsQuery, useBookSlotMutation } from '@/store/doctorsApi';
 import { useRescheduleBookingMutation } from '@/store/doctorPortalApi';
+import { useGetAnimalsQuery } from '@/store/animalsApi';
 import { DoctorAvatar } from '@/components/doctor-avatar';
 
 function pad(n: number): string {
@@ -32,6 +33,7 @@ export default function BookSlotScreen() {
   const [selectedDay, setSelectedDay] = useState(today.getDate());
   const [selectedTimeSlot, setSelectedTimeSlot] = useState('');
   const [bookingReason, setBookingReason] = useState('');
+  const [selectedAnimalId, setSelectedAnimalId] = useState<number | null>(null);
 
   const selectedDateStr = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(selectedDay)}`;
 
@@ -58,6 +60,10 @@ export default function BookSlotScreen() {
   const { data: doctorData, isLoading: doctorLoading, isError: doctorError } = useGetDoctorByIdQuery(doctorId, { skip: !doctorId });
   const [bookSlot] = useBookSlotMutation();
   const [rescheduleBooking] = useRescheduleBookingMutation();
+
+  const { data: myAnimals = [] } = useGetAnimalsQuery();
+  // Derived at render (no effect) so the first animal is the default selection.
+  const effectiveAnimalId = selectedAnimalId ?? myAnimals[0]?.id ?? null;
 
   const doctor = useMemo(() => {
     if (!doctorData) return null;
@@ -97,6 +103,7 @@ export default function BookSlotScreen() {
         doctorId: doctor.id,
         date: selectedDateStr,
         time: selectedTimeSlot,
+        animalId: effectiveAnimalId ?? undefined,
         consultationType: selectedVisitType === 'Online' ? 'online_video' : 'physical',
         reasonForConsultation: bookingReason.trim(),
       }).unwrap();
@@ -254,6 +261,35 @@ export default function BookSlotScreen() {
               multiline
               textAlignVertical="top"
             />
+
+            {/* Animal Selection */}
+            {!isReschedule && myAnimals.length > 0 && (
+              <>
+                <Text style={styles.sectionTitle}>Select Animal</Text>
+                <View style={styles.animalChipsRow}>
+                  {myAnimals.map((animal) => {
+                    const isSelected = animal.id === effectiveAnimalId;
+                    return (
+                      <TouchableOpacity
+                        key={animal.id}
+                        style={[styles.animalChip, isSelected && styles.animalChipSelected]}
+                        onPress={() => setSelectedAnimalId(animal.id)}
+                        activeOpacity={0.7}
+                      >
+                        <Text
+                          style={[
+                            styles.animalChipText,
+                            isSelected && styles.animalChipTextSelected,
+                          ]}
+                        >
+                          {animal.name}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </>
+            )}
 
             {/* Date Selection */}
             <Text style={styles.sectionTitle}>Select Date</Text>
@@ -686,5 +722,31 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
+  },
+  animalChipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 4,
+  },
+  animalChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E6E1DC',
+  },
+  animalChipSelected: {
+    backgroundColor: '#BD632F',
+    borderColor: '#BD632F',
+  },
+  animalChipText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1A1817',
+  },
+  animalChipTextSelected: {
+    color: '#FFFFFF',
   },
 });

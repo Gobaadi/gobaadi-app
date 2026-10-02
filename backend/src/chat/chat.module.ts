@@ -10,6 +10,8 @@ import { ConversationService } from './conversation.service';
 import { Appointment } from '../appointments/appointment.entity';
 import { Doctor } from '../doctors/doctor.entity';
 import { VideoSession } from '../video-call/video-call.entity';
+import { User } from '../users/user.entity';
+import { Animal } from '../animals/animal.entity';
 import { S3Module } from '../s3/s3.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 
@@ -21,6 +23,8 @@ import { NotificationsModule } from '../notifications/notifications.module';
       Appointment,
       Doctor,
       VideoSession,
+      User,
+      Animal,
     ]),
     MulterModule.register({ limits: { fileSize: 10 * 1024 * 1024 } }),
     S3Module,

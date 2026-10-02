@@ -17,6 +17,7 @@ import {
   useGetDoctorBookingsQuery,
   type DoctorAppointment,
 } from '@/store/doctorPortalApi';
+import { PatientAvatar } from '@/components/patient-avatar';
 
 interface EnrichedChat {
   id: string;
@@ -26,6 +27,7 @@ interface EnrichedChat {
   unreadCount: number;
   isPending: boolean;
   animalImage?: string;
+  patientPhoto?: string;
   patientId: number;
   conversationId?: number;
   appointmentId?: number;
@@ -99,12 +101,18 @@ export default function DoctorMessagesScreen() {
       const appointment = patientLookup.get(conv.patientId);
       chatMap.set(conv.patientId, {
         id: String(conv.id),
-        name: appointment?.patientName || `Patient #${conv.patientId}`,
+        name:
+          conv.patientName ||
+          appointment?.patientName ||
+          conv.animalName ||
+          appointment?.animalName ||
+          'Patient',
         lastMessage: conv.lastMessageText || 'Start a conversation',
         time: formatChatTime(conv.lastMessageAt),
         unreadCount: conv.unreadCount || 0,
         isPending: false,
-        animalImage: appointment?.animalImage,
+        animalImage: conv.animalImage || appointment?.animalImage,
+        patientPhoto: conv.patientPhoto || appointment?.patientImage,
         patientId: conv.patientId,
         conversationId: conv.id,
         appointmentId: appointment?.id != null ? Number(appointment.id) : undefined,
@@ -115,12 +123,13 @@ export default function DoctorMessagesScreen() {
       if (!chatMap.has(b.patientId)) {
         chatMap.set(b.patientId, {
           id: `apt-${b.patientId}`,
-          name: b.patientName || `Patient #${b.patientId}`,
+          name: b.patientName || b.animalName || 'Patient',
           lastMessage: '',
           time: formatAppointmentTime(b.startAt),
           unreadCount: 0,
           isPending: true,
           animalImage: b.animalImage,
+          patientPhoto: b.patientImage,
           patientId: b.patientId,
           appointmentId: Number(b.id),
           appointmentStatus: b.status,
@@ -190,7 +199,7 @@ export default function DoctorMessagesScreen() {
           pathname: '/chat',
           params: {
             conversationId: String(result.id),
-            patientName: appointment.patientName || `Patient #${appointment.patientId}`,
+            patientName: appointment.patientName || appointment.animalName || 'Patient',
             animalImage: appointment.animalImage || '',
             appointmentId: String(appointment.id),
           },
@@ -226,14 +235,24 @@ export default function DoctorMessagesScreen() {
                   {formatAppointmentTime(nextAppointment.startAt)} · Today
                 </Text>
                 <Text style={styles.upcomingPetName}>{nextAppointment.animalName || 'Pet'}</Text>
-                <Text style={styles.upcomingOwner}>Owner   {nextAppointment.patientName || `Patient #${nextAppointment.patientId}`}</Text>
+                <Text style={styles.upcomingOwner}>
+                  Owner{'   '}
+                  {nextAppointment.patientName ||
+                    nextAppointment.patientPhone ||
+                    'Patient'}
+                </Text>
               </View>
               <View style={styles.upcomingRight}>
                 <View style={styles.upcomingPetAvatar}>
                   {nextAppointment.animalImage ? (
                     <Image source={{ uri: nextAppointment.animalImage }} style={styles.upcomingPetAvatarImage} />
                   ) : (
-                    <Ionicons name="paw" size={28} color="#BD632F" />
+                    <PatientAvatar
+                      name={nextAppointment.patientName || nextAppointment.animalName}
+                      image={nextAppointment.patientImage}
+                      size={64}
+                      radius={16}
+                    />
                   )}
                 </View>
                 <TouchableOpacity style={styles.joinBtn} activeOpacity={0.85}>
@@ -254,13 +273,13 @@ export default function DoctorMessagesScreen() {
             onPress={() => handleChatPress(chat)}
             disabled={creatingId === chat.patientId}
           >
-            <View style={styles.chatAvatar}>
-              {chat.animalImage ? (
-                <Image source={{ uri: chat.animalImage }} style={styles.chatAvatarImage} />
-              ) : (
-                <Ionicons name="paw" size={22} color="#BD632F" />
-              )}
-            </View>
+            <PatientAvatar
+              name={chat.name}
+              image={chat.animalImage || chat.patientPhoto}
+              size={48}
+              radius={24}
+              style={styles.chatAvatarSpacing}
+            />
             <View style={styles.chatInfo}>
               <View style={styles.chatTopRow}>
                 <Text style={styles.chatName}>{chat.name}</Text>
@@ -310,8 +329,7 @@ const styles = StyleSheet.create({
   joinBtnText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
   sectionTitle: { fontSize: 16, fontWeight: '700', color: '#1A1817', marginBottom: 12 },
   chatItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#F0ECE8' },
-  chatAvatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#FFF2EB', justifyContent: 'center', alignItems: 'center', marginRight: 12, overflow: 'hidden' },
-  chatAvatarImage: { width: 48, height: 48, borderRadius: 24 },
+  chatAvatarSpacing: { marginRight: 12 },
   chatInfo: { flex: 1 },
   chatTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
   chatName: { fontSize: 15, fontWeight: '700', color: '#1A1817' },

@@ -30,6 +30,11 @@ export interface Conversation {
   lastMessageText?: string | null;
   unreadCount?: number;
   createdAt: string;
+  patientName?: string;
+  patientPhone?: string;
+  patientPhoto?: string;
+  animalName?: string;
+  animalImage?: string;
 }
 
 export interface ChatAppointment {

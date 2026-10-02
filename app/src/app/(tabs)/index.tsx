@@ -342,7 +342,7 @@ export default function HomeDashboard() {
               >
                 <View style={styles.listItemLeft}>
                   <DoctorAvatar
-                    name={appt.doctorName || `Doctor #${appt.doctorId}`}
+                    name={appt.doctorName || 'Doctor'}
                     avatar={appt.doctorAvatar}
                     size={44}
                     radius={22}
@@ -350,7 +350,7 @@ export default function HomeDashboard() {
                   />
                   <View>
                     <Text style={styles.animalName}>
-                      {appt.doctorName || `Doctor #${appt.doctorId}`}
+                      {appt.doctorName || 'Doctor'}
                     </Text>
                     <Text style={styles.animalBreed}>
                       {appt.animalName || 'Consultation'} · {new Date(appt.startAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
