@@ -105,6 +105,14 @@ export function useAgora(
       // Audio call: never publish camera. Also resets the singleton engine
       // after a previous audio call so later video calls start with camera on.
       await agoraManager.muteVideo(startCameraOff);
+      // Video call: start local preview so own face renders in the PiP
+      // (Agora does not show self-view until startPreview is called).
+      // Audio call: stop preview left running by a previous video call.
+      if (startCameraOff) {
+        await agoraManager.stopPreview();
+      } else {
+        await agoraManager.startPreview();
+      }
       await agoraManager.join(token, channelName, uid);
     };
 
@@ -150,6 +158,10 @@ export function useAgora(
   const toggleCamera = useCallback(async () => {
     const newCameraOff = !stateRef.current.isCameraOff;
     await agoraManager.muteVideo(newCameraOff);
+    // Re-enable self-view after camera-off (preview may have been halted).
+    if (!newCameraOff) {
+      await agoraManager.startPreview();
+    }
     setState(prev => ({ ...prev, isCameraOff: newCameraOff }));
   }, []);
 

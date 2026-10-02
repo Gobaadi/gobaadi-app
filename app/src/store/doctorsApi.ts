@@ -32,7 +32,17 @@ export const doctorsApi = createApi({
       query: ({ doctorId, date }) => `/doctors/${doctorId}/slots?date=${date}`,
       providesTags: (_result, _error, { doctorId, date }) => [{ type: 'Slot', id: `${doctorId}-${date}` }],
     }),
-    bookSlot: builder.mutation<void, { doctorId: string; date: string; time: string; consultationType?: string }>({
+    bookSlot: builder.mutation<
+      void,
+      {
+        doctorId: string;
+        date: string;
+        time: string;
+        consultationType?: string;
+        animalId?: number;
+        reasonForConsultation?: string;
+      }
+    >({
       query: (body) => ({ url: '/doctors/book', method: 'POST', body }),
       invalidatesTags: (_result, _error, { doctorId, date }) => [{ type: 'Slot', id: `${doctorId}-${date}` }],
       async onQueryStarted(_args, { dispatch, queryFulfilled }) {

@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useCallback, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -8,13 +8,9 @@ import {
   ScrollView,
   Image,
   Alert,
-  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { useSelector } from 'react-redux';
-import type { RootState } from '@/store/store';
 import { useGetDoctorsQuery } from '@/store/doctorsApi';
 import { useLocation } from '@/hooks/use-location';
 import LocationBottomSheet from '@/components/LocationBottomSheet';
@@ -24,9 +20,6 @@ import {
   type DoctorAppointment,
   type AppointmentStatus,
 } from '@/store/doctorPortalApi';
-import { useCreateSessionMutation } from '@/store/videoCallApi';
-import { useLazyGetForAppointmentQuery } from '@/store/consultationsApi';
-import { useCallSignalingContext } from '@/components/IncomingCallProvider';
 import { apiErrorMessage } from '@/utils/api-error';
 
 interface Treatment {
@@ -61,20 +54,15 @@ function isUpcoming(status: AppointmentStatus): boolean {
 
 export default function MyTreatmentScreen() {
   const router = useRouter();
-  const user = useSelector((state: RootState) => state.auth.user);
-  const { startCall, outgoingState, resetOutgoingState } = useCallSignalingContext();
   const [activeFilter, setActiveFilter] = useState<'All' | 'Upcoming' | 'Medicine'>('All');
   const [activeVisitTab, setActiveVisitTab] = useState<'online' | 'physical'>('online');
   const [searchQuery, setSearchQuery] = useState('');
-  const [callingAppointmentId, setCallingAppointmentId] = useState<number | null>(null);
   const { location, setLocation } = useLocation();
   const [locationSheetOpen, setLocationSheetOpen] = useState(false);
 
   const { data: appointments = [] } = useGetDoctorBookingsQuery();
   const { data: doctors = [] } = useGetDoctorsQuery();
   const [cancelBookingMutation] = useCancelBookingMutation();
-  const [createSession] = useCreateSessionMutation();
-  const [getConsultation] = useLazyGetForAppointmentQuery();
 
   const doctorsById = useMemo(
     () => Object.fromEntries(doctors.map((d) => [d.id, d])),
@@ -94,56 +82,6 @@ export default function MyTreatmentScreen() {
       );
     }
   }
-
-  const handleStartCall = useCallback(
-    async (appointment: DoctorAppointment) => {
-      if (!user) return;
-
-      try {
-        setCallingAppointmentId(appointment.id);
-        const consultation = await getConsultation(String(appointment.id))
-          .unwrap()
-          .catch(() => null);
-        if (consultation?.status !== 'ONGOING') {
-          setCallingAppointmentId(null);
-          Alert.alert(
-            'Consultation not started',
-            'Start the consultation in the chat before placing a call.',
-          );
-          return;
-        }
-        const session = await createSession(appointment.id).unwrap();
-        const callerRole =
-          user.role === 'doctor' ? ('DOCTOR' as const) : ('PATIENT' as const);
-
-        startCall(
-          appointment.id,
-          user.id,
-          user.name || (callerRole === 'DOCTOR' ? 'Doctor' : 'Patient'),
-          callerRole,
-          session.channelName,
-        );
-      } catch (err: any) {
-        setCallingAppointmentId(null);
-        const message = err?.data?.message || 'Could not start the call. Please try again.';
-        Alert.alert('Call Failed', Array.isArray(message) ? message[0] : message);
-      }
-    },
-    [user, createSession, getConsultation, startCall],
-  );
-
-  useEffect(() => {
-    if (outgoingState === 'idle' || outgoingState === 'calling') return;
-    setCallingAppointmentId(null);
-    if (outgoingState === 'rejected') {
-      Alert.alert('Call Declined', 'The doctor declined the call.');
-    } else if (outgoingState === 'timeout') {
-      Alert.alert('No Response', 'The doctor did not respond. Please try again later.');
-    } else if (outgoingState === 'error') {
-      Alert.alert('Call Failed', 'Something went wrong. Please try again.');
-    }
-    resetOutgoingState();
-  }, [outgoingState, resetOutgoingState]);
 
   const treatments: Treatment[] = useMemo(
     () =>
@@ -358,30 +296,6 @@ export default function MyTreatmentScreen() {
                       <Text style={styles.priceAmount}> 120 </Text>
                       <Text style={styles.paidBadge}>(Paid)</Text>
                     </View>
-                    {isUpcoming(item.status) &&
-                      item.consultationType?.startsWith('online_') && (
-                        <TouchableOpacity
-                          style={[
-                            styles.videoCallBtn,
-                            callingAppointmentId === item.appointmentId &&
-                              styles.videoCallBtnLoading,
-                          ]}
-                          activeOpacity={0.8}
-                          disabled={callingAppointmentId !== null}
-                          onPress={() => handleStartCall(item.raw)}
-                        >
-                          {callingAppointmentId === item.appointmentId ? (
-                            <ActivityIndicator size="small" color="#FFFFFF" />
-                          ) : (
-                            <Ionicons name="videocam" size={16} color="#FFFFFF" />
-                          )}
-                          <Text style={styles.videoCallBtnText}>
-                            {callingAppointmentId === item.appointmentId
-                              ? 'Calling...'
-                              : 'Video Call'}
-                          </Text>
-                        </TouchableOpacity>
-                      )}
                   </View>
                 </View>
               </TouchableOpacity>
