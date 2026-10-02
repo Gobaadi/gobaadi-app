@@ -4,14 +4,13 @@ import {
   View,
   Text,
   TouchableOpacity,
-  Image,
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 
 import { useGetDoctorByIdQuery } from '@/store/doctorsApi';
-import { doctorImageSource } from '@/utils/doctor-image';
+import { DoctorAvatar } from '@/components/doctor-avatar';
 
 export default function ConfirmPayScreen() {
   const router = useRouter();
@@ -28,7 +27,7 @@ export default function ConfirmPayScreen() {
       location: 'Uttar Badda, Dhaka',
       rating: doctorData.rating || 4.8,
       reviews: 124,
-      image: doctorImageSource(doctorData.avatar),
+      avatar: doctorData.avatar ?? '',
     }
     : {
       id: doctorId || '1',
@@ -37,7 +36,7 @@ export default function ConfirmPayScreen() {
       location: '',
       rating: 0,
       reviews: 0,
-      image: null,
+      avatar: null,
     };
 
   // Format Date value nicely
@@ -77,8 +76,11 @@ export default function ConfirmPayScreen() {
                 <ActivityIndicator size="small" color="#BD632F" />
               </View>
             ) : (
-              <Image
-                source={doctor.image ?? doctorImageSource(undefined)}
+              <DoctorAvatar
+                name={doctor.name}
+                avatar={doctor.avatar}
+                size={72}
+                radius={16}
                 style={styles.doctorPortrait}
               />
             )}

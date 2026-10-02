@@ -25,6 +25,7 @@ import {
   useUploadAnimalPhotoMutation,
 } from '@/store/animalsApi';
 import { compressImageForUpload } from '@/utils/compress-image';
+import { isRenderableImageUri } from '@/utils/photo-uri';
 
 // Custom Calendar Modal Component
 interface CalendarModalProps {
@@ -284,7 +285,11 @@ export default function AddAnimalScreen() {
     setLiveWeight(existingAnimal.liveWeight || '');
     setReproStatus(existingAnimal.reproStatus || '');
     setColor(existingAnimal.color || '');
-    setPhotos(existingAnimal.photos || (existingAnimal.image ? [existingAnimal.image] : []));
+    setPhotos(
+      (existingAnimal.photos || (existingAnimal.image ? [existingAnimal.image] : [])).filter(
+        isRenderableImageUri,
+      ),
+    );
     setPhotoCost(existingAnimal.photoCost || '');
     setSellingPrice(existingAnimal.sellingPrice || '');
     setLiveWeightPrice(existingAnimal.liveWeightPrice || '');
@@ -341,7 +346,7 @@ export default function AddAnimalScreen() {
       }
       try {
         setIsUploading(true);
-        const existingUrls = photos.filter((p) => p.startsWith('http'));
+        const existingUrls = photos.filter((p) => p.startsWith('http') && isRenderableImageUri(p));
         const newLocalUris = photos.filter((p) => !p.startsWith('http'));
         let uploadedNewUrls: string[] = [];
         try {

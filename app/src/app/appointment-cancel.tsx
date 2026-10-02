@@ -150,14 +150,18 @@ export default function AppointmentCancelScreen() {
             )}
             <View style={styles.cardInfo}>
               <Text style={styles.cardName}>{displayName}</Text>
-              {appointment.animalSpecies && (
+              {(appointment.animalSpecies || appointment.animalBreed || appointment.animalAge) && (
                 <Text style={styles.cardDetail}>
-                  {appointment.animalSpecies}
-                  {appointment.animalAge ? ` · ${appointment.animalAge}` : ''}
-                  {appointment.animalBreed ? ` · ${appointment.animalBreed}` : ''}
+                  {[
+                    appointment.animalSpecies,
+                    appointment.animalAge,
+                    appointment.animalBreed,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
                 </Text>
               )}
-              {appointment.patientName && (
+              {appointment.animalName && appointment.patientName && (
                 <Text style={styles.cardOwner}>Owner: {appointment.patientName}</Text>
               )}
             </View>

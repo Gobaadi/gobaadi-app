@@ -38,6 +38,10 @@ export class S3Service {
     }
   }
 
+  get isConfigured(): boolean {
+    return !!this.client && !!this.bucket && !!this.region;
+  }
+
   async uploadFile(
     buffer: Buffer,
     opts: UploadFileOptions = {},

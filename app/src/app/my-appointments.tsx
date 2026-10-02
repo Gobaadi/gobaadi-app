@@ -14,7 +14,7 @@ import {
   useGetDoctorBookingsQuery,
   type DoctorAppointment,
 } from '@/store/doctorPortalApi';
-import { doctorImageSource } from '@/utils/doctor-image';
+import { DoctorAvatar } from '@/components/doctor-avatar';
 
 type Tab = 'upcoming' | 'past';
 
@@ -81,7 +81,9 @@ interface AppointmentCardProps {
 function AppointmentCard({ appointment, onPress }: AppointmentCardProps) {
   const statusStyle = getStatusStyle(appointment.status);
   const displayName =
-    appointment.animalName || `Animal #${appointment.animalId}`;
+    appointment.animalName ||
+    appointment.patientName ||
+    (appointment.animalId != null ? `Animal #${appointment.animalId}` : null);
   const doctorDisplayName =
     appointment.doctorName || `Doctor #${appointment.doctorId}`;
 
@@ -110,8 +112,11 @@ function AppointmentCard({ appointment, onPress }: AppointmentCardProps) {
         </View>
 
         <View style={styles.cardDoctorRow}>
-          <Image
-            source={doctorImageSource(appointment.doctorAvatar)}
+          <DoctorAvatar
+            name={doctorDisplayName}
+            avatar={appointment.doctorAvatar}
+            size={36}
+            radius={18}
             style={styles.cardDoctorAvatar}
           />
           <View style={styles.cardDoctorInfo}>
@@ -123,7 +128,9 @@ function AppointmentCard({ appointment, onPress }: AppointmentCardProps) {
           </View>
         </View>
 
-        <Text style={styles.cardAnimal}>{displayName}</Text>
+        {displayName ? (
+          <Text style={styles.cardAnimal}>{displayName}</Text>
+        ) : null}
       </View>
     </TouchableOpacity>
   );

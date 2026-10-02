@@ -18,6 +18,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { MediaCardSkeleton } from '@/components/ui/skeleton';
 import { useLanguage } from '@/hooks/use-language';
 import { useDebounce } from '@/hooks/use-debounce';
+import { isRenderableImageUri } from '@/utils/photo-uri';
 
 type Chip = 'All' | 'Calf' | 'Bull';
 
@@ -114,6 +115,7 @@ export default function AnimalsListScreen() {
   const debouncedSearch = useDebounce(searchQuery, 300);
   const { data: animals = [], isLoading } = useGetAnimalsQuery();
   const { languageCode } = useLanguage();
+  const [failedImageUris, setFailedImageUris] = useState<string[]>([]);
 
   const counts = useMemo(
     () => ({
@@ -266,7 +268,10 @@ export default function AnimalsListScreen() {
               onAction={hasQuery ? resetAdvancedFilters : () => router.push('/add-animal')}
             />
           ) : (
-            displayAnimals.map((item) => (
+            displayAnimals.map((item) => {
+              const imageUri = isRenderableImageUri(item.image) ? item.image : undefined;
+              const imageFailed = !!imageUri && failedImageUris.includes(imageUri);
+              return (
               <TouchableOpacity
                 key={item.id}
                 style={styles.card}
@@ -279,9 +284,17 @@ export default function AnimalsListScreen() {
                 }
               >
                 <Image
-                  source={item.image ? { uri: item.image } : animalImage(item.breed)}
+                  source={!imageFailed && imageUri ? { uri: imageUri } : animalImage(item.breed)}
                   style={styles.cardImage}
                   contentFit="cover"
+                  onError={
+                    !imageFailed && imageUri
+                      ? () =>
+                          setFailedImageUris((prev) =>
+                            prev.includes(imageUri) ? prev : [...prev, imageUri],
+                          )
+                      : undefined
+                  }
                 />
 
                 <View style={styles.cardContent}>
@@ -314,7 +327,8 @@ export default function AnimalsListScreen() {
                   </View>
                 </View>
               </TouchableOpacity>
-            ))
+              );
+            })
           )}
         </ScrollView>
       </View>

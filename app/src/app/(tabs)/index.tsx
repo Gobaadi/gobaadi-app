@@ -27,7 +27,7 @@ import Svg, { Path } from 'react-native-svg';
 import { EmptyState } from '@/components/ui/empty-state';
 import { RowSkeleton, SkeletonBox } from '@/components/ui/skeleton';
 import { localDateKey } from '@/utils/date';
-import { doctorImageSource } from '@/utils/doctor-image';
+import { DoctorAvatar } from '@/components/doctor-avatar';
 
 const { width } = Dimensions.get('window');
 
@@ -341,10 +341,12 @@ export default function HomeDashboard() {
                 })}
               >
                 <View style={styles.listItemLeft}>
-                  <Image
-                    source={doctorImageSource(appt.doctorAvatar)}
+                  <DoctorAvatar
+                    name={appt.doctorName || `Doctor #${appt.doctorId}`}
+                    avatar={appt.doctorAvatar}
+                    size={44}
+                    radius={22}
                     style={styles.checkeredIcon}
-                    contentFit="cover"
                   />
                   <View>
                     <Text style={styles.animalName}>

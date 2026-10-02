@@ -157,7 +157,15 @@ export default function AppointmentRescheduleScreen() {
         time: selectedTime,
       }).unwrap();
       Alert.alert('Success', 'Appointment rescheduled successfully.');
-      router.replace(isDoctor ? '/appointments' : '/my-appointments');
+      const target = isDoctor ? '/appointments' : '/my-appointments';
+      try {
+        // Drop the details/reschedule screens from the stack so Back from the
+        // list returns to where the flow started instead of the old booking.
+        router.dismissAll();
+        router.navigate(target);
+      } catch {
+        router.replace(target);
+      }
     } catch (err) {
       Alert.alert(
         'Error',
@@ -195,14 +203,18 @@ export default function AppointmentRescheduleScreen() {
             )}
             <View style={styles.cardInfo}>
               <Text style={styles.cardName}>{displayName}</Text>
-              {appointment.animalSpecies && (
+              {(appointment.animalSpecies || appointment.animalBreed || appointment.animalAge) && (
                 <Text style={styles.cardDetail}>
-                  {appointment.animalSpecies}
-                  {appointment.animalAge ? ` · ${appointment.animalAge}` : ''}
-                  {appointment.animalBreed ? ` · ${appointment.animalBreed}` : ''}
+                  {[
+                    appointment.animalSpecies,
+                    appointment.animalAge,
+                    appointment.animalBreed,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
                 </Text>
               )}
-              {appointment.patientName && (
+              {appointment.animalName && appointment.patientName && (
                 <Text style={styles.cardOwner}>Owner: {appointment.patientName}</Text>
               )}
             </View>

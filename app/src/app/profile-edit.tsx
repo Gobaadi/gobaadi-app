@@ -10,7 +10,6 @@ import {
   Switch,
   ActivityIndicator,
   Alert,
-  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -26,7 +25,7 @@ import {
   useUploadMyPhotoMutation,
 } from '@/store/doctorPortalApi';
 import { compressImageForUpload } from '@/utils/compress-image';
-import { doctorImageSource } from '@/utils/doctor-image';
+import { DoctorAvatar } from '@/components/doctor-avatar';
 
 type Tab = 'about' | 'experience' | 'credentials';
 
@@ -119,10 +118,6 @@ export default function ProfileEditScreen() {
   }, [doctorBookings]);
 
   const isSaving = savingProfile || savingExperiences || savingQualifications || savingSpecializations;
-
-  const avatarSource = pickedPhotoUri
-    ? { uri: pickedPhotoUri }
-    : doctorImageSource(doctorProfile?.avatar, require('@/assets/images/doctor_avatar.png'));
 
   const openPhotoPicker = () => {
     Alert.alert('Change Profile Photo', 'Choose an option', [
@@ -355,7 +350,13 @@ export default function ProfileEditScreen() {
               disabled={isUploadingPhoto}
               activeOpacity={0.8}
             >
-              <Image source={avatarSource} style={styles.avatarPlaceholder} />
+              <DoctorAvatar
+                name={doctorProfile?.name}
+                avatar={pickedPhotoUri ?? doctorProfile?.avatar}
+                size={64}
+                radius={32}
+                style={styles.avatarPlaceholder}
+              />
               <View style={styles.onlineDot} />
               <View style={styles.cameraBadge}>
                 {isUploadingPhoto ? (

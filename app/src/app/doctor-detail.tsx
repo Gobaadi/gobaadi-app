@@ -5,14 +5,13 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useGetDoctorByIdQuery } from '@/store/doctorsApi';
 import { useGetServicesQuery } from '@/store/servicesApi';
-import { doctorImageSource } from '@/utils/doctor-image';
+import { DoctorAvatar } from '@/components/doctor-avatar';
 
 export default function DoctorDetailScreen() {
   const router = useRouter();
@@ -34,7 +33,7 @@ export default function DoctorDetailScreen() {
         location: 'Cardiology Center, USA',
         rating: 5,
         reviews: 1872,
-        image: require('@/assets/images/doctor.png'),
+        avatar: '',
         availability: '6 AM - 9 PM',
       };
     }
@@ -45,7 +44,7 @@ export default function DoctorDetailScreen() {
       location: 'Uttar Badda, Dhaka',
       rating: doctorData.rating || 4.8,
       reviews: 124,
-      image: doctorImageSource(doctorData.avatar),
+      avatar: doctorData.avatar ?? '',
       availability: doctorData.avatar === 'jessica_doctor.png' ? '8 AM - 5 PM' : '6 AM - 9 PM',
     };
   }, [doctorData]);
@@ -88,7 +87,13 @@ export default function DoctorDetailScreen() {
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         {/* Doctor Main Card */}
         <View style={styles.doctorCard}>
-          <Image source={doctor.image} style={styles.doctorPortrait} />
+          <DoctorAvatar
+            name={doctor.name}
+            avatar={doctor.avatar}
+            size={88}
+            radius={20}
+            style={styles.doctorPortrait}
+          />
           <View style={styles.doctorDetails}>
             <Text style={styles.doctorName}>{doctor.name}</Text>
             <Text style={styles.doctorSpecialty}>{doctor.specialty}</Text>

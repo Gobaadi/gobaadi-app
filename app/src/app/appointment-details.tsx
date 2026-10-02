@@ -15,7 +15,7 @@ import {
   useGetBookingByIdQuery,
   useGetDoctorBookingsQuery,
 } from '@/store/doctorPortalApi';
-import { doctorImageSource } from '@/utils/doctor-image';
+import { DoctorAvatar } from '@/components/doctor-avatar';
 
 function formatTimeRange(start: string, end: string): string {
   const s = new Date(start);
@@ -191,14 +191,18 @@ export default function AppointmentDetailsScreen() {
             )}
             <View style={styles.cardInfo}>
               <Text style={styles.cardName}>{displayName}</Text>
-              {appointment.animalSpecies && (
+              {(appointment.animalSpecies || appointment.animalBreed || appointment.animalAge) && (
                 <Text style={styles.cardDetail}>
-                  {appointment.animalSpecies}
-                  {appointment.animalAge ? ` · ${appointment.animalAge}` : ''}
-                  {appointment.animalBreed ? ` · ${appointment.animalBreed}` : ''}
+                  {[
+                    appointment.animalSpecies,
+                    appointment.animalAge,
+                    appointment.animalBreed,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
                 </Text>
               )}
-              {appointment.patientName && (
+              {appointment.animalName && appointment.patientName && (
                 <Text style={styles.cardOwner}>Owner: {appointment.patientName}</Text>
               )}
             </View>
@@ -207,8 +211,11 @@ export default function AppointmentDetailsScreen() {
           <View style={styles.divider} />
 
           <View style={styles.cardRow}>
-            <Image
-              source={doctorImageSource(appointment.doctorAvatar)}
+            <DoctorAvatar
+              name={appointment.doctorName || `Doctor #${appointment.doctorId}`}
+              avatar={appointment.doctorAvatar}
+              size={56}
+              radius={28}
               style={styles.doctorAvatar}
             />
             <View style={styles.cardInfo}>

@@ -5,7 +5,6 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  Image,
   TextInput,
   Alert,
   ActivityIndicator,
@@ -14,7 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useGetDoctorByIdQuery, useGetSlotsQuery, useBookSlotMutation } from '@/store/doctorsApi';
 import { useRescheduleBookingMutation } from '@/store/doctorPortalApi';
-import { doctorImageSource } from '@/utils/doctor-image';
+import { DoctorAvatar } from '@/components/doctor-avatar';
 
 function pad(n: number): string {
   return String(n).padStart(2, '0');
@@ -69,7 +68,7 @@ export default function BookSlotScreen() {
       location: 'Uttar Badda, Dhaka',
       rating: doctorData.rating || 4.8,
       reviews: 124,
-      image: doctorImageSource(doctorData.avatar),
+      avatar: doctorData.avatar ?? '',
     };
   }, [doctorData]);
 
@@ -181,7 +180,13 @@ export default function BookSlotScreen() {
           <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
             {/* Doctor Summary Card */}
             <View style={styles.doctorCard}>
-              <Image source={doctor.image} style={styles.doctorPortrait} />
+              <DoctorAvatar
+                name={doctor.name}
+                avatar={doctor.avatar}
+                size={64}
+                radius={14}
+                style={styles.doctorPortrait}
+              />
               <View style={styles.doctorDetails}>
                 <Text style={styles.doctorName}>{doctor.name}</Text>
                 <Text style={styles.doctorSpecialty}>{doctor.specialty}</Text>
