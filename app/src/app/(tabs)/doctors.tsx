@@ -36,7 +36,7 @@ interface Category {
 function clinicImageSource(avatar?: string) {
   return avatar && avatar.startsWith('http')
     ? { uri: avatar }
-    : require('@/assets/images/clinic_lobby.png');
+    : require('@/assets/images/clinic_lobby.webp');
 }
 
 interface DoctorView {
@@ -423,7 +423,7 @@ export default function DoctorsScreen() {
                       </TouchableOpacity>
                     </View>
 
-                    <Image source={require('@/assets/images/analyzewithai.png')} style={styles.aiCowImage} />
+                    <Image source={require('@/assets/images/analyzewithai.webp')} style={styles.aiCowImage} />
                   </View>
 
                   {/* Dots */}

@@ -156,7 +156,7 @@ export default function OTPScreen() {
 
           {/* Illustration */}
           <Image
-            source={require('@/assets/images/gobadi-otp-verification-image.png')}
+            source={require('@/assets/images/gobadi-otp-verification-image.webp')}
             style={styles.illustration}
             resizeMode="contain"
           />

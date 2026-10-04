@@ -29,7 +29,7 @@ const slides: OnboardingSlide[] = [
   {
     id: '1',
     type: 'slide1',
-    image: require('@/assets/images/OnboardingImage-1.png'),
+    image: require('@/assets/images/OnboardingImage-1.webp'),
     titlePart1: 'Timely Treatment,',
     titlePart2: 'Stronger Tomorrow',
     subtitle:
@@ -38,7 +38,7 @@ const slides: OnboardingSlide[] = [
   {
     id: '2',
     type: 'slide2',
-    image: require('@/assets/images/OnboardingImage-2.png'),
+    image: require('@/assets/images/OnboardingImage-2.webp'),
     titleFull: 'Everything Your Farm\nNeeds in One App',
     subtitle:
       'Keep your herd healthy and organised with simple foods that save time and help you stay in control.',

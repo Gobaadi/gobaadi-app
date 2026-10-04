@@ -36,8 +36,8 @@ export default function MyAnimalDetailScreen() {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fallbackImage = animal?.breed?.toLowerCase().includes('buffalo')
-    ? require('@/assets/images/albino_buffalo.png')
-    : require('@/assets/images/bangladeshi_cow.png');
+    ? require('@/assets/images/albino_buffalo.webp')
+    : require('@/assets/images/bangladeshi_cow.webp');
 
   const photos: ImageSourcePropType[] = (() => {
     const fromPhotos = (animal?.photos || [])
