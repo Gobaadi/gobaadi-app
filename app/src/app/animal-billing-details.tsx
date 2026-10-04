@@ -41,7 +41,7 @@ export default function AnimalBillingDetailsScreen() {
           {/* Cow Summary Card */}
           <View style={styles.doctorRow}>
             <Image
-              source={require('@/assets/images/albino_buffalo.png')}
+              source={require('@/assets/images/albino_buffalo.webp')}
               style={styles.doctorPortrait}
             />
             <View style={styles.doctorDetails}>

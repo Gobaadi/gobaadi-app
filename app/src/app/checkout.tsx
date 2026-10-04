@@ -44,7 +44,7 @@ export default function CheckoutScreen() {
 
   const imageUri = isDirectCheckout && livestockItem?.images?.[0]
     ? { uri: livestockItem.images[0] }
-    : require('@/assets/images/albino_buffalo.png');
+    : require('@/assets/images/albino_buffalo.webp');
 
   const handlePlaceOrder = async () => {
     try {

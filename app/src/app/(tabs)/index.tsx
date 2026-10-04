@@ -50,8 +50,8 @@ function formatTaskTime(scheduledTime: string): string {
 
 function animalImage(breed: string) {
   return breed?.toLowerCase().includes('buffalo')
-    ? require('@/assets/images/albino_buffalo.png')
-    : require('@/assets/images/bangladeshi_cow.png');
+    ? require('@/assets/images/albino_buffalo.webp')
+    : require('@/assets/images/bangladeshi_cow.webp');
 }
 
 export default function HomeDashboard() {
@@ -134,7 +134,7 @@ export default function HomeDashboard() {
         {/* Header Section */}
         <View style={styles.headerWrapper}>
           <ImageBackground
-            source={require('@/assets/Top BG.png')}
+            source={require('@/assets/Top BG.webp')}
             style={[styles.header, { paddingTop: insets.top + 16 }]}
             resizeMode="cover"
           >
@@ -170,7 +170,7 @@ export default function HomeDashboard() {
           <View style={styles.weatherCardHeader}>
             <Text style={styles.weatherLocation}>📍 Farm Weather{weather?.location ? ` - ${weather.location}` : ' - Munshiganj'}</Text>
             <Image
-              source={require('@/assets/images/farm_barn.png')}
+              source={require('@/assets/images/farm_barn.webp')}
               style={styles.barnImage}
               contentFit="cover"
             />

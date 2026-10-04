@@ -60,7 +60,7 @@ export default function WishlistScreen() {
                   }
                 >
                   <Image
-                    source={image ? { uri: image } : require('@/assets/images/kota_goat.png')}
+                    source={image ? { uri: image } : require('@/assets/images/kota_goat.webp')}
                     style={styles.itemImage}
                   />
                   <View style={styles.itemDetails}>

@@ -87,8 +87,8 @@ export default function MarketScreen() {
         image: item.images && item.images[0]
           ? { uri: item.images[0] }
           : (item.name || '').toLowerCase().includes('goat') || (item.breed || '').toLowerCase().includes('goat')
-            ? require('@/assets/images/kota_goat.png')
-            : require('@/assets/images/albino_buffalo.png'),
+            ? require('@/assets/images/kota_goat.webp')
+            : require('@/assets/images/albino_buffalo.webp'),
       };
     });
   }, [catalogList, activeCategory]);
@@ -107,7 +107,7 @@ export default function MarketScreen() {
           location: item.location || 'My Farm',
           image: item.images && item.images[0]
             ? { uri: item.images[0] }
-            : require('@/assets/images/kota_goat.png'),
+            : require('@/assets/images/kota_goat.webp'),
         }))
       : marketItems;
 

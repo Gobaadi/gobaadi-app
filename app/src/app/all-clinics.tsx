@@ -20,7 +20,7 @@ import LocationBottomSheet from '@/components/LocationBottomSheet';
 function clinicImageSource(avatar?: string) {
   return avatar && avatar.startsWith('http')
     ? { uri: avatar }
-    : require('@/assets/images/clinic_lobby.png');
+    : require('@/assets/images/clinic_lobby.webp');
 }
 
 export default function AllClinicsScreen() {

@@ -32,7 +32,7 @@ export default function BillingDetailsScreen() {
       location: 'Cardiology Center, USA',
       rating: 5,
       reviews: 1872,
-      image: require('@/assets/images/doctor.png'),
+      image: require('@/assets/images/doctor.webp'),
     },
     '2': {
       id: '2',
@@ -41,7 +41,7 @@ export default function BillingDetailsScreen() {
       location: "Women's Clinic, Seattle, USA",
       rating: 4.9,
       reviews: 127,
-      image: require('@/assets/images/jessica_doctor.png'),
+      image: require('@/assets/images/jessica_doctor.webp'),
     },
     '3': {
       id: '3',
@@ -50,7 +50,7 @@ export default function BillingDetailsScreen() {
       location: 'Maple Associates, NY, USA',
       rating: 4.7,
       reviews: 5223,
-      image: require('@/assets/images/michael_doctor.png'),
+      image: require('@/assets/images/michael_doctor.webp'),
     },
   };
 

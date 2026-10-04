@@ -51,7 +51,7 @@ export default function CartScreen() {
               {items.map((item) => (
                 <View key={item.id} style={styles.itemCard}>
                   <Image
-                    source={item.image ? { uri: item.image } : require('@/assets/images/kota_goat.png')}
+                    source={item.image ? { uri: item.image } : require('@/assets/images/kota_goat.webp')}
                     style={styles.itemImage}
                   />
                   <View style={styles.itemDetails}>

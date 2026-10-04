@@ -80,7 +80,7 @@ export default function BookAnimalScreen() {
 
         <View style={styles.animalCard}>
           <Image
-            source={animal?.images?.[0] ? { uri: animal.images[0] } : require('@/assets/images/albino_buffalo.png')}
+            source={animal?.images?.[0] ? { uri: animal.images[0] } : require('@/assets/images/albino_buffalo.webp')}
             style={styles.animalImage}
           />
           <View style={styles.animalMeta}>

@@ -34,8 +34,8 @@ export default function AnimalDetailsScreen() {
   const animalImage = item?.images?.[0]
     ? { uri: item.images[0] }
     : (item?.breed || '').toLowerCase().includes('goat')
-      ? require('@/assets/images/kota_goat.png')
-      : require('@/assets/images/albino_buffalo.png');
+      ? require('@/assets/images/kota_goat.webp')
+      : require('@/assets/images/albino_buffalo.webp');
   const animalName = item ? `${item.breed} ${item.species}` : 'Loading...';
   const animalPrice = item?.price?.toLocaleString() || '—';
 
