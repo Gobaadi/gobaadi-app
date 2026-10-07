@@ -7,13 +7,18 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SvgXml } from 'react-native-svg';
 import {
   openSupportEmail,
   openSupportPhone,
   SUPPORT_EMAIL,
   SUPPORT_PHONE,
 } from '@/lib/contact';
+import {
+  backButtonSvg,
+  contactSupportMailSvg,
+  contactSupportPhoneSvg,
+} from '@/components/icons/svg-icon-sources';
 
 export default function ContactSupportScreen() {
   const router = useRouter();
@@ -22,7 +27,7 @@ export default function ContactSupportScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+          <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Contact Support</Text>
         <View style={{ width: 40 }} />
@@ -36,7 +41,7 @@ export default function ContactSupportScreen() {
           onPress={openSupportEmail}
         >
           <View style={styles.contactIcon}>
-            <Ionicons name="mail-outline" size={22} color="#BD632F" />
+            <SvgXml width={22} height={22} xml={contactSupportMailSvg} />
           </View>
           <View style={styles.contactInfo}>
             <Text style={styles.contactLabel}>Email</Text>
@@ -51,7 +56,7 @@ export default function ContactSupportScreen() {
           onPress={openSupportPhone}
         >
           <View style={styles.contactIcon}>
-            <Ionicons name="call-outline" size={22} color="#BD632F" />
+            <SvgXml width={22} height={22} xml={contactSupportPhoneSvg} />
           </View>
           <View style={styles.contactInfo}>
             <Text style={styles.contactLabel}>Customer Service</Text>

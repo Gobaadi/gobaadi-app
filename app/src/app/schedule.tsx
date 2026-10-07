@@ -15,6 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { SvgXml } from 'react-native-svg';
 import { useSelector } from 'react-redux';
 import type { RootState } from '@/store/store';
 import {
@@ -22,6 +23,11 @@ import {
   type DoctorAppointment,
 } from '@/store/doctorPortalApi';
 import { PatientAvatar } from '@/components/patient-avatar';
+import {
+  backButtonSvg,
+  doctorScheduleFilterSvg,
+  doctorScheduleVideoSvg,
+} from '@/components/icons/svg-icon-sources';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -322,7 +328,7 @@ function DayAppointmentCard({ appointment, isPast, isUpcoming }: { appointment: 
           image={appointment.animalImage || appointment.patientAvatar}
           size={44}
         />
-        {isUpcoming && <View style={styles.greenDot} />}
+        {isUpcoming && <View style={styles.greenDot}><SvgXml width={11} height={11} xml={doctorScheduleVideoSvg} /></View>}
       </View>
       <View style={styles.dayAppointmentInfo}>
         <Text style={styles.dayAppointmentName}>
@@ -426,7 +432,7 @@ function ListAppointmentCard({ appointment }: { appointment: DoctorAppointment }
             image={appointment.animalImage || appointment.patientAvatar}
             size={44}
           />
-          <View style={styles.greenDot} />
+          <View style={styles.greenDot}><SvgXml width={11} height={11} xml={doctorScheduleVideoSvg} /></View>
         </View>
         <View style={styles.listAppointmentInfo}>
           <Text style={styles.listAppointmentName}>
@@ -526,7 +532,7 @@ export default function ScheduleScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+          <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Schedule</Text>
         {/* <TouchableOpacity style={styles.settingsBtn} activeOpacity={0.7}>
@@ -567,7 +573,7 @@ export default function ScheduleScreen() {
               onPress={() => setShowFilter(!showFilter)}
               activeOpacity={0.8}
             >
-              <Ionicons name="options-outline" size={14} color="#1A1817" />
+              <SvgXml width={16} height={16} xml={doctorScheduleFilterSvg} />
               <Text style={styles.filterBtnText}>
                 Filter{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
               </Text>
@@ -977,12 +983,14 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     right: 0,
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
     backgroundColor: '#4CAF50',
     borderWidth: 2,
     borderColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   appointmentRow: {
     flexDirection: 'row',

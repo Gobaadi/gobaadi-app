@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SvgXml } from 'react-native-svg';
 import * as ImagePicker from 'expo-image-picker';
 import {
   useGetMyProfileQuery,
@@ -22,6 +22,13 @@ import {
 import { useLocation } from '@/hooks/use-location';
 import { compressImageForUpload } from '@/utils/compress-image';
 import { apiErrorMessage } from '@/utils/api-error';
+import {
+  backButtonSvg,
+  editProfilePhotoCameraSvg,
+  editProfileNameMicrophoneSvg,
+  editProfileNumberCheckSvg,
+  editProfileLocationSvg,
+} from '@/components/icons/svg-icon-sources';
 
 export default function EditProfileScreen() {
   const router = useRouter();
@@ -145,7 +152,7 @@ export default function EditProfileScreen() {
           onPress={() => router.back()}
           activeOpacity={0.8}
         >
-          <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+          <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
 
         <Text style={styles.headerTitle}>Edit Profile</Text>
@@ -166,9 +173,9 @@ export default function EditProfileScreen() {
             <Image source={avatarSource} style={styles.avatarImage} />
             <View style={styles.cameraBadge}>
               {isUploadingPhoto ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
+                <ActivityIndicator size="small" color="#BD632F" />
               ) : (
-                <Ionicons name="camera" size={18} color="#FFFFFF" />
+                <SvgXml width={18} height={16} xml={editProfilePhotoCameraSvg} />
               )}
             </View>
           </TouchableOpacity>
@@ -185,7 +192,7 @@ export default function EditProfileScreen() {
                 placeholderTextColor="#A39E99"
               />
               <TouchableOpacity style={styles.inputActionBtn} activeOpacity={0.7}>
-                <Ionicons name="mic-outline" size={20} color="#BD632F" />
+                <SvgXml width={20} height={20} xml={editProfileNameMicrophoneSvg} />
               </TouchableOpacity>
             </View>
           </View>
@@ -202,7 +209,7 @@ export default function EditProfileScreen() {
                 placeholderTextColor="#A39E99"
                 keyboardType="phone-pad"
               />
-              <Ionicons name="checkmark-circle" size={22} color="#4CAF50" />
+              <SvgXml width={20} height={20} xml={editProfileNumberCheckSvg} />
             </View>
           </View>
 
@@ -216,7 +223,7 @@ export default function EditProfileScreen() {
                 placeholder="Enter location"
                 placeholderTextColor="#A39E99"
               />
-              <Ionicons name="location-outline" size={20} color="#BD632F" />
+              <SvgXml width={20} height={20} xml={editProfileLocationSvg} />
             </View>
           </View>
         </View>
@@ -301,11 +308,11 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: '#BD632F',
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 3,
-    borderColor: '#FFFFFF',
+    borderColor: '#E6E1DC',
   },
   avatarImage: {
     width: 140,

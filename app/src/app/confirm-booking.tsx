@@ -11,6 +11,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useGetDoctorByIdQuery } from '@/store/doctorsApi';
 import { DoctorAvatar } from '@/components/doctor-avatar';
+import { SvgXml } from 'react-native-svg';
+
+import {
+  backButtonSvg,
+  confirmPaymentSvg,
+  doctorCardLocationSvg,
+  doctorCardStarSvg,
+  doctorNotificationSvg,
+} from '@/components/icons/svg-icon-sources';
 
 function pad(n: number): string {
   return String(n).padStart(2, '0');
@@ -81,13 +90,13 @@ export default function ConfirmBookingScreen() {
           onPress={() => router.back()}
           activeOpacity={0.8}
         >
-          <Text style={styles.buttonText}>←</Text>
+          <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
 
         <Text style={styles.headerTitle}>Confirm Booking</Text>
 
         <TouchableOpacity style={styles.circleButton} activeOpacity={0.8}>
-          <Text style={styles.buttonText}>🔔</Text>
+          <SvgXml width={20} height={20} xml={doctorNotificationSvg} />
         </TouchableOpacity>
       </View>
 
@@ -118,13 +127,13 @@ export default function ConfirmBookingScreen() {
               )}
               {!!doctor.location && (
                 <View style={styles.ratingLocationRow}>
-                  <Text style={styles.locationPin}>📍</Text>
+                  <SvgXml width={11} height={11} xml={doctorCardLocationSvg} style={styles.locationPin} />
                   <Text style={styles.locationTextMeta}>{doctor.location}</Text>
                 </View>
               )}
               {!!doctorData && (
                 <View style={styles.ratingRow}>
-                  <Text style={styles.starIcon}>⭐</Text>
+                  <SvgXml width={11} height={11} xml={doctorCardStarSvg} style={styles.starIcon} />
                   <Text style={styles.ratingValue}>{doctor.rating}</Text>
                   <Text style={styles.reviewsText}>| {doctor.reviews} Reviews</Text>
                 </View>
@@ -165,7 +174,7 @@ export default function ConfirmBookingScreen() {
           onPress={handleConfirmPayment}
           activeOpacity={0.85}
         >
-          <Text style={styles.confirmButtonIcon}>💵</Text>
+          <SvgXml width={20} height={20} xml={confirmPaymentSvg} style={styles.confirmButtonIcon} />
           <Text style={styles.confirmButtonText}>Confirm Payment</Text>
         </TouchableOpacity>
       </View>
@@ -193,11 +202,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#BD632F',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '700',
   },
   headerTitle: {
     fontSize: 20,
@@ -257,8 +261,6 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   locationPin: {
-    fontSize: 10,
-    color: '#9C9690',
     marginRight: 4,
   },
   locationTextMeta: {
@@ -270,7 +272,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   starIcon: {
-    fontSize: 10,
     marginRight: 4,
   },
   ratingValue: {
@@ -345,8 +346,6 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   confirmButtonIcon: {
-    color: '#FFFFFF',
-    fontSize: 18,
     marginRight: 8,
   },
   confirmButtonText: {

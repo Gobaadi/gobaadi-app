@@ -15,6 +15,15 @@ import { useGetDoctorByIdQuery, useGetSlotsQuery, useBookSlotMutation } from '@/
 import { useRescheduleBookingMutation } from '@/store/doctorPortalApi';
 import { useGetAnimalsQuery } from '@/store/animalsApi';
 import { DoctorAvatar } from '@/components/doctor-avatar';
+import { SvgXml } from 'react-native-svg';
+
+import {
+  backButtonSvg,
+  confirmBookSvg,
+  doctorCardLocationSvg,
+  doctorCardStarSvg,
+  doctorNotificationSvg,
+} from '@/components/icons/svg-icon-sources';
 
 function pad(n: number): string {
   return String(n).padStart(2, '0');
@@ -166,13 +175,13 @@ export default function BookSlotScreen() {
           onPress={() => router.back()}
           activeOpacity={0.8}
         >
-          <Text style={styles.buttonText}>←</Text>
+          <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
 
         <Text style={styles.headerTitle}>{isReschedule ? 'Reschedule' : 'Book Slot'}</Text>
 
         <TouchableOpacity style={styles.circleButton} activeOpacity={0.8}>
-          <Text style={styles.buttonText}>🔔</Text>
+          <SvgXml width={20} height={20} xml={doctorNotificationSvg} />
         </TouchableOpacity>
       </View>
 
@@ -211,11 +220,11 @@ export default function BookSlotScreen() {
                 <Text style={styles.doctorName}>{doctor.name}</Text>
                 <Text style={styles.doctorSpecialty}>{doctor.specialty}</Text>
                 <View style={styles.ratingLocationRow}>
-                  <Text style={styles.locationPin}>📍</Text>
+                  <SvgXml width={11} height={11} xml={doctorCardLocationSvg} style={styles.locationPin} />
                   <Text style={styles.locationTextMeta}>{doctor.location}</Text>
                 </View>
                 <View style={styles.ratingRow}>
-                  <Text style={styles.starIcon}>⭐</Text>
+                  <SvgXml width={11} height={11} xml={doctorCardStarSvg} style={styles.starIcon} />
                   <Text style={styles.ratingValue}>{doctor.rating}</Text>
                   <Text style={styles.reviewsText}>| {doctor.reviews} Reviews</Text>
                 </View>
@@ -448,8 +457,9 @@ export default function BookSlotScreen() {
               disabled={!selectedTimeSlot || !bookingReason.trim() || !doctor || (animals.length > 0 && !effectiveAnimalId)}
               activeOpacity={0.85}
             >
+              <SvgXml width={20} height={20} xml={confirmBookSvg} style={styles.confirmButtonIcon} />
               <Text style={styles.confirmButtonText}>
-                {isReschedule ? '📅 Confirm Reschedule' : '📅 Confirm Slot'}
+                {isReschedule ? 'Confirm Reschedule' : 'Confirm Slot'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -511,11 +521,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '700',
-  },
   headerTitle: {
     fontSize: 20,
     fontWeight: '700',
@@ -557,8 +562,6 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   locationPin: {
-    fontSize: 10,
-    color: '#9C9690',
     marginRight: 4,
   },
   locationTextMeta: {
@@ -570,7 +573,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   starIcon: {
-    fontSize: 10,
     marginRight: 4,
   },
   ratingValue: {
@@ -771,6 +773,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#BD632F',
     height: 52,
     borderRadius: 26,
+    flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#BD632F',
@@ -778,6 +781,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 6,
     elevation: 3,
+  },
+  confirmButtonIcon: {
+    marginRight: 8,
   },
   confirmButtonText: {
     color: '#FFFFFF',

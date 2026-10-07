@@ -9,22 +9,31 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { SvgXml } from 'react-native-svg';
+import {
+  backButtonSvg,
+  helpSupportFaqsSvg,
+  helpSupportContactSupportSvg,
+  helpSupportReportIssuesSvg,
+  profileArrowRightSvg,
+  tintSvg,
+} from '@/components/icons/svg-icon-sources';
 
 export default function HelpSupportScreen() {
   const router = useRouter();
 
   const options = [
-    { id: 'faqs', title: 'FAQs', subtitle: 'Common Question and Answer', icon: 'help-circle-outline' as const, route: '/faqs' },
-    { id: 'contact', title: 'Contact Support', subtitle: 'Get Help From Our Team', icon: 'chatbubble-ellipses-outline' as const, route: '/contact-support' },
-    { id: 'report', title: 'Report Issues', subtitle: 'Report Issues or Abuse', icon: 'flag-outline' as const, route: '/report-issues' },
-    { id: 'my-reports', title: 'My Reports', subtitle: 'View Your Submitted Reports', icon: 'document-text-outline' as const, route: '/my-reports' },
+    { id: 'faqs', title: 'FAQs', subtitle: 'Common Question and Answer', icon: 'help-circle-outline' as const, svg: helpSupportFaqsSvg, route: '/faqs' },
+    { id: 'contact', title: 'Contact Support', subtitle: 'Get Help From Our Team', icon: 'chatbubble-ellipses-outline' as const, svg: helpSupportContactSupportSvg, route: '/contact-support' },
+    { id: 'report', title: 'Report Issues', subtitle: 'Report Issues or Abuse', icon: 'flag-outline' as const, svg: helpSupportReportIssuesSvg, route: '/report-issues' },
+    { id: 'my-reports', title: 'My Reports', subtitle: 'View Your Submitted Reports', icon: 'document-text-outline' as const, svg: null, route: '/my-reports' },
   ];
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+          <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Help & Support</Text>
         <View style={{ width: 40 }} />
@@ -40,14 +49,18 @@ export default function HelpSupportScreen() {
           >
             <View style={styles.menuLeft}>
               <View style={styles.menuIcon}>
-                <Ionicons name={item.icon} size={22} color="#171717" />
+                {item.svg ? (
+                  <SvgXml width={22} height={22} xml={item.svg} />
+                ) : (
+                  <Ionicons name={item.icon} size={22} color="#171717" />
+                )}
               </View>
               <View>
                 <Text style={styles.menuTitle}>{item.title}</Text>
                 <Text style={styles.menuSubtitle}>{item.subtitle}</Text>
               </View>
             </View>
-            <Ionicons name="chevron-forward" size={18} color="#9C9690" />
+            <SvgXml width={9} height={18} xml={tintSvg(profileArrowRightSvg, '#737373', '#9C9690')} />
           </TouchableOpacity>
         ))}
       </ScrollView>

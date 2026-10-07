@@ -15,6 +15,29 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { SvgXml } from 'react-native-svg';
+import {
+  languageGlobeSvg,
+  doctorNotificationSvg,
+  locationPinSvg,
+  locationChevronSvg,
+  treatmentCalendarSvg,
+  searchSvg,
+  messageSvg,
+  videoCallSvg,
+  scanCameraSvg,
+  categoryGeneralSvg,
+  categoryMedicineSvg,
+  categorySurgerySvg,
+  categoryGynaecologySvg,
+  categoryAvianSvg,
+  doctorCardLocationSvg,
+  doctorCardStarSvg,
+  doctorCardBookSlotSvg,
+  doctorCardDetailsSvg,
+  tintNavSvg,
+  tintSvg,
+} from '@/components/icons/svg-icon-sources';
 import { useGetClinicsQuery } from '@/store/clinicsApi';
 import { useGetDoctorBookingsQuery } from '@/store/doctorPortalApi';
 import { useGetDoctorsQuery } from '@/store/doctorsApi';
@@ -30,7 +53,7 @@ import { DoctorAvatar } from '@/components/doctor-avatar';
 interface Category {
   id: string;
   name: string;
-  icon: string;
+  svg: string;
 }
 
 function clinicImageSource(avatar?: string) {
@@ -223,11 +246,11 @@ export default function DoctorsScreen() {
   }
 
   const categories: Category[] = [
-    { id: '1', name: 'General', icon: '🩺' },
-    { id: '2', name: 'Medicine', icon: '💊' },
-    { id: '3', name: 'Surgery', icon: '🔪' },
-    { id: '4', name: 'Gynaecology', icon: '🤰' },
-    { id: '5', name: 'Avian & Co.', icon: '🐦' },
+    { id: '1', name: 'General', svg: categoryGeneralSvg },
+    { id: '2', name: 'Medicine', svg: categoryMedicineSvg },
+    { id: '3', name: 'Surgery', svg: categorySurgerySvg },
+    { id: '4', name: 'Gynaecology', svg: categoryGynaecologySvg },
+    { id: '5', name: 'Avian & Co.', svg: categoryAvianSvg },
   ];
 
   const nearbyDoctors: DoctorView[] = useMemo(() => {
@@ -265,7 +288,7 @@ export default function DoctorsScreen() {
               activeOpacity={0.8}
               onPress={() => router.push('/select-language')}
             >
-              <Ionicons name="globe-outline" size={16} color="#BD632F" />
+              <SvgXml width={16} height={16} xml={tintSvg(languageGlobeSvg, 'white', '#BD632F')} />
               <Text style={styles.langText}>{languageCode}</Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -273,7 +296,7 @@ export default function DoctorsScreen() {
               activeOpacity={0.8}
               onPress={() => router.push('/notifications')}
             >
-              <Ionicons name="notifications-outline" size={20} color="#FFFFFF" />
+              <SvgXml width={20} height={20} xml={doctorNotificationSvg} />
             </TouchableOpacity>
           </View>
         </View>
@@ -287,14 +310,14 @@ export default function DoctorsScreen() {
               activeOpacity={0.7}
               onPress={() => setLocationSheetOpen(true)}
             >
-              <Text style={styles.pinIcon}>📍</Text>
+              <SvgXml width={15} height={17} xml={locationPinSvg} style={{ marginRight: 6 }} />
               <Text style={styles.locationText}>{location}</Text>
-              <Text style={styles.dropdownArrow}>∨</Text>
+              <SvgXml width={12} height={12} xml={locationChevronSvg} />
             </TouchableOpacity>
           </View>
 
           <TouchableOpacity style={styles.myTreatmentButton} activeOpacity={0.8} onPress={() => router.push('/my-treatment')}>
-            <Text style={styles.treatmentIcon}>📅</Text>
+            <SvgXml width={14} height={14} xml={treatmentCalendarSvg} style={{ marginRight: 6 }} />
             <Text style={styles.treatmentText}>My Treatment</Text>
           </TouchableOpacity>
         </View>
@@ -308,7 +331,7 @@ export default function DoctorsScreen() {
 
         {/* Search Bar */}
         <View style={styles.searchContainer}>
-          <Text style={styles.searchIcon}>🔍</Text>
+          <SvgXml width={18} height={18} xml={searchSvg} style={{ marginRight: 10 }} />
           <TextInput
             style={styles.searchInput}
             placeholder="Search doctors..."
@@ -353,14 +376,14 @@ export default function DoctorsScreen() {
                           style={styles.chatButton}
                           onPress={handleOpenChat}
                         >
-                          <Text style={styles.actionEmoji}>💬</Text>
+                          <SvgXml width={16} height={16} xml={messageSvg} />
                         </TouchableOpacity>
                         <TouchableOpacity
                           style={styles.callButton}
                           activeOpacity={0.8}
                           onPress={handleStartCall}
                         >
-                          <Text style={styles.callIcon}>📹</Text>
+                          <SvgXml width={14} height={14} xml={videoCallSvg} style={{ marginRight: 4 }} />
                           <Text style={styles.callText}>Start Call</Text>
                         </TouchableOpacity>
                       </View>
@@ -418,7 +441,7 @@ export default function DoctorsScreen() {
                         activeOpacity={0.8}
                         onPress={() => router.push('/ai-scan')}
                       >
-                        <Text style={styles.scanNowIcon}>📷</Text>
+                        <SvgXml width={14} height={14} xml={scanCameraSvg} style={{ marginRight: 6 }} />
                         <Text style={styles.scanNowText}>Scan Now</Text>
                       </TouchableOpacity>
                     </View>
@@ -457,7 +480,11 @@ export default function DoctorsScreen() {
                 activeOpacity={0.7}
               >
                 <View style={[styles.categoryIconCircle, isActive && styles.categoryIconCircleActive]}>
-                  <Text style={styles.categoryIconText}>{cat.icon}</Text>
+                  <SvgXml
+                    width={26}
+                    height={26}
+                    xml={isActive ? tintNavSvg(cat.svg, '#BD632F') : cat.svg}
+                  />
                 </View>
                 <Text style={[styles.categoryLabel, isActive && styles.categoryLabelActive]}>
                   {cat.name}
@@ -505,12 +532,12 @@ export default function DoctorsScreen() {
                 <Text style={styles.doctorSpecialty}>{doc.specialty}</Text>
 
                 <View style={styles.ratingLocationRow}>
-                  <Text style={styles.locationPin}>📍</Text>
+                  <SvgXml width={12} height={12} xml={doctorCardLocationSvg} style={{ marginRight: 4 }} />
                   <Text style={styles.locationTextMeta}>{doc.location}</Text>
                 </View>
 
                 <View style={styles.ratingRow}>
-                  <Text style={styles.starIcon}>⭐</Text>
+                  <SvgXml width={12} height={12} xml={doctorCardStarSvg} style={{ marginRight: 4 }} />
                   <Text style={styles.ratingValue}>{doc.rating}</Text>
                   <Text style={styles.reviewsText}>| {doc.reviews.toLocaleString()} Reviews</Text>
                 </View>
@@ -521,14 +548,20 @@ export default function DoctorsScreen() {
                     onPress={() => router.push({ pathname: '/book-slot', params: { id: doc.id } })}
                     activeOpacity={0.8}
                   >
-                    <Text style={styles.bookButtonText}>📅 Book Slot</Text>
+                    <View style={styles.bookButtonContent}>
+                      <SvgXml width={14} height={14} xml={doctorCardBookSlotSvg} style={{ marginRight: 6 }} />
+                      <Text style={styles.bookButtonText}>Book Slot</Text>
+                    </View>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.detailsButton}
                     onPress={() => router.push({ pathname: '/doctor-detail', params: { id: doc.id } })}
                     activeOpacity={0.8}
                   >
-                    <Text style={styles.detailsButtonText}>📄 Details</Text>
+                    <View style={styles.bookButtonContent}>
+                      <SvgXml width={14} height={14} xml={doctorCardDetailsSvg} style={{ marginRight: 6 }} />
+                      <Text style={styles.detailsButtonText}>Details</Text>
+                    </View>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -578,11 +611,11 @@ export default function DoctorsScreen() {
                     )}
                   </View>
                   <View style={styles.clinicLocationRow}>
-                    <Text style={styles.clinicLocationPin}>📍</Text>
+                    <SvgXml width={11} height={11} xml={doctorCardLocationSvg} style={{ marginRight: 3 }} />
                     <Text style={styles.clinicLocation} numberOfLines={1}>{clinic.location}</Text>
                   </View>
                   <View style={styles.clinicRatingRow}>
-                    <Text style={styles.clinicStarIcon}>⭐</Text>
+                    <SvgXml width={11} height={11} xml={doctorCardStarSvg} style={{ marginRight: 3 }} />
                     <Text style={styles.clinicRatingValue}>{clinic.rating}</Text>
                     <Text style={styles.clinicDoctorCount}>| {clinic.doctors?.length || 0} Doctors</Text>
                   </View>
@@ -674,20 +707,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  pinIcon: {
-    fontSize: 16,
-    marginRight: 6,
-    color: '#BD632F',
-  },
   locationText: {
     fontSize: 14,
     fontWeight: '700',
     color: '#1A1817',
     marginRight: 4,
-  },
-  dropdownArrow: {
-    fontSize: 10,
-    color: '#BD632F',
   },
   myTreatmentButton: {
     flexDirection: 'row',
@@ -701,11 +725,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
-  },
-  treatmentIcon: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    marginRight: 6,
   },
   treatmentText: {
     color: '#FFFFFF',
@@ -723,11 +742,6 @@ const styles = StyleSheet.create({
     marginHorizontal: 24,
     paddingHorizontal: 16,
     marginBottom: 20,
-  },
-  searchIcon: {
-    fontSize: 16,
-    marginRight: 10,
-    color: '#7C7672',
   },
   searchInput: {
     flex: 1,
@@ -778,9 +792,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  actionEmoji: {
-    fontSize: 15,
-  },
   callButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -788,11 +799,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingHorizontal: 12,
     height: 34,
-  },
-  callIcon: {
-    fontSize: 12,
-    marginRight: 4,
-    color: '#BD632F',
   },
   callText: {
     color: '#BD632F',
@@ -907,11 +913,6 @@ const styles = StyleSheet.create({
     height: 36,
     alignSelf: 'flex-start',
   },
-  scanNowIcon: {
-    fontSize: 12,
-    color: '#FFFFFF',
-    marginRight: 6,
-  },
   scanNowText: {
     color: '#FFFFFF',
     fontSize: 11.5,
@@ -972,9 +973,6 @@ const styles = StyleSheet.create({
   },
   categoryIconCircleActive: {
     backgroundColor: '#FFFFFF',
-  },
-  categoryIconText: {
-    fontSize: 18,
   },
   categoryLabel: {
     fontSize: 11,
@@ -1049,11 +1047,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 4,
   },
-  locationPin: {
-    fontSize: 11,
-    color: '#9C9690',
-    marginRight: 4,
-  },
   locationTextMeta: {
     fontSize: 11,
     color: '#9C9690',
@@ -1063,10 +1056,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 4,
     marginBottom: 8,
-  },
-  starIcon: {
-    fontSize: 12,
-    marginRight: 4,
   },
   ratingValue: {
     fontSize: 12,
@@ -1089,6 +1078,10 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 12,
     justifyContent: 'center',
+    alignItems: 'center',
+  },
+  bookButtonContent: {
+    flexDirection: 'row',
     alignItems: 'center',
   },
   bookButtonText: {
@@ -1153,11 +1146,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 4,
   },
-  clinicLocationPin: {
-    fontSize: 10,
-    color: '#9C9690',
-    marginRight: 3,
-  },
   clinicLocation: {
     fontSize: 11,
     color: '#9C9690',
@@ -1166,10 +1154,6 @@ const styles = StyleSheet.create({
   clinicRatingRow: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  clinicStarIcon: {
-    fontSize: 11,
-    marginRight: 3,
   },
   clinicRatingValue: {
     fontSize: 11,

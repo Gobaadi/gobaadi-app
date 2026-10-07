@@ -8,7 +8,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SvgXml } from 'react-native-svg';
+import {
+  backButtonSvg,
+  legalAndAboutTermsAndConditionSvg,
+  legalAndAboutAppSvg,
+  profileArrowRightSvg,
+  tintSvg,
+} from '@/components/icons/svg-icon-sources';
 
 export default function LegalAboutScreen() {
   const router = useRouter();
@@ -22,7 +29,7 @@ export default function LegalAboutScreen() {
           activeOpacity={0.8}
           onPress={() => router.back()}
         >
-          <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+          <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Legal & About</Text>
       </View>
@@ -36,14 +43,14 @@ export default function LegalAboutScreen() {
         >
           <View style={styles.cardLeft}>
             <View style={styles.iconCircle}>
-              <Ionicons name="document-text-outline" size={22} color="#3B82F6" />
+              <SvgXml width={22} height={22} xml={legalAndAboutTermsAndConditionSvg} />
             </View>
             <View>
               <Text style={styles.cardTitle}>Terms of Service</Text>
               <Text style={styles.cardSubtitle}>Terms and Conditions</Text>
             </View>
           </View>
-          <Ionicons name="chevron-forward" size={20} color="#9C9690" />
+          <SvgXml width={10} height={20} xml={tintSvg(profileArrowRightSvg, '#737373', '#9C9690')} />
         </TouchableOpacity>
 
         {/* Privacy Policy Card */}
@@ -72,14 +79,14 @@ export default function LegalAboutScreen() {
         >
           <View style={styles.cardLeft}>
             <View style={styles.iconCircle}>
-              <Ionicons name="globe-outline" size={22} color="#3B82F6" />
+              <SvgXml width={22} height={22} xml={legalAndAboutAppSvg} />
             </View>
             <View>
               <Text style={styles.cardTitle}>About App</Text>
               <Text style={styles.cardSubtitle}>Our Vision & Mission</Text>
             </View>
           </View>
-          <Ionicons name="chevron-forward" size={20} color="#9C9690" />
+          <SvgXml width={10} height={20} xml={tintSvg(profileArrowRightSvg, '#737373', '#9C9690')} />
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

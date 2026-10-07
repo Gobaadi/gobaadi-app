@@ -11,6 +11,21 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { SvgXml } from 'react-native-svg';
+
+import {
+  backButtonSvg,
+  doctorNotificationSvg,
+  doctorsFilterSvg,
+  doctorCardBookSlotSvg,
+  doctorCardDetailsSvg,
+  doctorCardLocationSvg,
+  doctorCardStarSvg,
+  locationChevronSvg,
+  locationPinSvg,
+  searchSvg,
+  tintSvg,
+} from '@/components/icons/svg-icon-sources';
 import { useGetDoctorsQuery } from '@/store/doctorsApi';
 import { EmptyState } from '@/components/ui/empty-state';
 import { MediaCardSkeleton } from '@/components/ui/skeleton';
@@ -91,13 +106,13 @@ export default function AllDoctorsScreen() {
           onPress={() => router.back()}
           activeOpacity={0.8}
         >
-          <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+          <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
 
         <Text style={styles.headerTitle}>All Doctors</Text>
 
         <TouchableOpacity style={styles.circleButton} activeOpacity={0.8}>
-          <Ionicons name="notifications-outline" size={20} color="#FFFFFF" />
+          <SvgXml width={20} height={20} xml={doctorNotificationSvg} />
         </TouchableOpacity>
       </View>
 
@@ -108,9 +123,13 @@ export default function AllDoctorsScreen() {
           activeOpacity={0.7}
           onPress={() => setLocationSheetOpen(true)}
         >
-          <Ionicons name="location" size={16} color="#BD632F" style={styles.pinIcon} />
+          <SvgXml width={14} height={16} xml={locationPinSvg} style={styles.pinIcon} />
           <Text style={styles.locationText}>{location}</Text>
-          <Ionicons name="chevron-down" size={14} color="#7C7672" />
+          <SvgXml
+            width={14}
+            height={14}
+            xml={tintSvg(locationChevronSvg, '#C0612B', '#7C7672')}
+          />
         </TouchableOpacity>
       </View>
 
@@ -123,7 +142,7 @@ export default function AllDoctorsScreen() {
 
       {/* Search Input */}
       <View style={styles.searchContainer}>
-        <Ionicons name="search" size={18} color="#7C7672" style={styles.searchIcon} />
+        <SvgXml width={18} height={18} xml={searchSvg} style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
           placeholder="Search doctor"
@@ -160,10 +179,10 @@ export default function AllDoctorsScreen() {
                 activeOpacity={0.7}
               >
                 {opt.icon && (
-                  <Ionicons
-                    name={opt.icon}
-                    size={14}
-                    color={isActive ? '#FFFFFF' : '#7C7672'}
+                  <SvgXml
+                    width={14}
+                    height={14}
+                    xml={tintSvg(doctorsFilterSvg, '#525252', isActive ? '#FFFFFF' : '#7C7672')}
                     style={styles.filterChipIcon}
                   />
                 )}
@@ -204,11 +223,11 @@ export default function AllDoctorsScreen() {
                 <Text style={styles.doctorName}>{doc.name}</Text>
                 <Text style={styles.doctorSpecialty}>{doc.specialty}</Text>
                 <View style={styles.ratingLocationRow}>
-                  <Ionicons name="location" size={12} color="#9C9690" style={styles.locationPin} />
+                  <SvgXml width={12} height={12} xml={doctorCardLocationSvg} style={styles.locationPin} />
                   <Text style={styles.locationTextMeta}>{doc.location}</Text>
                 </View>
                 <View style={styles.ratingRow}>
-                  <Ionicons name="star" size={12} color="#F5A623" style={styles.starIcon} />
+                  <SvgXml width={12} height={12} xml={doctorCardStarSvg} style={styles.starIcon} />
                   <Text style={styles.ratingValue}>{doc.rating}</Text>
                   <Text style={styles.reviewsText}>| {doc.reviews} Reviews</Text>
                 </View>
@@ -221,7 +240,12 @@ export default function AllDoctorsScreen() {
                 onPress={() => router.push({ pathname: '/book-slot', params: { id: doc.id } })}
                 activeOpacity={0.8}
               >
-                <Ionicons name="calendar-outline" size={14} color="#BD632F" style={styles.buttonIcon} />
+                <SvgXml
+                  width={14}
+                  height={14}
+                  xml={tintSvg(doctorCardBookSlotSvg, 'white', '#BD632F')}
+                  style={styles.buttonIcon}
+                />
                 <Text style={styles.bookButtonText}>Book Slot</Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -229,7 +253,7 @@ export default function AllDoctorsScreen() {
                 onPress={() => router.push({ pathname: '/doctor-detail', params: { id: doc.id } })}
                 activeOpacity={0.8}
               >
-                <Ionicons name="document-text-outline" size={14} color="#BD632F" style={styles.buttonIcon} />
+                <SvgXml width={14} height={14} xml={doctorCardDetailsSvg} style={styles.buttonIcon} />
                 <Text style={styles.detailsButtonText}>Details</Text>
               </TouchableOpacity>
             </View>
@@ -340,9 +364,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   pinIcon: {
-    fontSize: 16,
     marginRight: 6,
-    color: '#BD632F',
   },
   locationText: {
     fontSize: 14,
@@ -363,9 +385,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   searchIcon: {
-    fontSize: 16,
     marginRight: 10,
-    color: '#7C7672',
   },
   searchInput: {
     flex: 1,
@@ -456,8 +476,6 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   locationPin: {
-    fontSize: 11,
-    color: '#9C9690',
     marginRight: 4,
   },
   locationTextMeta: {
@@ -469,7 +487,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   starIcon: {
-    fontSize: 11,
     marginRight: 4,
   },
   ratingValue: {

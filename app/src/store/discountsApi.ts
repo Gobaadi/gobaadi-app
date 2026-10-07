@@ -94,6 +94,14 @@ export const discountsApi = createApi({
       }),
       invalidatesTags: ['Discount', 'PatientDiscount'],
     }),
+    createDiscount: builder.mutation<Discount, { patientId: number; percent: number }>({
+      query: (body) => ({
+        url: '/discounts',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['Discount', 'PatientDiscount'],
+    }),
     removeDiscount: builder.mutation<void, number>({
       query: (id) => ({
         url: `/discounts/${id}`,
@@ -132,6 +140,7 @@ export const {
   useGetDiscountForPatientQuery,
   useApplyDiscountMutation,
   useEditDiscountMutation,
+  useCreateDiscountMutation,
   useRemoveDiscountMutation,
   useGetAvailableDiscountsQuery,
   useValidateDiscountMutation,

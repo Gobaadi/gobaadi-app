@@ -14,8 +14,15 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import { Ionicons } from '@expo/vector-icons';
+import { SvgXml } from 'react-native-svg';
 
+import {
+  aiScanBigCameraSvg,
+  aiScanCameraSvg,
+  aiScanUploadSvg,
+  backButtonSvg,
+  doctorNotificationSvg,
+} from '@/components/icons/svg-icon-sources';
 import { useUploadDiagnosisImageMutation } from '@/store/aiDiagnosisApi';
 import { compressImageForUpload } from '@/utils/compress-image';
 
@@ -94,11 +101,11 @@ export default function AiScanScreen() {
             onPress={() => router.back()}
             activeOpacity={0.8}
           >
-            <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+            <SvgXml width={20} height={20} xml={backButtonSvg} />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.circleButton} activeOpacity={0.8}>
-            <Ionicons name="notifications-outline" size={20} color="#FFFFFF" />
+            <SvgXml width={20} height={20} xml={doctorNotificationSvg} />
           </TouchableOpacity>
         </View>
 
@@ -107,7 +114,7 @@ export default function AiScanScreen() {
             <Image source={{ uri: imageUri }} style={styles.previewImage} resizeMode="cover" />
           ) : (
             <View style={styles.iconCircle}>
-              <Ionicons name="camera" size={40} color="#BD632F" />
+              <SvgXml width={52} height={52} xml={aiScanBigCameraSvg} />
             </View>
           )}
 
@@ -143,14 +150,14 @@ export default function AiScanScreen() {
               onPress={() => router.push('/ai-hold')}
               activeOpacity={0.85}
             >
-              <Ionicons name="camera" size={18} color="#FFFFFF" style={styles.scanButtonIcon} />
+              <SvgXml width={18} height={18} xml={aiScanCameraSvg} style={styles.scanButtonIcon} />
               <Text style={styles.scanButtonText}>Scan Now</Text>
             </TouchableOpacity>
           )}
 
           {!imageUri && (
             <TouchableOpacity style={styles.uploadButton} activeOpacity={0.8} onPress={pickFromGallery}>
-              <Ionicons name="images-outline" size={18} color="#7C7672" style={styles.uploadButtonIcon} />
+              <SvgXml width={18} height={18} xml={aiScanUploadSvg} style={styles.uploadButtonIcon} />
               <Text style={styles.uploadButtonText}>Upload From Gallery</Text>
             </TouchableOpacity>
           )}
@@ -261,8 +268,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   scanButtonIcon: {
-    color: '#FFFFFF',
-    fontSize: 18,
     marginRight: 8,
   },
   scanButtonText: {
@@ -282,9 +287,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   uploadButtonIcon: {
-    fontSize: 18,
     marginRight: 8,
-    color: '#7C7672',
   },
   uploadButtonText: {
     color: '#1A1817',

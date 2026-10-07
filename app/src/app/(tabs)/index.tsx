@@ -15,7 +15,6 @@ import {
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { useGetAnimalsQuery } from '@/store/animalsApi';
 import { useGetTasksQuery, useToggleTaskMutation } from '@/store/tasksApi';
 import { useGetDoctorBookingsQuery } from '@/store/doctorPortalApi';
@@ -23,8 +22,13 @@ import { useGetWeatherQuery } from '@/store/weatherApi';
 import { useGetMyReferralQuery, useClaimReferralMutation } from '@/store/referralsApi';
 import { useLanguage } from '@/hooks/use-language';
 import LanguageBottomSheet from '@/components/LanguageBottomSheet';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Path, SvgXml } from 'react-native-svg';
 import { EmptyState } from '@/components/ui/empty-state';
+import {
+  languageGlobeSvg,
+  notificationBellSvg,
+  homeLocationSvg,
+} from '@/components/icons/svg-icon-sources';
 import { RowSkeleton, SkeletonBox } from '@/components/ui/skeleton';
 import { localDateKey, formatTime12h } from '@/utils/date';
 import { DoctorAvatar } from '@/components/doctor-avatar';
@@ -151,7 +155,7 @@ export default function HomeDashboard() {
                 activeOpacity={0.8}
                 onPress={() => setShowLangSheet(true)}
               >
-                <Ionicons name="globe-outline" size={15} color="#FFFFFF" />
+                <SvgXml width={16} height={16} xml={languageGlobeSvg} />
                 <Text style={styles.langTextHeader}>{languageCode}</Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -159,7 +163,7 @@ export default function HomeDashboard() {
                 onPress={() => router.push('/notifications')}
                 activeOpacity={0.8}
               >
-                <Ionicons name="notifications-outline" size={20} color="#BD632F" />
+                <SvgXml width={20} height={20} xml={notificationBellSvg} />
               </TouchableOpacity>
             </View>
           </ImageBackground>
@@ -168,7 +172,12 @@ export default function HomeDashboard() {
         {/* Farm Weather Card */}
         <View style={styles.weatherCard}>
           <View style={styles.weatherCardHeader}>
-            <Text style={styles.weatherLocation}>📍 Farm Weather{weather?.location ? ` - ${weather.location}` : ' - Munshiganj'}</Text>
+            <View style={styles.weatherLocationRow}>
+              <SvgXml width={16} height={16} xml={homeLocationSvg} />
+              <Text style={styles.weatherLocation}>
+                Farm Weather{weather?.location ? ` - ${weather.location}` : ' - Munshiganj'}
+              </Text>
+            </View>
             <Image
               source={require('@/assets/images/farm_barn.png')}
               style={styles.barnImage}
@@ -589,6 +598,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: 8,
+  },
+  weatherLocationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   weatherLocation: {
     fontSize: 14,

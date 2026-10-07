@@ -11,6 +11,7 @@ import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { SvgXml } from 'react-native-svg';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '@/store/authApi';
 import { useGetMyProfileQuery } from '@/store/usersApi';
@@ -19,6 +20,18 @@ import { useGetAnimalsQuery } from '@/store/animalsApi';
 import { useGetBalanceQuery } from '@/store/walletApi';
 import type { RootState, AppDispatch } from '@/store/store';
 import { DoctorAvatar } from '@/components/doctor-avatar';
+import {
+  profileEditSvg,
+  profileArrowRightSvg,
+  profileMyTaskSvg,
+  profileNotificationSvg,
+  profileLanguageSvg,
+  profileReferAndEarnSvg,
+  profileHelpAndSupportSvg,
+  profilePrivacyPolicySvg,
+  profileLegalAndAboutSvg,
+  tintSvg,
+} from '@/components/icons/svg-icon-sources';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -143,7 +156,7 @@ export default function ProfileScreen() {
               </View>
               <View style={styles.walletRight}>
                 <Text style={styles.walletAmount}>${(walletBalance?.balance ?? 0).toFixed(2)}</Text>
-                <Ionicons name="chevron-forward" size={18} color="#9C9690" />
+                <SvgXml width={9} height={18} xml={tintSvg(profileArrowRightSvg, '#737373', '#9C9690')} />
               </View>
             </TouchableOpacity>
 
@@ -160,7 +173,7 @@ export default function ProfileScreen() {
                   </View>
                   <Text style={styles.menuLabel}>Personal Information</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={18} color="#9C9690" />
+                <SvgXml width={9} height={18} xml={tintSvg(profileArrowRightSvg, '#737373', '#9C9690')} />
               </TouchableOpacity>
 
               <View style={styles.divider} />
@@ -172,11 +185,11 @@ export default function ProfileScreen() {
               >
                 <View style={styles.menuLeft}>
                   <View style={styles.iconCircle}>
-                    <Ionicons name="notifications-outline" size={20} color="#BD632F" />
+                    <SvgXml width={22} height={22} xml={profileNotificationSvg} />
                   </View>
                   <Text style={styles.menuLabel}>Notification</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={18} color="#9C9690" />
+                <SvgXml width={9} height={18} xml={tintSvg(profileArrowRightSvg, '#737373', '#9C9690')} />
               </TouchableOpacity>
 
               <View style={styles.divider} />
@@ -188,11 +201,11 @@ export default function ProfileScreen() {
               >
                 <View style={styles.menuLeft}>
                   <View style={styles.iconCircle}>
-                    <Ionicons name="language-outline" size={20} color="#BD632F" />
+                    <SvgXml width={22} height={22} xml={profileLanguageSvg} />
                   </View>
                   <Text style={styles.menuLabel}>Language</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={18} color="#9C9690" />
+                <SvgXml width={9} height={18} xml={tintSvg(profileArrowRightSvg, '#737373', '#9C9690')} />
               </TouchableOpacity>
 
               <View style={styles.divider} />
@@ -204,11 +217,11 @@ export default function ProfileScreen() {
               >
                 <View style={styles.menuLeft}>
                   <View style={styles.iconCircle}>
-                    <MaterialCommunityIcons name="chat-question-outline" size={20} color="#BD632F" />
+                    <SvgXml width={22} height={22} xml={profileHelpAndSupportSvg} />
                   </View>
                   <Text style={styles.menuLabel}>Help & Support</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={18} color="#9C9690" />
+                <SvgXml width={9} height={18} xml={tintSvg(profileArrowRightSvg, '#737373', '#9C9690')} />
               </TouchableOpacity>
 
               <View style={styles.divider} />
@@ -225,7 +238,7 @@ export default function ProfileScreen() {
                   </View>
                   <Text style={[styles.menuLabel, styles.logoutLabel]}>Log Out</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={18} color="#DC2626" />
+                <SvgXml width={9} height={18} xml={tintSvg(profileArrowRightSvg, '#737373', '#DC2626')} />
               </TouchableOpacity>
 
             </View>
@@ -261,7 +274,7 @@ export default function ProfileScreen() {
                   onPress={() => router.push('/edit-profile')}
                 >
                   <Text style={styles.editBtnText}>Edit</Text>
-                  <Ionicons name="pencil-outline" size={13} color="#4A4543" />
+                  <SvgXml width={13} height={13} xml={profileEditSvg} />
                 </TouchableOpacity>
               </View>
 
@@ -308,7 +321,7 @@ export default function ProfileScreen() {
                   Next Billing : <Text style={styles.planBillingBold}>-</Text>
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#7C7672" />
+              <SvgXml width={10} height={20} xml={profileArrowRightSvg} />
             </TouchableOpacity>
 
             {/* Farmer Menu Items */}
@@ -320,11 +333,11 @@ export default function ProfileScreen() {
               >
                 <View style={styles.menuLeft}>
                   <View style={styles.iconCircle}>
-                    <Ionicons name="calendar-outline" size={20} color="#BD632F" />
+                    <SvgXml width={22} height={22} xml={profileMyTaskSvg} />
                   </View>
                   <Text style={styles.menuLabel}>My Task</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={18} color="#9C9690" />
+                <SvgXml width={9} height={18} xml={tintSvg(profileArrowRightSvg, '#737373', '#9C9690')} />
               </TouchableOpacity>
 
               <View style={styles.divider} />
@@ -336,11 +349,11 @@ export default function ProfileScreen() {
               >
                 <View style={styles.menuLeft}>
                   <View style={styles.iconCircle}>
-                    <Ionicons name="notifications-outline" size={20} color="#BD632F" />
+                    <SvgXml width={22} height={22} xml={profileNotificationSvg} />
                   </View>
                   <Text style={styles.menuLabel}>Notification</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={18} color="#9C9690" />
+                <SvgXml width={9} height={18} xml={tintSvg(profileArrowRightSvg, '#737373', '#9C9690')} />
               </TouchableOpacity>
 
               <View style={styles.divider} />
@@ -352,11 +365,11 @@ export default function ProfileScreen() {
               >
                 <View style={styles.menuLeft}>
                   <View style={styles.iconCircle}>
-                    <Ionicons name="language-outline" size={20} color="#BD632F" />
+                    <SvgXml width={22} height={22} xml={profileLanguageSvg} />
                   </View>
                   <Text style={styles.menuLabel}>Language</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={18} color="#9C9690" />
+                <SvgXml width={9} height={18} xml={tintSvg(profileArrowRightSvg, '#737373', '#9C9690')} />
               </TouchableOpacity>
 
               <View style={styles.divider} />
@@ -368,11 +381,11 @@ export default function ProfileScreen() {
               >
                 <View style={styles.menuLeft}>
                   <View style={styles.iconCircle}>
-                    <Ionicons name="gift-outline" size={20} color="#BD632F" />
+                    <SvgXml width={22} height={22} xml={profileReferAndEarnSvg} />
                   </View>
                   <Text style={styles.menuLabel}>Refer & Earn</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={18} color="#9C9690" />
+                <SvgXml width={9} height={18} xml={tintSvg(profileArrowRightSvg, '#737373', '#9C9690')} />
               </TouchableOpacity>
 
               <View style={styles.divider} />
@@ -384,11 +397,11 @@ export default function ProfileScreen() {
               >
                 <View style={styles.menuLeft}>
                   <View style={styles.iconCircle}>
-                    <MaterialCommunityIcons name="chat-question-outline" size={20} color="#BD632F" />
+                    <SvgXml width={22} height={22} xml={profileHelpAndSupportSvg} />
                   </View>
                   <Text style={styles.menuLabel}>Help & Support</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={18} color="#9C9690" />
+                <SvgXml width={9} height={18} xml={tintSvg(profileArrowRightSvg, '#737373', '#9C9690')} />
               </TouchableOpacity>
 
               <View style={styles.divider} />
@@ -400,11 +413,11 @@ export default function ProfileScreen() {
               >
                 <View style={styles.menuLeft}>
                   <View style={styles.iconCircle}>
-                    <Ionicons name="shield-outline" size={20} color="#BD632F" />
+                    <SvgXml width={22} height={22} xml={profilePrivacyPolicySvg} />
                   </View>
                   <Text style={styles.menuLabel}>Privacy Policy</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={18} color="#9C9690" />
+                <SvgXml width={9} height={18} xml={tintSvg(profileArrowRightSvg, '#737373', '#9C9690')} />
               </TouchableOpacity>
 
               <View style={styles.divider} />
@@ -416,11 +429,11 @@ export default function ProfileScreen() {
               >
                 <View style={styles.menuLeft}>
                   <View style={styles.iconCircle}>
-                    <Ionicons name="shield-checkmark-outline" size={20} color="#BD632F" />
+                    <SvgXml width={22} height={22} xml={profileLegalAndAboutSvg} />
                   </View>
                   <Text style={styles.menuLabel}>Legal & About</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={18} color="#9C9690" />
+                <SvgXml width={9} height={18} xml={tintSvg(profileArrowRightSvg, '#737373', '#9C9690')} />
               </TouchableOpacity>
 
               <View style={styles.divider} />
@@ -437,7 +450,7 @@ export default function ProfileScreen() {
                   </View>
                   <Text style={[styles.menuLabel, styles.logoutLabel]}>Log Out</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={18} color="#DC2626" />
+                <SvgXml width={9} height={18} xml={tintSvg(profileArrowRightSvg, '#737373', '#DC2626')} />
               </TouchableOpacity>
             </View>
           </>

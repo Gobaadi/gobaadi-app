@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SvgXml } from 'react-native-svg';
 import {
   useGetTasksQuery,
   useToggleTaskMutation,
@@ -20,6 +20,30 @@ import {
 import { RowSkeleton } from '@/components/ui/skeleton';
 import { formatLocalDateKey, localDateKey, formatTime12h } from '@/utils/date';
 import { apiErrorMessage } from '@/utils/api-error';
+import {
+  backButtonSvg,
+  myTaskCalendarSvg,
+  myTaskBlueCalendarSvg,
+  myTaskCardCalendarSvg,
+  myTaskCheckMarkSvg,
+  myTaskDeleteMarkSvg,
+  morningFeedSvg,
+  waterSupplyCheckSvg,
+  addTaskCalendarSvg,
+  addTaskCleaningSvg,
+  addTaskVaccinationSvg,
+  addTaskHealthCheckSvg,
+} from '@/components/icons/svg-icon-sources';
+
+function taskBadgeSvg(title: string): string | null {
+  const lower = title.toLowerCase();
+  if (lower.includes('water')) return waterSupplyCheckSvg;
+  if (lower.includes('feed')) return morningFeedSvg;
+  if (lower.includes('clean')) return addTaskCleaningSvg;
+  if (lower.includes('vaccin')) return addTaskVaccinationSvg;
+  if (lower.includes('health')) return addTaskHealthCheckSvg;
+  return null;
+}
 
 function formatTaskTime(scheduledTime?: string): string {
   if (!scheduledTime) return '07:00 PM';
@@ -97,7 +121,7 @@ export default function MyTaskScreen() {
           onPress={() => router.back()}
           activeOpacity={0.8}
         >
-          <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+          <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
 
         <Text style={styles.headerTitle}>My Task</Text>
@@ -107,7 +131,7 @@ export default function MyTaskScreen() {
           onPress={() => router.push('/add-task')}
           activeOpacity={0.8}
         >
-          <Ionicons name="calendar-outline" size={20} color="#FFFFFF" />
+          <SvgXml width={20} height={20} xml={myTaskCalendarSvg} />
         </TouchableOpacity>
       </View>
 
@@ -116,7 +140,7 @@ export default function MyTaskScreen() {
         <View style={styles.dateWeatherCard}>
           <View style={styles.dateWeatherLeft}>
             <View style={styles.calendarCircle}>
-              <Ionicons name="calendar-outline" size={18} color="#2B6CB0" />
+              <SvgXml width={18} height={18} xml={myTaskBlueCalendarSvg} />
             </View>
             <Text style={styles.dateText}>{formatTodayDate(listDate)}</Text>
           </View>
@@ -187,7 +211,7 @@ export default function MyTaskScreen() {
           /* Empty State Matching Screenshot 2 */
           <View style={styles.emptyCardContainer}>
             <View style={styles.emptyIconBadge}>
-              <Ionicons name="calendar-outline" size={32} color="#BD632F" />
+              <SvgXml width={48} height={48} xml={addTaskCalendarSvg} />
             </View>
             <Text style={styles.emptyTitle}>Schedule New Task</Text>
             <Text style={styles.emptySubtitle}>
@@ -215,17 +239,11 @@ export default function MyTaskScreen() {
               <View style={styles.taskCardTopRow}>
                 <View style={styles.taskTitleContainer}>
                   <View style={styles.taskTypeBadge}>
-                    <Text style={styles.badgeEmoji}>
-                      {task.title.toLowerCase().includes('water')
-                        ? '💧'
-                        : task.title.toLowerCase().includes('feed')
-                        ? '🌾'
-                        : task.title.toLowerCase().includes('clean')
-                        ? '🧹'
-                        : task.title.toLowerCase().includes('vaccin')
-                        ? '💉'
-                        : '📋'}
-                    </Text>
+                    {taskBadgeSvg(task.title) ? (
+                      <SvgXml width={24} height={24} xml={taskBadgeSvg(task.title) as string} />
+                    ) : (
+                      <Text style={styles.badgeEmoji}>📋</Text>
+                    )}
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.taskCardTitle, task.isDone && styles.taskCardTitleDone]}>
@@ -240,7 +258,7 @@ export default function MyTaskScreen() {
                 {/* Right Action */}
                 {task.isDone ? (
                   <View style={styles.checkDoneCircle}>
-                    <Ionicons name="checkmark" size={16} color="#FFFFFF" />
+                    <SvgXml width={16} height={13} xml={myTaskCheckMarkSvg} />
                   </View>
                 ) : (
                   <TouchableOpacity
@@ -248,7 +266,7 @@ export default function MyTaskScreen() {
                     onPress={() => setTaskToDelete(task)}
                     activeOpacity={0.7}
                   >
-                    <Ionicons name="trash-outline" size={20} color="#E53935" />
+                    <SvgXml width={20} height={20} xml={myTaskDeleteMarkSvg} />
                   </TouchableOpacity>
                 )}
               </View>
@@ -256,13 +274,13 @@ export default function MyTaskScreen() {
               {/* Time Row */}
               <View style={styles.timeRow}>
                 <View style={styles.timeCol}>
-                  <Ionicons name="calendar-outline" size={14} color="#BD7D5B" />
+                  <SvgXml width={14} height={14} xml={myTaskCardCalendarSvg} />
                   <Text style={styles.timeLabel}>Work Start </Text>
                   <Text style={styles.timeVal}>{formatTaskTime(task.scheduledTime)}</Text>
                 </View>
                 <View style={styles.timeDividerVertical} />
                 <View style={styles.timeCol}>
-                  <Ionicons name="calendar-outline" size={14} color="#BD7D5B" />
+                  <SvgXml width={14} height={14} xml={myTaskCardCalendarSvg} />
                   <Text style={styles.timeLabel}>Work End </Text>
                   <Text style={styles.timeVal}>{parseEndTime(task.detail)}</Text>
                 </View>
@@ -315,7 +333,7 @@ export default function MyTaskScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalBox}>
             <View style={styles.deleteModalIconCircle}>
-              <Ionicons name="trash-outline" size={28} color="#E53935" />
+              <SvgXml width={26} height={26} xml={myTaskDeleteMarkSvg} />
             </View>
             <Text style={styles.modalTitle}>Delete Task?</Text>
             <Text style={styles.modalMessage}>
