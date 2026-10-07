@@ -13,6 +13,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
+import { SvgXml } from 'react-native-svg';
+
+import {
+  aiScanBigCameraSvg,
+  aiScanResultCowSvg,
+  backButtonSvg,
+} from '@/components/icons/svg-icon-sources';
 
 import {
   useAnalyzeSymptomsMutation,
@@ -223,7 +230,7 @@ export default function AiHoldScreen() {
       <View style={styles.container}>
         <SafeAreaView style={styles.permissionWrap}>
           <View style={styles.permissionIcon}>
-            <Ionicons name="camera" size={36} color="#BD632F" />
+            <SvgXml width={44} height={44} xml={aiScanBigCameraSvg} />
           </View>
           <Text style={styles.permissionTitle}>Camera access needed</Text>
           <Text style={styles.permissionText}>
@@ -266,7 +273,7 @@ export default function AiHoldScreen() {
           onPress={() => router.back()}
           activeOpacity={0.8}
         >
-          <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+          <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
       </SafeAreaView>
 
@@ -343,7 +350,7 @@ export default function AiHoldScreen() {
               <View style={styles.diagnoseInfoBox}>
                 <View style={styles.cowInfoRow}>
                   <View style={styles.cowAvatarCircle}>
-                    <Text style={styles.cowAvatarEmoji}>🐮</Text>
+                    <SvgXml width={26} height={24} xml={aiScanResultCowSvg} />
                   </View>
                   <View style={styles.cowMetaCol}>
                     <Text style={styles.cowTitle}>Cow</Text>
@@ -618,9 +625,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
-  },
-  cowAvatarEmoji: {
-    fontSize: 22,
   },
   cowMetaCol: {
     justifyContent: 'center',

@@ -12,14 +12,22 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { SvgXml } from 'react-native-svg';
 import { useGetMyPatientsQuery } from '@/store/discountsApi';
+import { useGetDoctorBookingsQuery } from '@/store/doctorPortalApi';
+import { getLastAppointmentText } from '@/utils/last-appointment';
+import { PatientAvatar } from '@/components/patient-avatar';
+import {
+  backButtonSvg,
+  discountDetailsMessageSvg,
+  searchSvg,
+} from '@/components/icons/svg-icon-sources';
 
 type TabType = 'all' | 'discountGiven';
 
 export default function ApplyDiscountScreen() {
   const router = useRouter();
   const isDoctor = useRequireDoctor();
-  if (!isDoctor) return null;
   const [activeTab, setActiveTab] = useState<TabType>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -27,6 +35,12 @@ export default function ApplyDiscountScreen() {
     search: searchQuery || undefined,
     discountGiven: activeTab === 'discountGiven' ? 'true' : undefined,
   });
+  const { data: bookings = [] } = useGetDoctorBookingsQuery(undefined, {
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
+  });
+
+  if (!isDoctor) return null;
 
   const filteredPatients = (patients || []).filter((p) => !p.ownerOnly);
   const discountGivenCount =
@@ -36,7 +50,7 @@ export default function ApplyDiscountScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+          <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Apply Discount</Text>
         <View style={{ width: 40 }} />
@@ -47,7 +61,7 @@ export default function ApplyDiscountScreen() {
         contentContainerStyle={styles.scrollContainer}
       >
         <View style={styles.searchContainer}>
-          <Ionicons name="search-outline" size={18} color="#9C9690" />
+          <SvgXml width={18} height={18} xml={searchSvg} />
           <TextInput
             style={styles.searchInput}
             placeholder="Search by patient or owner"
@@ -60,7 +74,7 @@ export default function ApplyDiscountScreen() {
         <View style={styles.infoBanner}>
           <Ionicons name="information-circle-outline" size={20} color="#BD632F" />
           <Text style={styles.infoText}>
-            Discounts apply to the patient's next appointment fee only. They pay the discounted amount when booking.
+            Discounts apply to the patient’s next appointment fee only. They pay the discounted amount when booking.
           </Text>
         </View>
 
@@ -92,39 +106,48 @@ export default function ApplyDiscountScreen() {
             <ActivityIndicator size="large" color="#BD632F" />
           </View>
         ) : (
-          filteredPatients.map((patient) => (
-            <TouchableOpacity
-              key={patient.id}
-              style={styles.patientCard}
-              onPress={() =>
-                router.push({
-                  pathname: '/discount',
-                  params: {
-                    patientId: patient.id.toString(),
-                    patientName: patient.name,
-                    ownerName: patient.ownerName || '',
-                    existingDiscount: patient.discount?.percent?.toString() || '0',
-                  },
-                })
-              }
-              activeOpacity={0.7}
-            >
-              <View style={styles.patientAvatar}>
-                <Ionicons name="paw" size={20} color="#BD632F" />
-              </View>
-              <View style={styles.patientInfo}>
-                <Text style={styles.patientName}>{patient.name}</Text>
-                <Text style={styles.patientOwner}>Owner: {patient.ownerName || 'N/A'}</Text>
-                <Text style={styles.patientPhone}>{patient.breed}</Text>
-              </View>
-              {patient.discount?.isActive && patient.discount?.percent ? (
-                <View style={styles.discountBadge}>
-                  <Text style={styles.discountBadgeText}>{patient.discount.percent}%</Text>
+          filteredPatients.map((patient) => {
+            const lastAppointment = getLastAppointmentText(bookings, patient.id);
+            return (
+              <TouchableOpacity
+                key={patient.id}
+                style={styles.patientCard}
+                onPress={() =>
+                  router.push({
+                    pathname: '/discount',
+                    params: {
+                      patientId: patient.id.toString(),
+                      patientName: patient.name,
+                      ownerName: patient.ownerName || '',
+                      patientImage: patient.image || '',
+                      existingDiscount: patient.discount?.percent?.toString() || '0',
+                    },
+                  })
+                }
+                activeOpacity={0.7}
+              >
+                <View style={styles.patientAvatarWrap}>
+                  <PatientAvatar name={patient.name} image={patient.image} size={48} />
+                  <View style={styles.patientAvatarBadge}>
+                    <SvgXml width={18} height={18} xml={discountDetailsMessageSvg} />
+                  </View>
                 </View>
-              ) : null}
-              <Ionicons name="chevron-forward" size={18} color="#9C9690" />
-            </TouchableOpacity>
-          ))
+                <View style={styles.patientInfo}>
+                  <Text style={styles.patientName}>{patient.name}</Text>
+                  <Text style={styles.patientOwner}>Owner: {patient.ownerName || 'N/A'}</Text>
+                  {lastAppointment ? (
+                    <Text style={styles.patientPhone}>Last appointment: {lastAppointment}</Text>
+                  ) : null}
+                </View>
+                {patient.discount?.isActive && patient.discount?.percent ? (
+                  <View style={styles.discountBadge}>
+                    <Text style={styles.discountBadgeText}>{patient.discount.percent}%</Text>
+                  </View>
+                ) : null}
+                <Ionicons name="chevron-forward" size={18} color="#9C9690" />
+              </TouchableOpacity>
+            );
+          })
         )}
       </ScrollView>
     </SafeAreaView>
@@ -147,7 +170,7 @@ const styles = StyleSheet.create({
   backBtn: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 12,
     backgroundColor: '#BD632F',
     justifyContent: 'center',
     alignItems: 'center',
@@ -235,11 +258,20 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     gap: 12,
   },
-  patientAvatar: {
+  patientAvatarWrap: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#FFF2EB',
+  },
+  patientAvatarBadge: {
+    position: 'absolute',
+    bottom: -2,
+    left: -2,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
   },

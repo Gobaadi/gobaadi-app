@@ -8,7 +8,17 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SvgXml } from 'react-native-svg';
+
+import {
+  backButtonSvg,
+  doctorCardLocationSvg,
+  doctorCardStarSvg,
+  doctorDetailArrowRightSvg,
+  doctorDetailAvailabilitySvg,
+  doctorDetailConfirmSlotSvg,
+  doctorNotificationSvg,
+} from '@/components/icons/svg-icon-sources';
 import { useGetDoctorByIdQuery } from '@/store/doctorsApi';
 import { useGetServicesQuery } from '@/store/servicesApi';
 import { DoctorAvatar } from '@/components/doctor-avatar';
@@ -70,7 +80,7 @@ export default function DoctorDetailScreen() {
           onPress={() => router.back()}
           activeOpacity={0.8}
         >
-          <Text style={styles.buttonText}>←</Text>
+          <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
 
         <Text style={styles.headerTitle}>Doctor Detail</Text>
@@ -80,7 +90,7 @@ export default function DoctorDetailScreen() {
           activeOpacity={0.8}
           onPress={() => router.push('/notifications')}
         >
-          <Ionicons name="notifications-outline" size={20} color="#FFFFFF" />
+          <SvgXml width={20} height={20} xml={doctorNotificationSvg} />
         </TouchableOpacity>
       </View>
 
@@ -98,11 +108,11 @@ export default function DoctorDetailScreen() {
             <Text style={styles.doctorName}>{doctor.name}</Text>
             <Text style={styles.doctorSpecialty}>{doctor.specialty}</Text>
             <View style={styles.ratingLocationRow}>
-              <Text style={styles.locationPin}>📍</Text>
+              <SvgXml width={11} height={11} xml={doctorCardLocationSvg} style={styles.locationPin} />
               <Text style={styles.locationTextMeta}>{doctor.location}</Text>
             </View>
             <View style={styles.ratingRow}>
-              <Text style={styles.starIcon}>⭐</Text>
+              <SvgXml width={11} height={11} xml={doctorCardStarSvg} style={styles.starIcon} />
               <Text style={styles.ratingValue}>{doctor.rating}</Text>
               <Text style={styles.reviewsText}>| {doctor.reviews} Reviews</Text>
             </View>
@@ -117,14 +127,14 @@ export default function DoctorDetailScreen() {
         >
           <View style={styles.availabilityLeft}>
             <View style={styles.clockCircle}>
-              <Text style={styles.clockIcon}>🕐</Text>
+              <SvgXml width={28} height={28} xml={doctorDetailAvailabilitySvg} />
             </View>
             <View style={styles.availabilityMeta}>
               <Text style={styles.availabilityTitle}>Availability</Text>
               <Text style={styles.availabilityTime}>{doctor.availability}</Text>
             </View>
           </View>
-          <Text style={styles.chevronRight}>❯</Text>
+          <SvgXml width={9} height={15} xml={doctorDetailArrowRightSvg} />
         </TouchableOpacity>
 
         {/* Specializations list */}
@@ -161,7 +171,8 @@ export default function DoctorDetailScreen() {
           onPress={() => router.push({ pathname: '/book-slot', params: { id: doctor.id } })}
           activeOpacity={0.85}
         >
-          <Text style={styles.bookButtonText}>📅 Book Slot</Text>
+          <SvgXml width={20} height={20} xml={doctorDetailConfirmSlotSvg} style={styles.bookButtonIcon} />
+          <Text style={styles.bookButtonText}>Book Slot</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -192,11 +203,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#BD632F',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '700',
   },
   headerTitle: {
     fontSize: 20,
@@ -239,8 +245,6 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   locationPin: {
-    fontSize: 11,
-    color: '#9C9690',
     marginRight: 4,
   },
   locationTextMeta: {
@@ -252,7 +256,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   starIcon: {
-    fontSize: 11,
     marginRight: 4,
   },
   ratingValue: {
@@ -289,10 +292,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
   },
-  clockIcon: {
-    fontSize: 18,
-    color: '#BD632F',
-  },
   availabilityMeta: {
     justifyContent: 'center',
   },
@@ -306,11 +305,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#1A1817',
-  },
-  chevronRight: {
-    fontSize: 16,
-    color: '#BD632F',
-    fontWeight: '700',
   },
   specCard: {
     backgroundColor: '#FFFFFF',
@@ -358,6 +352,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#BD632F',
     height: 52,
     borderRadius: 26,
+    flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#BD632F',
@@ -365,6 +360,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 6,
     elevation: 3,
+  },
+  bookButtonIcon: {
+    marginRight: 8,
   },
   bookButtonText: {
     color: '#FFFFFF',

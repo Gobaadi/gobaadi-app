@@ -10,6 +10,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { SvgXml } from 'react-native-svg';
+import {
+  backButtonSvg,
+  notificationSettingsSvg,
+} from '@/components/icons/svg-icon-sources';
 import { useGetNotificationsQuery, useMarkNotificationReadMutation } from '@/store/notificationsApi';
 import type { Notification } from '@/store/notificationsApi';
 import { formatNotificationTime } from '@/utils/date';
@@ -115,11 +120,11 @@ export default function DoctorNotificationsScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
-            <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+            <SvgXml width={20} height={20} xml={backButtonSvg} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Notifications</Text>
           <TouchableOpacity style={styles.settingsBtn} onPress={() => router.push('/doctor-notification-preferences')} activeOpacity={0.7}>
-            <Ionicons name="settings-outline" size={20} color="#FFFFFF" />
+            <SvgXml width={20} height={20} xml={notificationSettingsSvg} />
           </TouchableOpacity>
         </View>
         <View style={styles.loadingContainer}>
@@ -134,11 +139,11 @@ export default function DoctorNotificationsScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
-            <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+            <SvgXml width={20} height={20} xml={backButtonSvg} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Notifications</Text>
           <TouchableOpacity style={styles.settingsBtn} onPress={() => router.push('/doctor-notification-preferences')} activeOpacity={0.7}>
-            <Ionicons name="settings-outline" size={20} color="#FFFFFF" />
+            <SvgXml width={20} height={20} xml={notificationSettingsSvg} />
           </TouchableOpacity>
         </View>
         <View style={styles.loadingContainer}>
@@ -155,11 +160,11 @@ export default function DoctorNotificationsScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+          <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Notifications</Text>
         <TouchableOpacity style={styles.settingsBtn} onPress={() => router.push('/doctor-notification-preferences')} activeOpacity={0.7}>
-          <Ionicons name="settings-outline" size={20} color="#FFFFFF" />
+          <SvgXml width={20} height={20} xml={notificationSettingsSvg} />
         </TouchableOpacity>
       </View>
 

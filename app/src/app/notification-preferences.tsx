@@ -12,6 +12,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { SvgXml } from 'react-native-svg';
+import {
+  backButtonSvg,
+} from '@/components/icons/svg-icon-sources';
 import {
   useGetPreferencesQuery,
   useUpdatePreferencesMutation,
@@ -66,7 +70,7 @@ export default function NotificationPreferencesScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
-            <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+            <SvgXml width={20} height={20} xml={backButtonSvg} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Notifications Settings</Text>
           <View style={styles.placeholder} />
@@ -83,7 +87,7 @@ export default function NotificationPreferencesScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
-            <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+            <SvgXml width={20} height={20} xml={backButtonSvg} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Notifications Settings</Text>
           <View style={styles.placeholder} />
@@ -103,7 +107,7 @@ export default function NotificationPreferencesScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+          <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Notifications Settings</Text>
         <View style={styles.placeholder} />

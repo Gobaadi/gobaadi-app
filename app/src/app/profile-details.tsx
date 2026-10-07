@@ -13,6 +13,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { SvgXml } from 'react-native-svg';
+import { profileEditSvg, doctorProfileCardStarSvg } from '@/components/icons/svg-icon-sources';
 import * as ImagePicker from 'expo-image-picker';
 import { useGetDoctorBookingsQuery, useGetMyDoctorProfileQuery, useUpdateQualificationsMutation, useUpdateSpecializationsMutation, useUploadCredentialDocumentMutation, useUpdateCredentialDocumentsMutation, useUpdateProfileMutation } from '@/store/doctorPortalApi';
 import { useGetMyProfileQuery } from '@/store/usersApi';
@@ -269,7 +271,7 @@ export default function ProfileDetailsScreen() {
               <Text style={styles.doctorName}>{`Dr ${doctorName}`}</Text>
               <Text style={styles.doctorSpecialty}>{doctorProfile?.specialty}</Text>
               <View style={styles.ratingRow}>
-                <Ionicons name="star" size={14} color="#F59E0B" />
+                <SvgXml width={14} height={14} xml={doctorProfileCardStarSvg} />
                 <Text style={styles.ratingText}>{doctorProfile?.rating} ({doctorBookings?.length} reviews)</Text>
               </View>
               <Text style={[styles.doctorLocation, !doctorProfile?.specialty && styles.noDataText]}>
@@ -317,7 +319,7 @@ export default function ProfileDetailsScreen() {
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Personal information</Text>
               <TouchableOpacity onPress={() => router.push('/profile-edit' as any)} activeOpacity={0.7}>
-                <Ionicons name="pencil-outline" size={20} color="#7C7672" />
+                <SvgXml width={20} height={20} xml={profileEditSvg} />
               </TouchableOpacity>
             </View>
 
@@ -367,7 +369,7 @@ export default function ProfileDetailsScreen() {
                   activeOpacity={0.7}
                   onPress={() => router.push({ pathname: '/profile-edit', params: { tab: 'experience' } } as any)}
                 >
-                  <Ionicons name="pencil-outline" size={20} color="#7C7672" />
+                  <SvgXml width={20} height={20} xml={profileEditSvg} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -421,7 +423,7 @@ export default function ProfileDetailsScreen() {
                     router.push({ pathname: '/profile-edit', params: { tab: 'credentials', section: 'qualifications' } } as any)
                   }
                 >
-                  <Ionicons name="pencil-outline" size={20} color="#7C7672" />
+                  <SvgXml width={20} height={20} xml={profileEditSvg} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -457,7 +459,7 @@ export default function ProfileDetailsScreen() {
                 activeOpacity={0.7}
                 onPress={() => router.push({ pathname: '/profile-edit', params: { tab: 'credentials' } } as any)}
               >
-                <Ionicons name="pencil-outline" size={20} color="#7C7672" />
+                <SvgXml width={20} height={20} xml={profileEditSvg} />
               </TouchableOpacity>
             </View>
 
@@ -554,7 +556,7 @@ export default function ProfileDetailsScreen() {
                   activeOpacity={0.7}
                   onPress={() => router.push({ pathname: '/profile-edit', params: { tab: 'credentials' } } as any)}
                 >
-                  <Ionicons name="pencil-outline" size={20} color="#7C7672" />
+                  <SvgXml width={20} height={20} xml={profileEditSvg} />
                 </TouchableOpacity>
               </View>
             </View>

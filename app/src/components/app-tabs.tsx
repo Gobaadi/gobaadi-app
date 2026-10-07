@@ -3,8 +3,17 @@ import { Tabs } from 'expo-router';
 import { StyleSheet, View, Text, TouchableOpacity, Dimensions } from 'react-native';
 import { useSelector } from 'react-redux';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { SvgXml } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { RootState } from '@/store/store';
+import {
+  navigationHomeSvg,
+  navigationAnimalSvg,
+  navigationDoctorSvg,
+  navigationMarketSvg,
+  navigationProfileSvg,
+  tintNavSvg,
+} from '@/components/icons/svg-icon-sources';
 
 const { width } = Dimensions.get('window');
 
@@ -14,22 +23,24 @@ function TabIcon({ routeName, isFocused }: { routeName: string; isFocused: boole
   const color = isFocused ? activeColor : inactiveColor;
   const size = isFocused ? 24 : 22;
 
+  const navIcon = (svg: string) => <SvgXml width={size} height={size} xml={tintNavSvg(svg, color)} />;
+
   switch (routeName) {
     case 'index':
     case 'doctor-home':
-      return <MaterialCommunityIcons name={isFocused ? 'home' : 'home-outline'} size={size} color={color} />;
+      return navIcon(navigationHomeSvg);
     case 'animals':
-      return <MaterialCommunityIcons name="cow" size={size} color={color} />;
+      return navIcon(navigationAnimalSvg);
     case 'doctors':
-      return <MaterialCommunityIcons name="doctor" size={size} color={color} />;
+      return navIcon(navigationDoctorSvg);
     case 'market':
-      return <MaterialCommunityIcons name={isFocused ? 'storefront' : 'storefront-outline'} size={size} color={color} />;
+      return navIcon(navigationMarketSvg);
     case 'doctor-bookings':
       return <MaterialCommunityIcons name={isFocused ? 'calendar-month' : 'calendar-month-outline'} size={size} color={color} />;
     case 'doctor-messages':
       return <MaterialCommunityIcons name={isFocused ? 'message-processing' : 'message-processing-outline'} size={size} color={color} />;
     case 'profile':
-      return <Ionicons name={isFocused ? 'person' : 'person-outline'} size={size} color={color} />;
+      return navIcon(navigationProfileSvg);
     default:
       return <Ionicons name="ellipse-outline" size={size} color={color} />;
   }

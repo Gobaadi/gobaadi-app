@@ -11,22 +11,37 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { SvgXml } from 'react-native-svg';
 import { useUpdateTaskMutation } from '@/store/tasksApi';
 import { apiErrorMessage } from '@/utils/api-error';
+import {
+  backButtonSvg,
+  myTaskCalendarSvg,
+  cowShedSvg,
+  goatShedSvg,
+  poultryShedSvg,
+  addTaskFeedingSvg,
+  addTaskWaterSupplySvg,
+  addTaskHygieneSvg,
+  addTaskCleaningSvg,
+  addTaskVaccinationSvg,
+  addTaskHealthCheckSvg,
+  addTaskMicrophoneSvg,
+} from '@/components/icons/svg-icon-sources';
 
 const SHEDS = [
-  { id: 'cow', name: 'Cow Shed', icon: '🐮' },
-  { id: 'goat', name: 'Goat Shed', icon: '🐐' },
-  { id: 'poultry', name: 'Poultry Shed', icon: '🐓' },
+  { id: 'cow', name: 'Cow Shed', icon: cowShedSvg },
+  { id: 'goat', name: 'Goat Shed', icon: goatShedSvg },
+  { id: 'poultry', name: 'Poultry Shed', icon: poultryShedSvg },
 ];
 
 const TASK_TYPES = [
-  { id: 'feeding', name: 'Feeding', icon: '💧' },
-  { id: 'water', name: 'Water Supply', icon: '🧪' },
-  { id: 'hygiene', name: 'Hygiene', icon: '🧼' },
-  { id: 'cleaning', name: 'Cleaning', icon: '🧹' },
-  { id: 'vaccination', name: 'Vaccination', icon: '💉' },
-  { id: 'health', name: 'Health Check', icon: '🩺' },
+  { id: 'feeding', name: 'Feeding', icon: addTaskFeedingSvg },
+  { id: 'water', name: 'Water Supply', icon: addTaskWaterSupplySvg },
+  { id: 'hygiene', name: 'Hygiene', icon: addTaskHygieneSvg },
+  { id: 'cleaning', name: 'Cleaning', icon: addTaskCleaningSvg },
+  { id: 'vaccination', name: 'Vaccination', icon: addTaskVaccinationSvg },
+  { id: 'health', name: 'Health Check', icon: addTaskHealthCheckSvg },
 ];
 
 function parseExistingTask(title?: string, detail?: string) {
@@ -142,13 +157,13 @@ export default function EditTaskScreen() {
           onPress={() => router.back()}
           activeOpacity={0.8}
         >
-          <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+          <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
 
         <Text style={styles.headerTitle}>Edit Task</Text>
 
         <TouchableOpacity style={styles.headerSquareBtn} activeOpacity={0.8}>
-          <Ionicons name="calendar-outline" size={20} color="#FFFFFF" />
+          <SvgXml width={20} height={20} xml={myTaskCalendarSvg} />
         </TouchableOpacity>
       </View>
 
@@ -169,7 +184,7 @@ export default function EditTaskScreen() {
                 >
                   <View style={styles.shedRowLeft}>
                     <View style={styles.shedIconCircle}>
-                      <Text style={styles.shedEmoji}>{s.icon}</Text>
+                      <SvgXml width={24} height={24} xml={s.icon} />
                     </View>
                     <Text style={[styles.shedName, isSel && styles.shedNameSelected]}>
                       {s.name}
@@ -205,7 +220,7 @@ export default function EditTaskScreen() {
                     />
                   </View>
                   <View style={styles.typeIconCircle}>
-                    <Text style={styles.typeEmoji}>{t.icon}</Text>
+                    <SvgXml width={24} height={24} xml={t.icon} />
                   </View>
                   <Text style={[styles.typeName, isSel && styles.typeNameSelected]}>
                     {t.name}
@@ -229,7 +244,7 @@ export default function EditTaskScreen() {
               onPress={() => Alert.alert('Voice input', 'Voice input is coming soon.')}
               activeOpacity={0.7}
             >
-              <Ionicons name="mic-outline" size={20} color="#BD632F" />
+              <SvgXml width={20} height={20} xml={addTaskMicrophoneSvg} />
             </TouchableOpacity>
           </View>
 
@@ -389,9 +404,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
   },
-  shedEmoji: {
-    fontSize: 18,
-  },
   shedName: {
     fontSize: 14,
     fontWeight: '600',
@@ -437,9 +449,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 8,
     marginTop: 4,
-  },
-  typeEmoji: {
-    fontSize: 18,
   },
   typeName: {
     fontSize: 12,

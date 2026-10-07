@@ -8,9 +8,15 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SvgXml } from 'react-native-svg';
 import { LANGUAGES } from '@/constants/languages';
 import { useLanguage } from '@/hooks/use-language';
+import {
+  backButtonSvg,
+  languageActiveSpeakerSvg,
+  languageUnactiveSpeakerSvg,
+  languageSelectionMicrophoneSvg,
+} from '@/components/icons/svg-icon-sources';
 
 export default function SelectLanguageScreen() {
   const router = useRouter();
@@ -20,7 +26,7 @@ export default function SelectLanguageScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+          <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Select Language</Text>
         <View style={{ width: 40 }} />
@@ -50,8 +56,12 @@ export default function SelectLanguageScreen() {
                     {lang.nativeName}
                   </Text>
                 </View>
-                <View style={[styles.radio, isSelected && styles.radioActive]}>
-                  {isSelected && <View style={styles.radioDot} />}
+                <View style={[styles.speakerBadge, isSelected && styles.speakerBadgeActive]}>
+                  <SvgXml
+                    width={16}
+                    height={16}
+                    xml={isSelected ? languageActiveSpeakerSvg : languageUnactiveSpeakerSvg}
+                  />
                 </View>
               </TouchableOpacity>
             );
@@ -61,7 +71,9 @@ export default function SelectLanguageScreen() {
         {/* Voice Selection Mode */}
         <TouchableOpacity style={styles.voiceRow} activeOpacity={0.8}>
           <Text style={styles.voiceText}>Voice Selection Mode</Text>
-          <Ionicons name="mic-outline" size={20} color="#9C9690" />
+          <View style={styles.micCircle}>
+            <SvgXml width={18} height={18} xml={languageSelectionMicrophoneSvg} />
+          </View>
         </TouchableOpacity>
       </ScrollView>
 
@@ -110,22 +122,15 @@ const styles = StyleSheet.create({
   languageNameActive: { color: '#BD632F' },
   languageNative: { fontSize: 12, fontWeight: '500', color: '#9C9690' },
   languageNativeActive: { color: '#BD632F' },
-  radio: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#D1CCC7',
+  speakerBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#F5F2EC',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  radioActive: {
-    borderColor: '#BD632F',
-  },
-  radioDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+  speakerBadgeActive: {
     backgroundColor: '#BD632F',
   },
   voiceRow: {
@@ -137,6 +142,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E6E1DC',
     padding: 16,
+  },
+  micCircle: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: '#F5F2EC',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   voiceText: { fontSize: 14, fontWeight: '600', color: '#1A1817' },
   bottomBar: {

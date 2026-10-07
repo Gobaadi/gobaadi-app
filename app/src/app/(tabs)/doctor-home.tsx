@@ -14,6 +14,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { SvgXml } from 'react-native-svg';
 import { useSelector } from 'react-redux';
 import type { RootState } from '@/store/store';
 import {
@@ -25,6 +26,15 @@ import { useGetConversationsQuery, useCreateConversationMutation } from '@/store
 import { useLanguage } from '@/hooks/use-language';
 import { PatientAvatar } from '@/components/patient-avatar';
 import { formatTime12h } from '@/utils/date';
+import {
+  languageGlobeSvg,
+  notificationBellSvg,
+  doctorHomeAppointmentsSvg,
+  doctorHomeScheduleSvg,
+  doctorHomePatientsSvg,
+  doctorHomeApplyDiscountSvg,
+  doctorHomeAppointmentMessageSquareSvg,
+} from '@/components/icons/svg-icon-sources';
 
 function getGreeting(): string {
   const h = new Date().getHours();
@@ -38,10 +48,10 @@ function formatBookingTime(iso: string): string {
 }
 
 const QUICK_TILES = [
-  { id: 'appointments', label: 'Appointments', icon: 'document-text-outline' as const, route: '/appointments' },
-  { id: 'schedule', label: 'Schedule', icon: 'calendar-outline' as const, route: '/schedule' },
-  { id: 'patients', label: 'Patients', icon: 'clipboard-outline' as const, route: '/doctor-patients' },
-  { id: 'discount', label: 'Apply Discount', icon: 'ticket-outline' as const, route: '/apply-discount' },
+  { id: 'appointments', label: 'Appointments', icon: doctorHomeAppointmentsSvg, route: '/appointments' },
+  { id: 'schedule', label: 'Schedule', icon: doctorHomeScheduleSvg, route: '/schedule' },
+  { id: 'patients', label: 'Patients', icon: doctorHomePatientsSvg, route: '/doctor-patients' },
+  { id: 'discount', label: 'Apply Discount', icon: doctorHomeApplyDiscountSvg, route: '/apply-discount' },
 ];
 
 export default function DoctorHomeScreen() {
@@ -128,7 +138,7 @@ export default function DoctorHomeScreen() {
                   onPress={() => router.push('/select-language')}
                   activeOpacity={0.8}
                 >
-                  <Ionicons name="globe-outline" size={16} color="#FFFFFF" />
+                  <SvgXml width={16} height={16} xml={languageGlobeSvg} />
                   <Text style={styles.langPillText}>EN</Text>
                 </TouchableOpacity>
 
@@ -137,7 +147,7 @@ export default function DoctorHomeScreen() {
                   onPress={() => router.push('/doctor-notifications')}
                   activeOpacity={0.8}
                 >
-                  <Ionicons name="notifications-outline" size={20} color="#BD632F" />
+                  <SvgXml width={20} height={20} xml={notificationBellSvg} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -189,7 +199,7 @@ export default function DoctorHomeScreen() {
                   </View>
 
                   <TouchableOpacity style={styles.chatBtn} activeOpacity={0.8} onPress={() => openPatientChat(b)}>
-                    <Ionicons name="chatbubble" size={22} color="#3B82F6" />
+                    <SvgXml width={26} height={24} xml={doctorHomeAppointmentMessageSquareSvg} />
                   </TouchableOpacity>
                 </View>
               ))
@@ -227,7 +237,7 @@ export default function DoctorHomeScreen() {
                 activeOpacity={0.85}
               >
                 <View style={styles.tileIconCircle}>
-                  <Ionicons name={tile.icon} size={28} color="#BD632F" />
+                  <SvgXml width={34} height={34} xml={tile.icon} />
                 </View>
                 <Text style={styles.tileLabel}>{tile.label}</Text>
               </TouchableOpacity>

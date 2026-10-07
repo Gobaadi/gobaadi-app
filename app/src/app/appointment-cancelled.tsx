@@ -9,9 +9,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { SvgXml } from 'react-native-svg';
 import { useSelector } from 'react-redux';
 import type { RootState } from '@/store/store';
 import { useGetBookingByIdQuery, useGetDoctorBookingsQuery } from '@/store/doctorPortalApi';
+import { appointmentCancelCalendarSvg } from '@/components/icons/svg-icon-sources';
 
 export default function AppointmentCancelledScreen() {
   const router = useRouter();
@@ -36,7 +38,7 @@ export default function AppointmentCancelledScreen() {
       <View style={styles.content}>
         <View style={styles.iconContainer}>
           <View style={styles.iconCircle}>
-            <Ionicons name="close" size={32} color="#E74C3C" />
+            <SvgXml width={44} height={44} xml={appointmentCancelCalendarSvg} />
           </View>
         </View>
 

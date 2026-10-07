@@ -12,7 +12,14 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { SvgXml } from 'react-native-svg';
 import * as DocumentPicker from 'expo-document-picker';
+import {
+  backButtonSvg,
+  reportIssuesArrowDownSvg,
+  reportIssuesCameraSvg,
+  reportIssuesAddSvg,
+} from '@/components/icons/svg-icon-sources';
 import { useCreateTicketMutation } from '@/store/supportApi';
 import { compressImageForUpload, getLocalFileSize, MAX_UPLOAD_BYTES } from '@/utils/compress-image';
 import { apiErrorMessage } from '@/utils/api-error';
@@ -143,7 +150,7 @@ export default function ReportIssuesScreen() {
           onPress={() => router.back()}
           activeOpacity={0.8}
         >
-          <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+          <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
 
         <Text style={styles.headerTitle}>Report Issues</Text>
@@ -160,7 +167,12 @@ export default function ReportIssuesScreen() {
           activeOpacity={0.8}
         >
           <Text style={styles.dropdownValue}>{selectedIssue}</Text>
-          <Ionicons name={showDropdown ? 'chevron-up' : 'chevron-down'} size={20} color="#7C7672" />
+          <SvgXml
+            width={18}
+            height={9}
+            xml={reportIssuesArrowDownSvg}
+            style={showDropdown ? styles.dropdownArrowOpen : undefined}
+          />
         </TouchableOpacity>
 
         {showDropdown && (
@@ -197,7 +209,7 @@ export default function ReportIssuesScreen() {
         {/* Attachment Upload */}
         <View style={styles.uploadCard}>
           <View style={styles.uploadIconCircle}>
-            <Ionicons name="camera-outline" size={22} color="#7C7672" />
+            <SvgXml width={22} height={22} xml={reportIssuesCameraSvg} />
           </View>
           <Text style={styles.uploadTitle}>Drag &amp; Drop</Text>
           <Text style={styles.uploadSubtitle}>Select File and Upload Here</Text>
@@ -208,7 +220,7 @@ export default function ReportIssuesScreen() {
             activeOpacity={0.8}
             disabled={isLoading}
           >
-            <Ionicons name="add" size={20} color="#1A1817" />
+            <SvgXml width={20} height={20} xml={reportIssuesAddSvg} />
             <Text style={styles.browseBtnText}>Browse File</Text>
           </TouchableOpacity>
         </View>
@@ -305,6 +317,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#7C7672',
     fontWeight: '500',
+  },
+  dropdownArrowOpen: {
+    transform: [{ rotate: '180deg' }],
   },
   dropdownMenu: {
     backgroundColor: '#FFFFFF',

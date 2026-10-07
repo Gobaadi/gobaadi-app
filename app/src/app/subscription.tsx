@@ -11,8 +11,14 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { SvgXml } from 'react-native-svg';
 import { useGetMySubscriptionQuery } from '@/store/subscriptionsApi';
 import { SUBSCRIPTION_PLANS } from '@/constants/subscription-plans';
+import {
+  backButtonSvg,
+  subscriptionDeleteSvg,
+  tintSvg,
+} from '@/components/icons/svg-icon-sources';
 
 export default function SubscriptionScreen() {
   const router = useRouter();
@@ -42,7 +48,7 @@ export default function SubscriptionScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} activeOpacity={0.8}>
-            <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+            <SvgXml width={20} height={20} xml={backButtonSvg} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Subscription</Text>
           <View style={{ width: 42 }} />
@@ -58,7 +64,7 @@ export default function SubscriptionScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} activeOpacity={0.8}>
-          <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+          <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Subscription</Text>
         <View style={{ width: 42 }} />
@@ -115,7 +121,11 @@ export default function SubscriptionScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.cancelBtn} onPress={handleCancelSubscription} activeOpacity={0.85}>
-          <Ionicons name="trash-outline" size={18} color="#E53935" />
+          <SvgXml
+            width={18}
+            height={18}
+            xml={tintSvg(subscriptionDeleteSvg, 'white', '#E53935')}
+          />
           <Text style={styles.cancelBtnText}>Cancel Subscriptions</Text>
         </TouchableOpacity>
       </ScrollView>

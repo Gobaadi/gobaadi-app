@@ -11,11 +11,19 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { SvgXml } from 'react-native-svg';
 import {
   useGetDoctorBookingsQuery,
   type DoctorAppointment,
 } from '@/store/doctorPortalApi';
 import { useRequireDoctor } from '@/hooks/use-require-doctor';
+import {
+  backButtonSvg,
+  appointmentsFilterSvg,
+  appointmentsSearchSvg,
+  appointmentsConsultationCardChatSvg,
+  tintSvg,
+} from '@/components/icons/svg-icon-sources';
 
 type Tab = 'today' | 'previous';
 
@@ -115,9 +123,7 @@ function AppointmentCard({ appointment, onPress }: AppointmentCardProps) {
           </View>
         )}
         <View style={styles.cardImageOverlay}>
-          <View style={styles.liveChatBadge}>
-            <Ionicons name="chatbubble" size={10} color="#FFFFFF" />
-          </View>
+          <SvgXml width={22} height={22} xml={appointmentsConsultationCardChatSvg} />
         </View>
       </View>
 
@@ -355,7 +361,7 @@ export default function AppointmentsScreen() {
           onPress={() => router.back()}
           activeOpacity={0.7}
         >
-          <Ionicons name="arrow-back" size={20} color="#BD632F" />
+          <SvgXml width={20} height={20} xml={tintSvg(backButtonSvg, 'white', '#BD632F')} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Appointments</Text>
         <TouchableOpacity
@@ -363,12 +369,12 @@ export default function AppointmentsScreen() {
           onPress={() => router.push('/appointment-filter')}
           activeOpacity={0.7}
         >
-          <Ionicons name="filter" size={20} color="#BD632F" />
+          <SvgXml width={20} height={20} xml={appointmentsFilterSvg} />
         </TouchableOpacity>
       </View>
 
       <View style={styles.searchContainer}>
-        <Ionicons name="search" size={18} color="#9C9690" />
+        <SvgXml width={18} height={18} xml={appointmentsSearchSvg} />
         <TextInput
           style={styles.searchInput}
           placeholder="Search patient"
@@ -635,16 +641,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: -2,
     right: -2,
-  },
-  liveChatBadge: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: '#4CAF50',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
   },
   cardContent: { flex: 1 },
   cardTopRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },

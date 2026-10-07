@@ -20,6 +20,8 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSelector } from 'react-redux';
 import type { RootState } from '@/store/store';
 import { Ionicons } from '@expo/vector-icons';
+import { SvgXml } from 'react-native-svg';
+import { backButtonSvg, chatPhoneSvg, chatVideoSvg } from '@/components/icons/svg-icon-sources';
 import * as ImagePicker from 'expo-image-picker';
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
@@ -808,15 +810,8 @@ export default function ChatScreen() {
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
-            <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+            <SvgXml width={20} height={20} xml={backButtonSvg} />
           </TouchableOpacity>
-          {theirAvatarUri ? (
-            <Image source={{ uri: theirAvatarUri }} style={styles.headerAvatar} />
-          ) : (
-            <View style={styles.headerAvatarFallback}>
-              <Ionicons name="person" size={18} color="#BD632F" />
-            </View>
-          )}
           <Text style={styles.headerTitle} numberOfLines={1}>
             {counterpartyName}
           </Text>
@@ -830,7 +825,7 @@ export default function ChatScreen() {
                 disabled={consultationState !== 'active'}
                 onPress={() => handleStartCall('audio')}
               >
-                <Ionicons name="call" size={18} color="#FFFFFF" />
+                <SvgXml width={20} height={20} xml={chatPhoneSvg} />
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.headerActionBtn, consultationState !== 'active' && styles.headerActionBtnDisabled]}
@@ -838,12 +833,12 @@ export default function ChatScreen() {
                 disabled={consultationState !== 'active'}
                 onPress={() => handleStartCall('video')}
               >
-                <Ionicons name="videocam" size={18} color="#FFFFFF" />
+                <SvgXml width={22} height={18} xml={chatVideoSvg} />
               </TouchableOpacity>
             </>
           )}
           <TouchableOpacity style={styles.headerActionBtn} activeOpacity={0.7} onPress={() => setShowActionsMenu((prev) => !prev)}>
-            <Ionicons name="ellipsis-vertical" size={18} color="#FFFFFF" />
+            <Ionicons name="ellipsis-vertical" size={18} color="#141B34" />
           </TouchableOpacity>
         </View>
       </View>
@@ -1129,14 +1124,12 @@ export default function ChatScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FAF9F6' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 4, paddingBottom: 12, backgroundColor: '#BD632F' },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 4, paddingBottom: 12, backgroundColor: '#FAF9F6' },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, minWidth: 0, marginRight: 8 },
-  headerAvatar: { width: 34, height: 34, borderRadius: 17, backgroundColor: '#FFF2EB' },
-  headerAvatarFallback: { width: 34, height: 34, borderRadius: 17, backgroundColor: '#FFF2EB', justifyContent: 'center', alignItems: 'center' },
-  backBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
-  headerTitle: { fontSize: 18, fontWeight: '800', color: '#FFFFFF', flexShrink: 1 },
+  backBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: '#BD632F', justifyContent: 'center', alignItems: 'center' },
+  headerTitle: { fontSize: 18, fontWeight: '800', color: '#1A1817', flexShrink: 1 },
   headerActions: { flexDirection: 'row', gap: 4 },
-  headerActionBtn: { width: 36, height: 36, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
+  headerActionBtn: { width: 36, height: 36, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
   headerActionBtnDisabled: { opacity: 0.4 },
   upcomingBanner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#E6D5C3', marginHorizontal: 20, borderRadius: 14, padding: 12, marginBottom: 12 },
   upcomingBannerLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },

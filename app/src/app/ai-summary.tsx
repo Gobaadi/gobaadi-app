@@ -10,6 +10,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { SvgXml } from 'react-native-svg';
+
+import {
+  aiScanResultCowSvg,
+  backButtonSvg,
+  doctorNotificationSvg,
+} from '@/components/icons/svg-icon-sources';
 
 import { useGetDiagnosisByIdQuery } from '@/store/aiDiagnosisApi';
 import { getDiseaseInfo } from '@/constants/disease-info';
@@ -48,11 +55,11 @@ export default function AiSummaryScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity style={styles.circleButton} onPress={handleBack} activeOpacity={0.8}>
-            <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+            <SvgXml width={20} height={20} xml={backButtonSvg} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Summary</Text>
           <TouchableOpacity style={styles.circleButton} activeOpacity={0.8}>
-            <Ionicons name="notifications-outline" size={20} color="#FFFFFF" />
+            <SvgXml width={20} height={20} xml={doctorNotificationSvg} />
           </TouchableOpacity>
         </View>
         <View style={styles.centerState}>
@@ -71,11 +78,11 @@ export default function AiSummaryScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity style={styles.circleButton} onPress={handleBack} activeOpacity={0.8}>
-            <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+            <SvgXml width={20} height={20} xml={backButtonSvg} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Summary</Text>
           <TouchableOpacity style={styles.circleButton} activeOpacity={0.8}>
-            <Ionicons name="notifications-outline" size={20} color="#FFFFFF" />
+            <SvgXml width={20} height={20} xml={doctorNotificationSvg} />
           </TouchableOpacity>
         </View>
         <View style={styles.centerState}>
@@ -91,11 +98,11 @@ export default function AiSummaryScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity style={styles.circleButton} onPress={handleBack} activeOpacity={0.8}>
-            <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+            <SvgXml width={20} height={20} xml={backButtonSvg} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Summary</Text>
           <TouchableOpacity style={styles.circleButton} activeOpacity={0.8}>
-            <Ionicons name="notifications-outline" size={20} color="#FFFFFF" />
+            <SvgXml width={20} height={20} xml={doctorNotificationSvg} />
           </TouchableOpacity>
         </View>
         <View style={styles.centerState}>
@@ -120,13 +127,13 @@ export default function AiSummaryScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.circleButton} onPress={handleBack} activeOpacity={0.8}>
-          <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+          <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
 
         <Text style={styles.headerTitle}>Summary</Text>
 
         <TouchableOpacity style={styles.circleButton} activeOpacity={0.8}>
-          <Ionicons name="notifications-outline" size={20} color="#FFFFFF" />
+          <SvgXml width={20} height={20} xml={doctorNotificationSvg} />
         </TouchableOpacity>
       </View>
 
@@ -135,7 +142,7 @@ export default function AiSummaryScreen() {
         <View style={styles.diagnoseInfoBox}>
           <View style={styles.cowInfoRow}>
             <View style={styles.cowAvatarCircle}>
-              <Text style={styles.cowAvatarEmoji}>🐮</Text>
+              <SvgXml width={26} height={24} xml={aiScanResultCowSvg} />
             </View>
             <View style={styles.cowMetaCol}>
               <Text style={styles.cowTitle}>Cow</Text>
@@ -318,9 +325,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
-  },
-  cowAvatarEmoji: {
-    fontSize: 22,
   },
   cowMetaCol: {
     justifyContent: 'center',
