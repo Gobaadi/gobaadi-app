@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Patch,
   Post,
@@ -122,5 +123,13 @@ export class DashboardAdminAuthController {
       ...body,
       avatar,
     });
+  }
+
+  @Delete('profile')
+  @UseGuards(DashboardAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Delete own admin/super admin account' })
+  async deleteProfile(@CurrentDashboardUser() admin: DashboardUserPayload) {
+    return this.adminAuthService.deleteOwnAccount(admin.sub);
   }
 }

@@ -37,7 +37,7 @@ export function useSocialAuth(onSuccess: () => void) {
       clientId: FACEBOOK_APP_ID,
       scopes: ['public_profile', 'email'],
       responseType: AuthSession.ResponseType.Token,
-      redirectUri: AuthSession.makeRedirectUri({ scheme: 'gobadi' }),
+      redirectUri: AuthSession.makeRedirectUri(),
     },
     FACEBOOK_DISCOVERY,
   );

@@ -57,7 +57,7 @@ export default function EditProfileScreen() {
     ? { uri: pickedPhotoUri }
     : profile?.profilePhoto
       ? { uri: profile.profilePhoto }
-      : require('@/assets/images/user_profile.png');
+      : require('@/assets/images/user_profile.webp');
 
   const openPhotoPicker = () => {
     Alert.alert('Change Profile Photo', 'Choose an option', [

@@ -255,7 +255,7 @@ export default function ProfileScreen() {
                       ? { uri: userProfile.profilePhoto }
                       : userProfile?.avatar
                         ? { uri: userProfile.avatar }
-                        : require('@/assets/images/user_profile.png')
+                        : require('@/assets/images/user_profile.webp')
                   }
                   style={styles.farmerAvatar}
                   contentFit="cover"

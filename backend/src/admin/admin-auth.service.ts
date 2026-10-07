@@ -9,7 +9,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, IsNull } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
@@ -459,5 +459,22 @@ export class AdminAuthService {
 
     await this.adminRepository.save(admin);
     return this.toPublicAdmin(admin);
+  }
+
+  async deleteOwnAccount(
+    adminId: number,
+  ): Promise<{ success: boolean; message: string }> {
+    const admin = await this.adminRepository.findOneBy({ id: adminId });
+    if (!admin) {
+      throw new NotFoundException('Admin not found.');
+    }
+
+    await this.refreshTokenRepository.update(
+      { adminId, revokedAt: IsNull() },
+      { revokedAt: new Date() },
+    );
+    await this.adminRepository.remove(admin);
+
+    return { success: true, message: 'Account deleted successfully.' };
   }
 }
