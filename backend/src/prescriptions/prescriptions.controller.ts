@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  NotFoundException,
   Param,
   Post,
   Put,
@@ -26,13 +27,26 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { UserRole } from '../users/user.entity';
 import type { JwtPayload } from '../auth/jwt-payload.interface';
+import { DoctorsService } from '../doctors/doctors.service';
+import type { Doctor } from '../doctors/doctor.entity';
 
 @ApiTags('prescriptions')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('prescriptions')
 export class PrescriptionsController {
-  constructor(private readonly prescriptionsService: PrescriptionsService) {}
+  constructor(
+    private readonly prescriptionsService: PrescriptionsService,
+    private readonly doctorsService: DoctorsService,
+  ) {}
+
+  private async requireDoctor(userId: number): Promise<Doctor> {
+    const doctor = await this.doctorsService.getDoctorByUserId(userId);
+    if (!doctor) {
+      throw new NotFoundException('Doctor profile not found');
+    }
+    return doctor;
+  }
 
   @Post()
   @UseGuards(RolesGuard)
@@ -43,7 +57,8 @@ export class PrescriptionsController {
     @CurrentUser() user: JwtPayload,
     @Body() dto: CreatePrescriptionDto,
   ): Promise<Prescription> {
-    return this.prescriptionsService.create(user.sub, dto);
+    const doctor = await this.requireDoctor(user.sub);
+    return this.prescriptionsService.create(doctor.id, dto);
   }
 
   @Get('by-appointment/:appointmentId')
@@ -54,9 +69,11 @@ export class PrescriptionsController {
     @Param('appointmentId') appointmentId: string,
     @CurrentUser() user: JwtPayload,
   ): Promise<Prescription | null> {
+    const doctor = await this.doctorsService.getDoctorByUserId(user.sub);
     return this.prescriptionsService.findByAppointmentId(
       parseInt(appointmentId, 10),
       user.sub,
+      doctor?.id,
     );
   }
 
@@ -84,7 +101,8 @@ export class PrescriptionsController {
     @CurrentUser() user: JwtPayload,
     @Body() dto: UpdatePrescriptionDto,
   ): Promise<Prescription> {
-    return this.prescriptionsService.update(parseInt(id, 10), user.sub, dto);
+    const doctor = await this.requireDoctor(user.sub);
+    return this.prescriptionsService.update(parseInt(id, 10), doctor.id, dto);
   }
 
   @Post(':id/attachment')
@@ -98,9 +116,10 @@ export class PrescriptionsController {
     @CurrentUser() user: JwtPayload,
     @UploadedFile() file: Express.Multer.File,
   ): Promise<Prescription> {
+    const doctor = await this.requireDoctor(user.sub);
     return this.prescriptionsService.addAttachment(
       parseInt(id, 10),
-      user.sub,
+      doctor.id,
       file,
     );
   }
@@ -114,6 +133,7 @@ export class PrescriptionsController {
     @Param('id') id: string,
     @CurrentUser() user: JwtPayload,
   ): Promise<Prescription> {
-    return this.prescriptionsService.send(parseInt(id, 10), user.sub);
+    const doctor = await this.requireDoctor(user.sub);
+    return this.prescriptionsService.send(parseInt(id, 10), doctor.id);
   }
 }

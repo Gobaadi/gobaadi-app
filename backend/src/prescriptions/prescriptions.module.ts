@@ -7,12 +7,14 @@ import { PrescriptionsService } from './prescriptions.service';
 import { PrescriptionsController } from './prescriptions.controller';
 import { S3Module } from '../s3/s3.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { DoctorsModule } from '../doctors/doctors.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Prescription, Appointment, Animal]),
     S3Module,
     NotificationsModule,
+    DoctorsModule,
   ],
   controllers: [PrescriptionsController],
   providers: [PrescriptionsService],

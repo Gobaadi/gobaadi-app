@@ -43,8 +43,25 @@ export class DiscountsService {
   ): Promise<DoctorPatient[]> {
     const appointments = await this.appointmentRepository.find({
       where: { doctorId },
-      select: { animalId: true, patientId: true },
+      select: { animalId: true, patientId: true, startAt: true, id: true },
+      order: { startAt: 'DESC', id: 'DESC' },
     });
+
+    const toTime = (value: Date | null | undefined): number =>
+      value instanceof Date ? value.getTime() : 0;
+    const latestByAnimal = new Map<number, number>();
+    const latestByOwner = new Map<number, number>();
+    for (const appointment of appointments) {
+      const startAt = toTime(appointment.startAt);
+      if (typeof appointment.animalId === 'number') {
+        const previous = latestByAnimal.get(appointment.animalId) ?? 0;
+        latestByAnimal.set(appointment.animalId, Math.max(previous, startAt));
+      }
+      if (typeof appointment.patientId === 'number') {
+        const previous = latestByOwner.get(appointment.patientId) ?? 0;
+        latestByOwner.set(appointment.patientId, Math.max(previous, startAt));
+      }
+    }
 
     const appointmentAnimalIds = [
       ...new Set(
@@ -151,6 +168,21 @@ export class DiscountsService {
     if (discountGiven !== undefined) {
       patients = patients.filter((p) => !!p.discount === discountGiven);
     }
+
+    // Recent-first: newest appointment (startAt) first, deterministic on ties.
+    const recencyOf = (patient: DoctorPatient): number => {
+      const ownerTime =
+        typeof patient.userId === 'number'
+          ? (latestByOwner.get(patient.userId) ?? 0)
+          : 0;
+      if (patient.ownerOnly) return ownerTime;
+      const animalTime = latestByAnimal.get(patient.id) ?? 0;
+      return Math.max(animalTime, ownerTime);
+    };
+    patients = [...patients].sort((a, b) => {
+      const byRecency = recencyOf(b) - recencyOf(a);
+      return byRecency !== 0 ? byRecency : a.id - b.id;
+    });
 
     return patients;
   }

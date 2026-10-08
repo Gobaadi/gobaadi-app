@@ -12,7 +12,10 @@ import {
 } from './medical-event.entity';
 import { CreateMedicalEventDto } from './dto/create-medical-event.dto';
 import { UpdateMedicalEventDto } from './dto/update-medical-event.dto';
-import { Appointment } from '../appointments/appointment.entity';
+import {
+  Appointment,
+  AppointmentStatus,
+} from '../appointments/appointment.entity';
 import { Animal } from '../animals/animal.entity';
 import { PaginatedResult } from '../common/paginated-result.interface';
 export { MedicalEvent, MedicalEventType } from './medical-event.entity';
@@ -276,7 +279,21 @@ export class MedicalEventsService {
       );
     }
     event.status = MedicalEventStatus.COMPLETED;
-    return this.medicalEventRepository.save(event);
+    const saved = await this.medicalEventRepository.save(event);
+
+    const appointment = await this.appointmentRepository.findOneBy({
+      id: event.appointmentId,
+    });
+    if (
+      appointment &&
+      (appointment.status === AppointmentStatus.CONFIRMED ||
+        appointment.status === AppointmentStatus.RESCHEDULED)
+    ) {
+      appointment.status = AppointmentStatus.COMPLETED;
+      await this.appointmentRepository.save(appointment);
+    }
+
+    return saved;
   }
 
   private assertAppointmentParticipant(
