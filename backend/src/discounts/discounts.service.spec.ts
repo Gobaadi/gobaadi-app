@@ -9,6 +9,8 @@ import { UsersService } from '../users/users.service';
 interface AppointmentRow {
   animalId: number | null;
   patientId: number;
+  startAt?: Date;
+  id?: number;
 }
 
 interface AnimalRow {
@@ -243,5 +245,81 @@ describe('DiscountsService.getDoctorPatients', () => {
     const undiscounted = await service.getDoctorPatients(1, undefined, false);
     expect(undiscounted).toHaveLength(1);
     expect(undiscounted[0].ownerOnly).toBe(true);
+  });
+
+  it('asks the database for appointments newest-first', async () => {
+    const { service } = makeService();
+    const find = jest.spyOn(
+      (service as unknown as { appointmentRepository: { find: jest.Mock } })
+        .appointmentRepository,
+      'find',
+    );
+
+    await service.getDoctorPatients(1);
+
+    expect(find).toHaveBeenCalledWith(
+      expect.objectContaining({ order: { startAt: 'DESC', id: 'DESC' } }),
+    );
+    find.mockRestore();
+  });
+
+  it('orders patients by most recent appointment, newest first', async () => {
+    const { service, state } = makeService();
+    state.appointments = [
+      { animalId: 5, patientId: 7, startAt: new Date('2026-01-10') },
+      { animalId: 6, patientId: 8, startAt: new Date('2026-09-01') },
+    ];
+    state.animals = [animal(5, 7, 'Old cow'), animal(6, 8, 'New cow')];
+    state.users = { 7: owner(7, 'Karim'), 8: owner(8, 'Rahim') };
+
+    const patients = await service.getDoctorPatients(1);
+
+    expect(patients.map((p) => p.name)).toEqual(['New cow', 'Old cow']);
+  });
+
+  it('bumps every animal of an owner to the top on a new owner booking', async () => {
+    const { service, state } = makeService();
+    state.appointments = [
+      { animalId: 6, patientId: 8, startAt: new Date('2026-08-01') },
+      { animalId: null, patientId: 7, startAt: new Date('2026-10-01') },
+    ];
+    state.animals = [animal(5, 7, 'Pakhi'), animal(6, 8, 'Rani')];
+    state.users = { 7: owner(7, 'Rahim'), 8: owner(8, 'Karim') };
+
+    const patients = await service.getDoctorPatients(1);
+
+    expect(patients.map((p) => p.name)).toEqual(['Pakhi', 'Rani']);
+  });
+
+  it('interleaves owner-only rows by recency instead of appending them last', async () => {
+    const { service, state } = makeService();
+    state.appointments = [
+      { animalId: null, patientId: 7, startAt: new Date('2026-10-01') },
+      { animalId: 5, patientId: 8, startAt: new Date('2026-08-01') },
+    ];
+    state.animals = [animal(5, 8, 'Old cow')];
+    state.users = { 7: owner(7, 'Rahim'), 8: owner(8, 'Karim') };
+
+    const patients = await service.getDoctorPatients(1);
+
+    expect(patients.map((p) => p.name)).toEqual(['Rahim', 'Old cow']);
+    expect(patients[0].ownerOnly).toBe(true);
+  });
+
+  it('breaks recency ties by ascending id so the order stays stable', async () => {
+    const { service, state } = makeService();
+    const sameDay = new Date('2026-09-01');
+    state.appointments = [
+      { animalId: 6, patientId: 8, startAt: sameDay },
+      { animalId: 5, patientId: 7, startAt: sameDay },
+    ];
+    state.animals = [animal(5, 7, 'Pakhi'), animal(6, 8, 'Rani')];
+    state.users = { 7: owner(7, 'Karim'), 8: owner(8, 'Rahim') };
+
+    const first = await service.getDoctorPatients(1);
+    const second = await service.getDoctorPatients(1);
+
+    expect(first.map((p) => p.id)).toEqual([5, 6]);
+    expect(second.map((p) => p.id)).toEqual(first.map((p) => p.id));
   });
 });

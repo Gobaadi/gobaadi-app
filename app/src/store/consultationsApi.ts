@@ -1,5 +1,6 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
 import { baseQueryWithReauth } from './base-query-with-reauth';
+import { doctorPortalApi } from './doctorPortalApi';
 
 export interface Consultation {
   id: number;
@@ -50,6 +51,12 @@ export const consultationsApi = createApi({
       // getForAppointment is tagged by appointmentId, and other participants'
       // chats must refetch too when a session ends.
       invalidatesTags: () => [{ type: 'Consultation' }],
+      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          dispatch(doctorPortalApi.util.invalidateTags(['DoctorBookings']));
+        } catch {}
+      },
     }),
   }),
 });

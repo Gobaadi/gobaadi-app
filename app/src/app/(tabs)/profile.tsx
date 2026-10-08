@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import {
   StyleSheet,
   View,
@@ -15,7 +15,7 @@ import { SvgXml } from 'react-native-svg';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '@/store/authApi';
 import { useGetMyProfileQuery } from '@/store/usersApi';
-import { useGetMyDoctorProfileQuery, useGetDoctorBookingsQuery } from '@/store/doctorPortalApi';
+import { useGetMyDoctorProfileQuery, useGetDashboardStatsQuery } from '@/store/doctorPortalApi';
 import { useGetAnimalsQuery } from '@/store/animalsApi';
 import { useGetBalanceQuery } from '@/store/walletApi';
 import type { RootState, AppDispatch } from '@/store/store';
@@ -45,19 +45,13 @@ export default function ProfileScreen() {
 
   // Doctor data
   const { data: doctorProfile } = useGetMyDoctorProfileQuery(undefined, { skip: !isDoctor });
-  const { data: doctorBookings = [] } = useGetDoctorBookingsQuery(undefined, { skip: !isDoctor });
+  const { data: dashboardStats } = useGetDashboardStatsQuery(undefined, { skip: !isDoctor });
 
   // Wallet data
   const { data: walletBalance } = useGetBalanceQuery();
 
-  const uniquePatients = useMemo(() => {
-    const patientIds = new Set(doctorBookings.map((b) => b.patientId));
-    return patientIds.size;
-  }, [doctorBookings]);
-
-  const completedConsultations = useMemo(() => {
-    return doctorBookings.filter((b) => b.status === 'COMPLETED').length;
-  }, [doctorBookings]);
+  const uniquePatients = dashboardStats?.totalPatients ?? 0;
+  const completedConsultations = dashboardStats?.totalConsultations ?? 0;
 
   // Animal counts for farmer
   const cowCount = animals.filter((a) => a.breed?.toLowerCase().includes('cow') || !a.breed?.toLowerCase().includes('buffalo') && !a.breed?.toLowerCase().includes('goat')).length || 0;

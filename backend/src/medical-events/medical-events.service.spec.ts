@@ -1,8 +1,15 @@
 import { Repository, IsNull } from 'typeorm';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { MedicalEventsService } from './medical-events.service';
-import { MedicalEvent, MedicalEventType } from './medical-event.entity';
-import { Appointment } from '../appointments/appointment.entity';
+import {
+  MedicalEvent,
+  MedicalEventStatus,
+  MedicalEventType,
+} from './medical-event.entity';
+import {
+  Appointment,
+  AppointmentStatus,
+} from '../appointments/appointment.entity';
 import { Animal } from '../animals/animal.entity';
 
 const animalRow = (id: number, userId: number | null): Animal =>
@@ -19,6 +26,8 @@ const makeService = () => {
     total: 0,
     appointmentWhere: undefined as unknown,
     eventWhere: undefined as Record<string, unknown> | undefined,
+    event: null as MedicalEvent | null,
+    bookedAppointment: null as Appointment | null,
   };
 
   const medicalEventRepository = {
@@ -26,9 +35,13 @@ const makeService = () => {
       state.eventWhere = args.where;
       return Promise.resolve([state.events, state.total] as const);
     }),
+    findOneBy: jest.fn(() => Promise.resolve(state.event)),
+    save: jest.fn((event: MedicalEvent) => Promise.resolve(event)),
   };
   const appointmentRepository = {
     findOne: jest.fn(() => Promise.resolve(state.treatedAppointment)),
+    findOneBy: jest.fn(() => Promise.resolve(state.bookedAppointment)),
+    save: jest.fn((appointment: Appointment) => Promise.resolve(appointment)),
     find: jest.fn((args?: { where?: unknown }) => {
       state.appointmentWhere = args?.where;
       return Promise.resolve(state.animalOwnerAppointments);
@@ -44,7 +57,7 @@ const makeService = () => {
     animalRepository as unknown as Repository<Animal>,
   );
 
-  return { service, state, medicalEventRepository };
+  return { service, state, medicalEventRepository, appointmentRepository };
 };
 
 describe('MedicalEventsService.listByAnimal', () => {
@@ -135,5 +148,92 @@ describe('MedicalEventsService.listByAnimal', () => {
     expect(state.eventWhere).toMatchObject({
       type: MedicalEventType.VACCINATION,
     });
+  });
+});
+
+const consultationRow = (overrides: Partial<MedicalEvent> = {}): MedicalEvent =>
+  ({
+    id: 9,
+    appointmentId: 11,
+    patientId: 42,
+    doctorId: 3,
+    type: MedicalEventType.CONSULTATION,
+    status: MedicalEventStatus.ONGOING,
+    ...overrides,
+  }) as MedicalEvent;
+
+describe('MedicalEventsService.endForParticipant', () => {
+  it('marks the consultation completed and completes the appointment', async () => {
+    const { service, state, appointmentRepository } = makeService();
+    state.event = consultationRow();
+    state.bookedAppointment = {
+      id: 11,
+      status: AppointmentStatus.CONFIRMED,
+    } as Appointment;
+
+    const result = await service.endForParticipant(999, 3, 9);
+
+    expect(result.status).toBe(MedicalEventStatus.COMPLETED);
+    expect(state.bookedAppointment?.status).toBe(AppointmentStatus.COMPLETED);
+    expect(appointmentRepository.save).toHaveBeenCalledTimes(1);
+  });
+
+  it('completes a rescheduled appointment too', async () => {
+    const { service, state } = makeService();
+    state.event = consultationRow();
+    state.bookedAppointment = {
+      id: 11,
+      status: AppointmentStatus.RESCHEDULED,
+    } as Appointment;
+
+    await service.endForParticipant(42, null, 9);
+
+    expect(state.bookedAppointment?.status).toBe(AppointmentStatus.COMPLETED);
+  });
+
+  it('leaves a cancelled appointment untouched', async () => {
+    const { service, state, appointmentRepository } = makeService();
+    state.event = consultationRow();
+    state.bookedAppointment = {
+      id: 11,
+      status: AppointmentStatus.CANCELLED,
+    } as Appointment;
+
+    const result = await service.endForParticipant(42, null, 9);
+
+    expect(result.status).toBe(MedicalEventStatus.COMPLETED);
+    expect(state.bookedAppointment?.status).toBe(AppointmentStatus.CANCELLED);
+    expect(appointmentRepository.save).not.toHaveBeenCalled();
+  });
+
+  it('does not re-save an already completed appointment', async () => {
+    const { service, state, appointmentRepository } = makeService();
+    state.event = consultationRow({ status: MedicalEventStatus.COMPLETED });
+    state.bookedAppointment = {
+      id: 11,
+      status: AppointmentStatus.COMPLETED,
+    } as Appointment;
+
+    await service.endForParticipant(42, null, 9);
+
+    expect(appointmentRepository.save).not.toHaveBeenCalled();
+  });
+
+  it('404s for an unknown consultation', async () => {
+    const { service, state } = makeService();
+    state.event = null;
+
+    await expect(service.endForParticipant(42, null, 999)).rejects.toThrow(
+      NotFoundException,
+    );
+  });
+
+  it('403s for a non-participant', async () => {
+    const { service, state } = makeService();
+    state.event = consultationRow();
+
+    await expect(service.endForParticipant(1234, 77, 9)).rejects.toThrow(
+      ForbiddenException,
+    );
   });
 });

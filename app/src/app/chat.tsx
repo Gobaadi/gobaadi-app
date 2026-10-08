@@ -388,6 +388,7 @@ export default function ChatScreen() {
   const [inputText, setInputText] = useState('');
   const [remainingTime, setRemainingTime] = useState(CONSULTATION_DURATION_SECONDS);
   const flatListRef = useRef<FlatList>(null);
+  const atBottomRef = useRef(true);
   const [showActionsMenu, setShowActionsMenu] = useState(false);
   const [localMessages, setLocalMessages] = useState<ChatMessageUI[]>([]);
   // In-app full-screen viewer for chat images (never leaves to a browser).
@@ -557,9 +558,26 @@ export default function ChatScreen() {
   }, [consultationState, isViewerDoctor, router]);
 
   useEffect(() => {
-    if (apiMessages) {
-      setLocalMessages(apiMessages.map(toUIMessage));
-    }
+    if (!apiMessages) return;
+    setLocalMessages((prev) => {
+      // Build a map from the server response (authoritative, deduplicated by real ID).
+      const serverMap = new Map<string, ChatMessageUI>();
+      apiMessages.forEach((m) => serverMap.set(String(m.id), toUIMessage(m)));
+
+      // Preserve any in-flight optimistic bubbles (temp-* IDs) that haven't
+      // been confirmed by the server yet — they will be replaced once the
+      // mutation resolves and writes the real server ID into localMessages.
+      const optimistic = prev.filter((m) => m.id.startsWith('temp-'));
+
+      // Merge: server messages first (sorted by id), then any pending optimistic ones.
+      const merged = [...serverMap.values()].sort(
+        (a, b) => Number(a.id) - Number(b.id),
+      );
+      for (const opt of optimistic) {
+        if (!serverMap.has(opt.id)) merged.push(opt);
+      }
+      return merged;
+    });
   }, [apiMessages]);
 
   const handleStartConsultation = async (): Promise<'started' | 'ended' | 'failed'> => {
@@ -749,6 +767,7 @@ export default function ChatScreen() {
         file: { uri: file.uri, name: file.name, type: file.type },
       }).unwrap();
 
+      atBottomRef.current = true;
       setLocalMessages((prev) =>
         prev.some((m) => m.id === String(saved.id)) ? prev : [...prev, toUIMessage(saved)],
       );
@@ -775,6 +794,7 @@ export default function ChatScreen() {
       createdAt: new Date().toISOString(),
       status: 'SENT',
     };
+    atBottomRef.current = true;
     setLocalMessages((prev) => [...prev, optimistic]);
     try {
       const saved = await sendMessage({ text, conversationId }).unwrap();
@@ -792,8 +812,10 @@ export default function ChatScreen() {
   const renderMessage = ({ item, index }: { item: ChatMessageUI; index: number }) => {
     const isMine = isViewerDoctor ? item.sender === 'doctor' : item.sender === 'patient';
     const prev = index > 0 ? localMessages[index - 1] : undefined;
+    const itemKey = dhakaDayKey(item.createdAt);
+    const prevKey = prev ? dhakaDayKey(prev.createdAt) : undefined;
     const showDateSeparator =
-      !prev || dhakaDayKey(prev.createdAt) !== dhakaDayKey(item.createdAt);
+      itemKey !== 'Invalid Date' && (!prev || prevKey !== itemKey);
     const separator = showDateSeparator ? (
       <View style={styles.dateSeparator}>
         <Text style={styles.dateSeparatorText}>{formatDhakaDayLabel(item.createdAt)}</Text>
@@ -1048,7 +1070,19 @@ export default function ChatScreen() {
           contentContainerStyle={styles.messagesList}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
-          onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+          removeClippedSubviews={false}
+          scrollEventThrottle={16}
+          onScroll={(e) => {
+            const { layoutMeasurement, contentOffset, contentSize } = e.nativeEvent;
+            const distanceFromBottom =
+              contentSize.height - layoutMeasurement.height - contentOffset.y;
+            atBottomRef.current = distanceFromBottom < 80;
+          }}
+          onContentSizeChange={() => {
+            if (atBottomRef.current) {
+              flatListRef.current?.scrollToEnd({ animated: true });
+            }
+          }}
         />
       )}
 

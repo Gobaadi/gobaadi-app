@@ -36,6 +36,7 @@ import {
   parseSlotDateTime,
   subMinutes,
 } from './utils/slot-time.util';
+import { dhakaDayWindow } from './utils/dhaka-day-window.util';
 
 const RESCHEDULE_CANCEL_BUFFER_MS = 1 * 60 * 60 * 1000; // 1 hour
 
@@ -538,11 +539,7 @@ export class AppointmentsService {
       throw new ForbiddenException('No doctor profile linked to this account');
     }
 
-    const now = new Date();
-    const todayStart = new Date(now);
-    todayStart.setHours(0, 0, 0, 0);
-    const todayEnd = new Date(todayStart);
-    todayEnd.setDate(todayEnd.getDate() + 1);
+    const { start: todayStart, end: todayEnd } = dhakaDayWindow(new Date());
 
     const totalToday = await this.appointmentRepository
       .createQueryBuilder('a')

@@ -63,7 +63,9 @@ export default function DoctorHomeScreen() {
 
   const { data: doctorProfile } = useGetMyDoctorProfileQuery(undefined, { skip: !isDoctor });
   const { data: bookings = [], isLoading } = useGetDoctorBookingsQuery();
-  const { data: todayStats } = useGetTodayStatsQuery();
+  const { data: todayStats } = useGetTodayStatsQuery(undefined, {
+    refetchOnMountOrArgChange: true,
+  });
   const { data: conversations = [] } = useGetConversationsQuery();
   const [createConversation] = useCreateConversationMutation();
 
