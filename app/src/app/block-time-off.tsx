@@ -20,7 +20,13 @@ import {
   useCreateBlockTimeMutation,
   useRemoveBlockTimeMutation,
 } from '@/store/blockTimesApi';
-import type { BlockTime } from '@/store/blockTimesApi';
+import type {
+  BlockTime,
+  BlockTimeBilling,
+  BlockTimeConflict,
+  BlockTimeConflictPayload,
+  CreateBlockTimeResult,
+} from '@/store/blockTimesApi';
 
 const REASONS = ['Vacation', 'Sick Leave', 'Conference/Training', 'Emergency', 'Other'];
 
@@ -41,6 +47,22 @@ const REVERSE_REASON_MAP: Record<string, string> = {
 };
 
 type Step = 'form' | 'warning' | 'confirmation' | 'confirmed';
+
+function parseConflictPayload(err: any): BlockTimeConflictPayload | null {
+  const payload = err?.data?.conflicts
+    ? err.data
+    : err?.data?.message?.conflicts
+    ? err.data.message
+    : null;
+  return payload?.conflicts ? payload : null;
+}
+
+function errorMessage(err: any): string {
+  const raw = err?.data?.message;
+  if (typeof raw === 'string' && raw) return raw;
+  if (Array.isArray(raw) && raw.length > 0) return String(raw[0]);
+  return 'Something went wrong. Please try again.';
+}
 
 const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -103,12 +125,11 @@ function getBlockedDatesForMonth(blockTimes: BlockTime[], year: number, month: n
 export default function BlockTimeOffScreen() {
   const router = useRouter();
   const isDoctor = useRequireDoctor();
-  if (!isDoctor) return null;
 
   const { data: profile } = useGetMyDoctorProfileQuery();
   const doctorId = profile?.id;
 
-  const { data: blockTimes = [], isLoading: loadingBlocks } = useGetBlockTimesQuery(
+  const { data: blockTimes = [] } = useGetBlockTimesQuery(
     String(doctorId),
     { skip: !doctorId }
   );
@@ -123,8 +144,11 @@ export default function BlockTimeOffScreen() {
   const [note, setNote] = useState('');
   const [showStartCalendar, setShowStartCalendar] = useState(false);
   const [showEndCalendar, setShowEndCalendar] = useState(false);
-  const [conflicts, setConflicts] = useState<Array<{ id: number; startAt: string; patientId: number; price: number }>>([]);
+  const [conflicts, setConflicts] = useState<BlockTimeConflict[]>([]);
   const [estimatedDeduction, setEstimatedDeduction] = useState(0);
+  const [billing, setBilling] = useState<BlockTimeBilling | null>(null);
+  const [showBilling, setShowBilling] = useState(false);
+  const [blockResult, setBlockResult] = useState<CreateBlockTimeResult | null>(null);
 
   const today = useMemo(() => {
     const now = new Date();
@@ -175,6 +199,8 @@ export default function BlockTimeOffScreen() {
   );
 
   const canNavigatePrev = startCalMonth !== today.month || startCalYear !== today.year;
+
+  if (!isDoctor) return null;
 
   const renderCalendar = (
     calYear: number,
@@ -271,11 +297,18 @@ export default function BlockTimeOffScreen() {
     );
   };
 
+  const applyConflictPayload = (payload: BlockTimeConflictPayload) => {
+    setConflicts(payload.conflicts);
+    setEstimatedDeduction(payload.estimatedWalletDeduction ?? 0);
+    setBilling(payload.billing ?? null);
+    setShowBilling(false);
+  };
+
   const handleContinue = async () => {
     if (!doctorId || !startDate || !endDate || !selectedReason) return;
 
     try {
-      const result = await createBlockTime({
+      await createBlockTime({
         id: doctorId,
         data: {
           startDate,
@@ -285,12 +318,20 @@ export default function BlockTimeOffScreen() {
           force: false,
         },
       }).unwrap();
+      setBlockResult(null);
       setStep('confirmed');
     } catch (err: any) {
-      if (err?.status === 409 && err?.data?.conflicts) {
-        setConflicts(err.data.conflicts);
-        setEstimatedDeduction(err.data.estimatedWalletDeduction ?? 0);
+      const payload409 = parseConflictPayload(err);
+      if (err?.status === 409 && payload409) {
+        applyConflictPayload(payload409);
         setStep('warning');
+      } else if (err?.status === 409) {
+        Alert.alert(
+          'Conflicting appointments',
+          'Blocking this range will cancel existing appointments, but their details could not be loaded. Please try again.'
+        );
+      } else {
+        Alert.alert('Block time off', errorMessage(err));
       }
     }
   };
@@ -303,7 +344,7 @@ export default function BlockTimeOffScreen() {
     if (!doctorId || !startDate || !endDate || !selectedReason) return;
 
     try {
-      await createBlockTime({
+      const result = await createBlockTime({
         id: doctorId,
         data: {
           startDate,
@@ -313,11 +354,15 @@ export default function BlockTimeOffScreen() {
           force: true,
         },
       }).unwrap();
+      setBlockResult(result);
       setStep('confirmed');
     } catch (err: any) {
-      if (err?.status === 409 && err?.data?.conflicts) {
-        setConflicts(err.data.conflicts);
-        setEstimatedDeduction(err.data.estimatedWalletDeduction ?? 0);
+      const payload409 = parseConflictPayload(err);
+      if (err?.status === 409 && payload409) {
+        applyConflictPayload(payload409);
+        setStep('warning');
+      } else {
+        Alert.alert('Block time off', errorMessage(err));
       }
     }
   };
@@ -349,7 +394,7 @@ export default function BlockTimeOffScreen() {
           <View style={{ width: 40 }} />
         </View>
 
-        <View style={styles.confirmedContent}>
+        <ScrollView contentContainerStyle={styles.confirmedContent}>
           <View style={styles.confirmedCircle}>
             <Ionicons name="checkmark" size={48} color="#FFFFFF" />
           </View>
@@ -358,7 +403,48 @@ export default function BlockTimeOffScreen() {
             {formatDateDisplay(startDate)} - {formatDateDisplay(endDate)}
           </Text>
           <Text style={styles.confirmedSubtitle}>You will not receive any bookings during this time.</Text>
-        </View>
+
+          {blockResult?.billing && blockResult.billing.totalFee > 0 && (
+            <View style={styles.billingSection}>
+              <Text style={styles.billingTitle}>Billing Details</Text>
+              <View style={styles.billingRow}>
+                <Text style={styles.billingLabel}>Booking time off</Text>
+                <Text style={styles.billingValue}>
+                  {formatDateDisplay(startDate)} - {formatDateDisplay(endDate)}
+                </Text>
+              </View>
+              <View style={styles.billingRow}>
+                <Text style={styles.billingLabel}>Reason</Text>
+                <Text style={styles.billingValue}>{selectedReason}</Text>
+              </View>
+              <View style={styles.billingDivider} />
+              <Text style={styles.feesTitle}>Fees Details</Text>
+              <View style={styles.billingRow}>
+                <Text style={styles.billingLabel}>Appointments fee</Text>
+                <Text style={styles.billingValue}>
+                  ৳ {blockResult.billing.appointmentsFeeTotal.toFixed(2)}
+                </Text>
+              </View>
+              <View style={styles.billingRow}>
+                <Text style={styles.billingLabel}>Cancellation fee</Text>
+                <Text style={styles.billingValue}>
+                  ৳ {blockResult.billing.cancellationFeesTotal.toFixed(2)}
+                </Text>
+              </View>
+              <View style={styles.billingDivider} />
+              <View style={styles.billingRow}>
+                <Text style={styles.totalLabel}>Total Fees</Text>
+                <Text style={styles.totalValue}>
+                  ৳ {blockResult.billing.totalFee.toFixed(2)}
+                </Text>
+              </View>
+              <View style={styles.billingRow}>
+                <Text style={styles.billingLabel}>Status</Text>
+                <Text style={styles.paidText}>{blockResult.billing.status}</Text>
+              </View>
+            </View>
+          )}
+        </ScrollView>
 
         <View style={styles.bottomBar}>
           <TouchableOpacity
@@ -407,7 +493,12 @@ export default function BlockTimeOffScreen() {
                   <Ionicons name="paw" size={20} color="#BD632F" />
                 </View>
                 <View style={styles.cancelledInfo}>
-                  <Text style={styles.cancelledName}>Appointment #{appt.id}</Text>
+                  <Text style={styles.cancelledName}>
+                    {appt.animalName || `Appointment #${appt.id}`}
+                  </Text>
+                  {appt.ownerName ? (
+                    <Text style={styles.cancelledOwner}>Owner: {appt.ownerName}</Text>
+                  ) : null}
                   <Text style={styles.cancelledDateTime}>
                     <Ionicons name="calendar-outline" size={12} color="#9C9690" /> {dateStr} · {timeStr}
                   </Text>
@@ -422,13 +513,67 @@ export default function BlockTimeOffScreen() {
             );
           })}
 
-          <View style={styles.walletSection}>
+          <TouchableOpacity
+            style={styles.walletSection}
+            onPress={() => setShowBilling((v) => !v)}
+            activeOpacity={0.8}
+          >
             <View style={styles.walletHeader}>
               <Ionicons name="wallet-outline" size={18} color="#BD632F" />
               <Text style={styles.walletLabel}>Estimated Wallet Deduction</Text>
             </View>
-            <Text style={styles.walletAmount}>৳ {estimatedDeduction.toFixed(2)}</Text>
-          </View>
+            <View style={styles.walletRight}>
+              <Text style={styles.walletAmount}>৳ {estimatedDeduction.toFixed(2)}</Text>
+              <Ionicons
+                name={showBilling ? 'chevron-up' : 'chevron-down'}
+                size={16}
+                color="#7C7672"
+              />
+            </View>
+          </TouchableOpacity>
+
+          {showBilling && billing && (
+            <View style={styles.billingSection}>
+              <Text style={styles.billingTitle}>Billing Details</Text>
+              <View style={styles.billingRow}>
+                <Text style={styles.billingLabel}>Booking time off</Text>
+                <Text style={styles.billingValue}>
+                  {formatDateDisplay(startDate)} - {formatDateDisplay(endDate)}
+                </Text>
+              </View>
+              <View style={styles.billingRow}>
+                <Text style={styles.billingLabel}>Reason</Text>
+                <Text style={styles.billingValue}>{selectedReason}</Text>
+              </View>
+              <View style={styles.billingDivider} />
+              <Text style={styles.feesTitle}>Fees Details</Text>
+              <View style={styles.billingRow}>
+                <Text style={styles.billingLabel}>Appointments fee</Text>
+                <Text style={styles.billingValue}>
+                  ৳ {billing.appointmentsFeeTotal.toFixed(2)}
+                </Text>
+              </View>
+              <View style={styles.billingRow}>
+                <Text style={styles.billingLabel}>Cancellation fee</Text>
+                <Text style={styles.billingValue}>
+                  ৳ {billing.cancellationFeesTotal.toFixed(2)}
+                </Text>
+              </View>
+              <View style={styles.billingDivider} />
+              <View style={styles.billingRow}>
+                <Text style={styles.totalLabel}>Total Fees</Text>
+                <Text style={styles.totalValue}>৳ {billing.totalFee.toFixed(2)}</Text>
+              </View>
+              <View style={styles.billingRow}>
+                <Text style={styles.billingLabel}>Status</Text>
+                <Text
+                  style={billing.status === 'Paid' ? styles.paidText : styles.pendingText}
+                >
+                  {billing.status}
+                </Text>
+              </View>
+            </View>
+          )}
 
           <View style={styles.infoBanner}>
             <Ionicons name="information-circle-outline" size={20} color="#BD632F" />
@@ -682,23 +827,25 @@ const styles = StyleSheet.create({
   cancelledBadgeText: { fontSize: 11, fontWeight: '600', color: '#C62828' },
   walletSection: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 14, borderWidth: 1, borderColor: '#E6E1DC', padding: 14, marginBottom: 16 },
   walletHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  walletRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   walletLabel: { fontSize: 13, fontWeight: '600', color: '#1A1817' },
   walletAmount: { fontSize: 16, fontWeight: '800', color: '#BD632F' },
   billingSection: { backgroundColor: '#FFFFFF', borderRadius: 14, borderWidth: 1, borderColor: '#E6E1DC', padding: 16, marginBottom: 16 },
   billingTitle: { fontSize: 16, fontWeight: '700', color: '#1A1817', marginBottom: 12 },
-  billingRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6 },
-  billingLabel: { fontSize: 13, color: '#7C7672', fontWeight: '500' },
-  billingValue: { fontSize: 13, fontWeight: '600', color: '#1A1817' },
+  billingRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, paddingVertical: 6 },
+  billingLabel: { fontSize: 13, color: '#7C7672', fontWeight: '500', flexShrink: 1 },
+  billingValue: { fontSize: 13, fontWeight: '600', color: '#1A1817', flexShrink: 1, textAlign: 'right' },
   billingDivider: { height: 1, backgroundColor: '#E6E1DC', marginVertical: 8 },
   feesTitle: { fontSize: 14, fontWeight: '700', color: '#1A1817', marginBottom: 8 },
   totalLabel: { fontSize: 14, fontWeight: '700', color: '#1A1817' },
   totalValue: { fontSize: 14, fontWeight: '800', color: '#1A1817' },
   paidText: { fontSize: 13, fontWeight: '600', color: '#2E7D32' },
+  pendingText: { fontSize: 13, fontWeight: '600', color: '#BD632F' },
   confirmBtn: { backgroundColor: '#BD632F', height: 52, borderRadius: 26, justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
   confirmBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
   backBtnBottom: { height: 52, borderRadius: 26, borderWidth: 1.5, borderColor: '#E6E1DC', justifyContent: 'center', alignItems: 'center' },
   backBtnText: { color: '#7C7672', fontSize: 16, fontWeight: '600' },
-  confirmedContent: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 40 },
+  confirmedContent: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 40, paddingBottom: 120 },
   confirmedCircle: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#4CAF50', justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
   confirmedTitle: { fontSize: 20, fontWeight: '700', color: '#1A1817', marginBottom: 8 },
   confirmedDate: { fontSize: 14, fontWeight: '600', color: '#BD632F', marginBottom: 8 },

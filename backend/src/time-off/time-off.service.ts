@@ -1,10 +1,11 @@
 import {
-  ConflictException,
+  HttpException,
+  HttpStatus,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { DoctorTimeOff } from './doctor-time-off.entity';
 import { CreateTimeOffDto } from './dto/create-time-off.dto';
 import {
@@ -14,6 +15,8 @@ import {
 import { WalletService } from '../wallet/wallet.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/notification.entity';
+import { User } from '../users/user.entity';
+import { Animal } from '../animals/animal.entity';
 export { DoctorTimeOff } from './doctor-time-off.entity';
 
 /**
@@ -28,6 +31,18 @@ export interface TimeOffConflictInfo {
   startAt: Date;
   patientId: number;
   price: number;
+  animalId?: number | null;
+  paymentStatus?: string;
+  animalName?: string | null;
+  ownerName?: string | null;
+}
+
+export interface TimeOffBillingBreakdown {
+  appointmentsFeeTotal: number;
+  cancellationFeesTotal: number;
+  totalFee: number;
+  cancellationFeeRate: number;
+  status: 'Pending' | 'Paid';
 }
 
 export interface CreateTimeOffResult {
@@ -36,6 +51,7 @@ export interface CreateTimeOffResult {
   refundedTotal: number;
   cancellationFeesTotal: number;
   walletDeduction: number;
+  billing: TimeOffBillingBreakdown;
 }
 
 @Injectable()
@@ -45,6 +61,10 @@ export class TimeOffService {
     private readonly timeOffRepository: Repository<DoctorTimeOff>,
     @InjectRepository(Appointment)
     private readonly appointmentRepository: Repository<Appointment>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+    @InjectRepository(Animal)
+    private readonly animalRepository: Repository<Animal>,
     private readonly walletService: WalletService,
     private readonly notificationsService: NotificationsService,
   ) {}
@@ -66,19 +86,20 @@ export class TimeOffService {
       dto.startDate,
       dto.endDate,
     );
+    const conflictInfo = await this.toConflictInfo(conflicts);
 
     if (conflicts.length > 0 && !dto.force) {
-      throw new ConflictException({
-        message:
-          'Blocking this time will cancel existing appointments. Confirm with force=true to proceed.',
-        conflicts: conflicts.map((a) => ({
-          id: a.id,
-          startAt: a.startAt,
-          patientId: a.patientId,
-          price: a.price,
-        })),
-        estimatedWalletDeduction: this.estimateDeduction(conflicts),
-      });
+      throw new HttpException(
+        {
+          statusCode: 409,
+          message:
+            'Blocking this time will cancel existing appointments. Confirm with force=true to proceed.',
+          conflicts: conflictInfo,
+          estimatedWalletDeduction: this.estimateDeduction(conflicts),
+          billing: this.buildBilling(conflicts, 'Pending'),
+        },
+        HttpStatus.CONFLICT,
+      );
     }
 
     const timeOff = await this.timeOffRepository.save(
@@ -93,7 +114,6 @@ export class TimeOffService {
 
     let refundedTotal = 0;
     let cancellationFeesTotal = 0;
-    const cancelledInfo: TimeOffConflictInfo[] = [];
 
     for (const appointment of conflicts) {
       appointment.status = AppointmentStatus.CANCELLED;
@@ -133,21 +153,15 @@ export class TimeOffService {
         'Appointment',
         String(appointment.id),
       );
-
-      cancelledInfo.push({
-        id: appointment.id,
-        startAt: appointment.startAt,
-        patientId: appointment.patientId,
-        price: appointment.price,
-      });
     }
 
     return {
       timeOff,
-      cancelledAppointments: cancelledInfo,
+      cancelledAppointments: conflictInfo,
       refundedTotal,
       cancellationFeesTotal,
       walletDeduction: refundedTotal + cancellationFeesTotal,
+      billing: this.buildBilling(conflicts, 'Paid'),
     };
   }
 
@@ -183,6 +197,66 @@ export class TimeOffService {
       const refund = a.paymentStatus === 'paid' ? a.price : 0;
       return sum + fee + refund;
     }, 0);
+  }
+
+  private async toConflictInfo(
+    conflicts: Appointment[],
+  ): Promise<TimeOffConflictInfo[]> {
+    if (conflicts.length === 0) return [];
+
+    const animalIds = [
+      ...new Set(
+        conflicts
+          .map((a) => a.animalId)
+          .filter((id): id is number => typeof id === 'number'),
+      ),
+    ];
+    const ownerIds = [...new Set(conflicts.map((a) => a.patientId))];
+
+    const [animals, owners] = await Promise.all([
+      animalIds.length > 0
+        ? this.animalRepository.find({ where: { id: In(animalIds) } })
+        : Promise.resolve([]),
+      ownerIds.length > 0
+        ? this.userRepository.find({ where: { id: In(ownerIds) } })
+        : Promise.resolve([]),
+    ]);
+    const animalById = new Map(animals.map((an) => [an.id, an]));
+    const ownerById = new Map(owners.map((u) => [u.id, u]));
+
+    return conflicts.map((a) => ({
+      id: a.id,
+      startAt: a.startAt,
+      patientId: a.patientId,
+      price: a.price,
+      animalId: a.animalId ?? null,
+      paymentStatus: a.paymentStatus,
+      animalName: a.animalId
+        ? (animalById.get(a.animalId)?.name ?? null)
+        : null,
+      ownerName: ownerById.get(a.patientId)?.name ?? null,
+    }));
+  }
+
+  private buildBilling(
+    conflicts: Appointment[],
+    status: TimeOffBillingBreakdown['status'],
+  ): TimeOffBillingBreakdown {
+    const appointmentsFeeTotal = conflicts.reduce(
+      (sum, a) => sum + (a.paymentStatus === 'paid' ? a.price : 0),
+      0,
+    );
+    const cancellationFeesTotal = conflicts.reduce(
+      (sum, a) => sum + a.price * CANCELLATION_FEE_RATE,
+      0,
+    );
+    return {
+      appointmentsFeeTotal,
+      cancellationFeesTotal,
+      totalFee: appointmentsFeeTotal + cancellationFeesTotal,
+      cancellationFeeRate: CANCELLATION_FEE_RATE,
+      status,
+    };
   }
 
   /**

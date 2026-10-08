@@ -225,7 +225,11 @@ export default function ChatScreen() {
   const patientName = params.patientName || 'Patient';
   const animalImage = params.animalImage || '';
   const animalId = params.animalId || '';
-  const appointmentId = params.appointmentId || '';
+  const rawAppointmentId = params.appointmentId || '';
+  const paramAppointmentId =
+    rawAppointmentId && rawAppointmentId !== '0' && rawAppointmentId !== 'undefined'
+      ? rawAppointmentId
+      : '';
 
   const viewerRole = useSelector((state: RootState) => state.auth.user?.role);
   const isViewerDoctor = viewerRole === 'doctor';
@@ -247,6 +251,40 @@ export default function ChatScreen() {
   const { data: myBookings } = useGetDoctorBookingsQuery(undefined, {
     skip: isViewerDoctor,
   });
+  const { data: doctorAppointments } = useGetDoctorAppointmentsQuery(
+    { limit: 100 },
+    { skip: !isViewerDoctor },
+  );
+  const resolvedAppointmentId = useMemo(() => {
+    if (paramAppointmentId) return paramAppointmentId;
+    if (!isViewerDoctor) return '';
+    const list = doctorAppointments?.data;
+    if (!list?.length) return '';
+    const conversation = conversations?.find(
+      (c) => String(c.id) === String(conversationId),
+    );
+    const byPatient = conversation
+      ? list.filter((a) => String(a.patientId) === String(conversation.patientId))
+      : [];
+    const pool =
+      byPatient.length > 0
+        ? byPatient
+        : animalId
+          ? list.filter((a) => String(a.animalId) === String(animalId))
+          : [];
+    if (!pool.length) return '';
+    const now = new Date().getTime();
+    const sorted = [...pool].sort((a, b) => {
+      const aUp = new Date(a.startAt).getTime() >= now;
+      const bUp = new Date(b.startAt).getTime() >= now;
+      if (aUp !== bUp) return aUp ? -1 : 1;
+      return aUp
+        ? new Date(a.startAt).getTime() - new Date(b.startAt).getTime()
+        : new Date(b.startAt).getTime() - new Date(a.startAt).getTime();
+    });
+    return String(sorted[0].id);
+  }, [paramAppointmentId, isViewerDoctor, conversations, conversationId, doctorAppointments, animalId]);
+  const appointmentId = paramAppointmentId || resolvedAppointmentId;
   const resolvedTheirAvatar = useMemo(() => {
     if (isViewerDoctor) {
       return (
@@ -280,10 +318,6 @@ export default function ChatScreen() {
   // Prescriptions need animalId, but most navigators only pass appointmentId —
   // resolve it (plus the appointment time / animal name for the session card)
   // from the doctor's appointment list.
-  const { data: doctorAppointments } = useGetDoctorAppointmentsQuery(
-    { limit: 100 },
-    { skip: !isViewerDoctor },
-  );
   const appointmentInfo = useMemo(
     () => doctorAppointments?.data?.find((a) => String(a.id) === appointmentId),
     [doctorAppointments, appointmentId],
@@ -350,6 +384,7 @@ export default function ChatScreen() {
   const { ringCall } = useCallSignalingContext();
 
   const [consultationState, setConsultationState] = useState<ConsultationState>('idle');
+  const [startingCall, setStartingCall] = useState(false);
   const [inputText, setInputText] = useState('');
   const [remainingTime, setRemainingTime] = useState(CONSULTATION_DURATION_SECONDS);
   const flatListRef = useRef<FlatList>(null);
@@ -364,6 +399,17 @@ export default function ChatScreen() {
   const [savingImage, setSavingImage] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
   const savedFlashTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const consultationFinished =
+    consultationState === 'ended' || consultationState === 'prescription_sent';
+  const appointmentCallStatusOk =
+    !appointmentInfo ||
+    appointmentInfo.status === 'CONFIRMED' ||
+    appointmentInfo.status === 'RESCHEDULED';
+  const canCall =
+    !consultationFinished &&
+    appointmentCallStatusOk &&
+    (consultationState === 'active' || !!appointmentInfo);
 
   useEffect(() => {
     return () => {
@@ -516,13 +562,13 @@ export default function ChatScreen() {
     }
   }, [apiMessages]);
 
-  const handleStartConsultation = async () => {
+  const handleStartConsultation = async (): Promise<'started' | 'ended' | 'failed'> => {
     if (!appointmentId) {
       Alert.alert(
         'Error',
         'Missing appointment information. Please open this chat from the appointment.',
       );
-      return;
+      return 'failed';
     }
     try {
       const started = await startConsultation(appointmentId).unwrap();
@@ -531,15 +577,17 @@ export default function ChatScreen() {
         // One consultation per appointment — a finished session stays ended.
         setRemainingTime(0);
         setConsultationState('ended');
-        return;
+        return 'ended';
       }
       setConsultationState('active');
       const elapsed = Math.floor(
         (Date.now() - new Date(consultationStartedAt(started)).getTime()) / 1000,
       );
       setRemainingTime(Math.max(0, CONSULTATION_DURATION_SECONDS - elapsed));
+      return 'started';
     } catch {
       Alert.alert('Error', 'Failed to start consultation. Please try again.');
+      return 'failed';
     }
   };
 
@@ -614,6 +662,33 @@ export default function ChatScreen() {
         animalId: resolvedAnimalId,
       },
     });
+  };
+
+  const handleCallPress = async (callType: CallType) => {
+    if (startingCall) return;
+    if (!appointmentId || !canCall) {
+      Alert.alert(
+        'Calls unavailable',
+        consultationFinished
+          ? 'Consultation has ended — only messaging is available.'
+          : 'Calling is not available for this appointment right now.',
+      );
+      return;
+    }
+    setStartingCall(true);
+    try {
+      if (consultationState === 'idle') {
+        const result = await handleStartConsultation();
+        if (result === 'ended') {
+          Alert.alert('Calls unavailable', 'Consultation has ended — only messaging is available.');
+          return;
+        }
+        if (result === 'failed') return;
+      }
+      handleStartCall(callType);
+    } finally {
+      setStartingCall(false);
+    }
   };
 
   const textInputRef = useRef<TextInput>(null);
@@ -817,21 +892,21 @@ export default function ChatScreen() {
           </Text>
         </View>
         <View style={styles.headerActions}>
-          {isViewerDoctor && !!appointmentId && (
+          {isViewerDoctor && !!appointmentId && canCall && (
             <>
               <TouchableOpacity
-                style={[styles.headerActionBtn, consultationState !== 'active' && styles.headerActionBtnDisabled]}
+                style={[styles.headerActionBtn, startingCall && styles.headerActionBtnDisabled]}
                 activeOpacity={0.7}
-                disabled={consultationState !== 'active'}
-                onPress={() => handleStartCall('audio')}
+                disabled={startingCall}
+                onPress={() => handleCallPress('audio')}
               >
                 <SvgXml width={20} height={20} xml={chatPhoneSvg} />
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.headerActionBtn, consultationState !== 'active' && styles.headerActionBtnDisabled]}
+                style={[styles.headerActionBtn, startingCall && styles.headerActionBtnDisabled]}
                 activeOpacity={0.7}
-                disabled={consultationState !== 'active'}
-                onPress={() => handleStartCall('video')}
+                disabled={startingCall}
+                onPress={() => handleCallPress('video')}
               >
                 <SvgXml width={22} height={18} xml={chatVideoSvg} />
               </TouchableOpacity>
@@ -972,6 +1047,7 @@ export default function ChatScreen() {
           renderItem={renderMessage}
           contentContainerStyle={styles.messagesList}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
           onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
         />
       )}
@@ -1003,7 +1079,7 @@ export default function ChatScreen() {
 
       {(!!conversationId || consultationState !== 'idle') && (
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior="padding"
           keyboardVerticalOffset={0}
         >
           <View style={styles.inputBar}>
@@ -1247,7 +1323,7 @@ const styles = StyleSheet.create({
   startConsultationBtn: { backgroundColor: '#BD632F', borderRadius: 14, paddingVertical: 16, alignItems: 'center' },
   startConsultationBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
   inputBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 28, borderWidth: 1, borderColor: '#E6E1DC', height: 52, paddingHorizontal: 16, marginHorizontal: 20, marginBottom: 12, gap: 8 },
-  textInput: { flex: 1, fontSize: 14, color: '#1A1817', height: '100%' },
+  textInput: { flex: 1, fontSize: 14, color: '#1A1817', height: '100%', textAlignVertical: 'center' },
   plusBtn: { width: 32, height: 32, borderRadius: 16, borderWidth: 1.5, borderColor: '#BD632F', justifyContent: 'center', alignItems: 'center' },
   micBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#BD632F', justifyContent: 'center', alignItems: 'center' },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
