@@ -16,6 +16,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     let statusCode = HttpStatus.INTERNAL_SERVER_ERROR;
     let message = 'Internal server error';
     let errorSources: { path: string; message: string }[] = [];
+    const extraFields: Record<string, unknown> = {};
 
     if (exception instanceof HttpException) {
       statusCode = exception.getStatus();
@@ -24,17 +25,27 @@ export class HttpExceptionFilter implements ExceptionFilter {
       if (typeof exceptionResponse === 'string') {
         message = exceptionResponse;
       } else if (typeof exceptionResponse === 'object') {
-        const resp = exceptionResponse as any;
-        message = resp.message || exception.message;
+        const resp = exceptionResponse as Record<string, unknown>;
+        message =
+          typeof resp.message === 'string' && resp.message
+            ? resp.message
+            : exception.message;
 
         // Handle class-validator errors (array of messages)
         if (Array.isArray(resp.message)) {
-          errorSources = resp.message.map((msg: string) => ({
+          errorSources = (resp.message as string[]).map((msg) => ({
             path: 'body',
             message: msg,
           }));
           message = 'Validation failed';
         }
+
+        const extra: Record<string, unknown> = { ...resp };
+        delete extra.message;
+        delete extra.error;
+        delete extra.statusCode;
+        delete extra.success;
+        Object.assign(extraFields, extra);
       }
     } else if (exception instanceof Error) {
       message = exception.message;
@@ -44,6 +55,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
       success: false,
       statusCode,
       message,
+      ...extraFields,
       ...(errorSources.length > 0 ? { errorSources } : {}),
     });
   }

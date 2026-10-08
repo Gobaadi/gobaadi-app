@@ -1882,12 +1882,16 @@ This part covers the doctor profile/availability APIs, appointment booking and c
 ```
 
 ### `POST /doctors/:id/block-times`
-- **Purpose:** Block a date range; without `force` a conflict returns 409 with the conflict list and fee estimate, with `force: true` conflicting appointments are cancelled, patients refunded and the doctor wallet debited.
+- **Purpose:** Block a date range; without `force` a conflict returns 409 with the conflict list, fee estimate and billing breakdown, with `force: true` conflicting appointments are cancelled, patients refunded and the doctor wallet debited.
 - **Auth:** JWT + Role(DOCTOR)
 - **Request:** `id (path param)`, `startDate (string)`, `endDate (string)`, `reason (string)`, `note (string)`, `force (boolean)`
 - **Response `201`:**
 ```json
-{ "timeOff": { "id": 2, "doctorId": 1, "startDate": "2026-08-24", "endDate": "2026-08-26", "reason": "vacation", "note": "..." }, "cancelledAppointments": [{ "id": 12, "startAt": "2026-08-24T10:00:00.000Z", "patientId": 2, "price": 500 }], "refundedTotal": 500, "cancellationFeesTotal": 50, "walletDeduction": 550 }
+{ "timeOff": { "id": 2, "doctorId": 1, "startDate": "2026-08-24", "endDate": "2026-08-26", "reason": "vacation", "note": "..." }, "cancelledAppointments": [{ "id": 12, "startAt": "2026-08-24T10:00:00.000Z", "patientId": 2, "price": 500, "animalId": 7, "paymentStatus": "paid", "animalName": "Clara", "ownerName": "Sophia Rodriguez" }], "refundedTotal": 500, "cancellationFeesTotal": 50, "walletDeduction": 550, "billing": { "appointmentsFeeTotal": 500, "cancellationFeesTotal": 50, "totalFee": 550, "cancellationFeeRate": 0.1, "status": "Paid" } }
+```
+- **Response `409` (conflicts and `force` not set):**
+```json
+{ "success": false, "statusCode": 409, "message": "Blocking this time will cancel existing appointments. Confirm with force=true to proceed.", "conflicts": [{ "id": 12, "startAt": "2026-08-24T10:00:00.000Z", "patientId": 2, "price": 500, "animalId": 7, "paymentStatus": "paid", "animalName": "Clara", "ownerName": "Sophia Rodriguez" }], "estimatedWalletDeduction": 550, "billing": { "appointmentsFeeTotal": 500, "cancellationFeesTotal": 50, "totalFee": 550, "cancellationFeeRate": 0.1, "status": "Pending" } }
 ```
 
 ### `DELETE /doctors/:id/block-times/:blockId`
