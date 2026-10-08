@@ -120,7 +120,7 @@ export default function DoctorHomeScreen() {
         {/* Orange Header Banner - Inside ScrollView so it scrolls, or keep it fixed? Figma usually scrolls everything. Let's make it fixed at top and scroll below it for a cooler effect, or just scroll together. We'll scroll together. */}
         <View style={styles.headerBannerWrapper}>
           <ImageBackground
-            source={require('@/assets/Top BG.png')}
+            source={require('@/assets/Top BG.webp')}
             style={[styles.headerBanner, { paddingTop: insets.top + 20 }]}
             resizeMode="cover"
           >

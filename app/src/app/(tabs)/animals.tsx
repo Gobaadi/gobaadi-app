@@ -24,8 +24,8 @@ type Chip = 'All' | 'Calf' | 'Bull';
 
 function animalImage(breed: string) {
   return breed.toLowerCase().includes('buffalo')
-    ? require('@/assets/images/albino_buffalo.png')
-    : require('@/assets/images/bangladeshi_cow.png');
+    ? require('@/assets/images/albino_buffalo.webp')
+    : require('@/assets/images/bangladeshi_cow.webp');
 }
 
 function isCalf(a: Animal): boolean {
