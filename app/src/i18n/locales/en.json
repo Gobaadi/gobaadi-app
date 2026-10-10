@@ -365,7 +365,9 @@
       "permissionTitle": "Permission needed",
       "photoTooLarge": "Photo is too large — please pick a smaller image.",
       "tryAgain": "Please try again.",
-      "uploadFailed": "Upload failed"
+      "uploadFailed": "Upload failed",
+      "symptomsRequiredMsg": "Please describe the symptoms before analyzing.",
+      "symptomsRequiredTitle": "Symptoms required"
     },
     "analyzeNow": "Analyze Now",
     "retake": "Retake",

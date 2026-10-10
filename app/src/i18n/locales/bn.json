@@ -365,7 +365,9 @@
       "permissionTitle": "অনুমতি প্রয়োজন",
       "photoTooLarge": "ছবিটি খুব বড় — অনুগ্রহ করে ছোট ছবি বেছে নিন।",
       "tryAgain": "অনুগ্রহ করে আবার চেষ্টা করুন।",
-      "uploadFailed": "আপলোড ব্যর্থ"
+      "uploadFailed": "আপলোড ব্যর্থ",
+      "symptomsRequiredMsg": "বিশ্লেষণের আগে উপসর্গগুলো বর্ণনা করুন।",
+      "symptomsRequiredTitle": "উপসর্গ আবশ্যক"
     },
     "analyzeNow": "এখনই বিশ্লেষণ করুন",
     "retake": "আবার তুলুন",
