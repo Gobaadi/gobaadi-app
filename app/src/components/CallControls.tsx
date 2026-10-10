@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 interface CallControlsProps {
   isMuted: boolean;
@@ -63,6 +64,7 @@ export function CallControls({
   hideVideoControls = false,
   quickActions,
 }: CallControlsProps) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
 
   return (
@@ -77,7 +79,7 @@ export function CallControls({
       {!hideVideoControls && (
         <ControlButton
           icon={isCameraOff ? 'videocam-off' : 'videocam'}
-          label={isCameraOff ? 'Camera off' : 'Camera'}
+          label={isCameraOff ? t('callControls.cameraOff') : t('callControls.camera')}
           active={!isCameraOff}
           onPress={onToggleCamera}
         />
@@ -85,14 +87,14 @@ export function CallControls({
 
       <ControlButton
         icon={isMuted ? 'mic-off' : 'mic'}
-        label={isMuted ? 'Muted' : 'Mic'}
+        label={isMuted ? t('callControls.muted') : t('callControls.mic')}
         active={!isMuted}
         onPress={onToggleMute}
       />
 
       <ControlButton
         icon={isSpeakerOn ? 'volume-high' : 'ear'}
-        label={isSpeakerOn ? 'Speaker' : 'Earpiece'}
+        label={isSpeakerOn ? t('callControls.speaker') : t('callControls.earpiece')}
         active={isSpeakerOn}
         onPress={onToggleSpeaker}
       />
@@ -100,7 +102,7 @@ export function CallControls({
       {!hideVideoControls && (
         <ControlButton
           icon="camera-reverse"
-          label="Flip"
+          label={t('callControls.flip')}
           active
           disabled={isCameraOff}
           onPress={onSwitchCamera}
@@ -111,13 +113,13 @@ export function CallControls({
         style={styles.endCallWrap}
         onPress={onEndCall}
         activeOpacity={0.8}
-        accessibilityLabel="End call"
+        accessibilityLabel={t('callControls.endCall')}
         accessibilityRole="button"
       >
         <View style={styles.endCallBtn}>
           <Ionicons name="call" size={30} color="#FFFFFF" />
         </View>
-        <Text style={styles.btnLabel}>End</Text>
+        <Text style={styles.btnLabel}>{t('callControls.end')}</Text>
       </TouchableOpacity>
       </View>
     </View>

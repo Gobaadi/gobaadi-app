@@ -8,6 +8,7 @@ import {
 } from 'expo-router/ui';
 import { SymbolView } from 'expo-symbols';
 import { Pressable, useColorScheme, View, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { ExternalLink } from './external-link';
 import { ThemedText } from './themed-text';
@@ -16,25 +17,27 @@ import { ThemedView } from './themed-view';
 import { Colors, MaxContentWidth, Spacing } from '@/constants/theme';
 
 export default function AppTabs() {
+  const { t } = useTranslation();
+
   return (
     <Tabs>
       <TabSlot style={{ height: '100%' }} />
       <TabList asChild>
         <CustomTabList>
           <TabTrigger name="index" href="/(tabs)" asChild>
-            <TabButton>Home</TabButton>
+            <TabButton>{t('tabBarWeb.home')}</TabButton>
           </TabTrigger>
           <TabTrigger name="animals" href="/(tabs)/animals" asChild>
-            <TabButton>Animals</TabButton>
+            <TabButton>{t('tabBarWeb.animals')}</TabButton>
           </TabTrigger>
           <TabTrigger name="doctors" href="/(tabs)/doctors" asChild>
-            <TabButton>Doctors</TabButton>
+            <TabButton>{t('tabBarWeb.doctors')}</TabButton>
           </TabTrigger>
           <TabTrigger name="market" href="/(tabs)/market" asChild>
-            <TabButton>Market</TabButton>
+            <TabButton>{t('tabBarWeb.market')}</TabButton>
           </TabTrigger>
           <TabTrigger name="profile" href="/(tabs)/profile" asChild>
-            <TabButton>Profile</TabButton>
+            <TabButton>{t('tabBarWeb.profile')}</TabButton>
           </TabTrigger>
         </CustomTabList>
       </TabList>
@@ -59,12 +62,13 @@ export function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps
 export function CustomTabList(props: TabListProps) {
   const scheme = useColorScheme();
   const colors = Colors[scheme === 'unspecified' ? 'light' : scheme];
+  const { t } = useTranslation();
 
   return (
     <View {...props} style={styles.tabListContainer}>
       <ThemedView type="backgroundElement" style={styles.innerContainer}>
         <ThemedText type="smallBold" style={styles.brandText}>
-          Gobadi Web Portal
+          {t('tabBarWeb.brand')}
         </ThemedText>
 
         {props.children}

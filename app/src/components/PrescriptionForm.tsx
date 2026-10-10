@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from '@/hooks/use-translation';
 
 export interface MedicationEntry {
   id: string;
@@ -39,9 +40,11 @@ function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
 
-function getMedicationSummary(med: MedicationEntry): string {
+type T = ReturnType<typeof useTranslation>['t'];
+
+function getMedicationSummary(med: MedicationEntry, t: T): string {
   if (!med.dosage || !med.frequency || !med.duration) return '';
-  return `${med.dosage} ${med.dosageUnit} · ${med.frequency} · ${med.duration} ${med.durationUnit}`;
+  return `${med.dosage} ${t(`prescription.units.${med.dosageUnit}`)} · ${med.frequency} · ${med.duration} ${t(`prescription.units.${med.durationUnit}`)}`;
 }
 
 function createEmptyMedication(): MedicationEntry {
@@ -61,6 +64,7 @@ function createEmptyMedication(): MedicationEntry {
 }
 
 export default function PrescriptionForm({ onSend, sending }: PrescriptionFormProps) {
+  const { t } = useTranslation();
   const [medications, setMedications] = useState<MedicationEntry[]>([
     createEmptyMedication(),
   ]);
@@ -105,7 +109,7 @@ export default function PrescriptionForm({ onSend, sending }: PrescriptionFormPr
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.sheetTitle}>Prescription</Text>
+        <Text style={styles.sheetTitle}>{t('prescription.title')}</Text>
 
         {medications.map((med, index) => (
           <View key={med.id} style={styles.medicationBlock}>
@@ -113,7 +117,7 @@ export default function PrescriptionForm({ onSend, sending }: PrescriptionFormPr
               <View style={styles.medBadge}>
                 <Text style={styles.medBadgeText}>{index + 1}</Text>
               </View>
-              <Text style={styles.medNameLabel}>Medication Name*</Text>
+              <Text style={styles.medNameLabel}>{t('prescription.medicationName')}</Text>
               {med.name ? (
                 <View style={styles.medActions}>
                   <TouchableOpacity
@@ -140,7 +144,7 @@ export default function PrescriptionForm({ onSend, sending }: PrescriptionFormPr
 
             <TextInput
               style={styles.medNameInput}
-              placeholder="Type medication name"
+              placeholder={t('prescription.namePlaceholder')}
               placeholderTextColor="#A39E99"
               value={med.name}
               onChangeText={(text) => updateMedication(med.id, { name: text })}
@@ -148,7 +152,7 @@ export default function PrescriptionForm({ onSend, sending }: PrescriptionFormPr
 
             {med.isExpanded && med.name && (
               <View style={styles.medFields}>
-                <Text style={styles.fieldLabel}>Dosage</Text>
+                <Text style={styles.fieldLabel}>{t('prescription.dosage')}</Text>
                 <View style={styles.dosageRow}>
                   <TextInput
                     style={[styles.fieldInput, styles.dosageInput]}
@@ -159,14 +163,14 @@ export default function PrescriptionForm({ onSend, sending }: PrescriptionFormPr
                     onChangeText={(text) => updateMedication(med.id, { dosage: text })}
                   />
                   <View style={styles.unitDropdown}>
-                    <Text style={styles.unitText}>{med.dosageUnit}</Text>
+                    <Text style={styles.unitText}>{t(`prescription.units.${med.dosageUnit}`)}</Text>
                     <Ionicons name="chevron-down" size={14} color="#9C9690" />
                   </View>
                 </View>
 
                 <View style={styles.halfRow}>
                   <View style={styles.halfField}>
-                    <Text style={styles.fieldLabel}>Frequency</Text>
+                    <Text style={styles.fieldLabel}>{t('prescription.frequency')}</Text>
                     <TextInput
                       style={styles.fieldInput}
                       placeholder="0"
@@ -176,7 +180,7 @@ export default function PrescriptionForm({ onSend, sending }: PrescriptionFormPr
                     />
                   </View>
                   <View style={styles.halfField}>
-                    <Text style={styles.fieldLabel}>Duration</Text>
+                    <Text style={styles.fieldLabel}>{t('prescription.duration')}</Text>
                     <View style={styles.durationRow}>
                       <TextInput
                         style={[styles.fieldInput, styles.durationInput]}
@@ -186,12 +190,12 @@ export default function PrescriptionForm({ onSend, sending }: PrescriptionFormPr
                         value={med.duration}
                         onChangeText={(text) => updateMedication(med.id, { duration: text })}
                       />
-                      <Text style={styles.durationUnit}>{med.durationUnit}</Text>
+                      <Text style={styles.durationUnit}>{t(`prescription.units.${med.durationUnit}`)}</Text>
                     </View>
                   </View>
                 </View>
 
-                <Text style={styles.fieldLabel}>Quantity</Text>
+                <Text style={styles.fieldLabel}>{t('prescription.quantity')}</Text>
                 <View style={styles.quantityRow}>
                   <TextInput
                     style={[styles.fieldInput, styles.quantityInput]}
@@ -201,38 +205,42 @@ export default function PrescriptionForm({ onSend, sending }: PrescriptionFormPr
                     value={med.quantity}
                     onChangeText={(text) => updateMedication(med.id, { quantity: text })}
                   />
-                  <Text style={styles.quantityUnit}>{med.quantityUnit}</Text>
+                  <Text style={styles.quantityUnit}>{t(`prescription.units.${med.quantityUnit}`)}</Text>
                 </View>
 
-                {getMedicationSummary(med) ? (
-                  <Text style={styles.medSummary}>Summary: {getMedicationSummary(med)}</Text>
+                {getMedicationSummary(med, t) ? (
+                  <Text style={styles.medSummary}>
+                    {t('prescription.summary', { summary: getMedicationSummary(med, t) })}
+                  </Text>
                 ) : (
-                  <Text style={styles.noSummary}>No Summary yet</Text>
+                  <Text style={styles.noSummary}>{t('prescription.noSummary')}</Text>
                 )}
               </View>
             )}
 
-            {!med.isExpanded && med.name && getMedicationSummary(med) && (
-              <Text style={styles.medCollapsedSummary}>Summary: {getMedicationSummary(med)}</Text>
+            {!med.isExpanded && med.name && getMedicationSummary(med, t) && (
+              <Text style={styles.medCollapsedSummary}>
+                {t('prescription.summary', { summary: getMedicationSummary(med, t) })}
+              </Text>
             )}
           </View>
         ))}
 
         {medications.length > 0 &&
           !medications.some((m) => m.isExpanded && m.name) && (
-            <Text style={styles.noSummaryCenter}>No Summary yet</Text>
+            <Text style={styles.noSummaryCenter}>{t('prescription.noSummary')}</Text>
           )}
 
         <TouchableOpacity style={styles.addMedBtn} onPress={addMedication} activeOpacity={0.8}>
           <Ionicons name="add" size={18} color="#BD632F" />
-          <Text style={styles.addMedBtnText}>Add medication</Text>
+          <Text style={styles.addMedBtnText}>{t('prescription.addMedication')}</Text>
         </TouchableOpacity>
 
-        <Text style={styles.sectionLabel}>Instructions</Text>
+        <Text style={styles.sectionLabel}>{t('prescription.instructions')}</Text>
         <View style={styles.textareaContainer}>
           <TextInput
             style={styles.textarea}
-            placeholder="Add instructions for the farmer..."
+            placeholder={t('prescription.instructionsPlaceholder')}
             placeholderTextColor="#A39E99"
             value={instructions}
             onChangeText={setInstructions}
@@ -243,11 +251,11 @@ export default function PrescriptionForm({ onSend, sending }: PrescriptionFormPr
           <Text style={styles.charCount}>{instructions.length}/500</Text>
         </View>
 
-        <Text style={styles.sectionLabel}>Medication note (optional)</Text>
+        <Text style={styles.sectionLabel}>{t('prescription.noteLabel')}</Text>
         <View style={styles.textareaContainer}>
           <TextInput
             style={styles.textarea}
-            placeholder="Add instructions for the farmer..."
+            placeholder={t('prescription.instructionsPlaceholder')}
             placeholderTextColor="#A39E99"
             value={note}
             onChangeText={setNote}
@@ -269,7 +277,7 @@ export default function PrescriptionForm({ onSend, sending }: PrescriptionFormPr
           {sending ? (
             <ActivityIndicator size="small" color="#FFFFFF" />
           ) : (
-            <Text style={styles.sendBtnText}>Send Prescription</Text>
+            <Text style={styles.sendBtnText}>{t('prescription.send')}</Text>
           )}
         </TouchableOpacity>
       </View>

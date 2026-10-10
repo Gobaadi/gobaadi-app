@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
+import { useTranslation } from '@/hooks/use-translation';
 
 export type IdentifierMode = 'phone' | 'email';
 
@@ -10,6 +11,7 @@ interface IdentifierTabsProps {
 
 /** Phone Number / Email tab switcher shared by the login and signup screens. */
 export function IdentifierTabs({ mode, onChange }: IdentifierTabsProps) {
+  const { t } = useTranslation();
   return (
     <View style={styles.container}>
       <TouchableOpacity
@@ -17,14 +19,14 @@ export function IdentifierTabs({ mode, onChange }: IdentifierTabsProps) {
         onPress={() => onChange('phone')}
         activeOpacity={0.7}
       >
-        <Text style={[styles.tabText, mode === 'phone' && styles.tabTextActive]}>Phone Number</Text>
+        <Text style={[styles.tabText, mode === 'phone' && styles.tabTextActive]}>{t('common.identifierTabs.phone')}</Text>
       </TouchableOpacity>
       <TouchableOpacity
         style={[styles.tab, mode === 'email' && styles.tabActive]}
         onPress={() => onChange('email')}
         activeOpacity={0.7}
       >
-        <Text style={[styles.tabText, mode === 'email' && styles.tabTextActive]}>Email</Text>
+        <Text style={[styles.tabText, mode === 'email' && styles.tabTextActive]}>{t('common.identifierTabs.email')}</Text>
       </TouchableOpacity>
     </View>
   );

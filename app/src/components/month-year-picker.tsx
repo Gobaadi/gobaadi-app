@@ -7,6 +7,7 @@ import {
   ScrollView,
   StyleSheet,
 } from 'react-native';
+import { useTranslation } from '@/hooks/use-translation';
 
 export interface MonthYearPickerModalProps {
   visible: boolean;
@@ -33,6 +34,7 @@ export function MonthYearPickerModal({
   onConfirm,
   onClose,
 }: MonthYearPickerModalProps) {
+  const { t } = useTranslation();
   const [selectedMonth, setSelectedMonth] = useState(month ?? months[0] ?? '');
   const [selectedYear, setSelectedYear] = useState(year ?? years[0] ?? '');
 
@@ -72,7 +74,7 @@ export function MonthYearPickerModal({
 
           <View style={styles.columns}>
             <View style={styles.column}>
-              <Text style={styles.columnLabel}>Month</Text>
+              <Text style={styles.columnLabel}>{t('monthPicker.month')}</Text>
               <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
                 {months.map((m) =>
                   renderOption(m, m === selectedMonth, () => setSelectedMonth(m)),
@@ -81,7 +83,7 @@ export function MonthYearPickerModal({
             </View>
 
             <View style={styles.column}>
-              <Text style={styles.columnLabel}>Year</Text>
+              <Text style={styles.columnLabel}>{t('monthPicker.year')}</Text>
               <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
                 {years.map((y) =>
                   renderOption(y, y === selectedYear, () => setSelectedYear(y)),
@@ -92,14 +94,14 @@ export function MonthYearPickerModal({
 
           <View style={styles.actions}>
             <TouchableOpacity style={styles.cancelBtn} onPress={onClose} activeOpacity={0.7}>
-              <Text style={styles.cancelText}>Cancel</Text>
+              <Text style={styles.cancelText}>{t('monthPicker.cancel')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.confirmBtn}
               onPress={() => onConfirm(selectedMonth, selectedYear)}
               activeOpacity={0.7}
             >
-              <Text style={styles.confirmText}>Confirm</Text>
+              <Text style={styles.confirmText}>{t('monthPicker.confirm')}</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
