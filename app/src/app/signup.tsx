@@ -31,7 +31,7 @@ export default function SignUpScreen() {
   const [authMethod, setAuthMethod] = useState<'phone' | 'email'>('phone');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState<'doctor' | 'user' | ''>('');
+  const [role, setRole] = useState<'doctor' | 'farmer' | ''>('');
   const [bvcNumber, setBvcNumber] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -57,8 +57,8 @@ export default function SignUpScreen() {
   const openRoleDropdown = () => {
     setModalData({
       title: t('signup.roleSelect'),
-      options: ['doctor', 'user'],
-      onSelect: (val) => setRole(val === 'doctor' ? 'doctor' : 'user'),
+      options: ['doctor', 'farmer'],
+      onSelect: (val) => setRole(val === 'doctor' ? 'doctor' : 'farmer'),
     });
     setModalVisible(true);
   };
@@ -147,7 +147,7 @@ export default function SignUpScreen() {
         name: name.trim(),
         identifier,
         password,
-        role: role || 'user',
+        role: role || 'farmer',
         bvcRegistrationNumber: undefined,
       };
       console.log('[1/8][FE signup.tsx] Register submit →', payload);
@@ -168,237 +168,237 @@ export default function SignUpScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-          {/* Logo Section */}
-          <View>
-            <Image
-              source={require('@/assets/images/splash-icon.png')}
-              style={styles.logo}
-              resizeMode="contain"
+        {/* Logo Section */}
+        <View>
+          <Image
+            source={require('@/assets/images/splash-icon.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+        </View>
+
+        {/* Heading */}
+        <Text style={styles.title}>{t('signup.title')}</Text>
+
+        {/* Toggle Phone/Email */}
+        <View style={styles.toggleContainer}>
+          <TouchableOpacity
+            style={[styles.toggleButton, authMethod === 'phone' && styles.toggleButtonActive]}
+            onPress={() => setAuthMethod('phone')}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.toggleText, authMethod === 'phone' && styles.toggleTextActive]}>{t('common.identifierTabs.phone')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.toggleButton, authMethod === 'email' && styles.toggleButtonActive]}
+            onPress={() => setAuthMethod('email')}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.toggleText, authMethod === 'email' && styles.toggleTextActive]}>{t('common.identifierTabs.email')}</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Form Fields */}
+        <View style={styles.form}>
+          {/* Name */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>{t('signup.nameLabel')}</Text>
+            <TextInput
+              style={styles.input}
+              value={name}
+              onChangeText={setName}
+              placeholder={t('signup.namePlaceholder')}
+              placeholderTextColor="#A39E99"
             />
           </View>
 
-          {/* Heading */}
-          <Text style={styles.title}>{t('signup.title')}</Text>
-
-          {/* Toggle Phone/Email */}
-          <View style={styles.toggleContainer}>
-            <TouchableOpacity
-              style={[styles.toggleButton, authMethod === 'phone' && styles.toggleButtonActive]}
-              onPress={() => setAuthMethod('phone')}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.toggleText, authMethod === 'phone' && styles.toggleTextActive]}>{t('common.identifierTabs.phone')}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.toggleButton, authMethod === 'email' && styles.toggleButtonActive]}
-              onPress={() => setAuthMethod('email')}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.toggleText, authMethod === 'email' && styles.toggleTextActive]}>{t('common.identifierTabs.email')}</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Form Fields */}
-          <View style={styles.form}>
-            {/* Name */}
+          {/* Phone Number or Email */}
+          {authMethod === 'phone' ? (
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>{t('signup.nameLabel')}</Text>
+              <Text style={styles.label}>{t('signup.phoneLabel')}</Text>
+              <View style={styles.phoneInputContainer}>
+                <TouchableOpacity style={styles.countryCodeSelector} activeOpacity={0.7}>
+                  <Text style={styles.flagEmoji}>🇧🇩</Text>
+                  <Text style={styles.countryCode}>+88</Text>
+                  <Text style={styles.dropdownArrow}>▼</Text>
+                </TouchableOpacity>
+                <View style={styles.phoneDivider} />
+                <TextInput
+                  style={styles.phoneInput}
+                  value={phone}
+                  onChangeText={setPhone}
+                  placeholder={t('signup.phonePlaceholder')}
+                  placeholderTextColor="#A39E99"
+                  keyboardType="phone-pad"
+                  maxLength={11}
+                />
+              </View>
+            </View>
+          ) : (
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>{t('signup.emailLabel')}</Text>
               <TextInput
                 style={styles.input}
-                value={name}
-                onChangeText={setName}
-                placeholder={t('signup.namePlaceholder')}
+                value={email}
+                onChangeText={setEmail}
+                placeholder={t('signup.emailPlaceholder')}
                 placeholderTextColor="#A39E99"
+                keyboardType="email-address"
+                autoCapitalize="none"
               />
             </View>
+          )}
 
-            {/* Phone Number or Email */}
-            {authMethod === 'phone' ? (
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>{t('signup.phoneLabel')}</Text>
-                <View style={styles.phoneInputContainer}>
-                  <TouchableOpacity style={styles.countryCodeSelector} activeOpacity={0.7}>
-                    <Text style={styles.flagEmoji}>🇧🇩</Text>
-                    <Text style={styles.countryCode}>+88</Text>
-                    <Text style={styles.dropdownArrow}>▼</Text>
-                  </TouchableOpacity>
-                  <View style={styles.phoneDivider} />
-                  <TextInput
-                    style={styles.phoneInput}
-                    value={phone}
-                    onChangeText={setPhone}
-                    placeholder={t('signup.phonePlaceholder')}
-                    placeholderTextColor="#A39E99"
-                    keyboardType="phone-pad"
-                    maxLength={11}
-                  />
-                </View>
-              </View>
-            ) : (
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>{t('signup.emailLabel')}</Text>
-                <TextInput
-                  style={styles.input}
-                  value={email}
-                  onChangeText={setEmail}
-                  placeholder={t('signup.emailPlaceholder')}
-                  placeholderTextColor="#A39E99"
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                />
-              </View>
-            )}
-
-            {/* Role */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>{t('signup.roleLabel')}</Text>
-              <TouchableOpacity style={styles.dropdownSelector} activeOpacity={0.7} onPress={openRoleDropdown}>
-                <Text style={[styles.dropdownValue, !role && styles.placeholderText]}>
-                  {role === 'doctor' ? t('signup.roleDoctor') : role === 'user' ? t('signup.roleUser') : t('signup.roleSelect')}
-                </Text>
-                <Text style={styles.dropdownArrow}>▼</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Password Fields - Only for Users */}
-            {role !== 'doctor' && (
-              <>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>{t('signup.passwordLabel')}</Text>
-                  <View style={styles.passwordContainer}>
-                    <TextInput
-                      style={styles.passwordInput}
-                      value={password}
-                      onChangeText={setPassword}
-                      placeholder="••••••••••••"
-                      placeholderTextColor="#A39E99"
-                      secureTextEntry={!showPassword}
-                    />
-                    <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon} activeOpacity={0.7}>
-                      <Ionicons name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color="#A39E99" />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>{t('signup.confirmLabel')}</Text>
-                  <View style={styles.passwordContainer}>
-                    <TextInput
-                      style={styles.passwordInput}
-                      value={confirmPassword}
-                      onChangeText={setConfirmPassword}
-                      placeholder="••••••••••••"
-                      placeholderTextColor="#A39E99"
-                      secureTextEntry={!showConfirmPassword}
-                    />
-                    <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeIcon} activeOpacity={0.7}>
-                      <Ionicons name={showConfirmPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color="#A39E99" />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </>
-            )}
-
-            {/* BVC Registration Number - Only for Doctors */}
-            {role === 'doctor' && (
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>{t('signup.bvcLabel')}</Text>
-                <TextInput
-                  style={styles.input}
-                  value={bvcNumber}
-                  onChangeText={setBvcNumber}
-                  placeholder={t('signup.bvcPlaceholder')}
-                  placeholderTextColor="#A39E99"
-                  keyboardType="number-pad"
-                />
-              </View>
-            )}
-
-            {/* Terms of Service */}
-            <TouchableOpacity
-              style={styles.termsRow}
-              activeOpacity={0.7}
-              onPress={() => setAgreedToTerms(!agreedToTerms)}
-            >
-              <View style={[styles.checkbox, agreedToTerms && styles.checkboxChecked]}>
-                {agreedToTerms && <Ionicons name="checkmark" size={14} color="#FFFFFF" />}
-              </View>
-              <Text style={styles.termsText}>
-                {t('signup.termsPrefix')}{' '}
-                <Text
-                  style={styles.termsHighlight}
-                  onPress={() => router.push('/terms-of-service')}
-                >
-                  {t('signup.termsLink')}
-                </Text>
+          {/* Role */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>{t('signup.roleLabel')}</Text>
+            <TouchableOpacity style={styles.dropdownSelector} activeOpacity={0.7} onPress={openRoleDropdown}>
+              <Text style={[styles.dropdownValue, !role && styles.placeholderText]}>
+                {role === 'doctor' ? t('signup.roleDoctor') : role === 'farmer' ? t('signup.roleUser') : t('signup.roleSelect')}
               </Text>
+              <Text style={styles.dropdownArrow}>▼</Text>
             </TouchableOpacity>
-
-            {/* Error message */}
-            {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
-
-            {/* Continue/Sign Up Button */}
-            <TouchableOpacity
-              style={[styles.signUpButton, isLoading && styles.signUpButtonDisabled]}
-              activeOpacity={0.8}
-              onPress={handleSignUp}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Text style={styles.signUpButtonText}>{role === 'doctor' ? t('signup.submitDoctor') : t('signup.submitUser')}</Text>
-              )}
-            </TouchableOpacity>
-
-            {/* Divider */}
-            <View style={styles.dividerContainer}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>{t('signup.divider')}</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            {/* Social login error */}
-            {socialError ? <Text style={styles.errorText}>{socialError}</Text> : null}
-
-            {/* Social Logins */}
-            <View style={styles.socialButtonsContainer}>
-              <TouchableOpacity
-                style={styles.socialButton}
-                activeOpacity={0.7}
-                onPress={withGoogle}
-                disabled={isSocialLoading}
-              >
-                <Image
-                  source={require('@/assets/images/Google.png')}
-                  style={styles.socialIcon}
-                  resizeMode="contain"
-                />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.socialButton}
-                activeOpacity={0.7}
-                onPress={withFacebook}
-                disabled={isSocialLoading}
-              >
-                <Image
-                  source={require('@/assets/images/selfhst_facebook.png')}
-                  style={styles.socialIcon}
-                  resizeMode="contain"
-                />
-              </TouchableOpacity>
-            </View>
-
-            {/* Footer */}
-            <View style={styles.footerContainer}>
-              <Text style={styles.footerText}>
-                {t('signup.footerPrefix')}{' '}
-                <Text style={styles.signInLink} onPress={() => router.push('/login')}>
-                  {t('signup.signIn')}
-                </Text>
-              </Text>
-            </View>
           </View>
+
+          {/* Password Fields - Only for Users */}
+          {role !== 'doctor' && (
+            <>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>{t('signup.passwordLabel')}</Text>
+                <View style={styles.passwordContainer}>
+                  <TextInput
+                    style={styles.passwordInput}
+                    value={password}
+                    onChangeText={setPassword}
+                    placeholder="••••••••••••"
+                    placeholderTextColor="#A39E99"
+                    secureTextEntry={!showPassword}
+                  />
+                  <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon} activeOpacity={0.7}>
+                    <Ionicons name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color="#A39E99" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>{t('signup.confirmLabel')}</Text>
+                <View style={styles.passwordContainer}>
+                  <TextInput
+                    style={styles.passwordInput}
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    placeholder="••••••••••••"
+                    placeholderTextColor="#A39E99"
+                    secureTextEntry={!showConfirmPassword}
+                  />
+                  <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeIcon} activeOpacity={0.7}>
+                    <Ionicons name={showConfirmPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color="#A39E99" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </>
+          )}
+
+          {/* BVC Registration Number - Only for Doctors */}
+          {role === 'doctor' && (
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>{t('signup.bvcLabel')}</Text>
+              <TextInput
+                style={styles.input}
+                value={bvcNumber}
+                onChangeText={setBvcNumber}
+                placeholder={t('signup.bvcPlaceholder')}
+                placeholderTextColor="#A39E99"
+                keyboardType="number-pad"
+              />
+            </View>
+          )}
+
+          {/* Terms of Service */}
+          <TouchableOpacity
+            style={styles.termsRow}
+            activeOpacity={0.7}
+            onPress={() => setAgreedToTerms(!agreedToTerms)}
+          >
+            <View style={[styles.checkbox, agreedToTerms && styles.checkboxChecked]}>
+              {agreedToTerms && <Ionicons name="checkmark" size={14} color="#FFFFFF" />}
+            </View>
+            <Text style={styles.termsText}>
+              {t('signup.termsPrefix')}{' '}
+              <Text
+                style={styles.termsHighlight}
+                onPress={() => router.push('/terms-of-service')}
+              >
+                {t('signup.termsLink')}
+              </Text>
+            </Text>
+          </TouchableOpacity>
+
+          {/* Error message */}
+          {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+
+          {/* Continue/Sign Up Button */}
+          <TouchableOpacity
+            style={[styles.signUpButton, isLoading && styles.signUpButtonDisabled]}
+            activeOpacity={0.8}
+            onPress={handleSignUp}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.signUpButtonText}>{role === 'doctor' ? t('signup.submitDoctor') : t('signup.submitUser')}</Text>
+            )}
+          </TouchableOpacity>
+
+          {/* Divider */}
+          <View style={styles.dividerContainer}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>{t('signup.divider')}</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          {/* Social login error */}
+          {socialError ? <Text style={styles.errorText}>{socialError}</Text> : null}
+
+          {/* Social Logins */}
+          <View style={styles.socialButtonsContainer}>
+            <TouchableOpacity
+              style={styles.socialButton}
+              activeOpacity={0.7}
+              onPress={withGoogle}
+              disabled={isSocialLoading}
+            >
+              <Image
+                source={require('@/assets/images/Google.png')}
+                style={styles.socialIcon}
+                resizeMode="contain"
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.socialButton}
+              activeOpacity={0.7}
+              onPress={withFacebook}
+              disabled={isSocialLoading}
+            >
+              <Image
+                source={require('@/assets/images/selfhst_facebook.png')}
+                style={styles.socialIcon}
+                resizeMode="contain"
+              />
+            </TouchableOpacity>
+          </View>
+
+          {/* Footer */}
+          <View style={styles.footerContainer}>
+            <Text style={styles.footerText}>
+              {t('signup.footerPrefix')}{' '}
+              <Text style={styles.signInLink} onPress={() => router.push('/login')}>
+                {t('signup.signIn')}
+              </Text>
+            </Text>
+          </View>
+        </View>
       </KeyboardAwareScrollView>
 
       {/* Role Selector Dropdown Modal */}

@@ -16,7 +16,6 @@ import { useGetDoctorByIdQuery, useGetSlotsQuery, useBookSlotMutation } from '@/
 import { useRescheduleBookingMutation } from '@/store/doctorPortalApi';
 import { useGetAnimalsQuery } from '@/store/animalsApi';
 import { DoctorAvatar } from '@/components/doctor-avatar';
-import { DEFAULT_DOCTOR_LOCATION } from '@/utils/location';
 import { SvgXml } from 'react-native-svg';
 
 import {
@@ -97,7 +96,7 @@ export default function BookSlotScreen() {
       id: String(doctorData.id),
       name: doctorData.name,
       specialty: doctorData.specialty,
-      location: doctorData.location || DEFAULT_DOCTOR_LOCATION,
+      location: doctorData.location || '',
       rating: doctorData.rating || 4.8,
       reviews: 124,
       avatar: doctorData.avatar ?? '',
@@ -234,10 +233,12 @@ export default function BookSlotScreen() {
               <View style={styles.doctorDetails}>
                 <Text style={styles.doctorName}>{doctor.name}</Text>
                 <Text style={styles.doctorSpecialty}>{doctor.specialty}</Text>
-                <View style={styles.ratingLocationRow}>
-                  <SvgXml width={11} height={11} xml={doctorCardLocationSvg} style={styles.locationPin} />
-                  <Text style={styles.locationTextMeta}>{doctor.location}</Text>
-                </View>
+                {doctor.location ? (
+                  <View style={styles.ratingLocationRow}>
+                    <SvgXml width={11} height={11} xml={doctorCardLocationSvg} style={styles.locationPin} />
+                    <Text style={styles.locationTextMeta}>{doctor.location}</Text>
+                  </View>
+                ) : null}
                 <View style={styles.ratingRow}>
                   <SvgXml width={11} height={11} xml={doctorCardStarSvg} style={styles.starIcon} />
                   <Text style={styles.ratingValue}>{doctor.rating}</Text>

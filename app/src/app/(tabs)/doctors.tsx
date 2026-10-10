@@ -51,7 +51,7 @@ import { useLocation } from '@/hooks/use-location';
 import LocationBottomSheet from '@/components/LocationBottomSheet';
 import { DoctorAvatar } from '@/components/doctor-avatar';
 import { useTranslation } from '@/hooks/use-translation';
-import { DEFAULT_DOCTOR_LOCATION, matchesDoctorLocation } from '@/utils/location';
+import { matchesDoctorLocation } from '@/utils/location';
 
 interface Category {
   id: string;
@@ -274,7 +274,7 @@ export default function DoctorsScreen() {
         id: d.id,
         name: d.name,
         specialty: d.specialty,
-        location: d.location || DEFAULT_DOCTOR_LOCATION,
+        location: d.location || '',
         rating: d.rating || 4.8,
         reviews: 124,
         avatar: d.avatar ?? '',
@@ -541,10 +541,12 @@ export default function DoctorsScreen() {
 
                 <Text style={styles.doctorSpecialty}>{doc.specialty}</Text>
 
-                <View style={styles.ratingLocationRow}>
-                  <SvgXml width={12} height={12} xml={doctorCardLocationSvg} style={{ marginRight: 4 }} />
-                  <Text style={styles.locationTextMeta}>{doc.location}</Text>
-                </View>
+                {doc.location ? (
+                  <View style={styles.ratingLocationRow}>
+                    <SvgXml width={12} height={12} xml={doctorCardLocationSvg} style={{ marginRight: 4 }} />
+                    <Text style={styles.locationTextMeta}>{doc.location}</Text>
+                  </View>
+                ) : null}
 
                 <View style={styles.ratingRow}>
                   <SvgXml width={12} height={12} xml={doctorCardStarSvg} style={{ marginRight: 4 }} />
