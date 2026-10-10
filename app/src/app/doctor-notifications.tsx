@@ -18,6 +18,7 @@ import {
 import { useGetNotificationsQuery, useMarkNotificationReadMutation } from '@/store/notificationsApi';
 import type { Notification } from '@/store/notificationsApi';
 import { formatNotificationTime } from '@/utils/date';
+import { useTranslation } from 'react-i18next';
 
 type FilterTab = 'all' | 'appointments' | 'patients' | 'messages';
 
@@ -57,6 +58,7 @@ function isThisWeek(dateStr: string): boolean {
 
 export default function DoctorNotificationsScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<FilterTab>('all');
   const { data: notifications, isLoading, isError } = useGetNotificationsQuery();
   const [markAsRead] = useMarkNotificationReadMutation();
@@ -122,7 +124,7 @@ export default function DoctorNotificationsScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
             <SvgXml width={20} height={20} xml={backButtonSvg} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Notifications</Text>
+          <Text style={styles.headerTitle}>{t('doctorNotifications.title')}</Text>
           <TouchableOpacity style={styles.settingsBtn} onPress={() => router.push('/doctor-notification-preferences')} activeOpacity={0.7}>
             <SvgXml width={20} height={20} xml={notificationSettingsSvg} />
           </TouchableOpacity>
@@ -141,14 +143,14 @@ export default function DoctorNotificationsScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
             <SvgXml width={20} height={20} xml={backButtonSvg} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Notifications</Text>
+          <Text style={styles.headerTitle}>{t('doctorNotifications.title')}</Text>
           <TouchableOpacity style={styles.settingsBtn} onPress={() => router.push('/doctor-notification-preferences')} activeOpacity={0.7}>
             <SvgXml width={20} height={20} xml={notificationSettingsSvg} />
           </TouchableOpacity>
         </View>
         <View style={styles.loadingContainer}>
           <Ionicons name="cloud-offline-outline" size={48} color="#9C9690" />
-          <Text style={styles.errorText}>Failed to load notifications</Text>
+          <Text style={styles.errorText}>{t('doctorNotifications.loadFailed')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -162,7 +164,7 @@ export default function DoctorNotificationsScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
           <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Notifications</Text>
+        <Text style={styles.headerTitle}>{t('doctorNotifications.title')}</Text>
         <TouchableOpacity style={styles.settingsBtn} onPress={() => router.push('/doctor-notification-preferences')} activeOpacity={0.7}>
           <SvgXml width={20} height={20} xml={notificationSettingsSvg} />
         </TouchableOpacity>
@@ -177,7 +179,7 @@ export default function DoctorNotificationsScreen() {
             activeOpacity={0.7}
           >
             <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              {t(`doctorNotifications.tabs.${tab}`)}
             </Text>
           </TouchableOpacity>
         ))}
@@ -187,27 +189,27 @@ export default function DoctorNotificationsScreen() {
         {!hasNotifications && (
           <View style={styles.emptyContainer}>
             <Ionicons name="notifications-off-outline" size={48} color="#9C9690" />
-            <Text style={styles.emptyText}>No notifications yet</Text>
+            <Text style={styles.emptyText}>{t('doctorNotifications.empty')}</Text>
           </View>
         )}
 
         {filteredNotifications.today.length > 0 && (
           <>
-            <Text style={styles.sectionTitle}>Today</Text>
+            <Text style={styles.sectionTitle}>{t('doctorNotifications.today')}</Text>
             {filteredNotifications.today.map(renderNotification)}
           </>
         )}
 
         {filteredNotifications.thisWeek.length > 0 && (
           <>
-            <Text style={[styles.sectionTitle, { marginTop: 20 }]}>This Week</Text>
+            <Text style={[styles.sectionTitle, { marginTop: 20 }]}>{t('doctorNotifications.thisWeek')}</Text>
             {filteredNotifications.thisWeek.map(renderNotification)}
           </>
         )}
 
         {filteredNotifications.older.length > 0 && (
           <>
-            <Text style={[styles.sectionTitle, { marginTop: 20 }]}>Earlier</Text>
+            <Text style={[styles.sectionTitle, { marginTop: 20 }]}>{t('doctorNotifications.earlier')}</Text>
             {filteredNotifications.older.map(renderNotification)}
           </>
         )}

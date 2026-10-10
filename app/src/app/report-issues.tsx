@@ -23,14 +23,17 @@ import {
 import { useCreateTicketMutation } from '@/store/supportApi';
 import { compressImageForUpload, getLocalFileSize, MAX_UPLOAD_BYTES } from '@/utils/compress-image';
 import { apiErrorMessage } from '@/utils/api-error';
+import { useTranslation } from '@/hooks/use-translation';
 
 const ISSUE_TYPES = [
-  'App Not Working',
-  'Payment Issue',
-  'Animal Record Sync Error',
-  'Doctor Consultation Problem',
-  'Other Technical Bug',
+  { value: 'App Not Working', labelKey: 'reportIssues.types.appNotWorking' },
+  { value: 'Payment Issue', labelKey: 'reportIssues.types.paymentIssue' },
+  { value: 'Animal Record Sync Error', labelKey: 'reportIssues.types.animalSyncError' },
+  { value: 'Doctor Consultation Problem', labelKey: 'reportIssues.types.doctorConsultation' },
+  { value: 'Other Technical Bug', labelKey: 'reportIssues.types.otherBug' },
 ];
+
+const ISSUE_PLACEHOLDER = 'E.g App Not Working';
 
 // Images above this are refused outright; anything smaller is compressed to
 // fit under MAX_UPLOAD_BYTES at submit time.
@@ -42,8 +45,9 @@ function isImageAttachment(name: string, mimeType?: string): boolean {
 }
 
 export default function ReportIssuesScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
-  const [selectedIssue, setSelectedIssue] = useState('E.g App Not Working');
+  const [selectedIssue, setSelectedIssue] = useState(ISSUE_PLACEHOLDER);
   const [description, setDescription] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
   const [attachment, setAttachment] = useState<{
@@ -67,13 +71,13 @@ export default function ReportIssuesScreen() {
       const size = typeof file.size === 'number' ? file.size : null;
       if (isImage) {
         if (size !== null && size > MAX_PICK_BYTES) {
-          Alert.alert('File Too Large', 'Images must be under 15 MB.');
+          Alert.alert(t('reportIssues.alerts.fileTooLarge'), t('reportIssues.alerts.imageTooLarge'));
           return;
         }
       } else if (size !== null && size > MAX_UPLOAD_BYTES) {
         Alert.alert(
-          'File Too Large',
-          'Files must be under 900 KB. Images are compressed automatically.',
+          t('reportIssues.alerts.fileTooLarge'),
+          t('reportIssues.alerts.fileUnder900'),
         );
         return;
       }
@@ -84,17 +88,17 @@ export default function ReportIssuesScreen() {
         mimeType: file.mimeType,
       });
     } catch {
-      Alert.alert('Error', 'Could not select the file. Please try again.');
+      Alert.alert(t('reportIssues.alerts.error'), t('reportIssues.alerts.selectFileFailed'));
     }
   }
 
   async function handleSubmit() {
     if (!description.trim()) {
-      Alert.alert('Missing Info', 'Please describe the issue in detail.');
+      Alert.alert(t('reportIssues.alerts.missingInfo'), t('reportIssues.alerts.describeIssue'));
       return;
     }
-    if (selectedIssue === 'E.g App Not Working') {
-      Alert.alert('Missing Info', 'Please select an issue type.');
+    if (selectedIssue === ISSUE_PLACEHOLDER) {
+      Alert.alert(t('reportIssues.alerts.missingInfo'), t('reportIssues.alerts.selectIssueType'));
       return;
     }
     try {
@@ -113,8 +117,8 @@ export default function ReportIssuesScreen() {
         const finalSize = getLocalFileSize(fileField.uri);
         if (finalSize !== null && finalSize > MAX_UPLOAD_BYTES) {
           Alert.alert(
-            'Attachment Too Large',
-            'This attachment is still too large after compression. Please choose a smaller file.',
+            t('reportIssues.alerts.attachmentTooLarge'),
+            t('reportIssues.alerts.attachmentTooLargeMsg'),
           );
           return;
         }
@@ -127,16 +131,18 @@ export default function ReportIssuesScreen() {
         form.append('file', { ...fileField } as any);
       }
       await createTicket(form).unwrap();
-      Alert.alert('Report Submitted', 'Thank you for reporting. Our team will inspect it promptly.', [
-        { text: 'OK', onPress: () => router.back() },
-      ]);
+      Alert.alert(
+        t('reportIssues.alerts.submitted'),
+        t('reportIssues.alerts.submittedMsg'),
+        [{ text: t('reportIssues.alerts.ok'), onPress: () => router.back() }],
+      );
     } catch (err) {
       const status = (err as { status?: number | string })?.status;
       Alert.alert(
-        'Error',
+        t('reportIssues.alerts.error'),
         status === 413
-          ? 'Attachment is too large — files must be under 1 MB. Please choose a smaller file.'
-          : apiErrorMessage(err, 'Failed to submit report. Please try again.'),
+          ? t('reportIssues.alerts.tooLarge413')
+          : apiErrorMessage(err, t('reportIssues.alerts.submitFailed')),
       );
     }
   }
@@ -153,20 +159,27 @@ export default function ReportIssuesScreen() {
           <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>Report Issues</Text>
+        <Text style={styles.headerTitle}>{t('reportIssues.header')}</Text>
 
         <View style={{ width: 42 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         {/* Issue Type Dropdown */}
-        <Text style={styles.fieldLabel}>What Happened ?</Text>
+        <Text style={styles.fieldLabel}>{t('reportIssues.whatHappened')}</Text>
         <TouchableOpacity
           style={styles.dropdownInput}
           onPress={() => setShowDropdown(!showDropdown)}
           activeOpacity={0.8}
         >
-          <Text style={styles.dropdownValue}>{selectedIssue}</Text>
+          <Text style={styles.dropdownValue}>
+            {selectedIssue === ISSUE_PLACEHOLDER
+              ? t('reportIssues.dropdownPlaceholder')
+              : t(
+                  ISSUE_TYPES.find((issue) => issue.value === selectedIssue)?.labelKey ??
+                    'reportIssues.dropdownPlaceholder',
+                )}
+          </Text>
           <SvgXml
             width={18}
             height={9}
@@ -179,27 +192,27 @@ export default function ReportIssuesScreen() {
           <View style={styles.dropdownMenu}>
             {ISSUE_TYPES.map((type) => (
               <TouchableOpacity
-                key={type}
+                key={type.value}
                 style={styles.dropdownItem}
                 onPress={() => {
-                  setSelectedIssue(type);
+                  setSelectedIssue(type.value);
                   setShowDropdown(false);
                 }}
               >
-                <Text style={styles.dropdownItemText}>{type}</Text>
+                <Text style={styles.dropdownItemText}>{t(type.labelKey)}</Text>
               </TouchableOpacity>
             ))}
           </View>
         )}
 
         {/* Description Field */}
-        <Text style={styles.fieldLabel}>Description</Text>
+        <Text style={styles.fieldLabel}>{t('reportIssues.descriptionLabel')}</Text>
         <View style={styles.descriptionWrapper}>
           <TextInput
             style={styles.descriptionInput}
             multiline
             numberOfLines={4}
-            placeholder="Please Describe in Detail What happened"
+            placeholder={t('reportIssues.descriptionPlaceholder')}
             placeholderTextColor="#A39E99"
             value={description}
             onChangeText={setDescription}
@@ -211,8 +224,8 @@ export default function ReportIssuesScreen() {
           <View style={styles.uploadIconCircle}>
             <SvgXml width={22} height={22} xml={reportIssuesCameraSvg} />
           </View>
-          <Text style={styles.uploadTitle}>Drag &amp; Drop</Text>
-          <Text style={styles.uploadSubtitle}>Select File and Upload Here</Text>
+          <Text style={styles.uploadTitle}>{t('reportIssues.dragDrop')}</Text>
+          <Text style={styles.uploadSubtitle}>{t('reportIssues.uploadHint')}</Text>
           <View style={styles.uploadDivider} />
           <TouchableOpacity
             style={styles.browseBtn}
@@ -221,7 +234,7 @@ export default function ReportIssuesScreen() {
             disabled={isLoading}
           >
             <SvgXml width={20} height={20} xml={reportIssuesAddSvg} />
-            <Text style={styles.browseBtnText}>Browse File</Text>
+            <Text style={styles.browseBtnText}>{t('reportIssues.browseFile')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -252,7 +265,7 @@ export default function ReportIssuesScreen() {
           {isLoading ? (
             <ActivityIndicator size="small" color="#FFFFFF" />
           ) : (
-            <Text style={styles.submitBtnText}>Submit Report</Text>
+            <Text style={styles.submitBtnText}>{t('reportIssues.submit')}</Text>
           )}
         </TouchableOpacity>
       </ScrollView>

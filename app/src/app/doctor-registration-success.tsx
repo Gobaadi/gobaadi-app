@@ -7,9 +7,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Image } from 'expo-image';
 
 export default function DoctorRegistrationSuccessScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const params = useLocalSearchParams<{
     name?: string;
@@ -35,10 +37,10 @@ export default function DoctorRegistrationSuccessScreen() {
           </View>
         </View>
 
-        <Text style={styles.successTitle}>Successful</Text>
+        <Text style={styles.successTitle}>{t('doctorRegistrationSuccess.successTitle')}</Text>
 
         <Text style={styles.successSubtitle}>
-          Your registration has been completed successfully. You can now access all features of the app.
+          {t('doctorRegistrationSuccess.successSubtitle')}
         </Text>
       </View>
 
@@ -58,7 +60,7 @@ export default function DoctorRegistrationSuccessScreen() {
           }
           activeOpacity={0.85}
         >
-          <Text style={styles.continueButtonText}>Check Status</Text>
+          <Text style={styles.continueButtonText}>{t('doctorRegistrationSuccess.checkStatus')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

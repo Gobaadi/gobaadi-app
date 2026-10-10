@@ -32,6 +32,15 @@ import { MediaCardSkeleton } from '@/components/ui/skeleton';
 import { useLocation } from '@/hooks/use-location';
 import LocationBottomSheet from '@/components/LocationBottomSheet';
 import { DoctorAvatar } from '@/components/doctor-avatar';
+import { useTranslation } from 'react-i18next';
+
+const SPECIALTY_OPTIONS: { value: string; labelKey: string }[] = [
+  { value: 'All', labelKey: 'allDoctors.specialties.all' },
+  { value: 'Medicine', labelKey: 'allDoctors.specialties.medicine' },
+  { value: 'Gynaecology', labelKey: 'allDoctors.specialties.gynaecology' },
+  { value: 'Surgery', labelKey: 'allDoctors.specialties.surgery' },
+  { value: 'Dermatology', labelKey: 'allDoctors.specialties.dermatology' },
+];
 
 interface DoctorView {
   id: number;
@@ -45,6 +54,7 @@ interface DoctorView {
 
 export default function AllDoctorsScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [activeFilter, setActiveFilter] = useState('All');
   const [searchText, setSearchText] = useState('');
   const [filterModalVisible, setFilterModalVisible] = useState(false);
@@ -90,11 +100,11 @@ export default function AllDoctorsScreen() {
     d.specialty?.toLowerCase().includes('gynaecol') || d.specialty?.toLowerCase().includes('gynecol')
   ).length;
 
-  const filterOptions = [
-    { label: 'Filter', value: 'filter', icon: 'options-outline' as const },
-    { label: `All (${totalCount})`, value: 'All', icon: null },
-    { label: `Medicine(${medicineCount})`, value: 'Medicine', icon: null },
-    { label: `Gynaecology(${gynaeCount})`, value: 'Gynaecology', icon: null },
+  const filterOptions: { labelKey: string; value: string; icon: 'options-outline' | null; count?: number }[] = [
+    { labelKey: 'allDoctors.filters.settings', value: 'filter', icon: 'options-outline' },
+    { labelKey: 'allDoctors.filters.all', value: 'All', icon: null, count: totalCount },
+    { labelKey: 'allDoctors.filters.medicine', value: 'Medicine', icon: null, count: medicineCount },
+    { labelKey: 'allDoctors.filters.gynaecology', value: 'Gynaecology', icon: null, count: gynaeCount },
   ];
 
   return (
@@ -109,7 +119,7 @@ export default function AllDoctorsScreen() {
           <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>All Doctors</Text>
+        <Text style={styles.headerTitle}>{t('allDoctors.title')}</Text>
 
         <TouchableOpacity style={styles.circleButton} activeOpacity={0.8}>
           <SvgXml width={20} height={20} xml={doctorNotificationSvg} />
@@ -145,7 +155,7 @@ export default function AllDoctorsScreen() {
         <SvgXml width={18} height={18} xml={searchSvg} style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
-          placeholder="Search doctor"
+          placeholder={t('allDoctors.searchPlaceholder')}
           placeholderTextColor="#A39E99"
           value={searchText}
           onChangeText={setSearchText}
@@ -187,7 +197,7 @@ export default function AllDoctorsScreen() {
                   />
                 )}
                 <Text style={[styles.filterChipText, isActive && styles.filterChipTextActive]}>
-                  {opt.label}
+                  {opt.count != null ? t(opt.labelKey, { count: opt.count }) : t(opt.labelKey)}
                 </Text>
               </TouchableOpacity>
             );
@@ -205,8 +215,8 @@ export default function AllDoctorsScreen() {
           </>
         ) : doctors.length === 0 ? (
           <EmptyState
-            title="No doctors available"
-            description="Check back soon — new vets are added regularly."
+            title={t('allDoctors.empty.title')}
+            description={t('allDoctors.empty.description')}
           />
         ) : (
         doctors.map((doc) => (
@@ -229,7 +239,7 @@ export default function AllDoctorsScreen() {
                 <View style={styles.ratingRow}>
                   <SvgXml width={12} height={12} xml={doctorCardStarSvg} style={styles.starIcon} />
                   <Text style={styles.ratingValue}>{doc.rating}</Text>
-                  <Text style={styles.reviewsText}>| {doc.reviews} Reviews</Text>
+                  <Text style={styles.reviewsText}>{t('allDoctors.reviews', { count: doc.reviews })}</Text>
                 </View>
               </View>
             </View>
@@ -246,7 +256,7 @@ export default function AllDoctorsScreen() {
                   xml={tintSvg(doctorCardBookSlotSvg, 'white', '#BD632F')}
                   style={styles.buttonIcon}
                 />
-                <Text style={styles.bookButtonText}>Book Slot</Text>
+                <Text style={styles.bookButtonText}>{t('allDoctors.bookSlot')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.detailsButton}
@@ -254,7 +264,7 @@ export default function AllDoctorsScreen() {
                 activeOpacity={0.8}
               >
                 <SvgXml width={14} height={14} xml={doctorCardDetailsSvg} style={styles.buttonIcon} />
-                <Text style={styles.detailsButtonText}>Details</Text>
+                <Text style={styles.detailsButtonText}>{t('allDoctors.details')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -273,7 +283,7 @@ export default function AllDoctorsScreen() {
             <TouchableOpacity onPress={() => setFilterModalVisible(false)} activeOpacity={0.7}>
               <Ionicons name="close" size={24} color="#1A1817" />
             </TouchableOpacity>
-            <Text style={styles.modalTitle}>Filter Doctors</Text>
+            <Text style={styles.modalTitle}>{t('allDoctors.modal.title')}</Text>
             <TouchableOpacity
               onPress={() => {
                 setSelectedSpecialties([]);
@@ -282,14 +292,14 @@ export default function AllDoctorsScreen() {
               }}
               activeOpacity={0.7}
             >
-              <Text style={styles.modalClearBtn}>Reset</Text>
+              <Text style={styles.modalClearBtn}>{t('allDoctors.modal.reset')}</Text>
             </TouchableOpacity>
           </View>
 
           <ScrollView style={styles.modalBody} contentContainerStyle={styles.modalBodyContent}>
-            <Text style={styles.modalSectionTitle}>Specialty</Text>
+            <Text style={styles.modalSectionTitle}>{t('allDoctors.modal.specialty')}</Text>
             <View style={styles.modalChipRow}>
-              {['All', 'Medicine', 'Gynaecology', 'Surgery', 'Dermatology'].map((spec) => {
+              {SPECIALTY_OPTIONS.map(({ value: spec, labelKey }) => {
                 const isActive = activeFilter === spec || selectedSpecialties.includes(spec);
                 return (
                   <TouchableOpacity
@@ -306,7 +316,7 @@ export default function AllDoctorsScreen() {
                     activeOpacity={0.7}
                   >
                     <Text style={[styles.modalChipText, isActive && styles.modalChipTextActive]}>
-                      {spec}
+                      {t(labelKey)}
                     </Text>
                   </TouchableOpacity>
                 );
@@ -320,7 +330,7 @@ export default function AllDoctorsScreen() {
               onPress={() => setFilterModalVisible(false)}
               activeOpacity={0.85}
             >
-              <Text style={styles.modalApplyBtnText}>Apply Filter</Text>
+              <Text style={styles.modalApplyBtnText}>{t('allDoctors.modal.apply')}</Text>
             </TouchableOpacity>
           </View>
         </SafeAreaView>

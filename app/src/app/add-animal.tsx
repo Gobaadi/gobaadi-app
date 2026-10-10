@@ -26,6 +26,13 @@ import {
 } from '@/store/animalsApi';
 import { compressImageForUpload } from '@/utils/compress-image';
 import { isRenderableImageUri } from '@/utils/photo-uri';
+import { useTranslation } from '@/hooks/use-translation';
+
+const MONTH_KEYS = [
+  'january', 'february', 'march', 'april', 'may', 'june',
+  'july', 'august', 'september', 'october', 'november', 'december',
+];
+const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
 // Custom Calendar Modal Component
 interface CalendarModalProps {
@@ -36,16 +43,14 @@ interface CalendarModalProps {
 }
 
 function CalendarModal({ visible, title, onClose, onSelectDate }: CalendarModalProps) {
+  const { t } = useTranslation();
   const [viewDate, setViewDate] = useState(new Date());
 
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
 
-  const monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ];
-  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const monthNames = MONTH_KEYS.map((key) => t(`addAnimal.calendar.months.${key}`));
+  const dayNames = DAY_KEYS.map((key) => t(`addAnimal.calendar.weekdays.${key}`));
 
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstDayOfWeek = new Date(year, month, 1).getDay();
@@ -138,6 +143,7 @@ function CalendarModal({ visible, title, onClose, onSelectDate }: CalendarModalP
 }
 
 export default function AddAnimalScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const params = useLocalSearchParams();
   const editId = params.edit ? String(params.id || '') : '';
@@ -171,7 +177,11 @@ export default function AddAnimalScreen() {
 
   // Dropdown Modal States
   const [modalVisible, setModalVisible] = useState(false);
-  const [modalData, setModalData] = useState<{ title: string; options: string[]; onSelect: (val: string) => void }>({
+  const [modalData, setModalData] = useState<{
+    title: string;
+    options: { value: string; label: string }[];
+    onSelect: (val: string) => void;
+  }>({
     title: '',
     options: [],
     onSelect: () => {},
@@ -179,11 +189,25 @@ export default function AddAnimalScreen() {
 
   // Calendar Modal States
   const [calendarVisible, setCalendarVisible] = useState(false);
-  const [calendarTitle, setCalendarTitle] = useState('Select Date');
+  const [calendarTitle, setCalendarTitle] = useState(() => t('addAnimal.calendar.selectDate'));
   const [calendarTarget, setCalendarTarget] = useState<'dob' | 'age' | 'joinedFarm' | null>(null);
 
-  const openDropdown = (title: string, options: string[], onSelect: (val: string) => void) => {
-    setModalData({ title, options, onSelect });
+  type OptionGroup = 'gender' | 'source' | 'breed' | 'reproStatus';
+
+  const optionLabel = (group: OptionGroup, value: string) =>
+    t(`addAnimal.options.${group}.${value}`, { defaultValue: value });
+
+  const openDropdown = (
+    title: string,
+    group: OptionGroup,
+    values: string[],
+    onSelect: (val: string) => void,
+  ) => {
+    setModalData({
+      title,
+      options: values.map((value) => ({ value, label: optionLabel(group, value) })),
+      onSelect,
+    });
     setModalVisible(true);
   };
 
@@ -213,7 +237,7 @@ export default function AddAnimalScreen() {
       return true;
     });
     if (validAssets.length < assets.length) {
-      Alert.alert('Invalid file type', 'Only JPEG and PNG images are allowed.');
+      Alert.alert(t('addAnimal.alerts.invalidFileTypeTitle'), t('addAnimal.alerts.invalidFileTypeMsg'));
     }
     if (validAssets.length === 0) return;
     const newUris = validAssets.map((asset) => asset.uri);
@@ -235,7 +259,7 @@ export default function AddAnimalScreen() {
 
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permissionResult.granted) {
-        Alert.alert('Permission required', 'Access to photo gallery is required to upload animal photos.');
+        Alert.alert(t('addAnimal.alerts.permissionTitle'), t('addAnimal.alerts.permissionMsg'));
         return;
       }
 
@@ -248,11 +272,11 @@ export default function AddAnimalScreen() {
       if (!result.canceled && result.assets && result.assets.length > 0) {
         addPickedAssets(result.assets);
       } else if (!result.canceled) {
-        Alert.alert('Photo selection failed', 'Could not read the selected photo. Please try again.');
+        Alert.alert(t('addAnimal.alerts.selectFailedTitle'), t('addAnimal.alerts.selectFailedReadMsg'));
       }
     } catch (err) {
       console.log('Error picking images:', err);
-      Alert.alert('Photo selection failed', 'Could not open the photo gallery. Please try again.');
+      Alert.alert(t('addAnimal.alerts.selectFailedTitle'), t('addAnimal.alerts.selectFailedOpenMsg'));
     }
   };
 
@@ -298,50 +322,50 @@ export default function AddAnimalScreen() {
   const handleNext = async () => {
     if (step === 1) {
       if (!name.trim()) {
-        Alert.alert('Required field', 'Please enter animal name.');
+        Alert.alert(t('addAnimal.alerts.requiredTitle'), t('addAnimal.validation.nameRequired'));
         return;
       }
       const nameRegex = /^[a-zA-Z0-9\s.,'-]+$/;
       if (name.trim() && !nameRegex.test(name.trim())) {
-        Alert.alert('Invalid input', 'Name can only contain letters, numbers, spaces, and basic punctuation.');
+        Alert.alert(t('addAnimal.alerts.invalidInputTitle'), t('addAnimal.validation.nameInvalid'));
         return;
       }
       if (!description.trim()) {
-        Alert.alert('Required field', 'Please enter description.');
+        Alert.alert(t('addAnimal.alerts.requiredTitle'), t('addAnimal.validation.descriptionRequired'));
         return;
       }
       if (description.trim() && !nameRegex.test(description.trim())) {
-        Alert.alert('Invalid input', 'Description can only contain letters, numbers, spaces, and basic punctuation.');
+        Alert.alert(t('addAnimal.alerts.invalidInputTitle'), t('addAnimal.validation.descriptionInvalid'));
         return;
       }
       if (!gender) {
-        Alert.alert('Required field', 'Please select gender.');
+        Alert.alert(t('addAnimal.alerts.requiredTitle'), t('addAnimal.validation.genderRequired'));
         return;
       }
       if (!dob.trim()) {
-        Alert.alert('Required field', 'Please enter date of birth.');
+        Alert.alert(t('addAnimal.alerts.requiredTitle'), t('addAnimal.validation.dobRequired'));
         return;
       }
       setStep(2);
     } else if (step === 2) {
       if (!weight.trim()) {
-        Alert.alert('Required field', 'Please add weight when joined farm.');
+        Alert.alert(t('addAnimal.alerts.requiredTitle'), t('addAnimal.validation.weightRequired'));
         return;
       }
       if (!color.trim()) {
-        Alert.alert('Required field', 'Please add animal color.');
+        Alert.alert(t('addAnimal.alerts.requiredTitle'), t('addAnimal.validation.colorRequired'));
         return;
       }
       setStep(3);
     } else if (step === 3) {
       if (photos.length === 0) {
-        Alert.alert('Required field', 'Please add at least one photo.');
+        Alert.alert(t('addAnimal.alerts.requiredTitle'), t('addAnimal.validation.photoRequired'));
         return;
       }
       setStep(4);
     } else {
       if (!photoCost.trim()) {
-        Alert.alert('Required field', 'Please add purchase cost.');
+        Alert.alert(t('addAnimal.alerts.requiredTitle'), t('addAnimal.validation.costRequired'));
         return;
       }
       try {
@@ -370,10 +394,10 @@ export default function AddAnimalScreen() {
           console.log("Error uploading photos:", uploadErr);
           setIsUploading(false);
           Alert.alert(
-            'Upload failed',
+            t('addAnimal.alerts.uploadFailedTitle'),
             uploadErr?.status === 413
-              ? 'Photo is too large — please pick a smaller image.'
-              : uploadErr?.data?.message || uploadErr?.message || 'Failed to upload photos. Please try again.',
+              ? t('addAnimal.alerts.uploadTooLarge')
+              : uploadErr?.data?.message || uploadErr?.message || t('addAnimal.alerts.uploadFailedMsg'),
           );
           return;
         }
@@ -407,7 +431,7 @@ export default function AddAnimalScreen() {
         router.replace('/(tabs)/animals');
       } catch (err: any) {
         console.log('Error saving animal:', err);
-        Alert.alert('Error', err?.data?.message || err?.message || 'Failed to save animal. Please try again.');
+        Alert.alert(t('addAnimal.alerts.errorTitle'), err?.data?.message || err?.message || t('addAnimal.alerts.saveFailedMsg'));
       }
     }
   };
@@ -426,7 +450,7 @@ export default function AddAnimalScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>{editId ? 'Edit Animal' : 'Add New Animal'}</Text>
+          <Text style={styles.headerTitle}>{editId ? t('addAnimal.header.edit') : t('addAnimal.header.add')}</Text>
           <TouchableOpacity
             style={styles.closeButton}
             onPress={() => router.back()}
@@ -444,7 +468,7 @@ export default function AddAnimalScreen() {
               <View style={[styles.stepDot, step >= 1 ? styles.stepDotActive : styles.stepDotInactive]}>
                 {step > 1 ? <Ionicons name="checkmark" size={14} color="#BD632F" /> : <View style={styles.stepInnerDot} />}
               </View>
-              <Text style={[styles.stepLabel, step === 1 && styles.stepLabelActive]}>Info</Text>
+              <Text style={[styles.stepLabel, step === 1 && styles.stepLabelActive]}>{t('addAnimal.steps.info')}</Text>
             </View>
 
             <View style={[styles.stepLine, step >= 2 ? styles.stepLineActive : styles.stepLineInactive]} />
@@ -454,7 +478,7 @@ export default function AddAnimalScreen() {
               <View style={[styles.stepDot, step >= 2 ? styles.stepDotActive : styles.stepDotInactive]}>
                 {step > 2 ? <Ionicons name="checkmark" size={14} color="#BD632F" /> : step === 2 ? <View style={styles.stepInnerDot} /> : null}
               </View>
-              <Text style={[styles.stepLabel, step === 2 && styles.stepLabelActive]}>Details</Text>
+              <Text style={[styles.stepLabel, step === 2 && styles.stepLabelActive]}>{t('addAnimal.steps.details')}</Text>
             </View>
 
             <View style={[styles.stepLine, step >= 3 ? styles.stepLineActive : styles.stepLineInactive]} />
@@ -464,7 +488,7 @@ export default function AddAnimalScreen() {
               <View style={[styles.stepDot, step >= 3 ? styles.stepDotActive : styles.stepDotInactive]}>
                 {step > 3 ? <Ionicons name="checkmark" size={14} color="#BD632F" /> : step === 3 ? <View style={styles.stepInnerDot} /> : null}
               </View>
-              <Text style={[styles.stepLabel, step === 3 && styles.stepLabelActive]}>Visual</Text>
+              <Text style={[styles.stepLabel, step === 3 && styles.stepLabelActive]}>{t('addAnimal.steps.visual')}</Text>
             </View>
 
             <View style={[styles.stepLine, step >= 4 ? styles.stepLineActive : styles.stepLineInactive]} />
@@ -474,7 +498,7 @@ export default function AddAnimalScreen() {
               <View style={[styles.stepDot, step >= 4 ? styles.stepDotActive : styles.stepDotInactive]}>
                 {step === 4 ? <View style={styles.stepInnerDot} /> : null}
               </View>
-              <Text style={[styles.stepLabel, step === 4 && styles.stepLabelActive]}>Pricing</Text>
+              <Text style={[styles.stepLabel, step === 4 && styles.stepLabelActive]}>{t('addAnimal.steps.pricing')}</Text>
             </View>
           </View>
         </View>
@@ -485,24 +509,24 @@ export default function AddAnimalScreen() {
             <View style={styles.formStep}>
               {/* Name */}
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Name*</Text>
+                <Text style={styles.label}>{t('addAnimal.fields.nameRequired')}</Text>
                 <TextInput
                   style={styles.input}
                   value={name}
                   onChangeText={setName}
-                  placeholder="Enter animal name"
+                  placeholder={t('addAnimal.placeholders.name')}
                   placeholderTextColor="#A39E99"
                 />
               </View>
 
               {/* Description */}
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Description*</Text>
+                <Text style={styles.label}>{t('addAnimal.fields.descriptionRequired')}</Text>
                 <TextInput
                   style={[styles.input, styles.textArea]}
                   value={description}
                   onChangeText={setDescription}
-                  placeholder="Add descriptions of the animal"
+                  placeholder={t('addAnimal.placeholders.description')}
                   placeholderTextColor="#A39E99"
                   multiline
                   numberOfLines={4}
@@ -511,14 +535,14 @@ export default function AddAnimalScreen() {
 
               {/* Date of Birth */}
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Date of Birth*</Text>
+                <Text style={styles.label}>{t('addAnimal.fields.dobRequired')}</Text>
                 <TouchableOpacity
                   style={styles.dropdown}
                   activeOpacity={0.8}
-                  onPress={() => openCalendar('dob', 'Select Date of Birth')}
+                  onPress={() => openCalendar('dob', t('addAnimal.calendar.dobTitle'))}
                 >
                   <Text style={[styles.dropdownValue, !dob && styles.placeholder]}>
-                    {dob || 'Add date of birth'}
+                    {dob || t('addAnimal.placeholders.dob')}
                   </Text>
                   <Ionicons name="chevron-down" size={18} color="#7C7672" />
                 </TouchableOpacity>
@@ -526,14 +550,14 @@ export default function AddAnimalScreen() {
 
               {/* Gender */}
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Gender*</Text>
+                <Text style={styles.label}>{t('addAnimal.fields.genderRequired')}</Text>
                 <TouchableOpacity
                   style={styles.dropdown}
                   activeOpacity={0.8}
-                  onPress={() => openDropdown('Gender', ['Male', 'Female'], setGender)}
+                  onPress={() => openDropdown(t('addAnimal.dropdowns.gender'), 'gender', ['Male', 'Female'], setGender)}
                 >
                   <Text style={[styles.dropdownValue, !gender && styles.placeholder]}>
-                    {gender || 'Select gender'}
+                    {gender ? optionLabel('gender', gender) : t('addAnimal.placeholders.gender')}
                   </Text>
                   <Ionicons name="chevron-down" size={18} color="#7C7672" />
                 </TouchableOpacity>
@@ -545,14 +569,14 @@ export default function AddAnimalScreen() {
             <View style={styles.formStep}>
               {/* Source */}
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Source <Text style={styles.optional}>(optional)</Text></Text>
+                <Text style={styles.label}>{t('addAnimal.fields.source')} <Text style={styles.optional}>{t('addAnimal.optional')}</Text></Text>
                 <TouchableOpacity
                   style={styles.dropdown}
                   activeOpacity={0.8}
-                  onPress={() => openDropdown('Source', ['Purchased', 'Born in Farm', 'Leased', 'Imported'], setSource)}
+                  onPress={() => openDropdown(t('addAnimal.dropdowns.source'), 'source', ['Purchased', 'Born in Farm', 'Leased', 'Imported'], setSource)}
                 >
                   <Text style={[styles.dropdownValue, !source && styles.placeholder]}>
-                    {source || 'Select source'}
+                    {source ? optionLabel('source', source) : t('addAnimal.placeholders.source')}
                   </Text>
                   <Ionicons name="chevron-down" size={18} color="#7C7672" />
                 </TouchableOpacity>
@@ -560,14 +584,14 @@ export default function AddAnimalScreen() {
 
               {/* Breed */}
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Breed <Text style={styles.optional}>(optional)</Text></Text>
+                <Text style={styles.label}>{t('addAnimal.fields.breed')} <Text style={styles.optional}>{t('addAnimal.optional')}</Text></Text>
                 <TouchableOpacity
                   style={styles.dropdown}
                   activeOpacity={0.8}
-                  onPress={() => openDropdown('Breed', ['Albino Buffalo', 'Bangladeshi Cow', 'Gir', 'Holstein', 'Sahiwal', 'Crossbreed'], setBreed)}
+                  onPress={() => openDropdown(t('addAnimal.dropdowns.breed'), 'breed', ['Albino Buffalo', 'Bangladeshi Cow', 'Gir', 'Holstein', 'Sahiwal', 'Crossbreed'], setBreed)}
                 >
                   <Text style={[styles.dropdownValue, !breed && styles.placeholder]}>
-                    {breed || 'Select breed'}
+                    {breed ? optionLabel('breed', breed) : t('addAnimal.placeholders.breed')}
                   </Text>
                   <Ionicons name="chevron-down" size={18} color="#7C7672" />
                 </TouchableOpacity>
@@ -575,14 +599,14 @@ export default function AddAnimalScreen() {
 
               {/* Age */}
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Age <Text style={styles.optional}>(optional)</Text></Text>
+                <Text style={styles.label}>{t('addAnimal.fields.age')} <Text style={styles.optional}>{t('addAnimal.optional')}</Text></Text>
                 <TouchableOpacity
                   style={styles.dropdown}
                   activeOpacity={0.8}
-                  onPress={() => openCalendar('age', 'Select Farm Joined Date')}
+                  onPress={() => openCalendar('age', t('addAnimal.calendar.farmJoinedTitle'))}
                 >
                   <Text style={[styles.dropdownValue, !age && styles.placeholder]}>
-                    {age || 'Select farm joined date'}
+                    {age || t('addAnimal.placeholders.farmJoined')}
                   </Text>
                   <Ionicons name="chevron-down" size={18} color="#7C7672" />
                 </TouchableOpacity>
@@ -590,14 +614,14 @@ export default function AddAnimalScreen() {
 
               {/* Joined Farm */}
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Joined Farm <Text style={styles.optional}>(optional)</Text></Text>
+                <Text style={styles.label}>{t('addAnimal.fields.joinedFarm')} <Text style={styles.optional}>{t('addAnimal.optional')}</Text></Text>
                 <TouchableOpacity
                   style={styles.dropdown}
                   activeOpacity={0.8}
-                  onPress={() => openCalendar('joinedFarm', 'Select Farm Joined Date')}
+                  onPress={() => openCalendar('joinedFarm', t('addAnimal.calendar.farmJoinedTitle'))}
                 >
                   <Text style={[styles.dropdownValue, !joinedFarm && styles.placeholder]}>
-                    {joinedFarm || 'Select farm joined date'}
+                    {joinedFarm || t('addAnimal.placeholders.farmJoined')}
                   </Text>
                   <Ionicons name="chevron-down" size={18} color="#7C7672" />
                 </TouchableOpacity>
@@ -605,12 +629,12 @@ export default function AddAnimalScreen() {
 
               {/* Weight */}
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Weight*</Text>
+                <Text style={styles.label}>{t('addAnimal.fields.weightRequired')}</Text>
                 <TextInput
                   style={styles.input}
                   value={weight}
                   onChangeText={setWeight}
-                  placeholder="Add weight when joined farm"
+                  placeholder={t('addAnimal.placeholders.weight')}
                   placeholderTextColor="#A39E99"
                   keyboardType="numeric"
                 />
@@ -618,12 +642,12 @@ export default function AddAnimalScreen() {
 
               {/* Live Weight */}
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Live Weight <Text style={styles.optional}>(optional)</Text></Text>
+                <Text style={styles.label}>{t('addAnimal.fields.liveWeight')} <Text style={styles.optional}>{t('addAnimal.optional')}</Text></Text>
                 <TextInput
                   style={styles.input}
                   value={liveWeight}
                   onChangeText={setLiveWeight}
-                  placeholder="Add live weight"
+                  placeholder={t('addAnimal.placeholders.liveWeight')}
                   placeholderTextColor="#A39E99"
                   keyboardType="numeric"
                 />
@@ -631,14 +655,14 @@ export default function AddAnimalScreen() {
 
               {/* Reproductive Status */}
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Reproductive Status <Text style={styles.optional}>(optional)</Text></Text>
+                <Text style={styles.label}>{t('addAnimal.fields.reproStatus')} <Text style={styles.optional}>{t('addAnimal.optional')}</Text></Text>
                 <TouchableOpacity
                   style={styles.dropdown}
                   activeOpacity={0.8}
-                  onPress={() => openDropdown('Reproductive Status', ['Open', 'Pregnant', 'Lactating', 'Dry', 'N/A'], setReproStatus)}
+                  onPress={() => openDropdown(t('addAnimal.dropdowns.reproStatus'), 'reproStatus', ['Open', 'Pregnant', 'Lactating', 'Dry', 'N/A'], setReproStatus)}
                 >
                   <Text style={[styles.dropdownValue, !reproStatus && styles.placeholder]}>
-                    {reproStatus || 'Add reproductive status'}
+                    {reproStatus ? optionLabel('reproStatus', reproStatus) : t('addAnimal.placeholders.reproStatus')}
                   </Text>
                   <Ionicons name="chevron-down" size={18} color="#7C7672" />
                 </TouchableOpacity>
@@ -646,12 +670,12 @@ export default function AddAnimalScreen() {
 
               {/* Color */}
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Color*</Text>
+                <Text style={styles.label}>{t('addAnimal.fields.colorRequired')}</Text>
                 <TextInput
                   style={styles.input}
                   value={color}
                   onChangeText={setColor}
-                  placeholder="Add animal color"
+                  placeholder={t('addAnimal.placeholders.color')}
                   placeholderTextColor="#A39E99"
                 />
               </View>
@@ -660,7 +684,7 @@ export default function AddAnimalScreen() {
 
           {step === 3 && (
             <View style={styles.formStep}>
-              <Text style={styles.label}>Photo*</Text>
+              <Text style={styles.label}>{t('addAnimal.fields.photoRequired')}</Text>
 
               {/* Main Photo Card Box */}
               <TouchableOpacity
@@ -688,7 +712,7 @@ export default function AddAnimalScreen() {
                       <Ionicons name="image-outline" size={48} color="#A39E99" />
                       <Ionicons name="arrow-up" size={20} color="#A39E99" style={styles.photoArrowBadge} />
                     </View>
-                    <Text style={styles.photoUploadText}>Tap to upload photo</Text>
+                    <Text style={styles.photoUploadText}>{t('addAnimal.photo.tapToUpload')}</Text>
                   </View>
                 )}
               </TouchableOpacity>
@@ -724,7 +748,7 @@ export default function AddAnimalScreen() {
                   >
                     <Ionicons name="image-outline" size={24} color="#7C7672" />
                     <Ionicons name="add" size={14} color="#7C7672" style={styles.addPlusBadge} />
-                    <Text style={styles.addMoreText}>Add More</Text>
+                    <Text style={styles.addMoreText}>{t('addAnimal.actions.addMore')}</Text>
                   </TouchableOpacity>
                 </ScrollView>
               </View>
@@ -735,12 +759,12 @@ export default function AddAnimalScreen() {
             <View style={styles.formStep}>
               {/* Purchase Cost */}
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Purchase Cost*</Text>
+                <Text style={styles.label}>{t('addAnimal.fields.purchaseCostRequired')}</Text>
                 <TextInput
                   style={styles.input}
                   value={photoCost}
                   onChangeText={setPhotoCost}
-                  placeholder="Add purchase cost"
+                  placeholder={t('addAnimal.placeholders.purchaseCost')}
                   placeholderTextColor="#A39E99"
                   keyboardType="numeric"
                 />
@@ -748,12 +772,12 @@ export default function AddAnimalScreen() {
 
               {/* Selling Price (optional) */}
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Selling Price <Text style={styles.optional}>(optional)</Text></Text>
+                <Text style={styles.label}>{t('addAnimal.fields.sellingPrice')} <Text style={styles.optional}>{t('addAnimal.optional')}</Text></Text>
                 <TextInput
                   style={styles.input}
                   value={sellingPrice}
                   onChangeText={setSellingPrice}
-                  placeholder="Add selling price"
+                  placeholder={t('addAnimal.placeholders.sellingPrice')}
                   placeholderTextColor="#A39E99"
                   keyboardType="numeric"
                 />
@@ -761,12 +785,12 @@ export default function AddAnimalScreen() {
 
               {/* Live Weight Price (optional) */}
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Live Weight Price <Text style={styles.optional}>(optional)</Text></Text>
+                <Text style={styles.label}>{t('addAnimal.fields.liveWeightPrice')} <Text style={styles.optional}>{t('addAnimal.optional')}</Text></Text>
                 <TextInput
                   style={styles.input}
                   value={liveWeightPrice}
                   onChangeText={setLiveWeightPrice}
-                  placeholder="Add selling price"
+                  placeholder={t('addAnimal.placeholders.sellingPrice')}
                   placeholderTextColor="#A39E99"
                   keyboardType="numeric"
                 />
@@ -778,7 +802,7 @@ export default function AddAnimalScreen() {
           <View style={styles.buttonRow}>
             {step > 1 ? (
               <TouchableOpacity style={styles.backButton} onPress={handleBack} activeOpacity={0.8}>
-                <Text style={styles.backButtonText}>Back</Text>
+                <Text style={styles.backButtonText}>{t('addAnimal.actions.back')}</Text>
               </TouchableOpacity>
             ) : null}
 
@@ -789,7 +813,7 @@ export default function AddAnimalScreen() {
               disabled={isUploading}
             >
               <Text style={styles.nextButtonText}>
-                {isUploading ? 'Uploading...' : step === 4 ? 'Add Animal' : 'Next'}
+                {isUploading ? t('addAnimal.actions.uploading') : step === 4 ? t('addAnimal.actions.addAnimal') : t('addAnimal.actions.next')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -812,16 +836,16 @@ export default function AddAnimalScreen() {
             <Text style={styles.modalTitle}>{modalData.title}</Text>
             <FlatList
               data={modalData.options}
-              keyExtractor={(item) => item}
+              keyExtractor={(item) => item.value}
               renderItem={({ item }) => (
                 <TouchableOpacity
                   style={styles.modalItem}
                   onPress={() => {
-                    modalData.onSelect(item);
+                    modalData.onSelect(item.value);
                     setModalVisible(false);
                   }}
                 >
-                  <Text style={styles.modalItemText}>{item}</Text>
+                  <Text style={styles.modalItemText}>{item.label}</Text>
                 </TouchableOpacity>
               )}
             />

@@ -18,8 +18,10 @@ import {
   useSetAvailabilityMutation,
   type AvailabilityEntry,
 } from '@/store/doctorPortalApi';
+import { useTranslation } from '@/hooks/use-translation';
 
 const DAY_LABELS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const DAY_KEYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
 interface DayRow {
   dayOfWeek: number;
@@ -40,6 +42,7 @@ function defaultRows(): DayRow[] {
 export default function DoctorAvailabilityScreen() {
   const { data: profile, isLoading: isProfileLoading } = useGetMyDoctorProfileQuery();
   const isDoctor = useRequireDoctor();
+  const { t } = useTranslation();
   if (!isDoctor) return null;
   const { data: availability, isLoading: isAvailabilityLoading } = useGetAvailabilityQuery(
     profile?.id ?? 0,
@@ -73,10 +76,10 @@ export default function DoctorAvailabilityScreen() {
 
     try {
       await setAvailability({ doctorId: profile.id, entries }).unwrap();
-      Alert.alert('Saved', 'Your availability has been updated.');
+      Alert.alert(t('doctorAvailability.alerts.saved.title'), t('doctorAvailability.alerts.saved.msg'));
     } catch (err) {
       console.log('Error saving availability:', err);
-      Alert.alert('Could not save', 'Please check your time formats (HH:mm) and try again.');
+      Alert.alert(t('doctorAvailability.alerts.saveError.title'), t('doctorAvailability.alerts.saveError.msg'));
     }
   }
 
@@ -85,7 +88,7 @@ export default function DoctorAvailabilityScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>My Availability</Text>
+        <Text style={styles.headerTitle}>{t('doctorAvailability.title')}</Text>
       </View>
 
       {isLoading ? (
@@ -95,7 +98,7 @@ export default function DoctorAvailabilityScreen() {
           {rows.map((row) => (
             <View key={row.dayOfWeek} style={styles.dayCard}>
               <View style={styles.dayHeader}>
-                <Text style={styles.dayLabel}>{DAY_LABELS[row.dayOfWeek]}</Text>
+                <Text style={styles.dayLabel}>{t(`doctorAvailability.days.${DAY_KEYS[row.dayOfWeek]}`)}</Text>
                 <Switch
                   value={row.enabled}
                   onValueChange={(enabled) => updateRow(row.dayOfWeek, { enabled })}
@@ -110,7 +113,7 @@ export default function DoctorAvailabilityScreen() {
                     onChangeText={(startTime) => updateRow(row.dayOfWeek, { startTime })}
                     placeholder="09:00"
                   />
-                  <Text style={styles.timeSeparator}>to</Text>
+                  <Text style={styles.timeSeparator}>{t('doctorAvailability.to')}</Text>
                   <TextInput
                     style={styles.timeInput}
                     value={row.endTime}
@@ -134,7 +137,7 @@ export default function DoctorAvailabilityScreen() {
           {isSaving ? (
             <ActivityIndicator size="small" color="#FFFFFF" />
           ) : (
-            <Text style={styles.saveButtonText}>Save Availability</Text>
+            <Text style={styles.saveButtonText}>{t('doctorAvailability.save')}</Text>
           )}
         </TouchableOpacity>
       </View>

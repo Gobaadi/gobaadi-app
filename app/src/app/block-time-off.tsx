@@ -27,24 +27,10 @@ import type {
   BlockTimeConflictPayload,
   CreateBlockTimeResult,
 } from '@/store/blockTimesApi';
+import { useTranslation } from '@/hooks/use-translation';
+import i18n from '@/i18n';
 
-const REASONS = ['Vacation', 'Sick Leave', 'Conference/Training', 'Emergency', 'Other'];
-
-const REASON_MAP: Record<string, string> = {
-  'Vacation': 'vacation',
-  'Sick Leave': 'sick_leave',
-  'Conference/Training': 'conference_training',
-  'Emergency': 'emergency',
-  'Other': 'other',
-};
-
-const REVERSE_REASON_MAP: Record<string, string> = {
-  vacation: 'Vacation',
-  sick_leave: 'Sick Leave',
-  conference_training: 'Conference/Training',
-  emergency: 'Emergency',
-  other: 'Other',
-};
+const REASONS = ['vacation', 'sick_leave', 'conference_training', 'emergency', 'other'];
 
 type Step = 'form' | 'warning' | 'confirmation' | 'confirmed';
 
@@ -57,17 +43,19 @@ function parseConflictPayload(err: any): BlockTimeConflictPayload | null {
   return payload?.conflicts ? payload : null;
 }
 
-function errorMessage(err: any): string {
+function errorMessage(err: any): string | null {
   const raw = err?.data?.message;
   if (typeof raw === 'string' && raw) return raw;
   if (Array.isArray(raw) && raw.length > 0) return String(raw[0]);
-  return 'Something went wrong. Please try again.';
+  return null;
 }
 
-const MONTH_NAMES = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
+const MONTH_KEYS = [
+  'january', 'february', 'march', 'april', 'may', 'june',
+  'july', 'august', 'september', 'october', 'november', 'december',
 ];
+
+const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
 function getDaysInMonth(year: number, month: number): number {
   return new Date(year, month + 1, 0).getDate();
@@ -85,7 +73,7 @@ function formatDateISO(year: number, month: number, day: number): string {
 
 function formatDateDisplay(dateStr: string): string {
   const [y, m, d] = dateStr.split('-').map(Number);
-  return `${d} ${MONTH_NAMES[m - 1]}, ${y}`;
+  return `${d} ${i18n.t(`blockTime.months.${MONTH_KEYS[m - 1]}`)}, ${y}`;
 }
 
 function isDateInRange(dateStr: string, start: string, end: string): boolean {
@@ -123,6 +111,7 @@ function getBlockedDatesForMonth(blockTimes: BlockTime[], year: number, month: n
 }
 
 export default function BlockTimeOffScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const isDoctor = useRequireDoctor();
 
@@ -228,14 +217,14 @@ export default function BlockTimeOffScreen() {
               color={target === 'start' && !canNavigatePrev ? '#E6E1DC' : '#BD632F'}
             />
           </TouchableOpacity>
-          <Text style={styles.calMonth}>{MONTH_NAMES[calMonth]} {calYear}</Text>
+          <Text style={styles.calMonth}>{t(`blockTime.months.${MONTH_KEYS[calMonth]}`)} {calYear}</Text>
           <TouchableOpacity onPress={() => navigateMonth('next', target)} activeOpacity={0.7}>
             <Ionicons name="chevron-forward" size={18} color="#BD632F" />
           </TouchableOpacity>
         </View>
         <View style={styles.calDayHeader}>
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
-            <Text key={d} style={styles.calDayText}>{d}</Text>
+          {DAY_KEYS.map((d) => (
+            <Text key={d} style={styles.calDayText}>{t(`blockTime.weekdays.${d}`)}</Text>
           ))}
         </View>
         <View style={styles.calDays}>
@@ -313,7 +302,7 @@ export default function BlockTimeOffScreen() {
         data: {
           startDate,
           endDate,
-          reason: REASON_MAP[selectedReason] as any,
+          reason: selectedReason as any,
           note: note || undefined,
           force: false,
         },
@@ -327,11 +316,11 @@ export default function BlockTimeOffScreen() {
         setStep('warning');
       } else if (err?.status === 409) {
         Alert.alert(
-          'Conflicting appointments',
-          'Blocking this range will cancel existing appointments, but their details could not be loaded. Please try again.'
+          t('blockTime.alerts.conflictTitle'),
+          t('blockTime.alerts.conflictMsg'),
         );
       } else {
-        Alert.alert('Block time off', errorMessage(err));
+        Alert.alert(t('blockTime.title'), errorMessage(err) || t('blockTime.errors.generic'));
       }
     }
   };
@@ -349,7 +338,7 @@ export default function BlockTimeOffScreen() {
         data: {
           startDate,
           endDate,
-          reason: REASON_MAP[selectedReason] as any,
+          reason: selectedReason as any,
           note: note || undefined,
           force: true,
         },
@@ -362,17 +351,17 @@ export default function BlockTimeOffScreen() {
         applyConflictPayload(payload409);
         setStep('warning');
       } else {
-        Alert.alert('Block time off', errorMessage(err));
+        Alert.alert(t('blockTime.title'), errorMessage(err) || t('blockTime.errors.generic'));
       }
     }
   };
 
   const handleRemoveBlock = async (blockId: number) => {
     if (!doctorId) return;
-    Alert.alert('Remove Block', 'Are you sure you want to remove this blocked period?', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('blockTime.remove.title'), t('blockTime.remove.msg'), [
+      { text: t('blockTime.actions.cancel'), style: 'cancel' },
       {
-        text: 'Remove',
+        text: t('blockTime.actions.remove'),
         style: 'destructive',
         onPress: async () => {
           try {
@@ -390,7 +379,7 @@ export default function BlockTimeOffScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
             <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Block Confirmed</Text>
+          <Text style={styles.headerTitle}>{t('blockTime.confirmed.header')}</Text>
           <View style={{ width: 40 }} />
         </View>
 
@@ -398,48 +387,48 @@ export default function BlockTimeOffScreen() {
           <View style={styles.confirmedCircle}>
             <Ionicons name="checkmark" size={48} color="#FFFFFF" />
           </View>
-          <Text style={styles.confirmedTitle}>Your time has been blocked</Text>
+          <Text style={styles.confirmedTitle}>{t('blockTime.confirmed.title')}</Text>
           <Text style={styles.confirmedDate}>
             {formatDateDisplay(startDate)} - {formatDateDisplay(endDate)}
           </Text>
-          <Text style={styles.confirmedSubtitle}>You will not receive any bookings during this time.</Text>
+          <Text style={styles.confirmedSubtitle}>{t('blockTime.confirmed.subtitle')}</Text>
 
           {blockResult?.billing && blockResult.billing.totalFee > 0 && (
             <View style={styles.billingSection}>
-              <Text style={styles.billingTitle}>Billing Details</Text>
+              <Text style={styles.billingTitle}>{t('blockTime.billing.title')}</Text>
               <View style={styles.billingRow}>
-                <Text style={styles.billingLabel}>Booking time off</Text>
+                <Text style={styles.billingLabel}>{t('blockTime.billing.bookingTimeOff')}</Text>
                 <Text style={styles.billingValue}>
                   {formatDateDisplay(startDate)} - {formatDateDisplay(endDate)}
                 </Text>
               </View>
               <View style={styles.billingRow}>
-                <Text style={styles.billingLabel}>Reason</Text>
-                <Text style={styles.billingValue}>{selectedReason}</Text>
+                <Text style={styles.billingLabel}>{t('blockTime.billing.reason')}</Text>
+                <Text style={styles.billingValue}>{t(`blockTime.reasons.${selectedReason}`, { defaultValue: selectedReason })}</Text>
               </View>
               <View style={styles.billingDivider} />
-              <Text style={styles.feesTitle}>Fees Details</Text>
+              <Text style={styles.feesTitle}>{t('blockTime.billing.feesTitle')}</Text>
               <View style={styles.billingRow}>
-                <Text style={styles.billingLabel}>Appointments fee</Text>
+                <Text style={styles.billingLabel}>{t('blockTime.billing.appointmentsFee')}</Text>
                 <Text style={styles.billingValue}>
                   ৳ {blockResult.billing.appointmentsFeeTotal.toFixed(2)}
                 </Text>
               </View>
               <View style={styles.billingRow}>
-                <Text style={styles.billingLabel}>Cancellation fee</Text>
+                <Text style={styles.billingLabel}>{t('blockTime.billing.cancellationFee')}</Text>
                 <Text style={styles.billingValue}>
                   ৳ {blockResult.billing.cancellationFeesTotal.toFixed(2)}
                 </Text>
               </View>
               <View style={styles.billingDivider} />
               <View style={styles.billingRow}>
-                <Text style={styles.totalLabel}>Total Fees</Text>
+                <Text style={styles.totalLabel}>{t('blockTime.billing.totalFees')}</Text>
                 <Text style={styles.totalValue}>
                   ৳ {blockResult.billing.totalFee.toFixed(2)}
                 </Text>
               </View>
               <View style={styles.billingRow}>
-                <Text style={styles.billingLabel}>Status</Text>
+                <Text style={styles.billingLabel}>{t('blockTime.billing.status')}</Text>
                 <Text style={styles.paidText}>{blockResult.billing.status}</Text>
               </View>
             </View>
@@ -455,14 +444,14 @@ export default function BlockTimeOffScreen() {
             }}
             activeOpacity={0.85}
           >
-            <Text style={styles.viewCalendarBtnText}>View Calendar</Text>
+            <Text style={styles.viewCalendarBtnText}>{t('blockTime.actions.viewCalendar')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.doneBtn}
             onPress={() => router.back()}
             activeOpacity={0.85}
           >
-            <Text style={styles.doneBtnText}>Done</Text>
+            <Text style={styles.doneBtnText}>{t('blockTime.actions.done')}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -476,12 +465,12 @@ export default function BlockTimeOffScreen() {
           <TouchableOpacity onPress={() => setStep('form')} style={styles.backBtn} activeOpacity={0.7}>
             <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Block time off</Text>
+          <Text style={styles.headerTitle}>{t('blockTime.title')}</Text>
           <View style={{ width: 40 }} />
         </View>
 
         <ScrollView contentContainerStyle={styles.scrollContainer}>
-          <Text style={styles.sectionTitle}>Cancelled Appointments</Text>
+          <Text style={styles.sectionTitle}>{t('blockTime.cancelled.title')}</Text>
 
           {conflicts.map((appt) => {
             const apptDate = new Date(appt.startAt);
@@ -494,10 +483,10 @@ export default function BlockTimeOffScreen() {
                 </View>
                 <View style={styles.cancelledInfo}>
                   <Text style={styles.cancelledName}>
-                    {appt.animalName || `Appointment #${appt.id}`}
+                    {appt.animalName || t('blockTime.cancelled.appointmentFallback', { id: appt.id })}
                   </Text>
                   {appt.ownerName ? (
-                    <Text style={styles.cancelledOwner}>Owner: {appt.ownerName}</Text>
+                    <Text style={styles.cancelledOwner}>{t('blockTime.cancelled.owner', { name: appt.ownerName })}</Text>
                   ) : null}
                   <Text style={styles.cancelledDateTime}>
                     <Ionicons name="calendar-outline" size={12} color="#9C9690" /> {dateStr} · {timeStr}
@@ -507,7 +496,7 @@ export default function BlockTimeOffScreen() {
                   )}
                 </View>
                 <View style={styles.cancelledBadge}>
-                  <Text style={styles.cancelledBadgeText}>Cancelled</Text>
+                  <Text style={styles.cancelledBadgeText}>{t('blockTime.cancelled.badge')}</Text>
                 </View>
               </View>
             );
@@ -520,7 +509,7 @@ export default function BlockTimeOffScreen() {
           >
             <View style={styles.walletHeader}>
               <Ionicons name="wallet-outline" size={18} color="#BD632F" />
-              <Text style={styles.walletLabel}>Estimated Wallet Deduction</Text>
+              <Text style={styles.walletLabel}>{t('blockTime.billing.walletDeduction')}</Text>
             </View>
             <View style={styles.walletRight}>
               <Text style={styles.walletAmount}>৳ {estimatedDeduction.toFixed(2)}</Text>
@@ -534,38 +523,38 @@ export default function BlockTimeOffScreen() {
 
           {showBilling && billing && (
             <View style={styles.billingSection}>
-              <Text style={styles.billingTitle}>Billing Details</Text>
+              <Text style={styles.billingTitle}>{t('blockTime.billing.title')}</Text>
               <View style={styles.billingRow}>
-                <Text style={styles.billingLabel}>Booking time off</Text>
+                <Text style={styles.billingLabel}>{t('blockTime.billing.bookingTimeOff')}</Text>
                 <Text style={styles.billingValue}>
                   {formatDateDisplay(startDate)} - {formatDateDisplay(endDate)}
                 </Text>
               </View>
               <View style={styles.billingRow}>
-                <Text style={styles.billingLabel}>Reason</Text>
-                <Text style={styles.billingValue}>{selectedReason}</Text>
+                <Text style={styles.billingLabel}>{t('blockTime.billing.reason')}</Text>
+                <Text style={styles.billingValue}>{t(`blockTime.reasons.${selectedReason}`, { defaultValue: selectedReason })}</Text>
               </View>
               <View style={styles.billingDivider} />
-              <Text style={styles.feesTitle}>Fees Details</Text>
+              <Text style={styles.feesTitle}>{t('blockTime.billing.feesTitle')}</Text>
               <View style={styles.billingRow}>
-                <Text style={styles.billingLabel}>Appointments fee</Text>
+                <Text style={styles.billingLabel}>{t('blockTime.billing.appointmentsFee')}</Text>
                 <Text style={styles.billingValue}>
                   ৳ {billing.appointmentsFeeTotal.toFixed(2)}
                 </Text>
               </View>
               <View style={styles.billingRow}>
-                <Text style={styles.billingLabel}>Cancellation fee</Text>
+                <Text style={styles.billingLabel}>{t('blockTime.billing.cancellationFee')}</Text>
                 <Text style={styles.billingValue}>
                   ৳ {billing.cancellationFeesTotal.toFixed(2)}
                 </Text>
               </View>
               <View style={styles.billingDivider} />
               <View style={styles.billingRow}>
-                <Text style={styles.totalLabel}>Total Fees</Text>
+                <Text style={styles.totalLabel}>{t('blockTime.billing.totalFees')}</Text>
                 <Text style={styles.totalValue}>৳ {billing.totalFee.toFixed(2)}</Text>
               </View>
               <View style={styles.billingRow}>
-                <Text style={styles.billingLabel}>Status</Text>
+                <Text style={styles.billingLabel}>{t('blockTime.billing.status')}</Text>
                 <Text
                   style={billing.status === 'Paid' ? styles.paidText : styles.pendingText}
                 >
@@ -578,7 +567,7 @@ export default function BlockTimeOffScreen() {
           <View style={styles.infoBanner}>
             <Ionicons name="information-circle-outline" size={20} color="#BD632F" />
             <Text style={styles.infoText}>
-              By confirming, you agree that this amount will be deducted from your Gobadi wallet and the appointments will be cancelled.
+              {t('blockTime.confirmation.info')}
             </Text>
           </View>
         </ScrollView>
@@ -588,11 +577,11 @@ export default function BlockTimeOffScreen() {
             {creating ? (
               <ActivityIndicator color="#FFFFFF" />
             ) : (
-              <Text style={styles.confirmBtnText}>Confirm</Text>
+              <Text style={styles.confirmBtnText}>{t('blockTime.actions.confirm')}</Text>
             )}
           </TouchableOpacity>
           <TouchableOpacity style={styles.backBtnBottom} onPress={() => setStep('form')} activeOpacity={0.85}>
-            <Text style={styles.backBtnText}>Back</Text>
+            <Text style={styles.backBtnText}>{t('blockTime.actions.back')}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -606,7 +595,7 @@ export default function BlockTimeOffScreen() {
           <TouchableOpacity onPress={() => setStep('form')} style={styles.backBtn} activeOpacity={0.7}>
             <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Block time off</Text>
+          <Text style={styles.headerTitle}>{t('blockTime.title')}</Text>
           <View style={{ width: 40 }} />
         </View>
 
@@ -616,16 +605,16 @@ export default function BlockTimeOffScreen() {
               <TouchableOpacity style={styles.modalCloseBtn} onPress={() => setStep('form')} activeOpacity={0.7}>
                 <Ionicons name="close" size={20} color="#7C7672" />
               </TouchableOpacity>
-              <Text style={styles.modalTitle}>You have existing appointments</Text>
+              <Text style={styles.modalTitle}>{t('blockTime.warning.title')}</Text>
               <Text style={styles.modalDescription}>
-                Blocking this time will cancel {conflicts.length} appointment{conflicts.length !== 1 ? 's' : ''}. Their booking amounts will be refunded, and applicable cancellation fees will be deducted from your wallet.
+                {t('blockTime.warning.description', { count: conflicts.length })}
               </Text>
               <View style={styles.modalButtons}>
                 <TouchableOpacity style={styles.modalBackBtn} onPress={() => setStep('form')} activeOpacity={0.85}>
-                  <Text style={styles.modalBackBtnText}>Back</Text>
+                  <Text style={styles.modalBackBtnText}>{t('blockTime.actions.back')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.modalConfirmBtn} onPress={handleWarningConfirm} activeOpacity={0.85}>
-                  <Text style={styles.modalConfirmBtnText}>Confirm</Text>
+                  <Text style={styles.modalConfirmBtnText}>{t('blockTime.actions.confirm')}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -641,33 +630,33 @@ export default function BlockTimeOffScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
           <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Block time off</Text>
+        <Text style={styles.headerTitle}>{t('blockTime.title')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <Text style={styles.fieldLabel}>Start date</Text>
+        <Text style={styles.fieldLabel}>{t('blockTime.fields.startDate')}</Text>
         <TouchableOpacity
           style={styles.dateDropdown}
           onPress={() => setShowStartCalendar(!showStartCalendar)}
           activeOpacity={0.7}
         >
           <Text style={[styles.dateText, !startDate && styles.datePlaceholder]}>
-            {startDate ? formatDateDisplay(startDate) : 'Select date'}
+            {startDate ? formatDateDisplay(startDate) : t('blockTime.selectDate')}
           </Text>
           <Ionicons name="chevron-down" size={18} color="#9C9690" />
         </TouchableOpacity>
 
         {renderCalendar(startCalYear, startCalMonth, startCalBlocked, 'start', showStartCalendar)}
 
-        <Text style={[styles.fieldLabel, { marginTop: 20 }]}>End date</Text>
+        <Text style={[styles.fieldLabel, { marginTop: 20 }]}>{t('blockTime.fields.endDate')}</Text>
         <TouchableOpacity
           style={styles.dateDropdown}
           onPress={() => setShowEndCalendar(!showEndCalendar)}
           activeOpacity={0.7}
         >
           <Text style={[styles.dateText, !endDate && styles.datePlaceholder]}>
-            {endDate ? formatDateDisplay(endDate) : 'Select date'}
+            {endDate ? formatDateDisplay(endDate) : t('blockTime.selectDate')}
           </Text>
           <Ionicons name="chevron-down" size={18} color="#9C9690" />
         </TouchableOpacity>
@@ -678,12 +667,12 @@ export default function BlockTimeOffScreen() {
           <View style={styles.dateRangeInfo}>
             <Ionicons name="information-circle-outline" size={16} color="#7C7672" />
             <Text style={styles.dateRangeText}>
-              Blocking from {formatDateDisplay(startDate)} to {formatDateDisplay(endDate)}
+              {t('blockTime.dateRange', { start: formatDateDisplay(startDate), end: formatDateDisplay(endDate) })}
             </Text>
           </View>
         )}
 
-        <Text style={[styles.fieldLabel, { marginTop: 20 }]}>Reason <Text style={styles.required}>(Required)</Text></Text>
+        <Text style={[styles.fieldLabel, { marginTop: 20 }]}>{t('blockTime.fields.reason')} <Text style={styles.required}>{t('blockTime.required')}</Text></Text>
         <View style={styles.reasonsCard}>
           {REASONS.map((reason) => (
             <TouchableOpacity
@@ -695,12 +684,12 @@ export default function BlockTimeOffScreen() {
               <View style={[styles.radio, selectedReason === reason && styles.radioSelected]}>
                 {selectedReason === reason && <View style={styles.radioDot} />}
               </View>
-              <Text style={styles.reasonText}>{reason}</Text>
+              <Text style={styles.reasonText}>{t(`blockTime.reasons.${reason}`)}</Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        <Text style={[styles.fieldLabel, { marginTop: 20 }]}>Note <Text style={styles.optional}>(Optional)</Text></Text>
+        <Text style={[styles.fieldLabel, { marginTop: 20 }]}>{t('blockTime.fields.note')} <Text style={styles.optional}>{t('blockTime.optional')}</Text></Text>
         <TextInput
           style={styles.noteInput}
           placeholder=""
@@ -712,9 +701,11 @@ export default function BlockTimeOffScreen() {
 
         {blockTimes.length > 0 && (
           <View style={{ marginTop: 24 }}>
-            <Text style={styles.sectionTitle}>Blocked Periods</Text>
+            <Text style={styles.sectionTitle}>{t('blockTime.blockedPeriods')}</Text>
             {blockTimes.map((bt) => {
-              const reasonLabel = REVERSE_REASON_MAP[bt.reason ?? ''] ?? bt.reason ?? 'Other';
+              const reasonLabel = bt.reason
+                ? t(`blockTime.reasons.${bt.reason}`, { defaultValue: bt.reason })
+                : t('blockTime.reasons.other');
               return (
                 <View key={bt.id} style={styles.blockTimeCard}>
                   <View style={styles.blockTimeInfo}>
@@ -744,7 +735,7 @@ export default function BlockTimeOffScreen() {
         <View style={styles.infoBanner}>
           <Ionicons name="information-circle-outline" size={20} color="#BD632F" />
           <Text style={styles.infoText}>
-            Blocking time with existing appointments will require refunds and cancellation fees, which will be deducted from your wallet.
+            {t('blockTime.formInfo')}
           </Text>
         </View>
       </ScrollView>
@@ -756,7 +747,7 @@ export default function BlockTimeOffScreen() {
           activeOpacity={0.85}
           disabled={!startDate || !endDate || !selectedReason}
         >
-          <Text style={styles.continueBtnText}>Continue</Text>
+          <Text style={styles.continueBtnText}>{t('blockTime.actions.continue')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

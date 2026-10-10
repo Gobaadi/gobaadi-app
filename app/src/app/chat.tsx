@@ -49,6 +49,8 @@ import { useGetByAppointmentQuery } from '@/store/prescriptionsApi';
 import { useGetMyProfileQuery } from '@/store/usersApi';
 import { useGetMyDoctorProfileQuery, useGetDoctorBookingsQuery } from '@/store/doctorPortalApi';
 import { useChatSocket } from '@/hooks/use-chat-socket';
+import { useTranslation } from '@/hooks/use-translation';
+import i18n from '@/i18n';
 
 type ConsultationState = 'idle' | 'active' | 'ended' | 'prescription_sent';
 
@@ -70,8 +72,8 @@ function dhakaDayKey(value: string | number | Date): string {
 function formatDhakaDayLabel(value: string | number | Date): string {
   const key = dhakaDayKey(value);
   const now = Date.now();
-  if (key === dhakaDayKey(now)) return 'Today';
-  if (key === dhakaDayKey(now - 86_400_000)) return 'Yesterday';
+  if (key === dhakaDayKey(now)) return i18n.t('chat.date.today');
+  if (key === dhakaDayKey(now - 86_400_000)) return i18n.t('chat.date.yesterday');
   return new Date(value).toLocaleDateString('en-GB', {
     timeZone: DHAKA_TZ,
     day: '2-digit',
@@ -124,7 +126,7 @@ function toUIMessage(msg: ChatMessage): ChatMessageUI {
     isPdf: msg.attachmentType === 'document' ? isPdf : undefined,
     prescriptionDate: msg.attachmentUrl ? formatDhakaDate(msg.createdAt) : undefined,
     prescriptionSize:
-      msg.attachmentType === 'document' ? (isPdf ? `PDF` : 'File') : undefined,
+      msg.attachmentType === 'document' ? (isPdf ? `PDF` : i18n.t('chat.prescription.file')) : undefined,
     attachmentUrl: msg.attachmentUrl || undefined,
     attachmentType: msg.attachmentType || undefined,
   };
@@ -173,6 +175,7 @@ function ChatImageBubble({
   status?: ChatMessage['status'];
   onView: (uri: string, mine: boolean) => void;
 }) {
+  const { t } = useTranslation();
   const [failed, setFailed] = useState(false);
 
   return (
@@ -181,7 +184,7 @@ function ChatImageBubble({
         {failed ? (
           <View style={styles.imageFallback}>
             <Ionicons name="image-outline" size={36} color="#BD632F" />
-            <Text style={styles.imageFallbackText}>Tap to open image</Text>
+            <Text style={styles.imageFallbackText}>{t('chat.viewer.tapToOpen')}</Text>
           </View>
         ) : (
           <Image
@@ -204,6 +207,7 @@ function ChatImageBubble({
 }
 
 export default function ChatScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const params = useLocalSearchParams<{
     consultationId?: string;
@@ -222,7 +226,7 @@ export default function ChatScreen() {
   const [conversationId, setConversationId] = useState<number | undefined>(
     params.conversationId ? parseInt(params.conversationId, 10) : undefined,
   );
-  const patientName = params.patientName || 'Patient';
+  const patientName = params.patientName || t('chat.fallbacks.patient');
   const animalImage = params.animalImage || '';
   const animalId = params.animalId || '';
   const rawAppointmentId = params.appointmentId || '';
@@ -235,7 +239,7 @@ export default function ChatScreen() {
   const isViewerDoctor = viewerRole === 'doctor';
   // Counterparty shown in the header/banners: the doctor sees the patient,
   // the farmer sees the doctor (peerName supplied by the entry point).
-  const peerName = isViewerDoctor ? patientName : params.peerName || 'Doctor';
+  const peerName = isViewerDoctor ? patientName : params.peerName || t('chat.fallbacks.doctor');
 
   const { data: myProfile } = useGetMyProfileQuery();
   const { data: myDoctorProfile } = useGetMyDoctorProfileQuery(undefined, {
@@ -458,10 +462,10 @@ export default function ChatScreen() {
       }
       await Sharing.shareAsync(cacheUri, {
         mimeType: ext === 'jpg' ? 'image/jpeg' : `image/${ext}`,
-        dialogTitle: 'Share image',
+        dialogTitle: t('chat.viewer.shareDialogTitle'),
       });
     } catch {
-      Alert.alert('Error', 'Could not share this image. Please try again.');
+      Alert.alert(t('chat.alerts.error'), t('chat.alerts.shareFailed'));
     } finally {
       setSharingImage(false);
     }
@@ -475,8 +479,8 @@ export default function ChatScreen() {
       const permission = await MediaLibrary.requestPermissionsAsync(true);
       if (!permission.granted) {
         Alert.alert(
-          'Permission required',
-          'Allow photo access so the image can be saved to your gallery.',
+          t('chat.alerts.permissionTitle'),
+          t('chat.alerts.savePermissionMsg'),
         );
         return;
       }
@@ -486,7 +490,7 @@ export default function ChatScreen() {
       if (savedFlashTimeoutRef.current) clearTimeout(savedFlashTimeoutRef.current);
       savedFlashTimeoutRef.current = setTimeout(() => setSavedFlash(false), 2000);
     } catch {
-      Alert.alert('Error', 'Could not save this image. Please try again.');
+      Alert.alert(t('chat.alerts.error'), t('chat.alerts.saveImageFailed'));
     } finally {
       setSavingImage(false);
     }
@@ -550,9 +554,9 @@ export default function ChatScreen() {
     if (consultationState !== 'ended' && consultationState !== 'prescription_sent') return;
     farmerEndNotifiedRef.current = true;
     Alert.alert(
-      'Congratulations!',
-      'The consultation has ended.',
-      [{ text: 'Go to Home', onPress: () => router.replace('/(tabs)') }],
+      t('chat.alerts.congratsTitle'),
+      t('chat.alerts.congratsMsg'),
+      [{ text: t('chat.alerts.goToHome'), onPress: () => router.replace('/(tabs)') }],
       { cancelable: false },
     );
   }, [consultationState, isViewerDoctor, router]);
@@ -583,8 +587,8 @@ export default function ChatScreen() {
   const handleStartConsultation = async (): Promise<'started' | 'ended' | 'failed'> => {
     if (!appointmentId) {
       Alert.alert(
-        'Error',
-        'Missing appointment information. Please open this chat from the appointment.',
+        t('chat.alerts.error'),
+        t('chat.alerts.missingAppointment'),
       );
       return 'failed';
     }
@@ -604,7 +608,7 @@ export default function ChatScreen() {
       setRemainingTime(Math.max(0, CONSULTATION_DURATION_SECONDS - elapsed));
       return 'started';
     } catch {
-      Alert.alert('Error', 'Failed to start consultation. Please try again.');
+      Alert.alert(t('chat.alerts.error'), t('chat.alerts.startFailed'));
       return 'failed';
     }
   };
@@ -614,7 +618,7 @@ export default function ChatScreen() {
       try {
         await endConsultation(resolvedConsultationId).unwrap();
       } catch {
-        Alert.alert('Error', 'Failed to end consultation. Please try again.');
+        Alert.alert(t('chat.alerts.error'), t('chat.alerts.endFailed'));
       }
     }
     setConsultationState('ended');
@@ -635,8 +639,8 @@ export default function ChatScreen() {
   const openSendPrescription = () => {
     if (!isViewerDoctor || !appointmentId) {
       Alert.alert(
-        'Error',
-        'Missing appointment information. Please open this chat from the appointment.',
+        t('chat.alerts.error'),
+        t('chat.alerts.missingAppointment'),
       );
       return;
     }
@@ -662,8 +666,8 @@ export default function ChatScreen() {
   const handleStartCall = (callType: CallType = 'video') => {
     if (!appointmentId) {
       Alert.alert(
-        'Error',
-        'Missing appointment information. Please open this chat from the appointment.',
+        t('chat.alerts.error'),
+        t('chat.alerts.missingAppointment'),
       );
       return;
     }
@@ -686,10 +690,10 @@ export default function ChatScreen() {
     if (startingCall) return;
     if (!appointmentId || !canCall) {
       Alert.alert(
-        'Calls unavailable',
+        t('chat.alerts.callsUnavailableTitle'),
         consultationFinished
-          ? 'Consultation has ended — only messaging is available.'
-          : 'Calling is not available for this appointment right now.',
+          ? t('chat.alerts.callEndedOnlyMsg')
+          : t('chat.alerts.callNotAvailableMsg'),
       );
       return;
     }
@@ -698,7 +702,7 @@ export default function ChatScreen() {
       if (consultationState === 'idle') {
         const result = await handleStartConsultation();
         if (result === 'ended') {
-          Alert.alert('Calls unavailable', 'Consultation has ended — only messaging is available.');
+          Alert.alert(t('chat.alerts.callsUnavailableTitle'), t('chat.alerts.callEndedOnlyMsg'));
           return;
         }
         if (result === 'failed') return;
@@ -713,7 +717,7 @@ export default function ChatScreen() {
 
   const handleSendNote = () => {
     if (Platform.OS === 'ios') {
-      Alert.prompt('Send Note', 'Enter a note for the patient', (text) => {
+      Alert.prompt(t('chat.actions.sendNote'), t('chat.alerts.sendNoteMsg'), (text) => {
         if (text && text.trim()) {
           setInputText(text.trim());
         }
@@ -727,7 +731,7 @@ export default function ChatScreen() {
     try {
       const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permission.granted) {
-        Alert.alert('Permission Required', 'Please allow access to your photo library to send images.');
+        Alert.alert(t('chat.alerts.permissionRequiredTitle'), t('chat.alerts.sendPermissionMsg'));
         return;
       }
 
@@ -752,7 +756,7 @@ export default function ChatScreen() {
       let targetConversationId = conversationId;
       if (!targetConversationId) {
         if (!appointmentId) {
-          Alert.alert('Error', 'Open this chat from an appointment to send images.');
+          Alert.alert(t('chat.alerts.error'), t('chat.alerts.openFromAppointment'));
           return;
         }
         const conv = await createConversation({
@@ -774,10 +778,10 @@ export default function ChatScreen() {
     } catch (err) {
       const status = (err as { status?: number | string })?.status;
       Alert.alert(
-        'Error',
+        t('chat.alerts.error'),
         status === 413
-          ? 'Photo is too large — please pick a smaller image.'
-          : 'Failed to send attachment. Please try again.',
+          ? t('chat.alerts.attachmentTooLarge')
+          : t('chat.alerts.attachmentFailed'),
       );
     }
   };
@@ -805,7 +809,7 @@ export default function ChatScreen() {
       );
     } catch {
       setLocalMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
-      Alert.alert('Error', 'Failed to send message. Please try again.');
+      Alert.alert(t('chat.alerts.error'), t('chat.alerts.messageFailed'));
     }
   };
 
@@ -846,7 +850,7 @@ export default function ChatScreen() {
           <View style={isMine ? styles.prescriptionBubble : styles.prescriptionBubbleLeft}>
             <View style={styles.prescriptionHeader}>
               <Ionicons name="document-text" size={18} color="#FFFFFF" />
-              <Text style={styles.prescriptionTitle}>Prescription - {item.prescriptionDate}</Text>
+              <Text style={styles.prescriptionTitle}>{t('chat.prescription.title', { date: item.prescriptionDate ?? '' })}</Text>
             </View>
             <Text style={styles.prescriptionMeta}>
               {item.prescriptionDate} · {item.prescriptionSize}
@@ -954,7 +958,7 @@ export default function ChatScreen() {
                 }}
               >
                 <Ionicons name="document-text-outline" size={18} color="#BD632F" />
-                <Text style={styles.actionsMenuItemText}>Send Recommendation</Text>
+                <Text style={styles.actionsMenuItemText}>{t('chat.actions.sendRecommendation')}</Text>
               </TouchableOpacity>
             )}
             <TouchableOpacity
@@ -966,7 +970,7 @@ export default function ChatScreen() {
               }}
             >
               <Ionicons name="chatbubble-outline" size={18} color="#BD632F" />
-              <Text style={styles.actionsMenuItemText}>Send Note</Text>
+              <Text style={styles.actionsMenuItemText}>{t('chat.actions.sendNote')}</Text>
             </TouchableOpacity>
           </View>
         </>
@@ -988,11 +992,11 @@ export default function ChatScreen() {
               <Text style={styles.upcomingBannerTime}>
                 {appointmentTime
                   ? `${formatDhakaClock(appointmentTime)} · ${formatDhakaDayLabel(appointmentTime)}`
-                  : 'Today'}
+                  : t('chat.date.today')}
               </Text>
               <Text style={styles.upcomingBannerName}>{animalName || patientName}</Text>
               {!!animalName && (
-                <Text style={styles.upcomingBannerOwner}>Owner   {patientName}</Text>
+                <Text style={styles.upcomingBannerOwner}>{t('chat.upcoming.owner', { name: patientName })}</Text>
               )}
             </View>
           </View>
@@ -1001,23 +1005,23 @@ export default function ChatScreen() {
             activeOpacity={0.85}
             onPress={() => handleStartCall('video')}
           >
-            <Text style={styles.upcomingBannerJoinText}>Join</Text>
+            <Text style={styles.upcomingBannerJoinText}>{t('chat.upcoming.join')}</Text>
           </TouchableOpacity>
         </View>
       )}
 
       {isViewerDoctor && consultationState === 'active' && (
         <View style={styles.consultationBanner}>
-          <Text style={styles.consultationBannerTitle}>Consultation started</Text>
-          <Text style={styles.consultationBannerDesc}>You are now in consultation with {patientName}</Text>
-          <Text style={styles.consultationBannerBullet}>•  Start time: {activeConsultation ? formatDhakaClock(consultationStartedAt(activeConsultation)) : ''}</Text>
-          <Text style={styles.consultationBannerBullet}>•  Max Duration: 30 min</Text>
-          <Text style={styles.consultationBannerRemaining}>•  Remaining time: {formatTimeRemaining(remainingTime)}</Text>
+          <Text style={styles.consultationBannerTitle}>{t('chat.consultation.startedTitle')}</Text>
+          <Text style={styles.consultationBannerDesc}>{t('chat.consultation.startedDesc', { name: patientName })}</Text>
+          <Text style={styles.consultationBannerBullet}>{t('chat.consultation.startTime', { time: activeConsultation ? formatDhakaClock(consultationStartedAt(activeConsultation)) : '' })}</Text>
+          <Text style={styles.consultationBannerBullet}>{t('chat.consultation.maxDuration')}</Text>
+          <Text style={styles.consultationBannerRemaining}>{t('chat.consultation.remainingTime', { time: formatTimeRemaining(remainingTime) })}</Text>
           <TouchableOpacity style={styles.endConsultationBtn} onPress={handleEndConsultation} activeOpacity={0.85} disabled={ending}>
             {ending ? (
               <ActivityIndicator size="small" color="#1A1817" />
             ) : (
-              <Text style={styles.endConsultationBtnText}>End Consultation</Text>
+              <Text style={styles.endConsultationBtnText}>{t('chat.actions.endConsultation')}</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -1026,18 +1030,18 @@ export default function ChatScreen() {
       {isViewerDoctor &&
         (consultationState === 'ended' || consultationState === 'prescription_sent') && (
         <View style={styles.consultationBanner}>
-          <Text style={styles.consultationBannerEndedTitle}>Consultation ended!</Text>
-          <Text style={styles.consultationBannerDesc}>Your consultation with {patientName} has ended.</Text>
-          <Text style={styles.consultationBannerBullet}>•  Start time: {activeConsultation ? formatDhakaClock(consultationStartedAt(activeConsultation)) : ''}</Text>
-          <Text style={styles.consultationBannerBullet}>•  Max Duration: 30 min</Text>
-          <Text style={styles.consultationBannerRemaining}>•  Remaining time: {formatTimeRemaining(remainingTime)}</Text>
+          <Text style={styles.consultationBannerEndedTitle}>{t('chat.consultation.endedTitle')}</Text>
+          <Text style={styles.consultationBannerDesc}>{t('chat.consultation.endedDesc', { name: patientName })}</Text>
+          <Text style={styles.consultationBannerBullet}>{t('chat.consultation.startTime', { time: activeConsultation ? formatDhakaClock(consultationStartedAt(activeConsultation)) : '' })}</Text>
+          <Text style={styles.consultationBannerBullet}>{t('chat.consultation.maxDuration')}</Text>
+          <Text style={styles.consultationBannerRemaining}>{t('chat.consultation.remainingTime', { time: formatTimeRemaining(remainingTime) })}</Text>
         </View>
       )}
 
       {isViewerDoctor &&
         (consultationState === 'ended' || consultationState === 'prescription_sent') && (
         <View style={styles.nextStepInline}>
-          <Text style={styles.nextStepInlineTitle}>Next Step</Text>
+          <Text style={styles.nextStepInlineTitle}>{t('chat.nextStep.title')}</Text>
           <View style={styles.nextStepInlineOption}>
             {prescriptionAlreadySent ? (
               <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
@@ -1046,11 +1050,11 @@ export default function ChatScreen() {
                 <View style={styles.radioInner} />
               </View>
             )}
-            <Text style={styles.nextStepInlineText}>Send prescription, recommendation, note</Text>
+            <Text style={styles.nextStepInlineText}>{t('chat.nextStep.option')}</Text>
           </View>
           {consultationState === 'ended' && !prescriptionAlreadySent && (
             <TouchableOpacity style={styles.sendPrescriptionInlineBtn} onPress={openSendPrescription} activeOpacity={0.85}>
-              <Text style={styles.sendPrescriptionInlineBtnText}>Send Prescription</Text>
+              <Text style={styles.sendPrescriptionInlineBtnText}>{t('chat.actions.sendPrescription')}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -1090,10 +1094,10 @@ export default function ChatScreen() {
         <View style={styles.quickActionsContainer}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickActions}>
             <TouchableOpacity style={styles.quickActionBtn} activeOpacity={0.8} onPress={openSendPrescription}>
-              <Text style={styles.quickActionText}>Send prescription</Text>
+              <Text style={styles.quickActionText}>{t('chat.actions.sendPrescriptionLower')}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.quickActionBtn} activeOpacity={0.8} onPress={openSendPrescription}>
-              <Text style={styles.quickActionText}>Send recommendation</Text>
+              <Text style={styles.quickActionText}>{t('chat.actions.sendRecommendationLower')}</Text>
             </TouchableOpacity>
           </ScrollView>
         </View>
@@ -1105,7 +1109,7 @@ export default function ChatScreen() {
             {starting ? (
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
-              <Text style={styles.startConsultationBtnText}>Start Consultation</Text>
+              <Text style={styles.startConsultationBtnText}>{t('chat.actions.startConsultation')}</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -1120,7 +1124,7 @@ export default function ChatScreen() {
             <TextInput
               ref={textInputRef}
               style={styles.textInput}
-              placeholder="Type a message..."
+              placeholder={t('chat.input.placeholder')}
               placeholderTextColor="#A39E99"
               value={inputText}
               onChangeText={setInputText}
@@ -1131,7 +1135,7 @@ export default function ChatScreen() {
             <TouchableOpacity
               style={[styles.micBtn, sending && { opacity: 0.5 }]}
               activeOpacity={0.8}
-              onPress={inputText.trim() ? handleSendMessage : () => Alert.alert('Audio Recording', 'Audio recording feature coming soon.')}
+              onPress={inputText.trim() ? handleSendMessage : () => Alert.alert(t('chat.alerts.audioTitle'), t('chat.alerts.audioMsg'))}
               disabled={sending}
             >
               {sending ? (
@@ -1170,7 +1174,7 @@ export default function ChatScreen() {
           {viewerError && (
             <View style={styles.viewerCenter} pointerEvents="none">
               <Ionicons name="image-outline" size={48} color="rgba(255,255,255,0.6)" />
-              <Text style={styles.viewerErrorText}>Could not load image</Text>
+              <Text style={styles.viewerErrorText}>{t('chat.viewer.loadFailed')}</Text>
             </View>
           )}
           <SafeAreaView style={styles.viewerTopBar} edges={['top']}>
@@ -1178,7 +1182,7 @@ export default function ChatScreen() {
               style={styles.viewerIconBtn}
               onPress={closeImageViewer}
               activeOpacity={0.7}
-              accessibilityLabel="Close image"
+              accessibilityLabel={t('chat.viewer.closeImage')}
             >
               <Ionicons name="close" size={26} color="#FFFFFF" />
             </TouchableOpacity>
@@ -1189,7 +1193,7 @@ export default function ChatScreen() {
                   mine={false}
                 />
                 <Text numberOfLines={1} ellipsizeMode="tail" style={styles.viewerSenderName}>
-                  {viewerMine ? 'You' : counterpartyName}
+                  {viewerMine ? t('chat.viewer.you') : counterpartyName}
                 </Text>
               </View>
             )}
@@ -1199,7 +1203,7 @@ export default function ChatScreen() {
                 onPress={downloadViewedImage}
                 activeOpacity={0.7}
                 disabled={savingImage || sharingImage}
-                accessibilityLabel="Download image"
+                accessibilityLabel={t('chat.viewer.downloadImage')}
               >
                 {savingImage ? (
                   <ActivityIndicator size="small" color="#FFFFFF" />
@@ -1216,7 +1220,7 @@ export default function ChatScreen() {
                 onPress={shareViewedImage}
                 activeOpacity={0.7}
                 disabled={sharingImage || savingImage}
-                accessibilityLabel="Share image"
+                accessibilityLabel={t('chat.viewer.shareImage')}
               >
                 {sharingImage ? (
                   <ActivityIndicator size="small" color="#FFFFFF" />

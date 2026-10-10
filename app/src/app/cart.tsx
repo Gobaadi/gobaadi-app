@@ -10,6 +10,7 @@ import {
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 import {
   useGetCartQuery,
@@ -19,6 +20,7 @@ import {
 
 export default function CartScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { data: cart, isLoading, isFetching } = useGetCartQuery();
   const [updateCartItem] = useUpdateCartItemMutation();
   const [removeCartItem] = useRemoveCartItemMutation();
@@ -31,7 +33,7 @@ export default function CartScreen() {
         <TouchableOpacity style={styles.circleButton} onPress={() => router.back()} activeOpacity={0.8}>
           <Text style={styles.buttonText}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>My Cart</Text>
+        <Text style={styles.headerTitle}>{t('cart.title')}</Text>
         <View style={styles.circleButton} />
       </View>
 
@@ -39,9 +41,9 @@ export default function CartScreen() {
         <ActivityIndicator style={{ marginTop: 40 }} color="#BD632F" />
       ) : items.length === 0 ? (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyText}>Your cart is empty.</Text>
+          <Text style={styles.emptyText}>{t('cart.empty')}</Text>
           <TouchableOpacity style={styles.browseBtn} onPress={() => router.push('/(tabs)/market')} activeOpacity={0.85}>
-            <Text style={styles.browseBtnText}>Browse Marketplace</Text>
+            <Text style={styles.browseBtnText}>{t('cart.browseMarketplace')}</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -58,7 +60,7 @@ export default function CartScreen() {
                     <Text style={styles.itemName} numberOfLines={1}>{item.name}</Text>
                     <Text style={styles.itemPrice}>৳ {(item.discountPrice || item.unitPrice).toLocaleString()}</Text>
                     {!item.isAvailable && (
-                      <Text style={styles.warningText}>{item.warning || 'Unavailable'}</Text>
+                      <Text style={styles.warningText}>{item.warning || t('cart.unavailable')}</Text>
                     )}
 
                     <View style={styles.qtyRow}>
@@ -84,7 +86,7 @@ export default function CartScreen() {
                         onPress={() => removeCartItem(item.id)}
                         activeOpacity={0.7}
                       >
-                        <Text style={styles.removeBtnText}>Remove</Text>
+                        <Text style={styles.removeBtnText}>{t('cart.remove')}</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -95,19 +97,19 @@ export default function CartScreen() {
 
           <View style={styles.summaryContainer}>
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Subtotal</Text>
+              <Text style={styles.summaryLabel}>{t('cart.subtotal')}</Text>
               <Text style={styles.summaryValue}>৳ {cart!.subtotal.toLocaleString()}</Text>
             </View>
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Tax</Text>
+              <Text style={styles.summaryLabel}>{t('cart.tax')}</Text>
               <Text style={styles.summaryValue}>৳ {cart!.tax.toLocaleString()}</Text>
             </View>
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Shipping</Text>
+              <Text style={styles.summaryLabel}>{t('cart.shipping')}</Text>
               <Text style={styles.summaryValue}>৳ {cart!.shipping.toLocaleString()}</Text>
             </View>
             <View style={[styles.summaryRow, styles.totalRow]}>
-              <Text style={styles.totalLabel}>Total</Text>
+              <Text style={styles.totalLabel}>{t('cart.total')}</Text>
               <Text style={styles.totalValue}>৳ {cart!.total.toLocaleString()}</Text>
             </View>
 
@@ -117,7 +119,7 @@ export default function CartScreen() {
               onPress={() => router.push('/checkout')}
               activeOpacity={0.85}
             >
-              <Text style={styles.checkoutBtnText}>Proceed to Checkout</Text>
+              <Text style={styles.checkoutBtnText}>{t('cart.proceedToCheckout')}</Text>
             </TouchableOpacity>
           </View>
         </>

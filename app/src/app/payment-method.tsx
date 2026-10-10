@@ -7,8 +7,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 export default function PaymentMethodScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const params = useLocalSearchParams();
 
@@ -24,7 +26,7 @@ export default function PaymentMethodScreen() {
           <Text style={styles.buttonText}>←</Text>
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>Payment</Text>
+        <Text style={styles.headerTitle}>{t('paymentMethod.title')}</Text>
 
         <TouchableOpacity style={styles.circleButton} activeOpacity={0.8}>
           <Text style={styles.buttonText}>🔔</Text>
@@ -33,7 +35,7 @@ export default function PaymentMethodScreen() {
 
       {/* Content */}
       <View style={styles.mainContent}>
-        <Text style={styles.sectionTitle}>Payment Method</Text>
+        <Text style={styles.sectionTitle}>{t('paymentMethod.sectionTitle')}</Text>
 
         {/* Selected bKash Card Option */}
         <TouchableOpacity style={styles.methodCardActive} activeOpacity={0.9}>
@@ -42,7 +44,7 @@ export default function PaymentMethodScreen() {
             <View style={styles.bkashLogoBadge}>
               <Text style={styles.bkashLogoText}>b</Text>
             </View>
-            <Text style={styles.methodName}>bKash</Text>
+            <Text style={styles.methodName}>{t('paymentMethod.bkash')}</Text>
           </View>
 
           {/* Active Check Circle indicator */}
@@ -65,7 +67,7 @@ export default function PaymentMethodScreen() {
           activeOpacity={0.85}
         >
           <Text style={styles.payButtonIcon}>💵</Text>
-          <Text style={styles.payButtonText}>Pay Now</Text>
+          <Text style={styles.payButtonText}>{t('paymentMethod.payNow')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

@@ -7,8 +7,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 export default function OrderSuccessScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { orderId } = useLocalSearchParams<{ orderId?: string }>();
 
@@ -31,10 +33,10 @@ export default function OrderSuccessScreen() {
           </View>
         </View>
 
-        <Text style={styles.successTitle}>Order Successfully</Text>
+        <Text style={styles.successTitle}>{t('orderSuccess.successTitle')}</Text>
         
         <Text style={styles.successSubtitle}>
-          Congratulations! Your order has been placed successfully. One of our agent will contact you within next hour.
+          {t('orderSuccess.successSubtitle')}
         </Text>
       </View>
 
@@ -46,7 +48,7 @@ export default function OrderSuccessScreen() {
           activeOpacity={0.85}
         >
           <Text style={styles.detailButtonIcon}>📄</Text>
-          <Text style={styles.detailButtonText}>Detail Bill</Text>
+          <Text style={styles.detailButtonText}>{t('orderSuccess.detailBill')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -54,7 +56,7 @@ export default function OrderSuccessScreen() {
           onPress={() => router.replace('/(tabs)/market')}
           activeOpacity={0.85}
         >
-          <Text style={styles.backButtonText}>← Back</Text>
+          <Text style={styles.backButtonText}>{t('orderSuccess.back')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

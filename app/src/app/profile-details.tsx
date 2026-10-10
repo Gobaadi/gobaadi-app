@@ -23,11 +23,13 @@ import { useGetReviewsQuery } from '@/store/reviewsApi';
 import { compressImageForUpload } from '@/utils/compress-image';
 import { DoctorAvatar } from '@/components/doctor-avatar';
 import { MonthYearPickerModal } from '@/components/month-year-picker';
+import { useTranslation } from '@/hooks/use-translation';
 
 type Tab = 'about' | 'experience' | 'credentials';
 
 export default function ProfileDetailsScreen() {
   // Doctor data
+  const { t } = useTranslation();
   const router = useRouter();
   const isDoctor = useRequireDoctor();
   const [activeTab, setActiveTab] = useState<Tab>('about');
@@ -47,7 +49,7 @@ export default function ProfileDetailsScreen() {
   const [updateProfile] = useUpdateProfileMutation();
   const { data: addresses = [] } = useGetAddressesQuery(undefined, { skip: !isDoctor });
 
-  const doctorPhone = userProfile?.phone || 'Not provided';
+  const doctorPhone = userProfile?.phone || t('profileDetails.notProvided');
 
   const [isCurrentlyStudying, setIsCurrentlyStudying] = useState(false);
   const [startMonth, setStartMonth] = useState('August');
@@ -78,11 +80,12 @@ export default function ProfileDetailsScreen() {
     () => addresses.find((a) => a.isDefault) ?? addresses[0],
     [addresses]
   );
+  const hasLocation = !!defaultAddress;
   const locationText = defaultAddress
     ? [defaultAddress.upazila, defaultAddress.district].filter(Boolean).join(', ')
-    : 'No data';
+    : t('profileDetails.noData');
   const locationStyle =
-    locationText === 'No data' ? [styles.fieldText, styles.noDataText] : styles.fieldText;
+    !hasLocation ? [styles.fieldText, styles.noDataText] : styles.fieldText;
 
   const savedDocuments = doctorProfile?.credentialDocuments ?? [];
   const displayDocumentUri =
@@ -97,6 +100,7 @@ export default function ProfileDetailsScreen() {
   const displayQualifications = (doctorProfile?.qualifications ?? []).filter((q) => q && q.trim());
 
   const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const monthLabel = (value: string) => t(`profileDetails.months.${value}`, { defaultValue: value });
   const YEARS = useMemo(() => {
     const currentYear = new Date().getFullYear();
     return Array.from({ length: 14 }, (_, i) => String(currentYear - 10 + i));
@@ -104,12 +108,12 @@ export default function ProfileDetailsScreen() {
 
   const handleDeleteCredentials = () => {
     Alert.alert(
-      'Delete Credentials',
-      'Are you sure you want to delete all professional credentials?',
+      t('profileDetails.alerts.deleteCredentialsTitle'),
+      t('profileDetails.alerts.deleteCredentialsMsg'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('profileDetails.actions.cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('profileDetails.actions.delete'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -117,9 +121,9 @@ export default function ProfileDetailsScreen() {
               await updateSpecializations([]).unwrap();
               await updateCredentialDocuments([]).unwrap();
               setPendingFiles([]);
-              Alert.alert('Success', 'Credentials deleted successfully');
+              Alert.alert(t('profileDetails.alerts.successTitle'), t('profileDetails.alerts.credentialsDeletedMsg'));
             } catch {
-              Alert.alert('Error', 'Failed to delete credentials. Please try again.');
+              Alert.alert(t('profileDetails.alerts.errorTitle'), t('profileDetails.alerts.deleteCredentialsFailedMsg'));
             }
           },
         },
@@ -130,7 +134,7 @@ export default function ProfileDetailsScreen() {
   const handleUploadDocument = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Permission Required', 'Please allow access to your photo library to upload documents.');
+      Alert.alert(t('profileDetails.alerts.permissionTitle'), t('profileDetails.alerts.permissionMsg'));
       return;
     }
 
@@ -163,15 +167,15 @@ export default function ProfileDetailsScreen() {
         await uploadCredentialDocument(formData).unwrap();
         setPendingFiles((prev) => prev.filter((f) => f !== file));
       }
-      Alert.alert('Success', 'Credential photo saved successfully');
+      Alert.alert(t('profileDetails.alerts.successTitle'), t('profileDetails.alerts.credentialSavedMsg'));
     } catch (err: any) {
       Alert.alert(
-        'Save failed',
+        t('profileDetails.alerts.saveFailedTitle'),
         err?.status === 413
-          ? 'The photo is too large. Please try a smaller image.'
+          ? t('profileDetails.alerts.photoTooLarge')
           : err?.data?.message ||
             err?.message ||
-            'Failed to save photo. Please try again.',
+            t('profileDetails.alerts.savePhotoFailedMsg'),
       );
     } finally {
       setIsSavingDocs(false);
@@ -188,7 +192,7 @@ export default function ProfileDetailsScreen() {
     try {
       await updateProfile({ credentialPeriod: period }).unwrap();
     } catch {
-      Alert.alert('Error', 'Failed to save your dates. Please try again.');
+      Alert.alert(t('profileDetails.alerts.errorTitle'), t('profileDetails.alerts.datesFailedMsg'));
     }
   };
 
@@ -240,7 +244,7 @@ export default function ProfileDetailsScreen() {
 
   if (!isDoctor) return null;
 
-  const doctorName = doctorProfile?.name || 'Doctor';
+  const doctorName = doctorProfile?.name || t('profileDetails.doctorFallback');
 
   return (
     <SafeAreaView style={styles.container}>
@@ -249,7 +253,7 @@ export default function ProfileDetailsScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
           <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Profile</Text>
+        <Text style={styles.headerTitle}>{t('profileDetails.title')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -272,27 +276,27 @@ export default function ProfileDetailsScreen() {
               <Text style={styles.doctorSpecialty}>{doctorProfile?.specialty}</Text>
               <View style={styles.ratingRow}>
                 <SvgXml width={14} height={14} xml={doctorProfileCardStarSvg} />
-                <Text style={styles.ratingText}>{doctorProfile?.rating} ({doctorBookings?.length} reviews)</Text>
+                <Text style={styles.ratingText}>{doctorProfile?.rating} ({t('profileDetails.reviews', { count: doctorBookings?.length ?? 0 })})</Text>
               </View>
               <Text style={[styles.doctorLocation, !doctorProfile?.specialty && styles.noDataText]}>
-                {doctorProfile?.specialty || 'No location added'}
+                {doctorProfile?.specialty || t('profileDetails.noLocationAdded')}
               </Text>
             </View>
           </View>
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>{uniquePatients}</Text>
-              <Text style={styles.statLabel}>Patients</Text>
+              <Text style={styles.statLabel}>{t('profileDetails.stats.patients')}</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>{completedConsultations}</Text>
-              <Text style={styles.statLabel}>Consultations</Text>
+              <Text style={styles.statLabel}>{t('profileDetails.stats.consultations')}</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>{doctorProfile?.experience || '0'}</Text>
-              <Text style={styles.statLabel}>Years Experience</Text>
+              <Text style={styles.statLabel}>{t('profileDetails.stats.yearsExperience')}</Text>
             </View>
           </View>
         </View>
@@ -307,7 +311,7 @@ export default function ProfileDetailsScreen() {
               activeOpacity={0.7}
             >
               <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-                {tab === 'about' ? 'About' : tab === 'experience' ? 'Experience' : 'Professional Credentials'}
+                {tab === 'about' ? t('profileDetails.tabs.about') : tab === 'experience' ? t('profileDetails.tabs.experience') : t('profileDetails.tabs.credentials')}
               </Text>
             </TouchableOpacity>
           ))}
@@ -317,21 +321,21 @@ export default function ProfileDetailsScreen() {
         {activeTab === 'about' && (
           <View>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Personal information</Text>
+              <Text style={styles.sectionTitle}>{t('profileDetails.sections.personalInfo')}</Text>
               <TouchableOpacity onPress={() => router.push('/profile-edit' as any)} activeOpacity={0.7}>
                 <SvgXml width={20} height={20} xml={profileEditSvg} />
               </TouchableOpacity>
             </View>
 
             <View style={styles.fieldCard}>
-              <Text style={styles.fieldLabel}>Your Name</Text>
+              <Text style={styles.fieldLabel}>{t('profileDetails.fields.name')}</Text>
               <View style={styles.fieldValue}>
                 <Text style={styles.fieldText}>{doctorProfile?.name}</Text>
               </View>
             </View>
 
             <View style={styles.fieldCard}>
-              <Text style={styles.fieldLabel}>Mobile Number</Text>
+              <Text style={styles.fieldLabel}>{t('profileDetails.fields.mobileNumber')}</Text>
               <View style={styles.fieldValue}>
                 <Text style={styles.fieldText}>{doctorPhone}</Text>
                 <Ionicons name="checkmark-circle" size={18} color="#4CAF50" />
@@ -339,16 +343,16 @@ export default function ProfileDetailsScreen() {
             </View>
 
             <View style={styles.fieldCard}>
-              <Text style={styles.fieldLabel}>Location (Village/District)</Text>
+              <Text style={styles.fieldLabel}>{t('profileDetails.fields.location')}</Text>
               <View style={styles.fieldValue}>
                 <Text style={locationStyle}>{locationText}</Text>
                 <Ionicons name="location-outline" size={18} color="#BD632F" />
               </View>
             </View>
 
-            <Text style={[styles.sectionTitle, { marginTop: 16, marginBottom: 8 }]}>About</Text>
+            <Text style={[styles.sectionTitle, { marginTop: 16, marginBottom: 8 }]}>{t('profileDetails.sections.about')}</Text>
             <Text style={[styles.aboutText, !doctorProfile?.bio && styles.noDataText]}>
-              {doctorProfile?.bio || 'No data'}
+              {doctorProfile?.bio || t('profileDetails.noData')}
             </Text>
           </View>
         )}
@@ -357,7 +361,7 @@ export default function ProfileDetailsScreen() {
         {activeTab === 'experience' && (
           <View>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Experiences</Text>
+              <Text style={styles.sectionTitle}>{t('profileDetails.sections.experiences')}</Text>
               <View style={styles.sectionActions}>
                 <TouchableOpacity
                   activeOpacity={0.7}
@@ -401,13 +405,13 @@ export default function ProfileDetailsScreen() {
               ))
             ) : (
               <View style={styles.experienceCard}>
-                <Text style={[styles.expDescription, styles.noDataText]}>No experiences added</Text>
+                <Text style={[styles.expDescription, styles.noDataText]}>{t('profileDetails.empty.experiences')}</Text>
               </View>
             )}
 
             {/* Qualifications */}
             <View style={[styles.sectionHeader, { marginTop: 20 }]}>
-              <Text style={styles.sectionTitle}>Qualifications</Text>
+              <Text style={styles.sectionTitle}>{t('profileDetails.sections.qualifications')}</Text>
               <View style={styles.sectionActions}>
                 <TouchableOpacity
                   activeOpacity={0.7}
@@ -446,7 +450,7 @@ export default function ProfileDetailsScreen() {
                     <Ionicons name="school-outline" size={24} color="#BD632F" />
                   </View>
                   <View>
-                    <Text style={styles.qualSchool}>No qualifications added</Text>
+                    <Text style={styles.qualSchool}>{t('profileDetails.empty.qualifications')}</Text>
                   </View>
                 </View>
               )}
@@ -454,7 +458,7 @@ export default function ProfileDetailsScreen() {
 
             {/* Specialization */}
             <View style={[styles.sectionHeader, { marginTop: 20 }]}>
-              <Text style={styles.sectionTitle}>Specialization</Text>
+              <Text style={styles.sectionTitle}>{t('profileDetails.sections.specialization')}</Text>
               <TouchableOpacity
                 activeOpacity={0.7}
                 onPress={() => router.push({ pathname: '/profile-edit', params: { tab: 'credentials' } } as any)}
@@ -472,7 +476,7 @@ export default function ProfileDetailsScreen() {
                   </View>
                 ))
               ) : (
-                <Text style={[styles.tagText, styles.noDataText]}>No specializations added</Text>
+                <Text style={[styles.tagText, styles.noDataText]}>{t('profileDetails.empty.specializations')}</Text>
               )}
               <TouchableOpacity
                 style={styles.addMoreTag}
@@ -480,13 +484,13 @@ export default function ProfileDetailsScreen() {
                 onPress={() => router.push({ pathname: '/profile-edit', params: { tab: 'credentials' } } as any)}
               >
                 <Ionicons name="add" size={16} color="#BD632F" />
-                <Text style={styles.addMoreTagText}>Add more..</Text>
+                <Text style={styles.addMoreTagText}>{t('profileDetails.actions.addMore')}</Text>
               </TouchableOpacity>
             </View>
 
             {/* Patient Reviews */}
             <View style={[styles.sectionHeader, { marginTop: 20 }]}>
-              <Text style={styles.sectionTitle}>Patient Reviews</Text>
+              <Text style={styles.sectionTitle}>{t('profileDetails.sections.patientReviews')}</Text>
               <TouchableOpacity
                 activeOpacity={0.7}
                 onPress={() =>
@@ -499,14 +503,14 @@ export default function ProfileDetailsScreen() {
                   })
                 }
               >
-                <Text style={styles.seeAllText}>See All</Text>
+                <Text style={styles.seeAllText}>{t('profileDetails.actions.seeAll')}</Text>
               </TouchableOpacity>
             </View>
 
             <View style={styles.reviewsRatingRow}>
               <Ionicons name="star" size={18} color="#F59E0B" />
               <Text style={styles.reviewsScore}>{doctorProfile?.rating ?? '0.0'}</Text>
-              <Text style={styles.reviewsCount}>({reviews.length} Reviews)</Text>
+              <Text style={styles.reviewsCount}>({t('profileDetails.reviewsCount', { count: reviews.length })})</Text>
             </View>
 
             {reviews.length > 0 ? (
@@ -521,7 +525,7 @@ export default function ProfileDetailsScreen() {
                       )}
                     </View>
                     <View style={styles.reviewInfo}>
-                      <Text style={styles.reviewName}>{review.user?.name || 'Anonymous'}</Text>
+                      <Text style={styles.reviewName}>{review.user?.name || t('profileDetails.reviewer.anonymous')}</Text>
                       <View style={styles.reviewStars}>
                         {Array.from({ length: review.rating }).map((_, si) => (
                           <Ionicons key={si} name="star" size={12} color="#F59E0B" />
@@ -537,7 +541,7 @@ export default function ProfileDetailsScreen() {
               ))
             ) : (
               <View style={styles.reviewCard}>
-                <Text style={styles.reviewText}>No reviews yet</Text>
+                <Text style={styles.reviewText}>{t('profileDetails.empty.reviews')}</Text>
               </View>
             )}
           </View>
@@ -547,7 +551,7 @@ export default function ProfileDetailsScreen() {
         {activeTab === 'credentials' && (
           <View>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Professional Credentials</Text>
+              <Text style={styles.sectionTitle}>{t('profileDetails.sections.credentials')}</Text>
               <View style={styles.sectionActions}>
                 <TouchableOpacity activeOpacity={0.7} onPress={handleDeleteCredentials}>
                   <Ionicons name="trash-outline" size={20} color="#E53935" />
@@ -562,26 +566,26 @@ export default function ProfileDetailsScreen() {
             </View>
 
             <View style={styles.fieldCard}>
-              <Text style={styles.fieldLabel}>Certifications</Text>
+              <Text style={styles.fieldLabel}>{t('profileDetails.fields.certifications')}</Text>
               <View style={styles.fieldValue}>
                 <Text style={[styles.fieldText, doctorProfile?.qualifications?.[0] ? undefined : styles.noDataText]}>
-                  {doctorProfile?.qualifications?.[0] || 'No data'}
+                  {doctorProfile?.qualifications?.[0] || t('profileDetails.noData')}
                 </Text>
               </View>
             </View>
 
             <View style={styles.fieldCard}>
-              <Text style={styles.fieldLabel}>Institute Name</Text>
+              <Text style={styles.fieldLabel}>{t('profileDetails.fields.instituteName')}</Text>
               <View style={styles.fieldValue}>
                 <Text style={[styles.fieldText, doctorProfile?.qualifications?.[1] ? undefined : styles.noDataText]}>
-                  {doctorProfile?.qualifications?.[1] || 'No data'}
+                  {doctorProfile?.qualifications?.[1] || t('profileDetails.noData')}
                 </Text>
                 <Ionicons name="checkmark-circle" size={18} color="#4CAF50" />
               </View>
             </View>
 
             <View style={styles.fieldCard}>
-              <Text style={styles.fieldLabel}>Location (Village/District)</Text>
+              <Text style={styles.fieldLabel}>{t('profileDetails.fields.location')}</Text>
               <View style={styles.fieldValue}>
                 <Text style={locationStyle}>{locationText}</Text>
                 <Ionicons name="location-outline" size={18} color="#BD632F" />
@@ -590,18 +594,18 @@ export default function ProfileDetailsScreen() {
 
             <View style={styles.halfRow}>
               <View style={styles.halfField}>
-                <Text style={styles.fieldLabel}>Start date</Text>
+                <Text style={styles.fieldLabel}>{t('profileDetails.fields.startDate')}</Text>
                 <TouchableOpacity
                   style={styles.dropdownField}
                   onPress={() => setPickerTarget('start')}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.fieldText}>{`${startMonth} ${startYear}`}</Text>
+                  <Text style={styles.fieldText}>{`${monthLabel(startMonth)} ${startYear}`}</Text>
                   <Ionicons name="chevron-down" size={16} color="#9C9690" />
                 </TouchableOpacity>
               </View>
               <View style={styles.halfField}>
-                <Text style={styles.fieldLabel}>End date</Text>
+                <Text style={styles.fieldLabel}>{t('profileDetails.fields.endDate')}</Text>
                 <TouchableOpacity
                   style={[styles.dropdownField, isCurrentlyStudying && styles.dropdownFieldDisabled]}
                   onPress={() => {
@@ -611,7 +615,7 @@ export default function ProfileDetailsScreen() {
                   activeOpacity={0.7}
                 >
                   <Text style={styles.fieldText}>
-                    {isCurrentlyStudying ? 'Present' : `${endMonth} ${endYear}`}
+                    {isCurrentlyStudying ? t('profileDetails.present') : `${monthLabel(endMonth)} ${endYear}`}
                   </Text>
                   {!isCurrentlyStudying && <Ionicons name="chevron-down" size={16} color="#9C9690" />}
                 </TouchableOpacity>
@@ -622,24 +626,24 @@ export default function ProfileDetailsScreen() {
               <View style={styles.checkbox}>
                 {isCurrentlyStudying && <View style={[styles.checkboxInner, { backgroundColor: '#BD632F' }]} />}
               </View>
-              <Text style={styles.checkboxLabel}>{"I'm currently studying here"}</Text>
+              <Text style={styles.checkboxLabel}>{t('profileDetails.currentlyStudying')}</Text>
             </TouchableOpacity>
 
-            <Text style={[styles.fieldLabel, { marginTop: 16, marginBottom: 8 }]}>Academic Credentials*</Text>
+            <Text style={[styles.fieldLabel, { marginTop: 16, marginBottom: 8 }]}>{t('profileDetails.fields.academicCredentialsRequired')}</Text>
             <TouchableOpacity style={styles.uploadArea} activeOpacity={0.7} onPress={handleUploadDocument}>
               {displayDocumentUri ? (
                 <Image source={{ uri: displayDocumentUri }} style={{ width: '100%', height: '100%', borderRadius: 14 }} resizeMode="cover" />
               ) : (
                 <>
                   <Ionicons name="camera-outline" size={36} color="#D1CCC7" />
-                  <Text style={styles.uploadText}>Tap to upload photo</Text>
+                  <Text style={styles.uploadText}>{t('profileDetails.actions.tapToUpload')}</Text>
                 </>
               )}
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.addMoreBtn} activeOpacity={0.8} onPress={handleUploadDocument}>
               <Ionicons name="image-outline" size={18} color="#7C7672" />
-              <Text style={styles.addMoreBtnText}>Add More</Text>
+              <Text style={styles.addMoreBtnText}>{t('profileDetails.actions.addMore')}</Text>
             </TouchableOpacity>
 
             {pendingFiles.length > 0 && (
@@ -654,7 +658,7 @@ export default function ProfileDetailsScreen() {
                 ) : (
                   <>
                     <Ionicons name="checkmark-circle-outline" size={18} color="#FFFFFF" />
-                    <Text style={styles.saveBtnText}>Save Photo</Text>
+                    <Text style={styles.saveBtnText}>{t('profileDetails.actions.savePhoto')}</Text>
                   </>
                 )}
               </TouchableOpacity>
@@ -665,12 +669,15 @@ export default function ProfileDetailsScreen() {
 
       <MonthYearPickerModal
         visible={pickerTarget !== null}
-        title={pickerTarget === 'start' ? 'Start date' : 'End date'}
-        month={pickerTarget === 'start' ? startMonth : endMonth}
+        title={pickerTarget === 'start' ? t('profileDetails.fields.startDate') : t('profileDetails.fields.endDate')}
+        month={monthLabel(pickerTarget === 'start' ? startMonth : endMonth)}
         year={pickerTarget === 'start' ? startYear : endYear}
-        months={MONTHS}
+        months={MONTHS.map((m) => monthLabel(m))}
         years={YEARS}
-        onConfirm={confirmPeriodPicker}
+        onConfirm={(monthValue, yearValue) => {
+          const englishMonth = MONTHS.find((m) => monthLabel(m) === monthValue) ?? monthValue;
+          confirmPeriodPicker(englishMonth, yearValue);
+        }}
         onClose={() => setPickerTarget(null)}
       />
     </SafeAreaView>

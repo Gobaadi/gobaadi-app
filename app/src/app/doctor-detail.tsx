@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { SvgXml } from 'react-native-svg';
 
 import {
@@ -25,6 +26,7 @@ import { DoctorAvatar } from '@/components/doctor-avatar';
 
 export default function DoctorDetailScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { id } = useLocalSearchParams();
   const doctorId = String(id || '');
 
@@ -39,7 +41,7 @@ export default function DoctorDetailScreen() {
       return {
         id: '1',
         name: 'Dr. David Patel',
-        specialty: 'Veterinary Surgery',
+        specialty: t('doctorDetail.defaults.specialty'),
         location: 'Cardiology Center, USA',
         rating: 5,
         reviews: 1872,
@@ -57,18 +59,18 @@ export default function DoctorDetailScreen() {
       avatar: doctorData.avatar ?? '',
       availability: doctorData.avatar === 'jessica_doctor.png' ? '8 AM - 5 PM' : '6 AM - 9 PM',
     };
-  }, [doctorData]);
+  }, [doctorData, t]);
 
   const specializations = [
-    'Veterinary clinical medicine',
-    'Veterinary geriatrics',
-    'Emergency and TRUMA CURE',
-    'Trained in Contrast Radiography by TANUVAS',
-    'Trained in Advance medical management of a major Dermatological Challenges in Dogs',
-    'Trained in Advance Feline Management by FCI',
-    'Trained in Canine Behaviour Management',
-    'Trained in Advance in Small Animal Renal Medicine and Renal Critical Care by TANUVAS',
-    'Trained in Pediatrics Health Management of Dogs and Cats by Dept of Vet Medicine, PGIVER, Jaipur Rajasthan',
+    'doctorDetail.specializations.clinicalMedicine',
+    'doctorDetail.specializations.geriatrics',
+    'doctorDetail.specializations.emergency',
+    'doctorDetail.specializations.contrastRadiography',
+    'doctorDetail.specializations.dermatology',
+    'doctorDetail.specializations.felineManagement',
+    'doctorDetail.specializations.canineBehaviour',
+    'doctorDetail.specializations.renalMedicine',
+    'doctorDetail.specializations.pediatrics',
   ];
 
   return (
@@ -83,7 +85,7 @@ export default function DoctorDetailScreen() {
           <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>Doctor Detail</Text>
+        <Text style={styles.headerTitle}>{t('doctorDetail.title')}</Text>
 
         <TouchableOpacity
           style={styles.circleButton}
@@ -114,7 +116,7 @@ export default function DoctorDetailScreen() {
             <View style={styles.ratingRow}>
               <SvgXml width={11} height={11} xml={doctorCardStarSvg} style={styles.starIcon} />
               <Text style={styles.ratingValue}>{doctor.rating}</Text>
-              <Text style={styles.reviewsText}>| {doctor.reviews} Reviews</Text>
+              <Text style={styles.reviewsText}>{t('doctorDetail.reviews', { count: doctor.reviews })}</Text>
             </View>
           </View>
         </View>
@@ -130,7 +132,7 @@ export default function DoctorDetailScreen() {
               <SvgXml width={28} height={28} xml={doctorDetailAvailabilitySvg} />
             </View>
             <View style={styles.availabilityMeta}>
-              <Text style={styles.availabilityTitle}>Availability</Text>
+              <Text style={styles.availabilityTitle}>{t('doctorDetail.availability')}</Text>
               <Text style={styles.availabilityTime}>{doctor.availability}</Text>
             </View>
           </View>
@@ -139,11 +141,11 @@ export default function DoctorDetailScreen() {
 
         {/* Specializations list */}
         <View style={styles.specCard}>
-          <Text style={styles.specTitle}>Specializations</Text>
+          <Text style={styles.specTitle}>{t('doctorDetail.specializationsTitle')}</Text>
           {specializations.map((spec, index) => (
             <View key={index} style={styles.specBulletRow}>
               <Text style={styles.bulletPoint}>•</Text>
-              <Text style={styles.bulletText}>{spec}</Text>
+              <Text style={styles.bulletText}>{t(spec)}</Text>
             </View>
           ))}
         </View>
@@ -151,12 +153,12 @@ export default function DoctorDetailScreen() {
         {/* Services offered */}
         {services.length > 0 && (
           <View style={[styles.specCard, { marginTop: 20 }]}>
-            <Text style={styles.specTitle}>Services</Text>
+            <Text style={styles.specTitle}>{t('doctorDetail.servicesTitle')}</Text>
             {services.map((service) => (
               <View key={service.id} style={styles.availabilityCard}>
                 <View style={styles.availabilityMeta}>
                   <Text style={styles.availabilityTitle}>{service.name}</Text>
-                  <Text style={styles.availabilityTime}>৳ {service.price} · {service.durationMinutes} min</Text>
+                  <Text style={styles.availabilityTime}>{t('doctorDetail.serviceMeta', { price: service.price, minutes: service.durationMinutes })}</Text>
                 </View>
               </View>
             ))}
@@ -172,7 +174,7 @@ export default function DoctorDetailScreen() {
           activeOpacity={0.85}
         >
           <SvgXml width={20} height={20} xml={doctorDetailConfirmSlotSvg} style={styles.bookButtonIcon} />
-          <Text style={styles.bookButtonText}>Book Slot</Text>
+          <Text style={styles.bookButtonText}>{t('doctorDetail.bookSlot')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

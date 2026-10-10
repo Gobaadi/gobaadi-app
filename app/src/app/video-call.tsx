@@ -32,6 +32,7 @@ import {
 } from '@/store/videoCallApi';
 import { socketManager } from '@/lib/socket-manager';
 import { useGetConversationsQuery } from '@/store/chatApi';
+import { useTranslation } from '@/hooks/use-translation';
 
 function formatTimer(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -47,7 +48,7 @@ function joinErrorMessage(error: unknown): string {
   const data = (error as { data?: { message?: string | string[] } })?.data;
   const raw = data?.message;
   const message = Array.isArray(raw) ? raw[0] : raw;
-  return message || 'Failed to join call';
+  return message || '';
 }
 
 async function requestPermissions(audioOnly: boolean): Promise<boolean> {
@@ -71,6 +72,7 @@ async function requestPermissions(audioOnly: boolean): Promise<boolean> {
 }
 
 export default function VideoCallScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const params = useLocalSearchParams<{
     appointmentId?: string;
@@ -89,7 +91,9 @@ export default function VideoCallScreen() {
   const peerName =
     params.peerName ||
     params.patientName ||
-    (user?.role === 'doctor' ? 'Patient' : 'Doctor');
+    (user?.role === 'doctor'
+      ? t('videoCall.patientFallback')
+      : t('videoCall.doctorFallback'));
   const peerImage = params.animalImage || '';
   const animalId = params.animalId || '';
   const conversationId = params.conversationId
@@ -146,11 +150,11 @@ export default function VideoCallScreen() {
       setHasPermission(granted);
       if (!granted) {
         Alert.alert(
-          'Permissions Required',
+          t('videoCall.alerts.permissionsTitle'),
           isAudioCall
-            ? 'Microphone permission is needed for audio calls. Please enable it in your device settings.'
-            : 'Camera and microphone permissions are needed for video calls. Please enable them in your device settings.',
-          [{ text: 'OK', onPress: () => router.back() }],
+            ? t('videoCall.alerts.permissionsAudio')
+            : t('videoCall.alerts.permissionsVideo'),
+          [{ text: t('videoCall.alerts.ok'), onPress: () => router.back() }],
         );
       }
     });
@@ -256,7 +260,7 @@ export default function VideoCallScreen() {
 
   const openSendPrescription = () => {
     if (!appointmentId) {
-      Alert.alert('Error', 'Missing appointment information. Please try again.');
+      Alert.alert(t('videoCall.alerts.error'), t('videoCall.alerts.missingAppointment'));
       return;
     }
     const ownerEmail =
@@ -282,8 +286,8 @@ export default function VideoCallScreen() {
     }) => {
       if (payload.appointmentId !== appointmentId || payload.accepted) return;
       if (endedRef.current) return;
-      Alert.alert('Call Declined', 'The other party declined the call.', [
-        { text: 'OK', onPress: () => handleEndCall() },
+      Alert.alert(t('videoCall.alerts.callDeclined'), t('videoCall.alerts.callDeclinedMsg'), [
+        { text: t('videoCall.alerts.ok'), onPress: () => handleEndCall() },
       ]);
     };
     socketManager.on('callResponse', handleResponse);
@@ -305,12 +309,12 @@ export default function VideoCallScreen() {
     return (
       <View style={styles.loadingContainer}>
         <Ionicons name="warning-outline" size={48} color="#E53935" />
-        <Text style={styles.loadingText}>Missing appointment information</Text>
+        <Text style={styles.loadingText}>{t('videoCall.missingAppointment')}</Text>
         <TouchableOpacity
           style={{ marginTop: 16, padding: 12, backgroundColor: '#BD632F', borderRadius: 12 }}
           onPress={() => router.back()}
         >
-          <Text style={{ color: '#FFF', fontWeight: '600' }}>Go Back</Text>
+          <Text style={{ color: '#FFF', fontWeight: '600' }}>{t('videoCall.goBack')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -320,7 +324,7 @@ export default function VideoCallScreen() {
     return (
       <View style={styles.loadingContainer}>
         <Ionicons name="videocam-off" size={48} color="#E53935" />
-        <Text style={styles.loadingText}>Permissions denied</Text>
+        <Text style={styles.loadingText}>{t('videoCall.permissionsDenied')}</Text>
       </View>
     );
   }
@@ -329,7 +333,7 @@ export default function VideoCallScreen() {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#BD632F" />
-        <Text style={styles.loadingText}>Connecting...</Text>
+        <Text style={styles.loadingText}>{t('videoCall.connecting')}</Text>
       </View>
     );
   }
@@ -338,12 +342,14 @@ export default function VideoCallScreen() {
     return (
       <View style={styles.loadingContainer}>
         <Ionicons name="warning-outline" size={48} color="#E53935" />
-        <Text style={styles.loadingText}>{joinErrorMessage(joinError)}</Text>
+        <Text style={styles.loadingText}>
+          {joinErrorMessage(joinError) || t('videoCall.failedToJoin')}
+        </Text>
         <TouchableOpacity
           style={{ marginTop: 16, padding: 12, backgroundColor: '#BD632F', borderRadius: 12 }}
           onPress={() => router.back()}
         >
-          <Text style={{ color: '#FFF', fontWeight: '600' }}>Go Back</Text>
+          <Text style={{ color: '#FFF', fontWeight: '600' }}>{t('videoCall.goBack')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -361,7 +367,7 @@ export default function VideoCallScreen() {
             )}
           </View>
           <Text style={styles.audioPeerName}>{peerName}</Text>
-          <Text style={styles.audioCallLabel}>Audio call</Text>
+          <Text style={styles.audioCallLabel}>{t('videoCall.audioCall')}</Text>
         </View>
       ) : (
         <>
@@ -397,7 +403,7 @@ export default function VideoCallScreen() {
                     size={22}
                     color="rgba(255,255,255,0.85)"
                   />
-                  <Text style={styles.pipPlaceholderText}>Camera off</Text>
+                  <Text style={styles.pipPlaceholderText}>{t('videoCall.cameraOff')}</Text>
                 </View>
               ) : (
                 <RtcSurfaceView
@@ -415,7 +421,7 @@ export default function VideoCallScreen() {
           {remoteUids.length === 0 && isCameraOff && (
             <View style={styles.cameraOffStage}>
               <Ionicons name="videocam-off" size={48} color="rgba(255,255,255,0.5)" />
-              <Text style={styles.cameraOffStageText}>Camera off</Text>
+              <Text style={styles.cameraOffStageText}>{t('videoCall.cameraOff')}</Text>
             </View>
           )}
         </>
@@ -441,15 +447,15 @@ export default function VideoCallScreen() {
               onPress={retryJoin}
               activeOpacity={0.7}
             >
-              <Text style={styles.retryBtnText}>Retry</Text>
+              <Text style={styles.retryBtnText}>{t('videoCall.retry')}</Text>
             </TouchableOpacity>
           </View>
         )}
         {!isConnected && !agoraJoinError && (
-          <Text style={styles.connectingText}>Connecting...</Text>
+          <Text style={styles.connectingText}>{t('videoCall.connecting')}</Text>
         )}
         {isConnected && remoteUids.length === 0 && (
-          <Text style={styles.connectingText}>Waiting for participant...</Text>
+          <Text style={styles.connectingText}>{t('videoCall.waitingParticipant')}</Text>
         )}
       </View>
 
@@ -476,14 +482,14 @@ export default function VideoCallScreen() {
                   activeOpacity={0.8}
                   onPress={openSendPrescription}
                 >
-                  <Text style={styles.quickActionText}>Send prescription</Text>
+                  <Text style={styles.quickActionText}>{t('videoCall.sendPrescription')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.quickActionBtn}
                   activeOpacity={0.8}
                   onPress={openSendPrescription}
                 >
-                  <Text style={styles.quickActionText}>Send recommendation</Text>
+                  <Text style={styles.quickActionText}>{t('videoCall.sendRecommendation')}</Text>
                 </TouchableOpacity>
               </ScrollView>
             </View>
@@ -497,9 +503,9 @@ export default function VideoCallScreen() {
             <View style={styles.modalCheckCircle}>
               <Ionicons name="checkmark" size={40} color="#FFFFFF" />
             </View>
-            <Text style={styles.modalTitle}>Consultation ended!</Text>
+            <Text style={styles.modalTitle}>{t('videoCall.consultationEnded')}</Text>
             <Text style={styles.modalSubtitle}>
-              Your consultation has ended successfully.
+              {t('videoCall.consultationEndedMsg')}
             </Text>
             <TouchableOpacity
               style={styles.modalBtn}
@@ -512,7 +518,7 @@ export default function VideoCallScreen() {
               }}
               activeOpacity={0.85}
             >
-              <Text style={styles.modalBtnText}>Back to Home</Text>
+              <Text style={styles.modalBtnText}>{t('videoCall.backToHome')}</Text>
             </TouchableOpacity>
           </View>
         </View>

@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { useGetFaqsQuery } from '@/store/faqsApi';
 
@@ -21,13 +22,14 @@ const TAB_MAP: Record<FaqTab, string> = {
 };
 
 const TAB_LABELS: Record<FaqTab, string> = {
-  general: 'General',
-  doctor: 'Doctor Connection',
-  photo: 'Photo Diagnosis',
+  general: 'faqs.tabs.general',
+  doctor: 'faqs.tabs.doctor',
+  photo: 'faqs.tabs.photo',
 };
 
 export default function FAQsScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<FaqTab>('general');
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const { data: faqs, isLoading, isError } = useGetFaqsQuery({ category: TAB_MAP[activeTab] });
@@ -43,7 +45,7 @@ export default function FAQsScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
             <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>FAQs</Text>
+          <Text style={styles.headerTitle}>{t('faqs.title')}</Text>
           <View style={{ width: 40 }} />
         </View>
         <View style={styles.loadingContainer}>
@@ -60,12 +62,12 @@ export default function FAQsScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
             <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>FAQs</Text>
+          <Text style={styles.headerTitle}>{t('faqs.title')}</Text>
           <View style={{ width: 40 }} />
         </View>
         <View style={styles.loadingContainer}>
           <Ionicons name="cloud-offline-outline" size={48} color="#9C9690" />
-          <Text style={styles.errorText}>Failed to load FAQs</Text>
+          <Text style={styles.errorText}>{t('faqs.loadError')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -79,7 +81,7 @@ export default function FAQsScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
           <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>FAQs</Text>
+        <Text style={styles.headerTitle}>{t('faqs.title')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -92,7 +94,7 @@ export default function FAQsScreen() {
             activeOpacity={0.7}
           >
             <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-              {TAB_LABELS[tab]}
+              {t(TAB_LABELS[tab])}
             </Text>
           </TouchableOpacity>
         ))}
@@ -102,7 +104,7 @@ export default function FAQsScreen() {
         {sortedFaqs.length === 0 && (
           <View style={styles.emptyContainer}>
             <Ionicons name="document-text-outline" size={48} color="#9C9690" />
-            <Text style={styles.emptyText}>No FAQs in this category</Text>
+            <Text style={styles.emptyText}>{t('faqs.empty')}</Text>
           </View>
         )}
 

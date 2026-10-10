@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import {
   useGetBookingByIdQuery,
@@ -36,28 +37,28 @@ function formatDate(dateStr: string): string {
 function getStatusStyle(status: string) {
   switch (status) {
     case 'CONFIRMED':
-      return { bg: '#E8F5E9', text: '#2E7D32', label: 'Upcoming' };
+      return { bg: '#E8F5E9', text: '#2E7D32', labelKey: 'appointmentDetails.status.upcoming' };
     case 'COMPLETED':
-      return { bg: '#E3F2FD', text: '#1565C0', label: 'Completed' };
+      return { bg: '#E3F2FD', text: '#1565C0', labelKey: 'appointmentDetails.status.completed' };
     case 'CANCELLED':
-      return { bg: '#FFEBEE', text: '#C62828', label: 'Cancelled' };
+      return { bg: '#FFEBEE', text: '#C62828', labelKey: 'appointmentDetails.status.cancelled' };
     case 'RESCHEDULED':
-      return { bg: '#FFF3E0', text: '#E65100', label: 'Rescheduled' };
+      return { bg: '#FFF3E0', text: '#E65100', labelKey: 'appointmentDetails.status.rescheduled' };
     default:
-      return { bg: '#FFF3E0', text: '#E65100', label: status };
+      return { bg: '#FFF3E0', text: '#E65100', labelKey: status };
   }
 }
 
 function consultationTypeLabel(value?: string): string | null {
   switch (value) {
     case 'online_video':
-      return 'Online - Video';
+      return 'appointmentDetails.consultation.video';
     case 'online_voice':
-      return 'Online - Voice';
+      return 'appointmentDetails.consultation.voice';
     case 'online_chat':
-      return 'Online - Chat';
+      return 'appointmentDetails.consultation.chat';
     case 'physical':
-      return 'In Person';
+      return 'appointmentDetails.consultation.inPerson';
     case undefined:
     case null:
     case '':
@@ -73,23 +74,24 @@ function formatSymptoms(symptoms?: string | string[]): string | null {
   return text.trim() ? text.trim() : null;
 }
 
-function paymentStatusStyle(status?: string): { label: string; color: string } {
+function paymentStatusStyle(status?: string): { labelKey: string; color: string } {
   switch (status) {
     case 'paid':
-      return { label: 'Paid', color: '#4CAF50' };
+      return { labelKey: 'appointmentDetails.payment.paid', color: '#4CAF50' };
     case 'pending':
-      return { label: 'Pending', color: '#E65100' };
+      return { labelKey: 'appointmentDetails.payment.pending', color: '#E65100' };
     case 'failed':
-      return { label: 'Failed', color: '#C62828' };
+      return { labelKey: 'appointmentDetails.payment.failed', color: '#C62828' };
     case 'refunded':
-      return { label: 'Refunded', color: '#1565C0' };
+      return { labelKey: 'appointmentDetails.payment.refunded', color: '#1565C0' };
     default:
-      return { label: '—', color: '#9C9690' };
+      return { labelKey: '—', color: '#9C9690' };
   }
 }
 
 export default function AppointmentDetailsScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const {
     data: fetchedAppointment,
@@ -110,7 +112,7 @@ export default function AppointmentDetailsScreen() {
           >
             <Ionicons name="arrow-back" size={20} color="#BD632F" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Appointment Details</Text>
+          <Text style={styles.headerTitle}>{t('appointmentDetails.title')}</Text>
           <View style={{ width: 40 }} />
         </View>
         <View style={styles.emptyContainer}>
@@ -131,12 +133,12 @@ export default function AppointmentDetailsScreen() {
           >
             <Ionicons name="arrow-back" size={20} color="#BD632F" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Appointment Details</Text>
+          <Text style={styles.headerTitle}>{t('appointmentDetails.title')}</Text>
           <View style={{ width: 40 }} />
         </View>
         <View style={styles.emptyContainer}>
           <Ionicons name="calendar-outline" size={48} color="#E6E1DC" />
-          <Text style={styles.emptyText}>Appointment not found</Text>
+          <Text style={styles.emptyText}>{t('appointmentDetails.notFound')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -144,7 +146,7 @@ export default function AppointmentDetailsScreen() {
 
   const statusStyle = getStatusStyle(appointment.status);
   const displayName =
-    appointment.animalName || appointment.patientName || 'Patient';
+    appointment.animalName || appointment.patientName || t('appointmentDetails.patient');
   const consultationType = consultationTypeLabel(appointment.consultationType);
   const reason = (appointment.reasonForConsultation ?? '').trim();
   const symptoms = formatSymptoms(appointment.symptoms);
@@ -160,7 +162,7 @@ export default function AppointmentDetailsScreen() {
         >
           <Ionicons name="arrow-back" size={20} color="#BD632F" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Appointment Details</Text>
+        <Text style={styles.headerTitle}>{t('appointmentDetails.title')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -175,7 +177,7 @@ export default function AppointmentDetailsScreen() {
           </Text>
           <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
             <Text style={[styles.statusText, { color: statusStyle.text }]}>
-              {statusStyle.label}
+              {t(statusStyle.labelKey)}
             </Text>
           </View>
         </View>
@@ -203,7 +205,7 @@ export default function AppointmentDetailsScreen() {
                 </Text>
               )}
               {appointment.animalName && appointment.patientName && (
-                <Text style={styles.cardOwner}>Owner: {appointment.patientName}</Text>
+                <Text style={styles.cardOwner}>{t('appointmentDetails.owner', { name: appointment.patientName })}</Text>
               )}
             </View>
           </View>
@@ -212,16 +214,16 @@ export default function AppointmentDetailsScreen() {
 
           <View style={styles.cardRow}>
             <DoctorAvatar
-              name={appointment.doctorName || 'Doctor'}
+              name={appointment.doctorName || t('appointmentDetails.doctor')}
               avatar={appointment.doctorAvatar}
               size={56}
               radius={28}
               style={styles.doctorAvatar}
             />
             <View style={styles.cardInfo}>
-              <Text style={styles.cardLabel}>DOCTOR</Text>
+              <Text style={styles.cardLabel}>{t('appointmentDetails.doctorLabel')}</Text>
               <Text style={styles.cardName}>
-                {appointment.doctorName || 'Doctor'}
+                {appointment.doctorName || t('appointmentDetails.doctor')}
               </Text>
               {appointment.doctorSpecialty && (
                 <Text style={styles.cardDetail}>{appointment.doctorSpecialty}</Text>
@@ -233,8 +235,8 @@ export default function AppointmentDetailsScreen() {
 
           {consultationType && (
             <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Consultation Type</Text>
-              <Text style={styles.detailValue}>{consultationType}</Text>
+              <Text style={styles.detailLabel}>{t('appointmentDetails.consultationType')}</Text>
+              <Text style={styles.detailValue}>{t(consultationType)}</Text>
             </View>
           )}
 
@@ -242,7 +244,7 @@ export default function AppointmentDetailsScreen() {
             <>
               <View style={styles.divider} />
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Reason for Consultation</Text>
+                <Text style={styles.detailLabel}>{t('appointmentDetails.reason')}</Text>
                 <Text style={styles.detailValue}>{reason}</Text>
               </View>
             </>
@@ -252,7 +254,7 @@ export default function AppointmentDetailsScreen() {
             <>
               <View style={styles.divider} />
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Symptoms</Text>
+                <Text style={styles.detailLabel}>{t('appointmentDetails.symptoms')}</Text>
                 <Text style={styles.detailValue}>{symptoms}</Text>
               </View>
             </>
@@ -260,9 +262,9 @@ export default function AppointmentDetailsScreen() {
 
           <View style={styles.divider} />
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Payment</Text>
+            <Text style={styles.detailLabel}>{t('appointmentDetails.paymentLabel')}</Text>
             <Text style={[styles.detailValue, { color: payment.color }]}>
-              {payment.label}
+              {t(payment.labelKey)}
             </Text>
           </View>
 
@@ -270,7 +272,7 @@ export default function AppointmentDetailsScreen() {
             <>
               <View style={styles.divider} />
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Fee</Text>
+                <Text style={styles.detailLabel}>{t('appointmentDetails.fee')}</Text>
                 <Text style={styles.detailValue}>
                   ৳ {appointment.price.toLocaleString()}
                 </Text>
@@ -292,7 +294,7 @@ export default function AppointmentDetailsScreen() {
             }
             activeOpacity={0.8}
           >
-            <Text style={styles.cancelBtnText}>Cancel</Text>
+            <Text style={styles.cancelBtnText}>{t('appointmentDetails.cancel')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.rescheduleBtn}
@@ -304,7 +306,7 @@ export default function AppointmentDetailsScreen() {
             }
             activeOpacity={0.8}
           >
-            <Text style={styles.rescheduleBtnText}>Reschedule</Text>
+            <Text style={styles.rescheduleBtnText}>{t('appointmentDetails.reschedule')}</Text>
           </TouchableOpacity>
         </View>
       )}

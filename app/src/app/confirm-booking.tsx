@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useGetDoctorByIdQuery } from '@/store/doctorsApi';
 import { DoctorAvatar } from '@/components/doctor-avatar';
 import { SvgXml } from 'react-native-svg';
@@ -27,6 +28,7 @@ function pad(n: number): string {
 
 export default function ConfirmBookingScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const params = useLocalSearchParams();
   const doctorId = String(params.id || '');
   const selectedDay = params.day ? String(params.day) : '28';
@@ -40,7 +42,7 @@ export default function ConfirmBookingScreen() {
     if (!doctorData) {
       return {
         id: doctorId || '1',
-        name: 'Doctor',
+        name: t('confirmBooking.defaultDoctor'),
         specialty: '',
         location: '',
         rating: 0,
@@ -57,16 +59,21 @@ export default function ConfirmBookingScreen() {
       reviews: 124,
       avatar: doctorData.avatar ?? '',
     };
-  }, [doctorData, doctorId]);
+  }, [doctorData, doctorId, t]);
 
   const today = new Date();
-  const monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December',
+  const monthKeys = [
+    'january', 'february', 'march', 'april', 'may', 'june',
+    'july', 'august', 'september', 'october', 'november', 'december',
   ];
-  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const dayKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
   const dateObj = new Date(today.getFullYear(), today.getMonth(), Number(selectedDay));
-  const fullDateDisplay = `${dayNames[dateObj.getDay()]}, ${pad(Number(selectedDay))} ${monthNames[today.getMonth()]} ${today.getFullYear()}`;
+  const fullDateDisplay = t('confirmBooking.fullDate', {
+    day: t(`confirmBooking.daysShort.${dayKeys[dateObj.getDay()]}`),
+    dayNum: pad(Number(selectedDay)),
+    month: t(`confirmBooking.months.${monthKeys[today.getMonth()]}`),
+    year: today.getFullYear(),
+  });
 
   const handleConfirmPayment = () => {
     router.push({
@@ -93,7 +100,7 @@ export default function ConfirmBookingScreen() {
           <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>Confirm Booking</Text>
+        <Text style={styles.headerTitle}>{t('confirmBooking.title')}</Text>
 
         <TouchableOpacity style={styles.circleButton} activeOpacity={0.8}>
           <SvgXml width={20} height={20} xml={doctorNotificationSvg} />
@@ -120,7 +127,7 @@ export default function ConfirmBookingScreen() {
             )}
             <View style={styles.doctorDetails}>
               <Text style={styles.doctorName}>
-                {doctorLoading ? 'Loading…' : doctor.name}
+                {doctorLoading ? t('confirmBooking.loading') : doctor.name}
               </Text>
               {!!doctor.specialty && (
                 <Text style={styles.doctorSpecialty}>{doctor.specialty}</Text>
@@ -135,33 +142,33 @@ export default function ConfirmBookingScreen() {
                 <View style={styles.ratingRow}>
                   <SvgXml width={11} height={11} xml={doctorCardStarSvg} style={styles.starIcon} />
                   <Text style={styles.ratingValue}>{doctor.rating}</Text>
-                  <Text style={styles.reviewsText}>| {doctor.reviews} Reviews</Text>
+                  <Text style={styles.reviewsText}>{t('confirmBooking.reviews', { reviews: doctor.reviews })}</Text>
                 </View>
               )}
             </View>
           </View>
 
           {/* Booking Reason */}
-          <Text style={styles.sectionHeader}>Booking Reason</Text>
+          <Text style={styles.sectionHeader}>{t('confirmBooking.bookingReason')}</Text>
           <Text style={styles.reasonText}>{bookingReason || '—'}</Text>
 
           <View style={styles.divider} />
 
           {/* Your Slot */}
-          <Text style={styles.sectionHeader}>Your Slot</Text>
+          <Text style={styles.sectionHeader}>{t('confirmBooking.yourSlot')}</Text>
 
           <View style={styles.slotDetailRow}>
-            <Text style={styles.slotLabel}>Hour</Text>
+            <Text style={styles.slotLabel}>{t('confirmBooking.hour')}</Text>
             <Text style={styles.slotValue}>{selectedTime}</Text>
           </View>
 
           <View style={styles.slotDetailRow}>
-            <Text style={styles.slotLabel}>Dates</Text>
+            <Text style={styles.slotLabel}>{t('confirmBooking.dates')}</Text>
             <Text style={styles.slotValue}>{fullDateDisplay}</Text>
           </View>
 
           <View style={styles.slotDetailRow}>
-            <Text style={styles.slotLabel}>Visit Type</Text>
+            <Text style={styles.slotLabel}>{t('confirmBooking.visitType')}</Text>
             <Text style={[styles.slotValue, styles.onlineText]}>{selectedVisitType}</Text>
           </View>
         </View>
@@ -175,7 +182,7 @@ export default function ConfirmBookingScreen() {
           activeOpacity={0.85}
         >
           <SvgXml width={20} height={20} xml={confirmPaymentSvg} style={styles.confirmButtonIcon} />
-          <Text style={styles.confirmButtonText}>Confirm Payment</Text>
+          <Text style={styles.confirmButtonText}>{t('confirmBooking.confirmPayment')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

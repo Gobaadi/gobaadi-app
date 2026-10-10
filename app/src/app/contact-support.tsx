@@ -7,6 +7,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { SvgXml } from 'react-native-svg';
 import {
   openSupportEmail,
@@ -21,6 +22,7 @@ import {
 } from '@/components/icons/svg-icon-sources';
 
 export default function ContactSupportScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
 
   return (
@@ -29,7 +31,7 @@ export default function ContactSupportScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
           <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Contact Support</Text>
+        <Text style={styles.headerTitle}>{t('contactSupport.title')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -44,7 +46,7 @@ export default function ContactSupportScreen() {
             <SvgXml width={22} height={22} xml={contactSupportMailSvg} />
           </View>
           <View style={styles.contactInfo}>
-            <Text style={styles.contactLabel}>Email</Text>
+            <Text style={styles.contactLabel}>{t('contactSupport.email')}</Text>
             <Text style={styles.contactValue}>{SUPPORT_EMAIL}</Text>
           </View>
         </TouchableOpacity>
@@ -59,7 +61,7 @@ export default function ContactSupportScreen() {
             <SvgXml width={22} height={22} xml={contactSupportPhoneSvg} />
           </View>
           <View style={styles.contactInfo}>
-            <Text style={styles.contactLabel}>Customer Service</Text>
+            <Text style={styles.contactLabel}>{t('contactSupport.customerService')}</Text>
             <Text style={styles.contactValue}>{SUPPORT_PHONE}</Text>
           </View>
         </TouchableOpacity>

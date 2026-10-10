@@ -10,10 +10,12 @@ import {
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 import { useGetWishlistQuery, useRemoveFromWishlistMutation } from '@/store/wishlistApi';
 
 export default function WishlistScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { data: items = [], isLoading } = useGetWishlistQuery();
   const [removeFromWishlist] = useRemoveFromWishlistMutation();
@@ -24,7 +26,7 @@ export default function WishlistScreen() {
         <TouchableOpacity style={styles.circleButton} onPress={() => router.back()} activeOpacity={0.8}>
           <Text style={styles.buttonText}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Wishlist</Text>
+        <Text style={styles.headerTitle}>{t('wishlist.title')}</Text>
         <View style={styles.circleButton} />
       </View>
 
@@ -32,9 +34,9 @@ export default function WishlistScreen() {
         <ActivityIndicator style={{ marginTop: 40 }} color="#BD632F" />
       ) : items.length === 0 ? (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyText}>Your wishlist is empty.</Text>
+          <Text style={styles.emptyText}>{t('wishlist.empty')}</Text>
           <TouchableOpacity style={styles.browseBtn} onPress={() => router.push('/(tabs)/market')} activeOpacity={0.85}>
-            <Text style={styles.browseBtnText}>Browse Marketplace</Text>
+            <Text style={styles.browseBtnText}>{t('wishlist.browse')}</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -42,7 +44,7 @@ export default function WishlistScreen() {
           <View style={styles.listContainer}>
             {items.map((item) => {
               const entity = item.product || item.livestock;
-              const name = entity?.name || `${entity?.breed || ''} ${entity?.species || ''}`.trim() || 'Item';
+              const name = entity?.name || `${entity?.breed || ''} ${entity?.species || ''}`.trim() || t('wishlist.item');
               const price = entity?.price;
               const image = entity?.images?.[0];
 
@@ -72,7 +74,7 @@ export default function WishlistScreen() {
                     onPress={() => removeFromWishlist(item.id)}
                     activeOpacity={0.7}
                   >
-                    <Text style={styles.removeBtnText}>Remove</Text>
+                    <Text style={styles.removeBtnText}>{t('wishlist.remove')}</Text>
                   </TouchableOpacity>
                 </TouchableOpacity>
               );

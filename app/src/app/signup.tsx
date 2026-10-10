@@ -20,11 +20,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRegisterMutation } from '@/store/authApi';
 import { useSocialAuth } from '@/hooks/use-social-auth';
 import { apiErrorMessage } from '@/utils/api-error';
+import { useTranslation } from '@/hooks/use-translation';
 
 const BD_PHONE_REGEX = /^01[3-9]\d{8}$/;
 
 export default function SignUpScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
 
   const [name, setName] = useState('');
   const [authMethod, setAuthMethod] = useState<'phone' | 'email'>('phone');
@@ -55,9 +57,9 @@ export default function SignUpScreen() {
 
   const openRoleDropdown = () => {
     setModalData({
-      title: 'Select your role',
-      options: ['Doctor', 'User'],
-      onSelect: (val) => setRole(val === 'Doctor' ? 'doctor' : 'user'),
+      title: t('signup.roleSelect'),
+      options: ['doctor', 'user'],
+      onSelect: (val) => setRole(val === 'doctor' ? 'doctor' : 'user'),
     });
     setModalVisible(true);
   };
@@ -66,7 +68,7 @@ export default function SignUpScreen() {
     setErrorMessage('');
 
     if (!name.trim()) {
-      setErrorMessage('Name is required.');
+      setErrorMessage(t('signup.errors.nameRequired'));
       return;
     }
 
@@ -74,51 +76,51 @@ export default function SignUpScreen() {
 
     if (authMethod === 'phone') {
       if (!phone.trim()) {
-        setErrorMessage('Phone number is required.');
+        setErrorMessage(t('signup.errors.phoneRequired'));
         return;
       }
       if (!BD_PHONE_REGEX.test(phone)) {
-        setErrorMessage('Please enter a valid 11-digit Bangladeshi phone number (e.g., 01712345678).');
+        setErrorMessage(t('signup.errors.invalidPhone'));
         return;
       }
       identifier = `+880${phone.trim()}`;
     } else {
       if (!email.trim()) {
-        setErrorMessage('Email is required.');
+        setErrorMessage(t('signup.errors.emailRequired'));
         return;
       }
       if (!/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/.test(email)) {
-        setErrorMessage('Please enter a valid email address.');
+        setErrorMessage(t('signup.errors.invalidEmail'));
         return;
       }
       identifier = email.trim();
     }
 
     if (!agreedToTerms) {
-      setErrorMessage('You must agree to the Terms of Service.');
+      setErrorMessage(t('signup.errors.termsRequired'));
       return;
     }
 
     if (!role) {
-      setErrorMessage('Please select a role.');
+      setErrorMessage(t('signup.errors.roleRequired'));
       return;
     }
     if (role === 'doctor') {
       if (!bvcNumber.trim()) {
-        setErrorMessage('BVC Registration Number is required for doctors.');
+        setErrorMessage(t('signup.errors.bvcRequired'));
         return;
       }
     } else {
       if (!password) {
-        setErrorMessage('Password is required.');
+        setErrorMessage(t('signup.errors.passwordRequired'));
         return;
       }
       if (password.length < 8) {
-        setErrorMessage('Password must be at least 8 characters.');
+        setErrorMessage(t('signup.errors.passwordTooShort'));
         return;
       }
       if (password !== confirmPassword) {
-        setErrorMessage('Passwords do not match.');
+        setErrorMessage(t('signup.errors.passwordMismatch'));
         return;
       }
     }
@@ -150,7 +152,7 @@ export default function SignUpScreen() {
       router.push({ pathname: '/otp', params: { phone: identifier, purpose: 'verify', role: role || 'user' } });
     } catch (err: any) {
       console.log('[1/8][FE signup.tsx] Register API FAILED →', err?.data ?? err?.message ?? err);
-      setErrorMessage(apiErrorMessage(err, 'Could not create account. Please try again.'));
+      setErrorMessage(apiErrorMessage(err, t('signup.errors.createFailed')));
     }
   };
 
@@ -172,7 +174,7 @@ export default function SignUpScreen() {
           </View>
 
           {/* Heading */}
-          <Text style={styles.title}>Create Your Account</Text>
+          <Text style={styles.title}>{t('signup.title')}</Text>
 
           {/* Toggle Phone/Email */}
           <View style={styles.toggleContainer}>
@@ -181,14 +183,14 @@ export default function SignUpScreen() {
               onPress={() => setAuthMethod('phone')}
               activeOpacity={0.8}
             >
-              <Text style={[styles.toggleText, authMethod === 'phone' && styles.toggleTextActive]}>Phone Number</Text>
+              <Text style={[styles.toggleText, authMethod === 'phone' && styles.toggleTextActive]}>{t('common.identifierTabs.phone')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.toggleButton, authMethod === 'email' && styles.toggleButtonActive]}
               onPress={() => setAuthMethod('email')}
               activeOpacity={0.8}
             >
-              <Text style={[styles.toggleText, authMethod === 'email' && styles.toggleTextActive]}>Email</Text>
+              <Text style={[styles.toggleText, authMethod === 'email' && styles.toggleTextActive]}>{t('common.identifierTabs.email')}</Text>
             </TouchableOpacity>
           </View>
 
@@ -196,12 +198,12 @@ export default function SignUpScreen() {
           <View style={styles.form}>
             {/* Name */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Name</Text>
+              <Text style={styles.label}>{t('signup.nameLabel')}</Text>
               <TextInput
                 style={styles.input}
                 value={name}
                 onChangeText={setName}
-                placeholder="Enter your name"
+                placeholder={t('signup.namePlaceholder')}
                 placeholderTextColor="#A39E99"
               />
             </View>
@@ -209,7 +211,7 @@ export default function SignUpScreen() {
             {/* Phone Number or Email */}
             {authMethod === 'phone' ? (
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Phone Number*</Text>
+                <Text style={styles.label}>{t('signup.phoneLabel')}</Text>
                 <View style={styles.phoneInputContainer}>
                   <TouchableOpacity style={styles.countryCodeSelector} activeOpacity={0.7}>
                     <Text style={styles.flagEmoji}>🇧🇩</Text>
@@ -221,7 +223,7 @@ export default function SignUpScreen() {
                     style={styles.phoneInput}
                     value={phone}
                     onChangeText={setPhone}
-                    placeholder="Phone number"
+                    placeholder={t('signup.phonePlaceholder')}
                     placeholderTextColor="#A39E99"
                     keyboardType="phone-pad"
                     maxLength={11}
@@ -230,12 +232,12 @@ export default function SignUpScreen() {
               </View>
             ) : (
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Email Address*</Text>
+                <Text style={styles.label}>{t('signup.emailLabel')}</Text>
                 <TextInput
                   style={styles.input}
                   value={email}
                   onChangeText={setEmail}
-                  placeholder="Enter your email"
+                  placeholder={t('signup.emailPlaceholder')}
                   placeholderTextColor="#A39E99"
                   keyboardType="email-address"
                   autoCapitalize="none"
@@ -245,10 +247,10 @@ export default function SignUpScreen() {
 
             {/* Role */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Role*</Text>
+              <Text style={styles.label}>{t('signup.roleLabel')}</Text>
               <TouchableOpacity style={styles.dropdownSelector} activeOpacity={0.7} onPress={openRoleDropdown}>
                 <Text style={[styles.dropdownValue, !role && styles.placeholderText]}>
-                  {role === 'doctor' ? 'Doctor' : role === 'user' ? 'User' : 'Select your role'}
+                  {role === 'doctor' ? t('signup.roleDoctor') : role === 'user' ? t('signup.roleUser') : t('signup.roleSelect')}
                 </Text>
                 <Text style={styles.dropdownArrow}>▼</Text>
               </TouchableOpacity>
@@ -258,7 +260,7 @@ export default function SignUpScreen() {
             {role !== 'doctor' && (
               <>
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Password*</Text>
+                  <Text style={styles.label}>{t('signup.passwordLabel')}</Text>
                   <View style={styles.passwordContainer}>
                     <TextInput
                       style={styles.passwordInput}
@@ -275,7 +277,7 @@ export default function SignUpScreen() {
                 </View>
 
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Confirm Password*</Text>
+                  <Text style={styles.label}>{t('signup.confirmLabel')}</Text>
                   <View style={styles.passwordContainer}>
                     <TextInput
                       style={styles.passwordInput}
@@ -296,12 +298,12 @@ export default function SignUpScreen() {
             {/* BVC Registration Number - Only for Doctors */}
             {role === 'doctor' && (
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>BVC Registration Number*</Text>
+                <Text style={styles.label}>{t('signup.bvcLabel')}</Text>
                 <TextInput
                   style={styles.input}
                   value={bvcNumber}
                   onChangeText={setBvcNumber}
-                  placeholder="Enter BVC registration number"
+                  placeholder={t('signup.bvcPlaceholder')}
                   placeholderTextColor="#A39E99"
                   keyboardType="number-pad"
                 />
@@ -318,12 +320,12 @@ export default function SignUpScreen() {
                 {agreedToTerms && <Ionicons name="checkmark" size={14} color="#FFFFFF" />}
               </View>
               <Text style={styles.termsText}>
-                By continuing, you agree to our{' '}
+                {t('signup.termsPrefix')}{' '}
                 <Text
                   style={styles.termsHighlight}
                   onPress={() => router.push('/terms-of-service')}
                 >
-                  terms of services
+                  {t('signup.termsLink')}
                 </Text>
               </Text>
             </TouchableOpacity>
@@ -341,14 +343,14 @@ export default function SignUpScreen() {
               {isLoading ? (
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
-                <Text style={styles.signUpButtonText}>{role === 'doctor' ? 'Continue' : 'Sign Up'}</Text>
+                <Text style={styles.signUpButtonText}>{role === 'doctor' ? t('signup.submitDoctor') : t('signup.submitUser')}</Text>
               )}
             </TouchableOpacity>
 
             {/* Divider */}
             <View style={styles.dividerContainer}>
               <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>or</Text>
+              <Text style={styles.dividerText}>{t('signup.divider')}</Text>
               <View style={styles.dividerLine} />
             </View>
 
@@ -386,9 +388,9 @@ export default function SignUpScreen() {
             {/* Footer */}
             <View style={styles.footerContainer}>
               <Text style={styles.footerText}>
-                Already have an account?{' '}
+                {t('signup.footerPrefix')}{' '}
                 <Text style={styles.signInLink} onPress={() => router.push('/login')}>
-                  Sign In
+                  {t('signup.signIn')}
                 </Text>
               </Text>
             </View>
@@ -421,7 +423,7 @@ export default function SignUpScreen() {
                     setModalVisible(false);
                   }}
                 >
-                  <Text style={styles.modalItemText}>{item}</Text>
+                  <Text style={styles.modalItemText}>{item === 'doctor' ? t('signup.roleDoctor') : t('signup.roleUser')}</Text>
                 </TouchableOpacity>
               )}
             />

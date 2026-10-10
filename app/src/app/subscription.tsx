@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { SvgXml } from 'react-native-svg';
 import { useGetMySubscriptionQuery } from '@/store/subscriptionsApi';
@@ -22,19 +23,20 @@ import {
 
 export default function SubscriptionScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { data: mySubscription, isLoading: subLoading } = useGetMySubscriptionQuery();
 
   const handleManageBillings = () => {
-    Alert.alert('Manage Billings', 'Redirecting to payment billing management portal...');
+    Alert.alert(t('subscription.alerts.manageTitle'), t('subscription.alerts.manageMsg'));
   };
 
   const handlePlanPress = () => {
     Alert.alert(
-      'Coming Soon',
-      'Subscription plans will be available in the future. Connect with us!',
+      t('subscription.alerts.comingSoonTitle'),
+      t('subscription.alerts.comingSoonMsg'),
       [
-        { text: 'OK', style: 'cancel' },
-        { text: 'Contact Us', onPress: () => router.push('/help-support') },
+        { text: t('subscription.alerts.ok'), style: 'cancel' },
+        { text: t('subscription.alerts.contactUs'), onPress: () => router.push('/help-support') },
       ]
     );
   };
@@ -50,7 +52,7 @@ export default function SubscriptionScreen() {
           <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} activeOpacity={0.8}>
             <SvgXml width={20} height={20} xml={backButtonSvg} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Subscription</Text>
+          <Text style={styles.headerTitle}>{t('subscription.title')}</Text>
           <View style={{ width: 42 }} />
         </View>
         <View style={styles.loadingContainer}>
@@ -66,7 +68,7 @@ export default function SubscriptionScreen() {
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} activeOpacity={0.8}>
           <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Subscription</Text>
+        <Text style={styles.headerTitle}>{t('subscription.title')}</Text>
         <View style={{ width: 42 }} />
       </View>
 
@@ -92,9 +94,9 @@ export default function SubscriptionScreen() {
 
               {isCurrentPlan && mySubscription ? (
                 <View style={styles.innerPlanBox}>
-                  <Text style={styles.innerLabel}>Current Plan</Text>
+                  <Text style={styles.innerLabel}>{t('subscription.currentPlan')}</Text>
                   <Text style={styles.innerPrice}>${plan.price.toFixed(2)}</Text>
-                  <Text style={styles.innerBilling}>Next Billing : {nextBillingDate}</Text>
+                  <Text style={styles.innerBilling}>{t('subscription.nextBilling', { date: nextBillingDate })}</Text>
                 </View>
               ) : (
                 <View style={styles.priceBox}>
@@ -117,7 +119,7 @@ export default function SubscriptionScreen() {
         })}
 
         <TouchableOpacity style={styles.manageBtn} onPress={handleManageBillings} activeOpacity={0.85}>
-          <Text style={styles.manageBtnText}>Manage Billings</Text>
+          <Text style={styles.manageBtnText}>{t('subscription.manageBillings')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.cancelBtn} onPress={handleCancelSubscription} activeOpacity={0.85}>
@@ -126,7 +128,7 @@ export default function SubscriptionScreen() {
             height={18}
             xml={tintSvg(subscriptionDeleteSvg, 'white', '#E53935')}
           />
-          <Text style={styles.cancelBtnText}>Cancel Subscriptions</Text>
+          <Text style={styles.cancelBtnText}>{t('subscription.cancelSubscription')}</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

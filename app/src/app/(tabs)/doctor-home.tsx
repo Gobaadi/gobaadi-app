@@ -35,12 +35,15 @@ import {
   doctorHomeApplyDiscountSvg,
   doctorHomeAppointmentMessageSquareSvg,
 } from '@/components/icons/svg-icon-sources';
+import { useTranslation } from '@/hooks/use-translation';
 
-function getGreeting(): string {
+type T = ReturnType<typeof useTranslation>['t'];
+
+function getGreeting(t: T): string {
   const h = new Date().getHours();
-  if (h < 12) return 'Good Morning';
-  if (h < 17) return 'Good Afternoon';
-  return 'Good Evening';
+  if (h < 12) return t('doctorHome.greeting.morning');
+  if (h < 17) return t('doctorHome.greeting.afternoon');
+  return t('doctorHome.greeting.evening');
 }
 
 function formatBookingTime(iso: string): string {
@@ -48,14 +51,15 @@ function formatBookingTime(iso: string): string {
 }
 
 const QUICK_TILES = [
-  { id: 'appointments', label: 'Appointments', icon: doctorHomeAppointmentsSvg, route: '/appointments' },
-  { id: 'schedule', label: 'Schedule', icon: doctorHomeScheduleSvg, route: '/schedule' },
-  { id: 'patients', label: 'Patients', icon: doctorHomePatientsSvg, route: '/doctor-patients' },
-  { id: 'discount', label: 'Apply Discount', icon: doctorHomeApplyDiscountSvg, route: '/apply-discount' },
+  { id: 'appointments', labelKey: 'doctorHome.tiles.appointments', icon: doctorHomeAppointmentsSvg, route: '/appointments' },
+  { id: 'schedule', labelKey: 'doctorHome.tiles.schedule', icon: doctorHomeScheduleSvg, route: '/schedule' },
+  { id: 'patients', labelKey: 'doctorHome.tiles.patients', icon: doctorHomePatientsSvg, route: '/doctor-patients' },
+  { id: 'discount', labelKey: 'doctorHome.tiles.discount', icon: doctorHomeApplyDiscountSvg, route: '/apply-discount' },
 ];
 
 export default function DoctorHomeScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const isDoctor = useRequireDoctor();
   const user = useSelector((state: RootState) => state.auth.user);
@@ -83,7 +87,7 @@ export default function DoctorHomeScreen() {
         pathname: '/chat',
         params: {
           conversationId: String(conversationId),
-          patientName: booking.patientName || `Patient #${booking.patientId}`,
+          patientName: booking.patientName || t('doctorHome.patientWithId', { id: booking.patientId }),
           theirAvatar: booking.patientAvatar,
           appointmentId: String(booking.id),
           animalId: booking.animalId != null ? String(booking.animalId) : undefined,
@@ -92,7 +96,7 @@ export default function DoctorHomeScreen() {
         },
       });
     } catch {
-      Alert.alert('Error', 'Could not open the conversation. Please try again.');
+      Alert.alert(t('doctorHome.alerts.openChatError.title'), t('doctorHome.alerts.openChatError.msg'));
     }
   };
 
@@ -128,9 +132,9 @@ export default function DoctorHomeScreen() {
           >
             <View style={styles.headerTop}>
               <View>
-                <Text style={styles.greetingText}>{getGreeting()}</Text>
+                <Text style={styles.greetingText}>{getGreeting(t)}</Text>
                 <Text style={styles.doctorName}>
-                  {doctorProfile?.name || user?.name || 'Doctor'}
+                  {doctorProfile?.name || user?.name || t('doctorHome.fallback.doctor')}
                 </Text>
               </View>
 
@@ -141,7 +145,7 @@ export default function DoctorHomeScreen() {
                   activeOpacity={0.8}
                 >
                   <SvgXml width={16} height={16} xml={languageGlobeSvg} />
-                  <Text style={styles.langPillText}>EN</Text>
+                  <Text style={styles.langPillText}>{languageCode}</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -154,7 +158,7 @@ export default function DoctorHomeScreen() {
               </View>
             </View>
 
-            <Text style={styles.ongoingLabel}>Ongoing Patients</Text>
+            <Text style={styles.ongoingLabel}>{t('doctorHome.ongoingPatients')}</Text>
           </ImageBackground>
         </View>
 
@@ -168,7 +172,7 @@ export default function DoctorHomeScreen() {
             ) : ongoingPatients.length === 0 ? (
               <View style={styles.emptyPatientCard}>
                 <Ionicons name="person-outline" size={32} color="#E6E1DC" />
-                <Text style={styles.emptyPatientText}>No ongoing patients right now</Text>
+                <Text style={styles.emptyPatientText}>{t('doctorHome.emptyPatients')}</Text>
               </View>
             ) : (
               ongoingPatients.slice(0, 3).map((b) => (
@@ -192,7 +196,7 @@ export default function DoctorHomeScreen() {
                   </View>
 
                   <View style={styles.patientInfo}>
-                    <Text style={styles.patientName}>{b.patientName || b.animalName || 'Patient'}</Text>
+                    <Text style={styles.patientName}>{b.patientName || b.animalName || t('doctorHome.fallback.patient')}</Text>
                     {b.reasonForConsultation || b.patientPhone ? (
                       <Text style={styles.patientDetail}>
                         {b.reasonForConsultation || b.patientPhone}
@@ -212,11 +216,14 @@ export default function DoctorHomeScreen() {
           <View style={styles.consultsCard}>
             <View style={styles.consultsLeft}>
               <Text style={styles.consultsTitle}>
-                <Text style={styles.consultsTitleOrange}>Consults </Text>
-                for today
+                <Text style={styles.consultsTitleOrange}>{t('doctorHome.consultsOrange')}</Text>{' '}
+                {t('doctorHome.consultsForToday')}
               </Text>
               <Text style={styles.consultsSubtitle}>
-                <Text style={styles.consultsSubtitleDark}>{completedToday} of {displayTotalConsults}</Text> completed
+                <Text style={styles.consultsSubtitleDark}>
+                  {t('doctorHome.completedOf', { completed: completedToday, total: displayTotalConsults })}
+                </Text>{' '}
+                {t('doctorHome.completed')}
               </Text>
             </View>
 
@@ -224,7 +231,7 @@ export default function DoctorHomeScreen() {
             <View style={styles.pendingCircle}>
               <View style={styles.pendingContent}>
                 <Text style={styles.pendingCount}>{pendingCount}</Text>
-                <Text style={styles.pendingLabel}>pending</Text>
+                <Text style={styles.pendingLabel}>{t('doctorHome.pending')}</Text>
               </View>
             </View>
           </View>
@@ -241,7 +248,7 @@ export default function DoctorHomeScreen() {
                 <View style={styles.tileIconCircle}>
                   <SvgXml width={34} height={34} xml={tile.icon} />
                 </View>
-                <Text style={styles.tileLabel}>{tile.label}</Text>
+                <Text style={styles.tileLabel}>{t(tile.labelKey)}</Text>
               </TouchableOpacity>
             ))}
           </View>

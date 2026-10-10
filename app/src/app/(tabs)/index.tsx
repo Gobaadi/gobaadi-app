@@ -21,6 +21,7 @@ import { useGetDoctorBookingsQuery } from '@/store/doctorPortalApi';
 import { useGetWeatherQuery } from '@/store/weatherApi';
 import { useGetMyReferralQuery, useClaimReferralMutation } from '@/store/referralsApi';
 import { useLanguage } from '@/hooks/use-language';
+import { useTranslation } from '@/hooks/use-translation';
 import LanguageBottomSheet from '@/components/LanguageBottomSheet';
 import Svg, { Path, SvgXml } from 'react-native-svg';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -39,8 +40,8 @@ function todayDateKey(): string {
   return localDateKey();
 }
 
-function formatFullDate(): string {
-  return new Date().toLocaleDateString(undefined, {
+function formatFullDate(locale: string): string {
+  return new Date().toLocaleDateString(locale, {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
@@ -71,6 +72,7 @@ export default function HomeDashboard() {
   const { data: referral } = useGetMyReferralQuery();
   const [claimReferral, { isLoading: isClaiming }] = useClaimReferralMutation();
   const { language, languageCode, setLanguage } = useLanguage();
+  const { t } = useTranslation();
   const [showLangSheet, setShowLangSheet] = useState(false);
 
   const [toggleTaskMutation] = useToggleTaskMutation();
@@ -94,7 +96,7 @@ export default function HomeDashboard() {
     if (!referral) return;
     try {
       await Share.share({
-        message: `Join me on Gobadi! Use my referral code ${referral.referralCode} to sign up: ${referral.shareLink}`,
+        message: t('home.referral.shareMsg', { code: referral.referralCode, link: referral.shareLink }),
       });
     } catch (err) {
       console.log('Error sharing referral:', err);
@@ -104,30 +106,30 @@ export default function HomeDashboard() {
   async function handleClaimReferral() {
     const code = claimCode.trim();
     if (!code) {
-      Alert.alert('Enter a code', 'Please enter a referral code to claim.');
+      Alert.alert(t('home.referral.alerts.enterCodeTitle'), t('home.referral.alerts.enterCodeMsg'));
       return;
     }
     if (!/^[A-Z0-9]{4,12}$/.test(code)) {
-      Alert.alert('Invalid code', 'Referral codes are 4-12 letters and numbers.');
+      Alert.alert(t('home.referral.alerts.invalidCodeTitle'), t('home.referral.alerts.invalidCodeMsg'));
       return;
     }
     try {
       await claimReferral(code).unwrap();
       setClaimCode('');
       setShowClaimInput(false);
-      Alert.alert('Success', 'Referral code claimed!');
+      Alert.alert(t('home.referral.alerts.successTitle'), t('home.referral.alerts.successMsg'));
     } catch (err) {
       console.log('Error claiming referral:', err);
-      Alert.alert('Could not claim', 'That code may be invalid or already used.');
+      Alert.alert(t('home.referral.alerts.claimFailTitle'), t('home.referral.alerts.claimFailMsg'));
     }
   }
 
   async function toggleTask(id: number) {
     try {
       await toggleTaskMutation(String(id)).unwrap();
-      Alert.alert('Task marked', 'Your task has been marked.');
+      Alert.alert(t('home.tasks.markedTitle'), t('home.tasks.markedMsg'));
     } catch {
-      Alert.alert('Could not mark task', 'Please try again.');
+      Alert.alert(t('home.tasks.markFailedTitle'), t('home.tasks.markFailedMsg'));
     }
   }
 
@@ -143,9 +145,9 @@ export default function HomeDashboard() {
             resizeMode="cover"
           >
             <View style={styles.headerTextContainer}>
-              <Text style={styles.greetingTitle}>Good Morning</Text>
+              <Text style={styles.greetingTitle}>{t('home.greeting')}</Text>
               <TouchableOpacity style={styles.dateSelector} activeOpacity={0.7} onPress={() => router.push('/schedule')}>
-                <Text style={styles.dateText}>{formatFullDate()}</Text>
+                <Text style={styles.dateText}>{formatFullDate(language === 'bn' ? 'bn-BD' : 'en-US')}</Text>
                 <Text style={styles.dropdownArrow}>∨</Text>
               </TouchableOpacity>
             </View>
@@ -175,7 +177,7 @@ export default function HomeDashboard() {
             <View style={styles.weatherLocationRow}>
               <SvgXml width={16} height={16} xml={homeLocationSvg} />
               <Text style={styles.weatherLocation}>
-                Farm Weather{weather?.location ? ` - ${weather.location}` : ' - Munshiganj'}
+                {t('home.weather.title', { place: weather?.location || t('home.weather.defaultPlace') })}
               </Text>
             </View>
             <Image
@@ -209,8 +211,8 @@ export default function HomeDashboard() {
                   <Text style={styles.tempUnit}>°C</Text>
                 </View>
                 <View style={styles.hiLowContainer}>
-                  <Text style={styles.hiLowText}>H: <Text style={styles.hiText}>{weather ? Math.round(weather.highTemp) : '35'}°C</Text></Text>
-                  <Text style={styles.hiLowText}>L: <Text style={styles.lowText}>{weather ? Math.round(weather.lowTemp) : '15'}°C</Text></Text>
+                  <Text style={styles.hiLowText}>{t('home.weather.high')} <Text style={styles.hiText}>{weather ? Math.round(weather.highTemp) : '35'}°C</Text></Text>
+                  <Text style={styles.hiLowText}>{t('home.weather.low')} <Text style={styles.lowText}>{weather ? Math.round(weather.lowTemp) : '15'}°C</Text></Text>
                 </View>
               </View>
 
@@ -219,19 +221,19 @@ export default function HomeDashboard() {
               {/* Weather Metrics */}
               <View style={styles.metricsGrid}>
                 <View style={styles.metricItem}>
-                  <Text style={styles.metricLabel}>Humidity</Text>
+                  <Text style={styles.metricLabel}>{t('home.weather.humidity')}</Text>
                   <Text style={styles.metricValue}>{weather ? `${weather.humidityPercentage}%` : '40%'}</Text>
                 </View>
                 <View style={styles.metricItem}>
-                  <Text style={styles.metricLabel}>Precipitation</Text>
+                  <Text style={styles.metricLabel}>{t('home.weather.precipitation')}</Text>
                   <Text style={styles.metricValue}>{weather ? `${weather.precipitationMl} ml` : '--'}</Text>
                 </View>
                 <View style={styles.metricItem}>
-                  <Text style={styles.metricLabel}>Pressure</Text>
+                  <Text style={styles.metricLabel}>{t('home.weather.pressure')}</Text>
                   <Text style={styles.metricValue}>{weather ? `${weather.pressureHpa} hpa` : '--'}</Text>
                 </View>
                 <View style={styles.metricItem}>
-                  <Text style={styles.metricLabel}>Wind</Text>
+                  <Text style={styles.metricLabel}>{t('home.weather.wind')}</Text>
                   <Text style={styles.metricValue}>{weather ? `${weather.windMps} m/s` : '--'}</Text>
                 </View>
               </View>
@@ -255,11 +257,11 @@ export default function HomeDashboard() {
                 <View style={styles.arcLabels}>
                   <View>
                     <Text style={styles.arcTime}>{weather?.sunriseTime || '5:25 am'}</Text>
-                    <Text style={styles.arcTypeSunrise}>Sunrise</Text>
+                    <Text style={styles.arcTypeSunrise}>{t('home.weather.sunrise')}</Text>
                   </View>
                   <View style={{ alignItems: 'flex-end' }}>
                     <Text style={styles.arcTime}>{weather?.sunsetTime || '6:53 pm'}</Text>
-                    <Text style={styles.arcTypeSunset}>Sunset</Text>
+                    <Text style={styles.arcTypeSunset}>{t('home.weather.sunset')}</Text>
                   </View>
                 </View>
               </View>
@@ -269,9 +271,9 @@ export default function HomeDashboard() {
 
         {/* My Animals Section */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>My Animals</Text>
+          <Text style={styles.sectionTitle}>{t('home.sections.myAnimals')}</Text>
           <TouchableOpacity onPress={() => router.push('/(tabs)/animals')}>
-            <Text style={styles.viewAllText}>View all</Text>
+            <Text style={styles.viewAllText}>{t('home.sections.viewAll')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -284,8 +286,8 @@ export default function HomeDashboard() {
           ) : animals.length === 0 ? (
             <EmptyState
               compact
-              title="No animals added yet"
-              actionLabel="Add your first animal"
+              title={t('home.animals.empty')}
+              actionLabel={t('home.animals.addFirst')}
               onAction={() => router.push('/(tabs)/animals')}
             />
           ) : (
@@ -321,9 +323,9 @@ export default function HomeDashboard() {
 
         {/* My Appointments Section */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>My Appointments</Text>
+          <Text style={styles.sectionTitle}>{t('home.sections.myAppointments')}</Text>
           <TouchableOpacity onPress={() => router.push('/my-appointments')}>
-            <Text style={styles.viewAllText}>View all</Text>
+            <Text style={styles.viewAllText}>{t('home.sections.viewAll')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -331,8 +333,8 @@ export default function HomeDashboard() {
           {upcomingAppointments.length === 0 ? (
             <EmptyState
               compact
-              title="No upcoming appointments"
-              actionLabel="Book a consultation"
+              title={t('home.appointments.empty')}
+              actionLabel={t('home.appointments.bookConsult')}
               onAction={() => router.push('/(tabs)/doctors')}
             />
           ) : (
@@ -351,7 +353,7 @@ export default function HomeDashboard() {
               >
                 <View style={styles.listItemLeft}>
                   <DoctorAvatar
-                    name={appt.doctorName || 'Doctor'}
+                    name={appt.doctorName || t('home.appointments.doctor')}
                     avatar={appt.doctorAvatar}
                     size={44}
                     radius={22}
@@ -359,10 +361,10 @@ export default function HomeDashboard() {
                   />
                   <View>
                     <Text style={styles.animalName}>
-                      {appt.doctorName || 'Doctor'}
+                      {appt.doctorName || t('home.appointments.doctor')}
                     </Text>
                     <Text style={styles.animalBreed}>
-                      {appt.animalName || 'Consultation'} · {new Date(appt.startAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      {appt.animalName || t('home.appointments.consultation')} · {new Date(appt.startAt).toLocaleDateString(language === 'bn' ? 'bn-BD' : 'en-US', { month: 'short', day: 'numeric' })}
                     </Text>
                   </View>
                 </View>
@@ -373,7 +375,7 @@ export default function HomeDashboard() {
         </View>
 
         {/* Today's Task Section */}
-        <Text style={[styles.sectionTitle, { marginTop: 24, marginBottom: 16, marginLeft: 24 }]}>Today's Task</Text>
+        <Text style={[styles.sectionTitle, { marginTop: 24, marginBottom: 16, marginLeft: 24 }]}>{t('home.sections.todaysTask')}</Text>
 
         <View style={styles.listCard}>
           {isTasksLoading ? (
@@ -382,7 +384,7 @@ export default function HomeDashboard() {
               <RowSkeleton />
             </>
           ) : visibleTasks.length === 0 ? (
-            <EmptyState compact title="No tasks scheduled for today" />
+            <EmptyState compact title={t('home.tasks.empty')} />
           ) : (
             visibleTasks.map((task, idx) => (
               <View
@@ -423,43 +425,43 @@ export default function HomeDashboard() {
             activeOpacity={0.85}
             onPress={() => router.push('/add-task')}
           >
-            <Text style={styles.addTaskBtnText}>Add Task</Text>
+            <Text style={styles.addTaskBtnText}>{t('home.tasks.add')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.viewAllTaskBtn}
             activeOpacity={0.85}
             onPress={() => router.push('/my-task')}
           >
-            <Text style={styles.viewAllTaskBtnText}>View All</Text>
+            <Text style={styles.viewAllTaskBtnText}>{t('home.tasks.viewAll')}</Text>
           </TouchableOpacity>
         </View>
 
         {/* Refer to Friend & Earn Banner */}
         <View style={styles.referBanner}>
           <View style={styles.referLeft}>
-            <Text style={styles.referTitle}>Refer to Your Friend and Earn</Text>
+            <Text style={styles.referTitle}>{t('home.referral.title')}</Text>
             <Text style={styles.referSub}>
               {referral && referral.totalEarned > 0
-                ? `You've earned Tk ${referral.totalEarned} from ${referral.referralCount} referrals`
-                : 'Earn Tk 100 For Every Referral'}
+                ? t('home.referral.earned', { amount: referral.totalEarned, count: referral.referralCount })
+                : t('home.referral.perReferral')}
             </Text>
             <View style={{ flexDirection: 'row', gap: 8 }}>
               <TouchableOpacity style={styles.referBtn} activeOpacity={0.8} onPress={shareReferral}>
-                <Text style={styles.referBtnText}>Refer Now</Text>
+                <Text style={styles.referBtnText}>{t('home.referral.referNow')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.referBtn}
                 activeOpacity={0.8}
                 onPress={() => setShowClaimInput((v) => !v)}
               >
-                <Text style={styles.referBtnText}>Have a code?</Text>
+                <Text style={styles.referBtnText}>{t('home.referral.haveCode')}</Text>
               </TouchableOpacity>
             </View>
             {showClaimInput ? (
               <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
                 <TextInput
                   style={styles.claimInput}
-                  placeholder="Enter code"
+                  placeholder={t('home.referral.enterCode')}
                   placeholderTextColor="#A39E99"
                   value={claimCode}
                   onChangeText={setClaimCode}
@@ -471,7 +473,7 @@ export default function HomeDashboard() {
                   onPress={handleClaimReferral}
                   disabled={isClaiming}
                 >
-                  <Text style={styles.referBtnText}>Claim</Text>
+                  <Text style={styles.referBtnText}>{t('home.referral.claim')}</Text>
                 </TouchableOpacity>
               </View>
             ) : null}

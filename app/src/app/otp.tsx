@@ -13,10 +13,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 import { useVerifyOtpMutation, useSendOtpMutation } from '@/store/authApi';
 
 export default function OTPScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const params = useLocalSearchParams();
   const phone = String(params.phone || '+88 01712-345678');
@@ -115,7 +117,7 @@ export default function OTPScreen() {
       router.replace('/congo');
     } catch (err: any) {
       console.log('[7/8][FE otp.tsx] Verify OTP FAILED ←', err?.data ?? err?.message ?? err);
-      setErrorMessage(err?.data?.message || 'Could not verify OTP. Please try again.');
+      setErrorMessage(err?.data?.message || t('otp.verifyFailed'));
     }
   };
 
@@ -129,7 +131,7 @@ export default function OTPScreen() {
       setCooldown(30);
     } catch (err: any) {
       console.log('[7/8][FE otp.tsx] Resend OTP FAILED ←', err?.data ?? err?.message ?? err);
-      setErrorMessage(err?.data?.message || 'Could not resend OTP. Please try again.');
+      setErrorMessage(err?.data?.message || t('otp.resendFailed'));
     }
   };
 
@@ -152,7 +154,7 @@ export default function OTPScreen() {
 
         <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
           {/* Title */}
-          <Text style={styles.title}>OTP Verification</Text>
+          <Text style={styles.title}>{t('otp.title')}</Text>
 
           {/* Illustration */}
           <Image
@@ -163,7 +165,9 @@ export default function OTPScreen() {
 
           {/* Subtitle */}
           <Text style={styles.subtitle}>
-            Enter the verification code we just sent to your {phone.includes('@') ? 'email' : 'phone number'}
+            {t('otp.subtitle', {
+              target: phone.includes('@') ? t('otp.email') : t('otp.phoneNumber'),
+            })}
           </Text>
           {phone && <Text style={styles.phoneNumber}>{phone}</Text>}
 
@@ -195,10 +199,14 @@ export default function OTPScreen() {
 
           {/* Resend text */}
           <View style={styles.resendContainer}>
-            <Text style={styles.resendText}>Didn't receive an OTP?</Text>
+            <Text style={styles.resendText}>{t('otp.didNotReceive')}</Text>
             <TouchableOpacity onPress={handleResend} activeOpacity={0.7} disabled={cooldown > 0 || isResending}>
               <Text style={[styles.resendLink, (cooldown > 0 || isResending) && styles.resendLinkDisabled]}>
-                {cooldown > 0 ? `Resend OTP in ${cooldown}s` : isResending ? 'Resending...' : 'Resend OTP'}
+                {cooldown > 0
+                  ? t('otp.resendIn', { seconds: cooldown })
+                  : isResending
+                    ? t('otp.resending')
+                    : t('otp.resend')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -216,7 +224,7 @@ export default function OTPScreen() {
             {isVerifying ? (
               <ActivityIndicator color="#FFFFFF" />
             ) : (
-              <Text style={styles.verifyButtonText}>Verify</Text>
+              <Text style={styles.verifyButtonText}>{t('otp.verify')}</Text>
             )}
           </TouchableOpacity>
         </ScrollView>

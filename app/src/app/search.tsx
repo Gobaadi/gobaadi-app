@@ -10,12 +10,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useSearchQuery } from '@/store/searchApi';
 
 const DEBOUNCE_MS = 300;
 
 export default function SearchScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
 
@@ -42,7 +44,7 @@ export default function SearchScreen() {
         <TouchableOpacity style={styles.circleButton} onPress={() => router.back()} activeOpacity={0.8}>
           <Text style={styles.buttonText}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Search</Text>
+        <Text style={styles.headerTitle}>{t('search.title')}</Text>
         <View style={{ width: 44 }} />
       </View>
 
@@ -51,7 +53,7 @@ export default function SearchScreen() {
         <Text style={styles.searchIcon}>🔍</Text>
         <TextInput
           style={styles.textInput}
-          placeholder="Search animals, marketplace, doctors, alerts..."
+          placeholder={t('search.placeholder')}
           placeholderTextColor="#A39E99"
           value={query}
           onChangeText={setQuery}
@@ -62,14 +64,14 @@ export default function SearchScreen() {
 
       <ScrollView contentContainerStyle={styles.resultsContainer} showsVerticalScrollIndicator={false}>
         {query.trim().length < 2 ? (
-          <Text style={styles.hintText}>Type at least 2 characters to search.</Text>
+          <Text style={styles.hintText}>{t('search.hintMinChars')}</Text>
         ) : !isLoading && !hasAnyResults ? (
-          <Text style={styles.hintText}>No "{query}" found. Try searching for another pet or browse the marketplace.</Text>
+          <Text style={styles.hintText}>{t('search.noResults', { query })}</Text>
         ) : null}
 
         {results.animals && results.animals.length > 0 ? (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Animals</Text>
+            <Text style={styles.sectionTitle}>{t('search.sections.animals')}</Text>
             {results.animals.map((item) => (
               <TouchableOpacity
                 key={`animal-${item.id}`}
@@ -86,7 +88,7 @@ export default function SearchScreen() {
 
         {results.marketplace && results.marketplace.length > 0 ? (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Marketplace</Text>
+            <Text style={styles.sectionTitle}>{t('search.sections.marketplace')}</Text>
             {results.marketplace.map((item) => (
               <TouchableOpacity
                 key={`market-${item.id}`}
@@ -103,7 +105,7 @@ export default function SearchScreen() {
 
         {results.doctors && results.doctors.length > 0 ? (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Doctors</Text>
+            <Text style={styles.sectionTitle}>{t('search.sections.doctors')}</Text>
             {results.doctors.map((item) => (
               <TouchableOpacity
                 key={`doctor-${item.id}`}
@@ -120,7 +122,7 @@ export default function SearchScreen() {
 
         {results.alerts && results.alerts.length > 0 ? (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Alerts</Text>
+            <Text style={styles.sectionTitle}>{t('search.sections.alerts')}</Text>
             {results.alerts.map((item) => (
               <View key={`alert-${item.id}`} style={styles.resultRow}>
                 <Text style={styles.resultTitle}>{item.title}</Text>

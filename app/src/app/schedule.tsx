@@ -17,6 +17,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SvgXml } from 'react-native-svg';
 import { useSelector } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import type { RootState } from '@/store/store';
 import {
   useGetDoctorBookingsQuery,
@@ -37,19 +38,19 @@ type CalendarGranularity = 'yearly' | 'monthly';
 type FilterStatus = 'all' | 'upcoming' | 'completed' | 'cancelled';
 type FilterConsultation = 'all' | 'video' | 'voice' | 'chat' | 'physical';
 
-const STATUS_FILTER_OPTIONS: { value: FilterStatus; label: string }[] = [
-  { value: 'all', label: 'All' },
-  { value: 'upcoming', label: 'Upcoming' },
-  { value: 'completed', label: 'Completed' },
-  { value: 'cancelled', label: 'Cancelled' },
+const STATUS_FILTER_OPTIONS: { value: FilterStatus; labelKey: string }[] = [
+  { value: 'all', labelKey: 'schedule.filters.status.all' },
+  { value: 'upcoming', labelKey: 'schedule.filters.status.upcoming' },
+  { value: 'completed', labelKey: 'schedule.filters.status.completed' },
+  { value: 'cancelled', labelKey: 'schedule.filters.status.cancelled' },
 ];
 
-const CONSULTATION_FILTER_OPTIONS: { value: FilterConsultation; label: string }[] = [
-  { value: 'all', label: 'All' },
-  { value: 'video', label: 'Video' },
-  { value: 'voice', label: 'Voice' },
-  { value: 'chat', label: 'Chat' },
-  { value: 'physical', label: 'Physical' },
+const CONSULTATION_FILTER_OPTIONS: { value: FilterConsultation; labelKey: string }[] = [
+  { value: 'all', labelKey: 'schedule.filters.consultation.all' },
+  { value: 'video', labelKey: 'schedule.filters.consultation.video' },
+  { value: 'voice', labelKey: 'schedule.filters.consultation.voice' },
+  { value: 'chat', labelKey: 'schedule.filters.consultation.chat' },
+  { value: 'physical', labelKey: 'schedule.filters.consultation.physical' },
 ];
 
 const CONSULTATION_TYPE_VALUE: Record<Exclude<FilterConsultation, 'all'>, string> = {
@@ -62,12 +63,13 @@ const CONSULTATION_TYPE_VALUE: Record<Exclude<FilterConsultation, 'all'>, string
 const UPCOMING_STATUSES = ['PENDING', 'CONFIRMED', 'RESCHEDULED'];
 
 const MONTH_NAMES = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
+  'schedule.months.january', 'schedule.months.february', 'schedule.months.march', 'schedule.months.april',
+  'schedule.months.may', 'schedule.months.june', 'schedule.months.july', 'schedule.months.august',
+  'schedule.months.september', 'schedule.months.october', 'schedule.months.november', 'schedule.months.december',
 ];
-const DAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-const DAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const DAY_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const DAY_LETTERS = ['schedule.dayLetters.sun', 'schedule.dayLetters.mon', 'schedule.dayLetters.tue', 'schedule.dayLetters.wed', 'schedule.dayLetters.thu', 'schedule.dayLetters.fri', 'schedule.dayLetters.sat'];
+const DAY_SHORT = ['schedule.dayShort.sun', 'schedule.dayShort.mon', 'schedule.dayShort.tue', 'schedule.dayShort.wed', 'schedule.dayShort.thu', 'schedule.dayShort.fri', 'schedule.dayShort.sat'];
+const DAY_FULL = ['schedule.dayFull.sunday', 'schedule.dayFull.monday', 'schedule.dayFull.tuesday', 'schedule.dayFull.wednesday', 'schedule.dayFull.thursday', 'schedule.dayFull.friday', 'schedule.dayFull.saturday'];
 
 function getDaysInMonth(year: number, month: number): number {
   return new Date(year, month + 1, 0).getDate();
@@ -115,16 +117,17 @@ function MonthGrid({
   selectedDate: Date;
   onSelectDate: (d: Date) => void;
 }) {
+  const { t } = useTranslation();
   const daysInMonth = getDaysInMonth(year, month);
   const firstDay = getFirstDayOfMonth(year, month);
   const blanks = Array.from({ length: firstDay }, (_, i) => i);
 
   return (
     <View style={styles.monthGrid}>
-      <Text style={styles.monthTitle}>{MONTH_NAMES[month]} {year}</Text>
+      <Text style={styles.monthTitle}>{t(MONTH_NAMES[month])} {year}</Text>
       <View style={styles.dayHeaderRow}>
         {DAY_LETTERS.map((d, i) => (
-          <Text key={i} style={styles.dayHeaderText}>{d}</Text>
+          <Text key={i} style={styles.dayHeaderText}>{t(d)}</Text>
         ))}
       </View>
       <View style={styles.daysGrid}>
@@ -179,13 +182,14 @@ function WeekStrip({
   selectedDate: Date;
   onSelectDate: (d: Date) => void;
 }) {
+  const { t } = useTranslation();
   const weekDates = useMemo(() => getWeekDates(selectedDate), [selectedDate]);
 
   return (
     <View style={styles.weekStrip}>
       <View style={styles.weekDayHeader}>
         {DAY_SHORT.map((d, i) => (
-          <Text key={i} style={styles.weekDayLabel}>{d}</Text>
+          <Text key={i} style={styles.weekDayLabel}>{t(d)}</Text>
         ))}
       </View>
       <View style={styles.weekDateRow}>
@@ -227,6 +231,7 @@ function DayBottomSheet({
   selectedDate: Date;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const dayAppointments = useMemo(() => {
     return appointments
       .filter((a) => isSameDay(new Date(a.startAt), selectedDate))
@@ -241,8 +246,8 @@ function DayBottomSheet({
   const pastAppts = dayAppointments.filter((a) => new Date(a.endAt) < now);
   const upcomingAppts = dayAppointments.filter((a) => new Date(a.startAt) >= now);
 
-  const dayName = DAY_FULL[selectedDate.getDay()];
-  const monthName = MONTH_NAMES[selectedDate.getMonth()];
+  const dayName = t(DAY_FULL[selectedDate.getDay()]);
+  const monthName = t(MONTH_NAMES[selectedDate.getMonth()]);
 
   const formatHourLabel = (hour: number) => {
     const h = hour > 12 ? hour - 12 : hour;
@@ -266,7 +271,7 @@ function DayBottomSheet({
               {dayName}, {selectedDate.getDate()} {monthName}
             </Text>
             <Text style={styles.bottomSheetCount}>
-              {dayAppointments.length} Appointment{dayAppointments.length !== 1 ? 's' : ''}
+              {t('schedule.appointmentCount', { count: dayAppointments.length })}
             </Text>
           </View>
 
@@ -277,7 +282,7 @@ function DayBottomSheet({
             {dayAppointments.length === 0 ? (
               <View style={styles.emptyDayContainer}>
                 <Ionicons name="calendar-outline" size={40} color="#E6E1DC" />
-                <Text style={styles.emptyDayText}>No appointments for this day</Text>
+                <Text style={styles.emptyDayText}>{t('schedule.empty.day')}</Text>
               </View>
             ) : (
               <>
@@ -301,7 +306,7 @@ function DayBottomSheet({
 
                 {upcomingAppts.length > 0 && (
                   <>
-                    <Text style={styles.upcoming_label}>Upcoming</Text>
+                    <Text style={styles.upcoming_label}>{t('schedule.upcoming')}</Text>
                     {upcomingAppts.map((appt) => (
                       <View key={appt.id} style={styles.appointmentRow}>
                         <Text style={styles.appointmentTimeLabel}>{formatTime(appt.startAt)}</Text>
@@ -320,11 +325,12 @@ function DayBottomSheet({
 }
 
 function DayAppointmentCard({ appointment, isPast, isUpcoming }: { appointment: DoctorAppointment; isPast?: boolean; isUpcoming?: boolean }) {
+  const { t } = useTranslation();
   return (
     <View style={[styles.dayAppointmentCard, isPast && styles.dayAppointmentCardPast]}>
       <View style={styles.dayAppointmentAvatar}>
         <PatientAvatar
-          name={appointment.animalName || appointment.patientName || 'Patient'}
+          name={appointment.animalName || appointment.patientName || t('schedule.patient')}
           image={appointment.animalImage || appointment.patientAvatar}
           size={44}
         />
@@ -332,7 +338,7 @@ function DayAppointmentCard({ appointment, isPast, isUpcoming }: { appointment: 
       </View>
       <View style={styles.dayAppointmentInfo}>
         <Text style={styles.dayAppointmentName}>
-            {appointment.animalName || appointment.patientName || 'Patient'}
+            {appointment.animalName || appointment.patientName || t('schedule.patient')}
         </Text>
         {appointment.animalSpecies && (
           <Text style={styles.dayAppointmentDetail}>
@@ -353,6 +359,7 @@ function ListView({
 }: {
   appointments: DoctorAppointment[];
 }) {
+  const { t } = useTranslation();
   const grouped = useMemo(() => {
     const map = new Map<string, DoctorAppointment[]>();
     appointments.forEach((a) => {
@@ -372,7 +379,7 @@ function ListView({
     return (
       <View style={styles.emptyContainer}>
         <Ionicons name="calendar-outline" size={48} color="#E6E1DC" />
-        <Text style={styles.emptyText}>No appointments scheduled</Text>
+        <Text style={styles.emptyText}>{t('schedule.empty.list')}</Text>
       </View>
     );
   }
@@ -380,8 +387,8 @@ function ListView({
   return (
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.listScrollContainer}>
       <View style={styles.listMonthHeader}>
-        <Text style={styles.listMonthTitle}>{MONTH_NAMES[currentMonth]} {currentYear}</Text>
-        <Text style={styles.listMonthCount}>{totalCount} Appointments</Text>
+        <Text style={styles.listMonthTitle}>{t(MONTH_NAMES[currentMonth])} {currentYear}</Text>
+        <Text style={styles.listMonthCount}>{t('schedule.appointmentCount', { count: totalCount })}</Text>
       </View>
 
       {grouped.map(([dateKey, appts]) => {
@@ -389,7 +396,7 @@ function ListView({
         return (
           <View key={dateKey} style={styles.listDateGroup}>
             <View style={styles.listDateSide}>
-              <Text style={styles.listDateDayName}>{DAY_SHORT[date.getDay()]}</Text>
+              <Text style={styles.listDateDayName}>{t(DAY_SHORT[date.getDay()])}</Text>
               <Text style={styles.listDateDayNumber}>{date.getDate()}</Text>
             </View>
             <View style={styles.listDateCards}>
@@ -405,6 +412,7 @@ function ListView({
 }
 
 function ListAppointmentCard({ appointment }: { appointment: DoctorAppointment }) {
+  const { t } = useTranslation();
   const startDate = new Date(appointment.startAt);
   const endDate = new Date(appointment.endAt);
 
@@ -422,13 +430,13 @@ function ListAppointmentCard({ appointment }: { appointment: DoctorAppointment }
       <View style={styles.listAppointmentDateBadge}>
         <Ionicons name="time-outline" size={14} color="#FFFFFF" />
         <Text style={styles.listAppointmentDateBadgeText}>
-          {DAY_SHORT[startDate.getDay()]} {MONTH_NAMES[startDate.getMonth()]} {startDate.getDate()} · {formatTimeShort(appointment.startAt)} - {formatTimeShort(appointment.endAt)}
+          {t(DAY_SHORT[startDate.getDay()])} {t(MONTH_NAMES[startDate.getMonth()])} {startDate.getDate()} · {formatTimeShort(appointment.startAt)} - {formatTimeShort(appointment.endAt)}
         </Text>
       </View>
       <View style={styles.listAppointmentCardBody}>
         <View style={styles.listAppointmentAvatar}>
           <PatientAvatar
-            name={appointment.animalName || appointment.patientName || 'Patient'}
+            name={appointment.animalName || appointment.patientName || t('schedule.patient')}
             image={appointment.animalImage || appointment.patientAvatar}
             size={44}
           />
@@ -436,7 +444,7 @@ function ListAppointmentCard({ appointment }: { appointment: DoctorAppointment }
         </View>
         <View style={styles.listAppointmentInfo}>
           <Text style={styles.listAppointmentName}>
-          {appointment.animalName || appointment.patientName || 'Patient'}
+          {appointment.animalName || appointment.patientName || t('schedule.patient')}
           </Text>
           {appointment.animalSpecies && (
             <Text style={styles.listAppointmentDetail}>
@@ -456,6 +464,7 @@ function ListAppointmentCard({ appointment }: { appointment: DoctorAppointment }
 export default function ScheduleScreen() {
   const isDoctor = useRequireDoctor();
   const router = useRouter();
+  const { t } = useTranslation();
   const user = useSelector((state: RootState) => state.auth.user);
 
   const [viewMode, setViewMode] = useState<ViewMode>('calendar');
@@ -534,7 +543,7 @@ export default function ScheduleScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
           <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Schedule</Text>
+        <Text style={styles.headerTitle}>{t('schedule.title')}</Text>
         {/* <TouchableOpacity style={styles.settingsBtn} activeOpacity={0.7}>
           <Ionicons name="settings-outline" size={20} color="#BD632F" />
         </TouchableOpacity> */}
@@ -547,7 +556,7 @@ export default function ScheduleScreen() {
           activeOpacity={0.8}
         >
           <Text style={[styles.viewToggleText, viewMode === 'calendar' && styles.viewToggleTextActive]}>
-            Full Calendar
+            {t('schedule.fullCalendar')}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -556,7 +565,7 @@ export default function ScheduleScreen() {
           activeOpacity={0.8}
         >
           <Text style={[styles.viewToggleText, viewMode === 'list' && styles.viewToggleTextActive]}>
-            List View
+            {t('schedule.listView')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -575,7 +584,7 @@ export default function ScheduleScreen() {
             >
               <SvgXml width={16} height={16} xml={doctorScheduleFilterSvg} />
               <Text style={styles.filterBtnText}>
-                Filter{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
+                {t('schedule.filter')}{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
               </Text>
             </TouchableOpacity>
             <View style={styles.granularityToggle}>
@@ -585,7 +594,7 @@ export default function ScheduleScreen() {
                 activeOpacity={0.8}
               >
                 <Text style={[styles.granularityText, granularity === 'yearly' && styles.granularityTextActive]}>
-                  Yearly
+                  {t('schedule.yearly')}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -594,7 +603,7 @@ export default function ScheduleScreen() {
                 activeOpacity={0.8}
               >
                 <Text style={[styles.granularityText, granularity === 'monthly' && styles.granularityTextActive]}>
-                  Monthly
+                  {t('schedule.monthly')}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -603,13 +612,13 @@ export default function ScheduleScreen() {
           {showFilter && (
             <View style={styles.filterPanel}>
               <View style={styles.filterPanelHeader}>
-                <Text style={styles.filterPanelTitle}>Filter schedule</Text>
+                <Text style={styles.filterPanelTitle}>{t('schedule.filterPanelTitle')}</Text>
                 <TouchableOpacity onPress={clearFilters} activeOpacity={0.7}>
-                  <Text style={styles.clearFilterText}>Clear</Text>
+                  <Text style={styles.clearFilterText}>{t('schedule.clear')}</Text>
                 </TouchableOpacity>
               </View>
 
-              <Text style={styles.filterGroupLabel}>Status</Text>
+              <Text style={styles.filterGroupLabel}>{t('schedule.statusLabel')}</Text>
               <View style={styles.filterChipRow}>
                 {STATUS_FILTER_OPTIONS.map((opt) => (
                   <TouchableOpacity
@@ -624,13 +633,13 @@ export default function ScheduleScreen() {
                         filterStatus === opt.value && styles.filterChipTextActive,
                       ]}
                     >
-                      {opt.label}
+                      {t(opt.labelKey)}
                     </Text>
                   </TouchableOpacity>
                 ))}
               </View>
 
-              <Text style={styles.filterGroupLabel}>Consultation type</Text>
+              <Text style={styles.filterGroupLabel}>{t('schedule.consultationTypeLabel')}</Text>
               <View style={styles.filterChipRow}>
                 {CONSULTATION_FILTER_OPTIONS.map((opt) => (
                   <TouchableOpacity
@@ -648,7 +657,7 @@ export default function ScheduleScreen() {
                         filterConsultation === opt.value && styles.filterChipTextActive,
                       ]}
                     >
-                      {opt.label}
+                      {t(opt.labelKey)}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -684,7 +693,7 @@ export default function ScheduleScreen() {
                 <TouchableOpacity onPress={() => navigateMonth(-1)} style={styles.navBtn} activeOpacity={0.7}>
                   <Ionicons name="chevron-back" size={18} color="#BD632F" />
                 </TouchableOpacity>
-                <Text style={styles.monthNavTitle}>{MONTH_NAMES[currentMonth]} {currentYear}</Text>
+                <Text style={styles.monthNavTitle}>{t(MONTH_NAMES[currentMonth])} {currentYear}</Text>
                 <TouchableOpacity onPress={() => navigateMonth(1)} style={styles.navBtn} activeOpacity={0.7}>
                   <Ionicons name="chevron-forward" size={18} color="#BD632F" />
                 </TouchableOpacity>

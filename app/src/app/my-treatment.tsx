@@ -21,6 +21,7 @@ import {
 } from '@/store/doctorPortalApi';
 import { apiErrorMessage } from '@/utils/api-error';
 import { DoctorAvatar } from '@/components/doctor-avatar';
+import { useTranslation } from 'react-i18next';
 
 interface Treatment {
   id: string;
@@ -54,6 +55,7 @@ function isUpcoming(status: AppointmentStatus): boolean {
 
 export default function MyTreatmentScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [activeFilter, setActiveFilter] = useState<'All' | 'Upcoming' | 'Medicine'>('All');
   const [activeVisitTab, setActiveVisitTab] = useState<'online' | 'physical'>('online');
   const [searchQuery, setSearchQuery] = useState('');
@@ -77,8 +79,8 @@ export default function MyTreatmentScreen() {
       }).unwrap();
     } catch (err) {
       Alert.alert(
-        'Could not cancel',
-        apiErrorMessage(err, 'Failed to cancel appointment. Please try again.'),
+        t('myTreatment.alerts.cancelFailedTitle'),
+        apiErrorMessage(err, t('myTreatment.alerts.cancelFailedMessage')),
       );
     }
   }
@@ -91,7 +93,7 @@ export default function MyTreatmentScreen() {
           id: String(a.id),
           appointmentId: a.id,
           doctorId: a.doctorId,
-          name: a.doctorName || doctor?.name || 'Doctor',
+          name: a.doctorName || doctor?.name || t('myTreatment.defaultDoctor'),
           specialty: a.doctorSpecialty || doctor?.specialty || '',
           rating: doctor?.rating || 0,
           avatar: a.doctorAvatar || doctor?.avatar || '',
@@ -104,7 +106,7 @@ export default function MyTreatmentScreen() {
           raw: a,
         };
       }),
-    [appointments, doctorsById],
+    [appointments, doctorsById, t],
   );
 
   const filteredTreatments = treatments.filter((item) => {
@@ -142,7 +144,7 @@ export default function MyTreatmentScreen() {
           <Text style={styles.buttonText}>←</Text>
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>My Treatment</Text>
+        <Text style={styles.headerTitle}>{t('myTreatment.title')}</Text>
 
         <TouchableOpacity style={styles.circleButton} activeOpacity={0.8}>
           <Text style={styles.buttonText}>🔔</Text>
@@ -152,7 +154,7 @@ export default function MyTreatmentScreen() {
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         {/* Location selector */}
         <View style={styles.locationContainer}>
-          <Text style={styles.locationLabel}>Location</Text>
+          <Text style={styles.locationLabel}>{t('myTreatment.location')}</Text>
           <TouchableOpacity
             style={styles.locationSelector}
             activeOpacity={0.7}
@@ -176,7 +178,7 @@ export default function MyTreatmentScreen() {
           <Text style={styles.searchIcon}>🔍</Text>
           <TextInput
             style={styles.textInput}
-            placeholder="Search doctor"
+            placeholder={t('myTreatment.searchPlaceholder')}
             placeholderTextColor="#A39E99"
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -191,7 +193,7 @@ export default function MyTreatmentScreen() {
             activeOpacity={0.7}
           >
             <Text style={[styles.visitTabText, activeVisitTab === 'online' && styles.visitTabTextActive]}>
-              Online Visit
+              {t('myTreatment.onlineVisit')}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -200,7 +202,7 @@ export default function MyTreatmentScreen() {
             activeOpacity={0.7}
           >
             <Text style={[styles.visitTabText, activeVisitTab === 'physical' && styles.visitTabTextActive]}>
-              Physical Visit
+              {t('myTreatment.physicalVisit')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -217,7 +219,7 @@ export default function MyTreatmentScreen() {
                 activeOpacity={0.7}
               >
                 <Text style={[styles.filterChipText, isSelected && styles.filterChipTextActive]}>
-                  {filter}
+                  {t(`myTreatment.filters.${filter.toLowerCase()}`)}
                 </Text>
               </TouchableOpacity>
             );
@@ -229,10 +231,10 @@ export default function MyTreatmentScreen() {
           {filteredTreatments.length === 0 ? (
             <Text style={styles.emptyText}>
               {appointments.length === 0
-                ? 'No appointments yet.'
+                ? t('myTreatment.empty.none')
                 : searchQuery
-                  ? 'No appointments match your search.'
-                  : 'No appointments found.'}
+                  ? t('myTreatment.empty.noMatch')
+                  : t('myTreatment.empty.notFound')}
             </Text>
           ) : (
             filteredTreatments.map((item) => (
@@ -265,11 +267,11 @@ export default function MyTreatmentScreen() {
                     {/* Detail Info Grid */}
                     <View style={styles.detailsGrid}>
                       <View style={styles.detailsCol}>
-                        <Text style={styles.gridLabel}>Appointment</Text>
+                        <Text style={styles.gridLabel}>{t('myTreatment.appointment')}</Text>
                         <Text style={styles.gridValue}>{item.date}</Text>
                       </View>
                       <View style={styles.detailsColRight}>
-                        <Text style={styles.gridLabelRight}>Booked on</Text>
+                        <Text style={styles.gridLabelRight}>{t('myTreatment.bookedOn')}</Text>
                         <Text style={styles.gridValueRight}>{item.bookedOn}</Text>
                       </View>
                     </View>
@@ -290,14 +292,14 @@ export default function MyTreatmentScreen() {
                         isUpcoming(item.status) ? styles.statusTextUpcoming : styles.statusTextCompleted,
                       ]}
                     >
-                      {isUpcoming(item.status) ? 'Upcoming' : 'Completed'}
+                      {isUpcoming(item.status) ? t('myTreatment.status.upcoming') : t('myTreatment.status.completed')}
                     </Text>
                   </View>
                   <View style={styles.cardFooterRight}>
                     <View style={styles.priceContainer}>
                       <Text style={styles.currencySymbol}>৳</Text>
                       <Text style={styles.priceAmount}> 120 </Text>
-                      <Text style={styles.paidBadge}>(Paid)</Text>
+                      <Text style={styles.paidBadge}>{t('myTreatment.paid')}</Text>
                     </View>
                   </View>
                 </View>

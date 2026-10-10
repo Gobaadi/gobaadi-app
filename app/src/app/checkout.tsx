@@ -15,8 +15,10 @@ import { useGetLivestockItemQuery } from '@/store/livestockApi';
 import { useGetCartQuery, useAddCartItemMutation, useClearCartMutation } from '@/store/cartApi';
 import { useCreateOrderMutation } from '@/store/ordersApi';
 import { useCreatePaymentIntentMutation, useSimulateSuccessMutation } from '@/store/paymentsApi';
+import { useTranslation } from 'react-i18next';
 
 export default function CheckoutScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const params = useLocalSearchParams();
   const itemId = String(params.id || '');
@@ -32,10 +34,10 @@ export default function CheckoutScreen() {
   const [clearCart] = useClearCartMutation();
 
   const itemName = isDirectCheckout 
-    ? (livestockItem ? `${livestockItem.breed} ${livestockItem.species}` : 'Loading...')
-    : `Cart Checkout (${cartData?.items?.length || 0} items)`;
+    ? (livestockItem ? `${livestockItem.breed} ${livestockItem.species}` : t('checkout.loading'))
+    : t('checkout.cartCheckout', { count: cartData?.items?.length || 0 });
 
-  const categoryName = isDirectCheckout ? 'Livestock' : 'Various';
+  const categoryName = isDirectCheckout ? t('checkout.livestock') : t('checkout.various');
 
   const subtotal = isDirectCheckout ? (livestockItem?.price || 0) : (cartData?.subtotal || 0);
   const tax = isDirectCheckout ? Math.round(subtotal * 0.05) : (cartData?.tax || 0);
@@ -77,7 +79,7 @@ export default function CheckoutScreen() {
       router.push({ pathname: '/order-success', params: { orderId: order.id } });
     } catch (err: any) {
       console.log('Error placing order:', err);
-      Alert.alert('Order Failed', err?.data?.message || 'Could not place your order. Please try again.');
+      Alert.alert(t('checkout.alerts.orderFailed'), err?.data?.message || t('checkout.alerts.orderFailedMessage'));
     }
   };
 
@@ -93,7 +95,7 @@ export default function CheckoutScreen() {
           <Text style={styles.buttonText}>←</Text>
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>Checkout</Text>
+        <Text style={styles.headerTitle}>{t('checkout.title')}</Text>
 
         <TouchableOpacity style={styles.circleButton} activeOpacity={0.8} onPress={() => router.push('/notifications')}>
           <Text style={styles.buttonText}>🔔</Text>
@@ -102,7 +104,7 @@ export default function CheckoutScreen() {
 
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         {/* Order Summary Section */}
-        <Text style={styles.sectionTitle}>Order Summary</Text>
+        <Text style={styles.sectionTitle}>{t('checkout.orderSummary')}</Text>
         
         <View style={styles.summaryCard}>
           <Image
@@ -111,11 +113,11 @@ export default function CheckoutScreen() {
           />
           <View style={styles.summaryDetails}>
             <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Item:</Text>
+              <Text style={styles.detailLabel}>{t('checkout.item')}</Text>
               <Text style={styles.detailValue}>{itemName}</Text>
             </View>
             <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Category:</Text>
+              <Text style={styles.detailLabel}>{t('checkout.category')}</Text>
               <Text style={styles.detailValue}>{categoryName}</Text>
             </View>
           </View>
@@ -123,41 +125,41 @@ export default function CheckoutScreen() {
 
         {/* Delivery Details Section */}
         <View style={styles.sectionHeaderRow}>
-          <Text style={styles.sectionTitle}>Delivery Details</Text>
-          <TouchableOpacity style={styles.changeAddressBtn} activeOpacity={0.7} onPress={() => Alert.alert('Change Address', 'Address selection feature coming soon.')}>
-            <Text style={styles.changeAddressText}>Change Address</Text>
+          <Text style={styles.sectionTitle}>{t('checkout.deliveryDetails')}</Text>
+          <TouchableOpacity style={styles.changeAddressBtn} activeOpacity={0.7} onPress={() => Alert.alert(t('checkout.alerts.changeAddress'), t('checkout.alerts.comingSoon'))}>
+            <Text style={styles.changeAddressText}>{t('checkout.changeAddress')}</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.addressCard}>
           <View style={styles.addressHeader}>
             <Text style={styles.addressPin}>📍</Text>
-            <Text style={styles.addressType}>Home Delivery</Text>
+            <Text style={styles.addressType}>{t('checkout.homeDelivery')}</Text>
           </View>
           <Text style={styles.addressText}>
-            Road# 9, house# 5, Lane#3, Mirpur 11/a, Dhaka-1216.
+            {t('checkout.address')}
           </Text>
         </View>
 
         {/* Pricing Details Section */}
-        <Text style={styles.sectionTitle}>Pricing Details</Text>
+        <Text style={styles.sectionTitle}>{t('checkout.pricingDetails')}</Text>
 
         <View style={styles.pricingCard}>
           <View style={styles.priceRow}>
-            <Text style={styles.priceLabel}>Item Price</Text>
+            <Text style={styles.priceLabel}>{t('checkout.itemPrice')}</Text>
             <Text style={styles.priceVal}>৳ {subtotal.toLocaleString()}</Text>
           </View>
           <View style={styles.priceRow}>
-            <Text style={styles.priceLabel}>VAT (5%)</Text>
+            <Text style={styles.priceLabel}>{t('checkout.vat')}</Text>
             <Text style={styles.priceVal}>৳ {tax.toLocaleString()}</Text>
           </View>
           <View style={styles.priceRow}>
-            <Text style={styles.priceLabel}>Delivery Charge</Text>
+            <Text style={styles.priceLabel}>{t('checkout.deliveryCharge')}</Text>
             <Text style={styles.priceVal}>৳ {shipping.toLocaleString()}</Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.priceRow}>
-            <Text style={styles.totalLabel}>Total Payment</Text>
+            <Text style={styles.totalLabel}>{t('checkout.totalPayment')}</Text>
             <Text style={styles.totalVal}>৳ {totalPrice.toLocaleString()}</Text>
           </View>
         </View>
@@ -171,7 +173,7 @@ export default function CheckoutScreen() {
           activeOpacity={0.85}
         >
           <Text style={styles.placeOrderIcon}>⚙️</Text>
-          <Text style={styles.placeOrderText}>Place Order</Text>
+          <Text style={styles.placeOrderText}>{t('checkout.placeOrder')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

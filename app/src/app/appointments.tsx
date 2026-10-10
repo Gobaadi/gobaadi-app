@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { SvgXml } from 'react-native-svg';
 import {
@@ -29,15 +30,33 @@ type Tab = 'today' | 'previous';
 
 type FilterParamKey = 'filterDate' | 'filterStatus' | 'filterConsultationType';
 
-const FILTER_LABELS: Record<FilterParamKey, Record<string, string>> = {
-  filterDate: { today: 'Today', tomorrow: 'Tomorrow', this_week: 'This week' },
-  filterStatus: { CONFIRMED: 'Upcoming', COMPLETED: 'Completed', CANCELLED: 'Cancelled' },
-  filterConsultationType: {
-    video: 'Online - Video',
-    voice: 'Online - Voice',
-    chat: 'Online - Chat',
-    physical: 'Physical',
+type Translate = ReturnType<typeof useTranslation>['t'];
+
+const FILTER_LABEL_KEYS: Record<FilterParamKey, Record<string, string>> = {
+  filterDate: {
+    today: 'appointments.filters.date.today',
+    tomorrow: 'appointments.filters.date.tomorrow',
+    this_week: 'appointments.filters.date.thisWeek',
   },
+  filterStatus: {
+    CONFIRMED: 'appointments.filters.status.upcoming',
+    COMPLETED: 'appointments.filters.status.completed',
+    CANCELLED: 'appointments.filters.status.cancelled',
+  },
+  filterConsultationType: {
+    video: 'appointments.filters.type.video',
+    voice: 'appointments.filters.type.voice',
+    chat: 'appointments.filters.type.chat',
+    physical: 'appointments.filters.type.physical',
+  },
+};
+
+const STATUS_LABEL_KEYS: Record<string, string> = {
+  PENDING: 'appointments.status.pending',
+  CONFIRMED: 'appointments.status.confirmed',
+  RESCHEDULED: 'appointments.status.rescheduled',
+  CANCELLED: 'appointments.status.cancelled',
+  COMPLETED: 'appointments.status.completed',
 };
 
 const CONSULTATION_TYPE_MAP: Record<string, string> = {
@@ -73,9 +92,9 @@ function formatTimeRange(start: string, end: string): string {
   return `${fmt(s)} - ${fmt(e)}`;
 }
 
-function formatDateLabel(date: Date): string {
-  if (isToday(date)) return "Today's";
-  if (isYesterday(date)) return 'Yesterday';
+function formatDateLabel(date: Date, t: Translate): string {
+  if (isToday(date)) return t('appointments.dates.today');
+  if (isYesterday(date)) return t('appointments.dates.yesterday');
   return date.toLocaleDateString('en-US', {
     day: 'numeric',
     month: 'long',
@@ -87,12 +106,12 @@ function getDateKey(date: Date): string {
   return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
 }
 
-function formatMinutesRemaining(start: string): string {
+function formatMinutesRemaining(start: string, t: Translate): string {
   const now = new Date();
   const startMs = new Date(start).getTime();
   const diffMs = startMs - now.getTime();
   const mins = Math.max(0, Math.floor(diffMs / 60000));
-  return `${mins} mins left`;
+  return t('appointments.minsLeft', { mins });
 }
 
 interface AppointmentCardProps {
@@ -101,6 +120,7 @@ interface AppointmentCardProps {
 }
 
 function AppointmentCard({ appointment, onPress }: AppointmentCardProps) {
+  const { t } = useTranslation();
   const now = new Date();
   const startAt = new Date(appointment.startAt);
   const endAt = new Date(appointment.endAt);
@@ -110,7 +130,7 @@ function AppointmentCard({ appointment, onPress }: AppointmentCardProps) {
     endAt >= now;
 
   const displayName =
-    appointment.animalName || appointment.patientName || 'Patient';
+    appointment.animalName || appointment.patientName || t('appointments.fallback.patient');
 
   return (
     <TouchableOpacity style={styles.card} activeOpacity={0.7} onPress={onPress}>
@@ -129,7 +149,7 @@ function AppointmentCard({ appointment, onPress }: AppointmentCardProps) {
 
       <View style={styles.cardContent}>
         <View style={styles.cardTopRow}>
-          <Text style={styles.cardType}>Live Chat</Text>
+          <Text style={styles.cardType}>{t('appointments.liveChat')}</Text>
           <Text style={styles.dot}> · </Text>
           <Text
             style={[
@@ -137,11 +157,15 @@ function AppointmentCard({ appointment, onPress }: AppointmentCardProps) {
               isOngoing ? styles.statusInProgress : styles.statusUpcoming,
             ]}
           >
-            {isOngoing ? 'Still in Progress' : appointment.status}
+            {isOngoing
+              ? t('appointments.stillInProgress')
+              : STATUS_LABEL_KEYS[appointment.status]
+                ? t(STATUS_LABEL_KEYS[appointment.status])
+                : appointment.status}
           </Text>
           {isOngoing && (
             <Text style={styles.timeRemaining}>
-              {formatMinutesRemaining(appointment.startAt)}
+              {formatMinutesRemaining(appointment.startAt, t)}
             </Text>
           )}
         </View>
@@ -157,7 +181,7 @@ function AppointmentCard({ appointment, onPress }: AppointmentCardProps) {
         )}
 
         {appointment.patientName && (
-          <Text style={styles.cardOwner}>Owner: {appointment.patientName}</Text>
+          <Text style={styles.cardOwner}>{t('appointments.owner', { name: appointment.patientName })}</Text>
         )}
 
         <Text style={styles.cardTime}>
@@ -170,6 +194,7 @@ function AppointmentCard({ appointment, onPress }: AppointmentCardProps) {
 
 export default function AppointmentsScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const params = useLocalSearchParams<{
     filterDate?: string;
     filterStatus?: string;
@@ -209,23 +234,24 @@ export default function AppointmentsScreen() {
 
   const activeFilters: { key: FilterParamKey; label: string }[] = [];
   if (params.filterDate) {
+    const labelKey = FILTER_LABEL_KEYS.filterDate[params.filterDate];
     activeFilters.push({
       key: 'filterDate',
-      label: FILTER_LABELS.filterDate[params.filterDate] ?? params.filterDate,
+      label: labelKey ? t(labelKey) : params.filterDate,
     });
   }
   if (params.filterStatus && params.filterStatus !== 'all') {
+    const labelKey = FILTER_LABEL_KEYS.filterStatus[params.filterStatus];
     activeFilters.push({
       key: 'filterStatus',
-      label: FILTER_LABELS.filterStatus[params.filterStatus] ?? params.filterStatus,
+      label: labelKey ? t(labelKey) : params.filterStatus,
     });
   }
   if (params.filterConsultationType && params.filterConsultationType !== 'all') {
+    const labelKey = FILTER_LABEL_KEYS.filterConsultationType[params.filterConsultationType];
     activeFilters.push({
       key: 'filterConsultationType',
-      label:
-        FILTER_LABELS.filterConsultationType[params.filterConsultationType] ??
-        params.filterConsultationType,
+      label: labelKey ? t(labelKey) : params.filterConsultationType,
     });
   }
   const hasActiveFilters = activeFilters.length > 0;
@@ -315,11 +341,11 @@ export default function AppointmentsScreen() {
     map.forEach((data, key) => {
       const [y, m, d] = key.split('-').map(Number);
       const date = new Date(y, m, d);
-      groups.push({ label: formatDateLabel(date), data });
+      groups.push({ label: formatDateLabel(date, t), data });
     });
 
     return groups;
-  }, [previousAppointments]);
+  }, [previousAppointments, t]);
 
   // A freshly pushed (filtered) screen opens on "Today's". If that tab has no
   // matches but "Previous" does, show "Previous" until the user picks a tab —
@@ -363,7 +389,7 @@ export default function AppointmentsScreen() {
         >
           <SvgXml width={20} height={20} xml={tintSvg(backButtonSvg, 'white', '#BD632F')} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Appointments</Text>
+        <Text style={styles.headerTitle}>{t('appointments.title')}</Text>
         <TouchableOpacity
           style={styles.filterBtn}
           onPress={() => router.push('/appointment-filter')}
@@ -377,7 +403,7 @@ export default function AppointmentsScreen() {
         <SvgXml width={18} height={18} xml={appointmentsSearchSvg} />
         <TextInput
           style={styles.searchInput}
-          placeholder="Search patient"
+          placeholder={t('appointments.searchPlaceholder')}
           placeholderTextColor="#9C9690"
           value={searchQuery}
           onChangeText={setSearchQuery}
@@ -412,7 +438,7 @@ export default function AppointmentsScreen() {
               displayedTab === 'today' && styles.tabTextActive,
             ]}
           >
-            {"Today's"}
+            {t('appointments.tabs.today')}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -426,7 +452,7 @@ export default function AppointmentsScreen() {
               displayedTab === 'previous' && styles.tabTextActive,
             ]}
           >
-            Previous
+            {t('appointments.tabs.previous')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -439,7 +465,7 @@ export default function AppointmentsScreen() {
           <>
             {inProgressCount > 0 && (
               <>
-                <Text style={styles.sectionTitle}>Still in Progress</Text>
+                <Text style={styles.sectionTitle}>{t('appointments.sections.inProgress')}</Text>
                 {todayAppointments
                   .filter(
                     (b) =>
@@ -460,7 +486,7 @@ export default function AppointmentsScreen() {
             {upcomingCount > 0 && (
               <>
                 <Text style={styles.sectionTitle}>
-                  Next Consults [{upcomingCount}]
+                  {t('appointments.sections.nextConsults', { upcomingCount })}
                 </Text>
                 {todayAppointments
                   .filter(
@@ -486,8 +512,8 @@ export default function AppointmentsScreen() {
                 <Ionicons name="calendar-outline" size={48} color="#E6E1DC" />
                 <Text style={styles.emptyText}>
                   {hasActiveFilters
-                    ? 'No appointments match your filters'
-                    : 'No appointments for today'}
+                    ? t('appointments.empty.noMatch')
+                    : t('appointments.empty.today')}
                 </Text>
                 {hasActiveFilters && (
                   <TouchableOpacity
@@ -495,7 +521,7 @@ export default function AppointmentsScreen() {
                     onPress={clearAllFilters}
                     activeOpacity={0.7}
                   >
-                    <Text style={styles.clearFiltersText}>Clear filters</Text>
+                    <Text style={styles.clearFiltersText}>{t('appointments.empty.clearFilters')}</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -521,8 +547,8 @@ export default function AppointmentsScreen() {
                 <Ionicons name="calendar-outline" size={48} color="#E6E1DC" />
                 <Text style={styles.emptyText}>
                   {hasActiveFilters
-                    ? 'No appointments match your filters'
-                    : 'No previous appointments'}
+                    ? t('appointments.empty.noMatch')
+                    : t('appointments.empty.previous')}
                 </Text>
                 {hasActiveFilters && (
                   <TouchableOpacity
@@ -530,7 +556,7 @@ export default function AppointmentsScreen() {
                     onPress={clearAllFilters}
                     activeOpacity={0.7}
                   >
-                    <Text style={styles.clearFiltersText}>Clear filters</Text>
+                    <Text style={styles.clearFiltersText}>{t('appointments.empty.clearFilters')}</Text>
                   </TouchableOpacity>
                 )}
               </View>

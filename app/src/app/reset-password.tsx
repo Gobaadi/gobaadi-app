@@ -11,12 +11,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 import { useResetPasswordMutation } from '@/store/authApi';
 import { PasswordField } from '@/components/password-field';
 
 export default function ResetPasswordScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const params = useLocalSearchParams();
   const resetToken = String(params.resetToken || '');
 
@@ -30,11 +32,11 @@ export default function ResetPasswordScreen() {
     setErrorMessage('');
 
     if (password.length < 8) {
-      setErrorMessage('Password must be at least 8 characters.');
+      setErrorMessage(t('resetPassword.errors.tooShort'));
       return;
     }
     if (password !== confirmPassword) {
-      setErrorMessage('Passwords do not match.');
+      setErrorMessage(t('resetPassword.errors.mismatch'));
       return;
     }
 
@@ -42,7 +44,7 @@ export default function ResetPasswordScreen() {
       await resetPassword({ resetToken, newPassword: password }).unwrap();
       router.replace('/congo');
     } catch (err: any) {
-      setErrorMessage(err?.data?.message || 'Could not reset password. Please try again.');
+      setErrorMessage(err?.data?.message || t('resetPassword.errors.failed'));
     }
   };
 
@@ -65,22 +67,20 @@ export default function ResetPasswordScreen() {
 
         <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
           {/* Title */}
-          <Text style={styles.title}>Reset Password</Text>
-          <Text style={styles.subtitle}>
-            Enter your new password twice below to reset a new password
-          </Text>
+          <Text style={styles.title}>{t('resetPassword.title')}</Text>
+          <Text style={styles.subtitle}>{t('resetPassword.subtitle')}</Text>
 
           {/* Form */}
           <View style={styles.form}>
             {/* Password */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Password*</Text>
+              <Text style={styles.label}>{t('resetPassword.labels.password')}</Text>
               <PasswordField value={password} onChangeText={setPassword} />
             </View>
 
             {/* Confirm Password */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Confirm Password*</Text>
+              <Text style={styles.label}>{t('resetPassword.labels.confirmPassword')}</Text>
               <PasswordField value={confirmPassword} onChangeText={setConfirmPassword} />
             </View>
 
@@ -97,7 +97,7 @@ export default function ResetPasswordScreen() {
               {isLoading ? (
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
-                <Text style={styles.resetButtonText}>Reset Password</Text>
+                <Text style={styles.resetButtonText}>{t('resetPassword.submit')}</Text>
               )}
             </TouchableOpacity>
           </View>

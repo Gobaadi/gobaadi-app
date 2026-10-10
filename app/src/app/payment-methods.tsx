@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import {
   useGetPaymentMethodsQuery,
   useSetDefaultPaymentMethodMutation,
@@ -36,6 +37,7 @@ function getProviderConfig(type: string, provider: string) {
 
 export default function PaymentMethodsScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const isDoctor = useRequireDoctor();
   if (!isDoctor) return null;
 
@@ -47,21 +49,21 @@ export default function PaymentMethodsScreen() {
     try {
       await setDefault(id).unwrap();
     } catch {
-      Alert.alert('Error', 'Failed to set as default');
+      Alert.alert(t('paymentMethods.alerts.error'), t('paymentMethods.alerts.setDefaultFailed'));
     }
   };
 
   const handleRemove = (id: number) => {
-    Alert.alert('Remove Payment Method', 'Are you sure you want to remove this payment method?', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('paymentMethods.alerts.removeTitle'), t('paymentMethods.alerts.removeConfirm'), [
+      { text: t('paymentMethods.alerts.cancel'), style: 'cancel' },
       {
-        text: 'Remove',
+        text: t('paymentMethods.alerts.remove'),
         style: 'destructive',
         onPress: async () => {
           try {
             await removeMethod(id).unwrap();
           } catch {
-            Alert.alert('Error', 'Failed to remove payment method');
+            Alert.alert(t('paymentMethods.alerts.error'), t('paymentMethods.alerts.removeFailed'));
           }
         },
       },
@@ -75,7 +77,7 @@ export default function PaymentMethodsScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
             <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Payment Method</Text>
+          <Text style={styles.headerTitle}>{t('paymentMethods.title')}</Text>
           <View style={{ width: 40 }} />
         </View>
         <View style={styles.loadingContainer}>
@@ -92,12 +94,12 @@ export default function PaymentMethodsScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
             <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Payment Method</Text>
+          <Text style={styles.headerTitle}>{t('paymentMethods.title')}</Text>
           <View style={{ width: 40 }} />
         </View>
         <View style={styles.loadingContainer}>
           <Ionicons name="cloud-offline-outline" size={48} color="#9C9690" />
-          <Text style={styles.errorText}>Failed to load payment methods</Text>
+          <Text style={styles.errorText}>{t('paymentMethods.loadFailed')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -109,7 +111,7 @@ export default function PaymentMethodsScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
           <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Payment Method</Text>
+        <Text style={styles.headerTitle}>{t('paymentMethods.title')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -117,7 +119,7 @@ export default function PaymentMethodsScreen() {
         {!methods || methods.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Ionicons name="card-outline" size={48} color="#9C9690" />
-            <Text style={styles.emptyText}>No payment methods added yet</Text>
+            <Text style={styles.emptyText}>{t('paymentMethods.empty')}</Text>
           </View>
         ) : (
           methods.map((method) => {
@@ -128,10 +130,10 @@ export default function PaymentMethodsScreen() {
                 style={[styles.methodCard, method.isDefault && styles.methodCardDefault]}
                 onLongPress={() => {
                   const options = [];
-                  if (!method.isDefault) options.push({ text: 'Set as Default', onPress: () => handleSetDefault(method.id) });
-                  options.push({ text: 'Remove', style: 'destructive' as const, onPress: () => handleRemove(method.id) });
-                  options.push({ text: 'Cancel', style: 'cancel' as const });
-                  Alert.alert('Payment Method', method.provider || method.type, options);
+                  if (!method.isDefault) options.push({ text: t('paymentMethods.setAsDefault'), onPress: () => handleSetDefault(method.id) });
+                  options.push({ text: t('paymentMethods.alerts.remove'), style: 'destructive' as const, onPress: () => handleRemove(method.id) });
+                  options.push({ text: t('paymentMethods.alerts.cancel'), style: 'cancel' as const });
+                  Alert.alert(t('paymentMethods.title'), method.provider || method.type, options);
                 }}
                 activeOpacity={0.7}
               >
@@ -144,7 +146,7 @@ export default function PaymentMethodsScreen() {
                       <Text style={styles.methodType}>{method.provider || method.type}</Text>
                       {method.isDefault && (
                         <View style={styles.defaultBadge}>
-                          <Text style={styles.defaultText}>Default</Text>
+                          <Text style={styles.defaultText}>{t('paymentMethods.defaultBadge')}</Text>
                         </View>
                       )}
                       {method.isVerified && (
@@ -169,7 +171,7 @@ export default function PaymentMethodsScreen() {
           activeOpacity={0.85}
         >
           <Ionicons name="add" size={18} color="#FFFFFF" />
-          <Text style={styles.addBtnText}>Add account</Text>
+          <Text style={styles.addBtnText}>{t('paymentMethods.addAccount')}</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

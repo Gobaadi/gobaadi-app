@@ -3,6 +3,7 @@ import { StyleSheet, View, Text, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import PrescriptionForm, { PrescriptionFormData } from '@/components/PrescriptionForm';
 import { useSendPrescription } from '@/hooks/use-send-prescription';
 import { useRequireDoctor } from '@/hooks/use-require-doctor';
@@ -11,6 +12,7 @@ export default function SendPrescriptionScreen() {
   // Destination of the doctor-only quick actions — block direct/deep-link
   // entry from a farmer account too.
   useRequireDoctor();
+  const { t } = useTranslation();
   const router = useRouter();
   const params = useLocalSearchParams<{
     appointmentId?: string;
@@ -34,8 +36,8 @@ export default function SendPrescriptionScreen() {
   const handleSend = async (data: PrescriptionFormData) => {
     if (!appointmentId) {
       Alert.alert(
-        'Error',
-        'Missing appointment information. Please open this from the appointment chat.',
+        t('sendPrescription.errorTitle'),
+        t('sendPrescription.missingAppointment'),
       );
       return;
     }
@@ -56,7 +58,7 @@ export default function SendPrescriptionScreen() {
       const errData = (err as { data?: { message?: string | string[] } })?.data;
       const raw = errData?.message ?? (err instanceof Error ? err.message : '');
       const message = Array.isArray(raw) ? raw[0] : raw;
-      Alert.alert('Error', message || 'Failed to send prescription. Please try again.');
+      Alert.alert(t('sendPrescription.errorTitle'), message || t('sendPrescription.sendFailed'));
     } finally {
       setSending(false);
     }
@@ -73,7 +75,7 @@ export default function SendPrescriptionScreen() {
           <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>
-          {patientName}
+          {params.patientName || t('sendPrescription.patient')}
         </Text>
         <View style={{ width: 40 }} />
       </View>

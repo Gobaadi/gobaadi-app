@@ -19,15 +19,16 @@ import {
 import { useGetBlockTimesQuery } from '@/store/blockTimesApi';
 import { PatientAvatar } from '@/components/patient-avatar';
 import { formatTime12h } from '@/utils/date';
+import { useTranslation } from '@/hooks/use-translation';
 
 type ViewMode = 'monthly' | 'weekly';
 
-const MONTH_NAMES = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
+const MONTH_KEYS = [
+  'january', 'february', 'march', 'april', 'may', 'june',
+  'july', 'august', 'september', 'october', 'november', 'december',
 ];
 const DAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-const DAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
 function getDaysInMonth(year: number, month: number): number {
   return new Date(year, month + 1, 0).getDate();
@@ -78,6 +79,7 @@ function MonthlyView({
   blockedDates: Set<string>;
   stats: { openDays: number; blockedDays: number; totalAppointments: number };
 }) {
+  const { t } = useTranslation();
   const year = selectedDate.getFullYear();
   const month = selectedDate.getMonth();
   const daysInMonth = getDaysInMonth(year, month);
@@ -91,7 +93,7 @@ function MonthlyView({
           <TouchableOpacity onPress={() => onNavigateMonth(-1)} style={styles.navBtn} activeOpacity={0.7}>
             <Ionicons name="chevron-back" size={18} color="#BD632F" />
           </TouchableOpacity>
-          <Text style={styles.monthTitle}>{MONTH_NAMES[month]} {year}</Text>
+          <Text style={styles.monthTitle}>{t(`doctorBookings.months.${MONTH_KEYS[month]}`)} {year}</Text>
           <TouchableOpacity onPress={() => onNavigateMonth(1)} style={styles.navBtn} activeOpacity={0.7}>
             <Ionicons name="chevron-forward" size={18} color="#BD632F" />
           </TouchableOpacity>
@@ -149,17 +151,17 @@ function MonthlyView({
       <View style={styles.statsRow}>
         <View style={styles.statItem}>
           <Text style={styles.statNumber}>{stats.openDays}</Text>
-          <Text style={styles.statLabel}>Open days</Text>
+          <Text style={styles.statLabel}>{t('doctorBookings.openDays')}</Text>
         </View>
         <View style={styles.statDivider} />
         <View style={styles.statItem}>
           <Text style={styles.statNumber}>{stats.blockedDays}</Text>
-          <Text style={styles.statLabel}>Blocked days</Text>
+          <Text style={styles.statLabel}>{t('doctorBookings.blockedDays')}</Text>
         </View>
         <View style={styles.statDivider} />
         <View style={styles.statItem}>
           <Text style={styles.statNumber}>{stats.totalAppointments}</Text>
-          <Text style={styles.statLabel}>Total appointments</Text>
+          <Text style={styles.statLabel}>{t('doctorBookings.totalAppointments')}</Text>
         </View>
       </View>
     </View>
@@ -183,6 +185,7 @@ function WeeklyView({
   blockedDates: Set<string>;
   onAppointmentPress: (appointment: DoctorAppointment) => void;
 }) {
+  const { t } = useTranslation();
   const weekDates = useMemo(() => getWeekDates(selectedDate), [selectedDate]);
 
   const dayAppointments = useMemo(() => {
@@ -195,8 +198,8 @@ function WeeklyView({
     <View>
       <View style={styles.weekStrip}>
         <View style={styles.weekDayHeader}>
-          {DAY_SHORT.map((d, i) => (
-            <Text key={i} style={styles.weekDayLabel}>{d}</Text>
+          {DAY_KEYS.map((d, i) => (
+            <Text key={i} style={styles.weekDayLabel}>{t(`doctorBookings.dayShort.${d}`)}</Text>
           ))}
         </View>
         <View style={styles.weekDateRow}>
@@ -234,15 +237,15 @@ function WeeklyView({
       <View style={styles.agendaContainer}>
         <View style={styles.dayTimelineHeaderRow}>
           <Text style={styles.dayTimelineHeader}>
-            {DAY_SHORT[selectedDate.getDay()]}, {selectedDate.getDate()} {MONTH_NAMES[selectedDate.getMonth()]}
+            {t(`doctorBookings.dayShort.${DAY_KEYS[selectedDate.getDay()]}`)}, {selectedDate.getDate()} {t(`doctorBookings.months.${MONTH_KEYS[selectedDate.getMonth()]}`)}
           </Text>
-          <Text style={styles.appointmentCount}>{dayAppointments.length} Appointments</Text>
+          <Text style={styles.appointmentCount}>{t('doctorBookings.appointmentsCount', { count: dayAppointments.length })}</Text>
         </View>
 
         {dayAppointments.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="calendar-outline" size={40} color="#E6E1DC" />
-            <Text style={styles.emptyStateText}>No appointments for this day</Text>
+            <Text style={styles.emptyStateText}>{t('doctorBookings.emptyDay')}</Text>
           </View>
         ) : (
           dayAppointments.map((appt) => (
@@ -272,10 +275,10 @@ function WeeklyView({
 
               <View style={styles.agendaInfo}>
                 <Text style={styles.agendaName}>
-                    {appt.animalName || appt.patientName || 'Patient'}
+                    {appt.animalName || appt.patientName || t('doctorBookings.fallback.patient')}
                 </Text>
                 <Text style={styles.agendaDetail}>
-                  {appt.symptoms || 'General Checkup'}
+                  {appt.symptoms || t('doctorBookings.fallback.generalCheckup')}
                 </Text>
               </View>
 
@@ -292,6 +295,7 @@ function WeeklyView({
 
 export default function DoctorBookingsScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const isDoctor = useRequireDoctor();
   const [viewMode, setViewMode] = useState<ViewMode>('monthly');
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -382,7 +386,7 @@ export default function DoctorBookingsScreen() {
         >
           <Ionicons name="arrow-back" size={20} color="#BD632F" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Calendar</Text>
+        <Text style={styles.headerTitle}>{t('doctorBookings.title')}</Text>
         <TouchableOpacity
           style={styles.settingsBtn}
           onPress={() => router.push('/calendar-settings')}
@@ -399,7 +403,7 @@ export default function DoctorBookingsScreen() {
           activeOpacity={0.8}
         >
           <Text style={[styles.viewToggleText, viewMode === 'monthly' && styles.viewToggleTextActive]}>
-            Monthly
+            {t('doctorBookings.monthly')}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -408,7 +412,7 @@ export default function DoctorBookingsScreen() {
           activeOpacity={0.8}
         >
           <Text style={[styles.viewToggleText, viewMode === 'weekly' && styles.viewToggleTextActive]}>
-            Weekly
+            {t('doctorBookings.weekly')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -436,7 +440,7 @@ export default function DoctorBookingsScreen() {
         {viewMode === 'monthly' && (
           <View style={styles.upcomingSection}>
             <View style={styles.upcomingHeader}>
-              <Text style={styles.upcomingTitle}>Upcoming appointments</Text>
+              <Text style={styles.upcomingTitle}>{t('doctorBookings.upcoming')}</Text>
               <TouchableOpacity
                 onPress={() => setShowAllAppointments(!showAllAppointments)}
                 activeOpacity={0.7}
@@ -444,10 +448,10 @@ export default function DoctorBookingsScreen() {
               >
                 <Text style={styles.viewAllText}>
                   {showAllAppointments
-                    ? 'Show less'
+                    ? t('doctorBookings.showLess')
                     : upcomingAll.length > 2
-                      ? `View all (${upcomingAll.length})`
-                      : 'View all'}
+                      ? t('doctorBookings.viewAllCount', { count: upcomingAll.length })
+                      : t('doctorBookings.viewAll')}
                 </Text>
                 <Ionicons
                   name={showAllAppointments ? 'chevron-up' : 'chevron-down'}
@@ -476,14 +480,14 @@ export default function DoctorBookingsScreen() {
                     {new Date(appt.startAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })} · {formatTime12h(appt.startAt)}
                   </Text>
                   <Text style={styles.upcomingName}>
-                  {appt.animalName || appt.patientName || 'Patient'}
+                  {appt.animalName || appt.patientName || t('doctorBookings.fallback.patient')}
                     {appt.animalSpecies ? ` (${appt.animalSpecies})` : ''}
                   </Text>
-                  <Text style={styles.upcomingType}>Physical Consultation</Text>
+                  <Text style={styles.upcomingType}>{t('doctorBookings.physicalConsultation')}</Text>
                 </View>
                 <View style={[styles.statusBadge, appt.status === 'CONFIRMED' ? styles.statusConfirmed : styles.statusPending]}>
                   <Text style={[styles.statusText, appt.status === 'CONFIRMED' ? styles.statusTextConfirmed : styles.statusTextPending]}>
-                    {appt.status === 'CONFIRMED' ? 'Confirmed' : appt.status}
+                    {appt.status === 'CONFIRMED' ? t('doctorBookings.status.confirmed') : appt.status}
                   </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={16} color="#9C9690" />

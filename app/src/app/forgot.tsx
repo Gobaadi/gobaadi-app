@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 import { useForgotPasswordMutation } from '@/store/authApi';
 
@@ -19,6 +20,7 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -28,11 +30,11 @@ export default function ForgotPasswordScreen() {
     setErrorMessage('');
     const identifier = email.trim();
     if (!identifier) {
-      setErrorMessage('Email is required.');
+      setErrorMessage(t('forgot.errors.required'));
       return;
     }
     if (!EMAIL_REGEX.test(identifier)) {
-      setErrorMessage('Please enter a valid email address.');
+      setErrorMessage(t('forgot.errors.invalidEmail'));
       return;
     }
 
@@ -43,7 +45,7 @@ export default function ForgotPasswordScreen() {
         params: { phone: identifier, purpose: 'reset' },
       });
     } catch (err: any) {
-      setErrorMessage(err?.data?.message || 'Could not send OTP. Please try again.');
+      setErrorMessage(err?.data?.message || t('forgot.errors.failed'));
     }
   };
 
@@ -66,15 +68,13 @@ export default function ForgotPasswordScreen() {
 
         <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
           {/* Title */}
-          <Text style={styles.title}>Forgot Password?</Text>
-          <Text style={styles.subtitle}>
-            Enter your email address to get the password reset code.
-          </Text>
+          <Text style={styles.title}>{t('forgot.title')}</Text>
+          <Text style={styles.subtitle}>{t('forgot.subtitle')}</Text>
 
           {/* Form */}
           <View style={styles.form}>
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Email</Text>
+              <Text style={styles.label}>{t('forgot.emailLabel')}</Text>
               <TextInput
                 style={styles.emailInput}
                 value={email}
@@ -99,7 +99,7 @@ export default function ForgotPasswordScreen() {
               {isLoading ? (
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
-                <Text style={styles.sendButtonText}>Reset Password</Text>
+                <Text style={styles.sendButtonText}>{t('forgot.submit')}</Text>
               )}
             </TouchableOpacity>
           </View>

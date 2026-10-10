@@ -32,8 +32,10 @@ import {
   profileLegalAndAboutSvg,
   tintSvg,
 } from '@/components/icons/svg-icon-sources';
+import { useTranslation } from '@/hooks/use-translation';
 
 export default function ProfileScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const user = useSelector((state: RootState) => state.auth.user);
@@ -60,12 +62,12 @@ export default function ProfileScreen() {
 
   const handleLogout = () => {
     Alert.alert(
-      'Log Out',
-      'Are you sure you want to log out?',
+      t('profile.logout.title'),
+      t('profile.logout.msg'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('profile.logout.cancel'), style: 'cancel' },
         {
-          text: 'Log Out',
+          text: t('profile.logout.confirm'),
           style: 'destructive',
           onPress: async () => {
             await logout(dispatch);
@@ -83,7 +85,7 @@ export default function ProfileScreen() {
         contentContainerStyle={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.headerTitle}>Profile</Text>
+        <Text style={styles.headerTitle}>{t('profile.header')}</Text>
 
         {isDoctor ? (
           /* ==================== DOCTOR PROFILE ==================== */
@@ -103,15 +105,15 @@ export default function ProfileScreen() {
                 </View>
                 <View style={styles.doctorDetails}>
                   <Text style={styles.doctorName}>
-                    {doctorProfile?.name || user?.name || 'Dr. David Patel'}
+                    {doctorProfile?.name || user?.name || t('profile.doctor.nameFallback')}
                   </Text>
                   <Text style={styles.doctorSpecialty}>
-                    {doctorProfile?.specialty || 'Veterinary Surgery'}
+                    {doctorProfile?.specialty || t('profile.doctor.specialtyFallback')}
                   </Text>
                   <View style={styles.ratingRow}>
                     <Ionicons name="star" size={14} color="#F59E0B" />
                     <Text style={styles.ratingScore}>{doctorProfile?.rating ?? '4.8'}</Text>
-                    <Text style={styles.ratingCount}>({completedConsultations} reviews)</Text>
+                    <Text style={styles.ratingCount}>{t('profile.doctor.reviews', { count: completedConsultations })}</Text>
                   </View>
                 </View>
               </View>
@@ -119,15 +121,15 @@ export default function ProfileScreen() {
               {/* Stats Row */}
               <View style={styles.statsRow}>
                 <View style={styles.statItem}>
-                  <Text style={styles.statLabel}>Patients</Text>
+                  <Text style={styles.statLabel}>{t('profile.stats.patients')}</Text>
                   <Text style={styles.statNumber}>{uniquePatients}</Text>
                 </View>
                 <View style={styles.statItem}>
-                  <Text style={styles.statLabel}>Consultations</Text>
+                  <Text style={styles.statLabel}>{t('profile.stats.consultations')}</Text>
                   <Text style={styles.statNumber}>{completedConsultations}</Text>
                 </View>
                 <View style={styles.statItem}>
-                  <Text style={styles.statLabel}>Years Experience</Text>
+                  <Text style={styles.statLabel}>{t('profile.stats.yearsExperience')}</Text>
                   <Text style={styles.statNumber}>
                     {doctorProfile?.experience || 0}
                   </Text>
@@ -136,7 +138,7 @@ export default function ProfileScreen() {
             </View>
 
             {/* Wallet Section */}
-            <Text style={styles.sectionTitle}>Wallet</Text>
+            <Text style={styles.sectionTitle}>{t('profile.wallet.section')}</Text>
             <TouchableOpacity
               style={styles.walletCard}
               activeOpacity={0.85}
@@ -146,7 +148,7 @@ export default function ProfileScreen() {
                 <View style={styles.iconCircle}>
                   <MaterialCommunityIcons name="wallet-outline" size={20} color="#BD632F" />
                 </View>
-                <Text style={styles.walletLabel}>Total Earnings</Text>
+                <Text style={styles.walletLabel}>{t('profile.wallet.totalEarnings')}</Text>
               </View>
               <View style={styles.walletRight}>
                 <Text style={styles.walletAmount}>${(walletBalance?.balance ?? 0).toFixed(2)}</Text>
@@ -165,7 +167,7 @@ export default function ProfileScreen() {
                   <View style={styles.iconCircle}>
                     <Ionicons name="person-outline" size={20} color="#BD632F" />
                   </View>
-                  <Text style={styles.menuLabel}>Personal Information</Text>
+                  <Text style={styles.menuLabel}>{t('profile.menu.personalInformation')}</Text>
                 </View>
                 <SvgXml width={9} height={18} xml={tintSvg(profileArrowRightSvg, '#737373', '#9C9690')} />
               </TouchableOpacity>
@@ -181,7 +183,7 @@ export default function ProfileScreen() {
                   <View style={styles.iconCircle}>
                     <SvgXml width={22} height={22} xml={profileNotificationSvg} />
                   </View>
-                  <Text style={styles.menuLabel}>Notification</Text>
+                  <Text style={styles.menuLabel}>{t('profile.menu.notification')}</Text>
                 </View>
                 <SvgXml width={9} height={18} xml={tintSvg(profileArrowRightSvg, '#737373', '#9C9690')} />
               </TouchableOpacity>
@@ -197,7 +199,7 @@ export default function ProfileScreen() {
                   <View style={styles.iconCircle}>
                     <SvgXml width={22} height={22} xml={profileLanguageSvg} />
                   </View>
-                  <Text style={styles.menuLabel}>Language</Text>
+                  <Text style={styles.menuLabel}>{t('profile.menu.language')}</Text>
                 </View>
                 <SvgXml width={9} height={18} xml={tintSvg(profileArrowRightSvg, '#737373', '#9C9690')} />
               </TouchableOpacity>
@@ -213,7 +215,7 @@ export default function ProfileScreen() {
                   <View style={styles.iconCircle}>
                     <SvgXml width={22} height={22} xml={profileHelpAndSupportSvg} />
                   </View>
-                  <Text style={styles.menuLabel}>Help & Support</Text>
+                  <Text style={styles.menuLabel}>{t('profile.menu.helpSupport')}</Text>
                 </View>
                 <SvgXml width={9} height={18} xml={tintSvg(profileArrowRightSvg, '#737373', '#9C9690')} />
               </TouchableOpacity>
@@ -230,7 +232,7 @@ export default function ProfileScreen() {
                   <View style={[styles.iconCircle, styles.logoutCircle]}>
                     <Ionicons name="log-out-outline" size={20} color="#DC2626" />
                   </View>
-                  <Text style={[styles.menuLabel, styles.logoutLabel]}>Log Out</Text>
+                  <Text style={[styles.menuLabel, styles.logoutLabel]}>{t('profile.menu.logout')}</Text>
                 </View>
                 <SvgXml width={9} height={18} xml={tintSvg(profileArrowRightSvg, '#737373', '#DC2626')} />
               </TouchableOpacity>
@@ -256,10 +258,10 @@ export default function ProfileScreen() {
                 />
                 <View style={styles.farmerDetails}>
                   <Text style={styles.farmerName}>
-                    {userProfile?.name || user?.name || 'Michal Wilson'}
+                    {userProfile?.name || user?.name || t('profile.farmer.nameFallback')}
                   </Text>
                   <Text style={styles.farmerLocation} numberOfLines={1}>
-                    {userProfile?.phone || 'Location not added'}
+                    {userProfile?.phone || t('profile.farmer.locationFallback')}
                   </Text>
                 </View>
                 <TouchableOpacity
@@ -267,7 +269,7 @@ export default function ProfileScreen() {
                   activeOpacity={0.8}
                   onPress={() => router.push('/edit-profile')}
                 >
-                  <Text style={styles.editBtnText}>Edit</Text>
+                  <Text style={styles.editBtnText}>{t('profile.menu.edit')}</Text>
                   <SvgXml width={13} height={13} xml={profileEditSvg} />
                 </TouchableOpacity>
               </View>
@@ -280,27 +282,27 @@ export default function ProfileScreen() {
                   <Text style={[styles.countNumber, styles.cowNumber]}>
                     {String(cowCount).padStart(2, '0')}
                   </Text>
-                  <Text style={styles.countLabel}>Cow</Text>
+                  <Text style={styles.countLabel}>{t('profile.counts.cow')}</Text>
                 </View>
 
                 <View style={[styles.countBadge, styles.goatBadge]}>
                   <Text style={[styles.countNumber, styles.goatNumber]}>
                     {String(goatCount).padStart(2, '0')}
                   </Text>
-                  <Text style={styles.countLabel}>Goat</Text>
+                  <Text style={styles.countLabel}>{t('profile.counts.goat')}</Text>
                 </View>
 
                 <View style={[styles.countBadge, styles.buffaloBadge]}>
                   <Text style={[styles.countNumber, styles.buffaloNumber]}>
                     {String(buffaloCount).padStart(2, '0')}
                   </Text>
-                  <Text style={styles.countLabel}>Buffalo</Text>
+                  <Text style={styles.countLabel}>{t('profile.counts.buffalo')}</Text>
                 </View>
               </View>
             </View>
 
             {/* Subscription Section */}
-            <Text style={styles.sectionTitle}>Subscription</Text>
+            <Text style={styles.sectionTitle}>{t('profile.subscription.section')}</Text>
 
             {/* Current Plan Card */}
             <TouchableOpacity
@@ -309,10 +311,10 @@ export default function ProfileScreen() {
               onPress={() => router.push('/subscription')}
             >
               <View style={styles.planLeft}>
-                <Text style={styles.planTitle}>Current Plan</Text>
+                <Text style={styles.planTitle}>{t('profile.subscription.currentPlan')}</Text>
                 <Text style={styles.planPrice}>$00.00</Text>
                 <Text style={styles.planBilling}>
-                  Next Billing : <Text style={styles.planBillingBold}>-</Text>
+                  {t('profile.subscription.nextBilling')}<Text style={styles.planBillingBold}>-</Text>
                 </Text>
               </View>
               <SvgXml width={10} height={20} xml={profileArrowRightSvg} />
@@ -329,7 +331,7 @@ export default function ProfileScreen() {
                   <View style={styles.iconCircle}>
                     <SvgXml width={22} height={22} xml={profileMyTaskSvg} />
                   </View>
-                  <Text style={styles.menuLabel}>My Task</Text>
+                  <Text style={styles.menuLabel}>{t('profile.menu.myTask')}</Text>
                 </View>
                 <SvgXml width={9} height={18} xml={tintSvg(profileArrowRightSvg, '#737373', '#9C9690')} />
               </TouchableOpacity>
@@ -345,7 +347,7 @@ export default function ProfileScreen() {
                   <View style={styles.iconCircle}>
                     <SvgXml width={22} height={22} xml={profileNotificationSvg} />
                   </View>
-                  <Text style={styles.menuLabel}>Notification</Text>
+                  <Text style={styles.menuLabel}>{t('profile.menu.notification')}</Text>
                 </View>
                 <SvgXml width={9} height={18} xml={tintSvg(profileArrowRightSvg, '#737373', '#9C9690')} />
               </TouchableOpacity>
@@ -361,7 +363,7 @@ export default function ProfileScreen() {
                   <View style={styles.iconCircle}>
                     <SvgXml width={22} height={22} xml={profileLanguageSvg} />
                   </View>
-                  <Text style={styles.menuLabel}>Language</Text>
+                  <Text style={styles.menuLabel}>{t('profile.menu.language')}</Text>
                 </View>
                 <SvgXml width={9} height={18} xml={tintSvg(profileArrowRightSvg, '#737373', '#9C9690')} />
               </TouchableOpacity>
@@ -377,7 +379,7 @@ export default function ProfileScreen() {
                   <View style={styles.iconCircle}>
                     <SvgXml width={22} height={22} xml={profileReferAndEarnSvg} />
                   </View>
-                  <Text style={styles.menuLabel}>Refer & Earn</Text>
+                  <Text style={styles.menuLabel}>{t('profile.menu.referEarn')}</Text>
                 </View>
                 <SvgXml width={9} height={18} xml={tintSvg(profileArrowRightSvg, '#737373', '#9C9690')} />
               </TouchableOpacity>
@@ -393,7 +395,7 @@ export default function ProfileScreen() {
                   <View style={styles.iconCircle}>
                     <SvgXml width={22} height={22} xml={profileHelpAndSupportSvg} />
                   </View>
-                  <Text style={styles.menuLabel}>Help & Support</Text>
+                  <Text style={styles.menuLabel}>{t('profile.menu.helpSupport')}</Text>
                 </View>
                 <SvgXml width={9} height={18} xml={tintSvg(profileArrowRightSvg, '#737373', '#9C9690')} />
               </TouchableOpacity>
@@ -409,7 +411,7 @@ export default function ProfileScreen() {
                   <View style={styles.iconCircle}>
                     <SvgXml width={22} height={22} xml={profilePrivacyPolicySvg} />
                   </View>
-                  <Text style={styles.menuLabel}>Privacy Policy</Text>
+                  <Text style={styles.menuLabel}>{t('profile.menu.privacyPolicy')}</Text>
                 </View>
                 <SvgXml width={9} height={18} xml={tintSvg(profileArrowRightSvg, '#737373', '#9C9690')} />
               </TouchableOpacity>
@@ -425,7 +427,7 @@ export default function ProfileScreen() {
                   <View style={styles.iconCircle}>
                     <SvgXml width={22} height={22} xml={profileLegalAndAboutSvg} />
                   </View>
-                  <Text style={styles.menuLabel}>Legal & About</Text>
+                  <Text style={styles.menuLabel}>{t('profile.menu.legalAbout')}</Text>
                 </View>
                 <SvgXml width={9} height={18} xml={tintSvg(profileArrowRightSvg, '#737373', '#9C9690')} />
               </TouchableOpacity>
@@ -442,7 +444,7 @@ export default function ProfileScreen() {
                   <View style={[styles.iconCircle, styles.logoutCircle]}>
                     <Ionicons name="log-out-outline" size={20} color="#DC2626" />
                   </View>
-                  <Text style={[styles.menuLabel, styles.logoutLabel]}>Log Out</Text>
+                  <Text style={[styles.menuLabel, styles.logoutLabel]}>{t('profile.menu.logout')}</Text>
                 </View>
                 <SvgXml width={9} height={18} xml={tintSvg(profileArrowRightSvg, '#737373', '#DC2626')} />
               </TouchableOpacity>

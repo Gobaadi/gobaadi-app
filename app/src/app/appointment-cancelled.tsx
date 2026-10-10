@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { SvgXml } from 'react-native-svg';
 import { useSelector } from 'react-redux';
@@ -16,6 +17,7 @@ import { useGetBookingByIdQuery, useGetDoctorBookingsQuery } from '@/store/docto
 import { appointmentCancelCalendarSvg } from '@/components/icons/svg-icon-sources';
 
 export default function AppointmentCancelledScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const isDoctor = useSelector((state: RootState) => state.auth.user?.role) === 'doctor';
@@ -26,13 +28,13 @@ export default function AppointmentCancelledScreen() {
   const appointment = fetchedAppointment ?? bookings.find((b) => String(b.id) === id);
 
   const displayName = appointment
-    ? appointment.animalName || appointment.patientName || 'Patient'
-    : 'Unknown';
+    ? appointment.animalName || appointment.patientName || t('appointmentCancelled.patient')
+    : t('appointmentCancelled.unknown');
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Appointment cancelled</Text>
+        <Text style={styles.headerTitle}>{t('appointmentCancelled.headerTitle')}</Text>
       </View>
 
       <View style={styles.content}>
@@ -42,14 +44,14 @@ export default function AppointmentCancelledScreen() {
           </View>
         </View>
 
-        <Text style={styles.title}>Appointment Cancelled</Text>
+        <Text style={styles.title}>{t('appointmentCancelled.title')}</Text>
         <Text style={styles.subtitle}>
-          This appointment has been cancelled.{'\n'}The owner has been notified.
+          {t('appointmentCancelled.subtitle')}
         </Text>
 
         {appointment && (
           <View style={styles.infoCard}>
-            <Text style={styles.cancelledLabel}>Cancelled Appointment</Text>
+            <Text style={styles.cancelledLabel}>{t('appointmentCancelled.cancelledLabel')}</Text>
             <View style={styles.cardRow}>
               {appointment.animalImage ? (
                 <Image source={{ uri: appointment.animalImage }} style={styles.avatar} />
@@ -72,7 +74,7 @@ export default function AppointmentCancelledScreen() {
                   </Text>
                 )}
                 {appointment.animalName && appointment.patientName && (
-                  <Text style={styles.cardOwner}>Owner: {appointment.patientName}</Text>
+                  <Text style={styles.cardOwner}>{t('appointmentCancelled.owner', { name: appointment.patientName })}</Text>
                 )}
               </View>
             </View>
@@ -86,7 +88,7 @@ export default function AppointmentCancelledScreen() {
           onPress={() => router.replace(isDoctor ? '/doctor-home' : '/')}
           activeOpacity={0.8}
         >
-          <Text style={styles.homeBtnText}>Go Home</Text>
+          <Text style={styles.homeBtnText}>{t('appointmentCancelled.goHome')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

@@ -8,90 +8,42 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { openSupportEmail, SUPPORT_EMAIL } from '@/lib/contact';
 
 const LAST_UPDATED = 'October 1, 2026';
 
 type Section = {
-  heading: string;
-  body?: string;
-  bullets?: string[];
-  contact?: { label: string; value: string };
+  headingKey: string;
+  bodyKey?: string;
+  bulletsKeys?: string[];
+  contact?: { labelKey: string; value: string };
 };
 
 const SECTIONS: Section[] = [
+  { headingKey: 'termsOfService.s1.heading', bodyKey: 'termsOfService.s1.body' },
+  { headingKey: 'termsOfService.s2.heading', bodyKey: 'termsOfService.s2.body' },
+  { headingKey: 'termsOfService.s3.heading', bodyKey: 'termsOfService.s3.body' },
+  { headingKey: 'termsOfService.s4.heading', bodyKey: 'termsOfService.s4.body' },
   {
-    heading: '1. Use of Gobaadi',
-    body:
-      'Gobaadi provides agricultural technology services, including AI-powered tools, animal ' +
-      'health information, professional consultations, marketplace services, tracking, and task ' +
-      'management.\n\nYou agree to provide accurate information and use the app only for lawful purposes.',
+    headingKey: 'termsOfService.s5.heading',
+    bulletsKeys: ['termsOfService.s5.bullet1', 'termsOfService.s5.bullet2'],
   },
+  { headingKey: 'termsOfService.s6.heading', bodyKey: 'termsOfService.s6.body' },
+  { headingKey: 'termsOfService.s7.heading', bodyKey: 'termsOfService.s7.body' },
+  { headingKey: 'termsOfService.s8.heading', bodyKey: 'termsOfService.s8.body' },
+  { headingKey: 'termsOfService.s9.heading', bodyKey: 'termsOfService.s9.body' },
+  { headingKey: 'termsOfService.s10.heading', bodyKey: 'termsOfService.s10.body' },
   {
-    heading: '2. AI Information',
-    body:
-      'Gobaadi may provide AI-generated animal health or agricultural information. AI results are ' +
-      'for informational purposes only and are not a substitute for a qualified veterinarian or ' +
-      'agricultural professional.\n\nGobaadi does not guarantee that AI results will always be accurate.',
-  },
-  {
-    heading: '3. Professional Consultation',
-    body:
-      'Information or advice provided by veterinarians or other professionals is the responsibility ' +
-      'of the respective professional. For emergencies, contact an appropriate local professional or ' +
-      'service directly.',
-  },
-  {
-    heading: '4. Marketplace',
-    body:
-      'Products and services may be provided by third-party sellers. Gobaadi does not guarantee the ' +
-      'quality, safety, availability, or suitability of third-party products or services.\n\n' +
-      'Users are responsible for reviewing product and seller information before making a purchase.',
-  },
-  {
-    heading: '5. Payments and Refunds',
-    bullets: [
-      'Payments, cancellations, refunds, and returns are subject to the applicable transaction, seller, or Gobaadi policy.',
-      'Additional charges will be shown before applicable transactions.',
-    ],
-  },
-  {
-    heading: '6. User Content',
-    body:
-      'You are responsible for information, images, videos, and other content you submit to Gobaadi. ' +
-      'You must have the necessary rights or permission to submit such content.',
-  },
-  {
-    heading: '7. Prohibited Use',
-    body:
-      'You must not use Gobaadi for illegal activities, fraud, harassment, unauthorized access, ' +
-      'spreading malicious software, or activities that may harm other users or the Platform.',
-  },
-  {
-    heading: '8. Privacy',
-    body: 'Your personal information is handled according to the Gobaadi Privacy Policy and applicable law.',
-  },
-  {
-    heading: '9. Availability',
-    body:
-      'We aim to keep Gobaadi available and reliable, but we do not guarantee uninterrupted or ' +
-      'error-free service.',
-  },
-  {
-    heading: '10. Changes and Termination',
-    body:
-      'We may update these Terms or modify, suspend, or discontinue features when necessary. ' +
-      'We may also suspend or terminate accounts that violate these Terms.',
-  },
-  {
-    heading: '11. Contact',
-    body: 'For questions or support:',
-    contact: { label: 'Email:', value: SUPPORT_EMAIL },
+    headingKey: 'termsOfService.s11.heading',
+    bodyKey: 'termsOfService.s11.body',
+    contact: { labelKey: 'termsOfService.contactLabel', value: SUPPORT_EMAIL },
   },
 ];
 
 export default function TermsOfServiceScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
 
   return (
@@ -105,31 +57,31 @@ export default function TermsOfServiceScreen() {
         >
           <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Terms of Service</Text>
+        <Text style={styles.headerTitle}>{t('termsOfService.title')}</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <Text style={styles.intro}>
-          By using the Gobaadi app, you agree to these Terms & Conditions.
+        <Text style={styles.intro}>{t('termsOfService.intro')}</Text>
+        <Text style={styles.lastUpdated}>
+          {t('termsOfService.lastUpdated', { date: LAST_UPDATED })}
         </Text>
-        <Text style={styles.lastUpdated}>Last Updated: {LAST_UPDATED}</Text>
 
         {SECTIONS.map((section) => (
-          <View key={section.heading}>
-            <Text style={styles.sectionHeading}>{section.heading}</Text>
+          <View key={section.headingKey}>
+            <Text style={styles.sectionHeading}>{t(section.headingKey)}</Text>
 
-            {section.body ? <Text style={styles.paragraph}>{section.body}</Text> : null}
+            {section.bodyKey ? <Text style={styles.paragraph}>{t(section.bodyKey)}</Text> : null}
 
-            {section.bullets?.map((bullet) => (
-              <View key={bullet} style={styles.bulletRow}>
+            {section.bulletsKeys?.map((bulletKey) => (
+              <View key={bulletKey} style={styles.bulletRow}>
                 <Text style={styles.bulletDot}>•</Text>
-                <Text style={styles.bulletText}>{bullet}</Text>
+                <Text style={styles.bulletText}>{t(bulletKey)}</Text>
               </View>
             ))}
 
             {section.contact ? (
               <View style={styles.contactRow}>
-                <Text style={styles.paragraph}>{section.contact.label} </Text>
+                <Text style={styles.paragraph}>{t(section.contact.labelKey)} </Text>
                 <TouchableOpacity activeOpacity={0.7} onPress={openSupportEmail}>
                   <Text style={styles.contactLink}>{section.contact.value}</Text>
                 </TouchableOpacity>
@@ -138,10 +90,7 @@ export default function TermsOfServiceScreen() {
           </View>
         ))}
 
-        <Text style={styles.closing}>
-          By continuing to use Gobaadi, you acknowledge that you have read and agreed to these
-          Terms & Conditions.
-        </Text>
+        <Text style={styles.closing}>{t('termsOfService.closing')}</Text>
       </ScrollView>
     </SafeAreaView>
   );

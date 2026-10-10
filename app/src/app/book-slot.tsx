@@ -24,14 +24,23 @@ import {
   doctorCardStarSvg,
   doctorNotificationSvg,
 } from '@/components/icons/svg-icon-sources';
+import { useTranslation } from 'react-i18next';
 
 function pad(n: number): string {
   return String(n).padStart(2, '0');
 }
 
-const VISIT_TYPES = ['Online', 'Physical'] as const;
+const VISIT_TYPES = [
+  { value: 'Online', labelKey: 'bookSlot.visitTypes.online' },
+  { value: 'Physical', labelKey: 'bookSlot.visitTypes.physical' },
+] as const;
+
+function visitTypeLabelKey(value: string): string {
+  return VISIT_TYPES.find((type) => type.value === value)?.labelKey ?? value;
+}
 
 export default function BookSlotScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { id, appointmentId, mode } = useLocalSearchParams();
   const doctorId = String(id || '');
@@ -100,13 +109,13 @@ export default function BookSlotScreen() {
 
     // Require booking reason
     if (!bookingReason.trim()) {
-      Alert.alert('Required', 'Please enter a booking reason before proceeding.');
+      Alert.alert(t('bookSlot.alerts.required'), t('bookSlot.alerts.enterReason'));
       return;
     }
 
     // Prescription / consultation flow needs the animal this visit is for.
     if (animals.length > 0 && !effectiveAnimalId) {
-      Alert.alert('Required', 'Please select the pet for this appointment.');
+      Alert.alert(t('bookSlot.alerts.required'), t('bookSlot.alerts.selectPet'));
       return;
     }
 
@@ -147,7 +156,7 @@ export default function BookSlotScreen() {
 
   // Custom Dec 2026 calendar data
   // Dec 1, 2026 starts on Tuesday
-  const daysOfWeek = ['SUM', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+  const daysOfWeek = ['bookSlot.weekdays.sun', 'bookSlot.weekdays.mon', 'bookSlot.weekdays.tue', 'bookSlot.weekdays.wed', 'bookSlot.weekdays.thu', 'bookSlot.weekdays.fri', 'bookSlot.weekdays.sat'];
 
   // Grid layout helper:
   // Week rows representing Dec 2026:
@@ -178,7 +187,7 @@ export default function BookSlotScreen() {
           <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>{isReschedule ? 'Reschedule' : 'Book Slot'}</Text>
+        <Text style={styles.headerTitle}>{isReschedule ? t('bookSlot.reschedule') : t('bookSlot.title')}</Text>
 
         <TouchableOpacity style={styles.circleButton} activeOpacity={0.8}>
           <SvgXml width={20} height={20} xml={doctorNotificationSvg} />
@@ -189,7 +198,7 @@ export default function BookSlotScreen() {
       {doctorLoading && (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#BD632F" />
-          <Text style={styles.loadingText}>Loading doctor info...</Text>
+          <Text style={styles.loadingText}>{t('bookSlot.loading')}</Text>
         </View>
       )}
 
@@ -197,9 +206,9 @@ export default function BookSlotScreen() {
       {doctorError && !doctorLoading && (
         <View style={styles.loadingContainer}>
           <Text style={styles.errorIcon}>⚠️</Text>
-          <Text style={styles.loadingText}>Doctor not found</Text>
+          <Text style={styles.loadingText}>{t('bookSlot.doctorNotFound')}</Text>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Text style={styles.backButtonText}>Go Back</Text>
+            <Text style={styles.backButtonText}>{t('bookSlot.goBack')}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -226,19 +235,19 @@ export default function BookSlotScreen() {
                 <View style={styles.ratingRow}>
                   <SvgXml width={11} height={11} xml={doctorCardStarSvg} style={styles.starIcon} />
                   <Text style={styles.ratingValue}>{doctor.rating}</Text>
-                  <Text style={styles.reviewsText}>| {doctor.reviews} Reviews</Text>
+                  <Text style={styles.reviewsText}>{t('bookSlot.reviews', { count: doctor.reviews })}</Text>
                 </View>
               </View>
             </View>
 
             {/* Visit Type */}
-            <Text style={styles.sectionTitle}>Visit Type</Text>
+            <Text style={styles.sectionTitle}>{t('bookSlot.visitType')}</Text>
             <TouchableOpacity
               style={styles.dropdownTrigger}
               activeOpacity={0.8}
               onPress={() => setShowVisitTypeOptions((v) => !v)}
             >
-              <Text style={styles.dropdownValue}>{selectedVisitType}</Text>
+              <Text style={styles.dropdownValue}>{t(visitTypeLabelKey(selectedVisitType))}</Text>
               <Text style={styles.dropdownArrow}>{showVisitTypeOptions ? '▲' : '▼'}</Text>
             </TouchableOpacity>
 
@@ -246,24 +255,24 @@ export default function BookSlotScreen() {
               <View style={styles.visitTypeMenu}>
                 {VISIT_TYPES.map((type) => (
                   <TouchableOpacity
-                    key={type}
+                    key={type.value}
                     style={[
                       styles.visitTypeItem,
-                      selectedVisitType === type && styles.visitTypeItemActive,
+                      selectedVisitType === type.value && styles.visitTypeItemActive,
                     ]}
                     activeOpacity={0.8}
                     onPress={() => {
-                      setSelectedVisitType(type);
+                      setSelectedVisitType(type.value);
                       setShowVisitTypeOptions(false);
                     }}
                   >
                     <Text
                       style={[
                         styles.visitTypeItemText,
-                        selectedVisitType === type && styles.visitTypeItemTextActive,
+                        selectedVisitType === type.value && styles.visitTypeItemTextActive,
                       ]}
                     >
-                      {type}
+                      {t(type.labelKey)}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -273,7 +282,7 @@ export default function BookSlotScreen() {
             {/* Select Pet — needed so doctor-side prescriptions link the right animal */}
             {animals.length > 0 && (
               <>
-                <Text style={styles.sectionTitle}>Select Pet</Text>
+                <Text style={styles.sectionTitle}>{t('bookSlot.selectPet')}</Text>
                 <TouchableOpacity
                   style={styles.dropdownTrigger}
                   activeOpacity={0.8}
@@ -281,8 +290,8 @@ export default function BookSlotScreen() {
                 >
                   <Text style={styles.dropdownValue}>
                     {effectiveAnimalId
-                      ? animals.find((a) => a.id === effectiveAnimalId)?.name || 'Pet'
-                      : 'Choose your pet'}
+                      ? animals.find((a) => a.id === effectiveAnimalId)?.name || t('bookSlot.petFallback')
+                      : t('bookSlot.choosePet')}
                   </Text>
                   <Text style={styles.dropdownArrow}>{showAnimalOptions ? '▲' : '▼'}</Text>
                 </TouchableOpacity>
@@ -320,11 +329,11 @@ export default function BookSlotScreen() {
 
             {/* Booking Reason */}
             <Text style={styles.sectionTitle}>
-              Booking Reason <Text style={{ color: '#E53935' }}>(Required)</Text>
+              {t('bookSlot.bookingReason')} <Text style={{ color: '#E53935' }}>{t('bookSlot.required')}</Text>
             </Text>
             <TextInput
               style={styles.reasonInput}
-              placeholder="Description of symptoms"
+              placeholder={t('bookSlot.reasonPlaceholder')}
               placeholderTextColor="#A39E99"
               value={bookingReason}
               onChangeText={setBookingReason}
@@ -335,7 +344,7 @@ export default function BookSlotScreen() {
             {/* Animal Selection */}
             {!isReschedule && myAnimals.length > 0 && (
               <>
-                <Text style={styles.sectionTitle}>Select Animal</Text>
+                <Text style={styles.sectionTitle}>{t('bookSlot.selectAnimal')}</Text>
                 <View style={styles.animalChipsRow}>
                   {myAnimals.map((animal) => {
                     const isSelected = animal.id === effectiveAnimalId;
@@ -362,20 +371,20 @@ export default function BookSlotScreen() {
             )}
 
             {/* Date Selection */}
-            <Text style={styles.sectionTitle}>Select Date</Text>
+            <Text style={styles.sectionTitle}>{t('bookSlot.selectDate')}</Text>
 
             <View style={styles.calendarContainer}>
               {/* Calendar Month Header */}
               <View style={styles.calendarHeader}>
                 <TouchableOpacity><Text style={styles.navArrow}>‹</Text></TouchableOpacity>
-                <Text style={styles.calendarMonthTitle}>December 2026</Text>
+                <Text style={styles.calendarMonthTitle}>{t('bookSlot.calendarMonth')}</Text>
                 <TouchableOpacity><Text style={styles.navArrow}>›</Text></TouchableOpacity>
               </View>
 
               {/* Days of Week Header */}
               <View style={styles.weekdaysRow}>
                 {daysOfWeek.map((day) => (
-                  <Text key={day} style={styles.weekdayLabel}>{day}</Text>
+                  <Text key={day} style={styles.weekdayLabel}>{t(day)}</Text>
                 ))}
               </View>
 
@@ -420,7 +429,7 @@ export default function BookSlotScreen() {
 
             {/* Time Slot Selection */}
             <View style={styles.timeSlotsHeader}>
-              <Text style={styles.timeSlotsTitle}>Select Time Slot</Text>
+              <Text style={styles.timeSlotsTitle}>{t('bookSlot.selectTimeSlot')}</Text>
             </View>
 
             <ScrollView
@@ -429,7 +438,7 @@ export default function BookSlotScreen() {
               contentContainerStyle={styles.timeSlotsRow}
             >
               {availableSlots.length === 0 ? (
-                <Text style={styles.noSlotsText}>No open slots for this date.</Text>
+                <Text style={styles.noSlotsText}>{t('bookSlot.noSlots')}</Text>
               ) : null}
               {availableSlots.map((slot) => {
                 const isSelected = slot === selectedTimeSlot;
@@ -459,7 +468,7 @@ export default function BookSlotScreen() {
             >
               <SvgXml width={20} height={20} xml={confirmBookSvg} style={styles.confirmButtonIcon} />
               <Text style={styles.confirmButtonText}>
-                {isReschedule ? 'Confirm Reschedule' : 'Confirm Slot'}
+                {isReschedule ? t('bookSlot.confirmReschedule') : t('bookSlot.confirmSlot')}
               </Text>
             </TouchableOpacity>
           </View>

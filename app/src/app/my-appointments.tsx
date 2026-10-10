@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import {
   useGetDoctorBookingsQuery,
@@ -17,6 +18,8 @@ import {
 import { DoctorAvatar } from '@/components/doctor-avatar';
 
 type Tab = 'upcoming' | 'past';
+
+type Translate = ReturnType<typeof useTranslation>['t'];
 
 function isSameDay(a: Date, b: Date): boolean {
   return (
@@ -44,9 +47,9 @@ function formatTimeRange(start: string, end: string): string {
   return `${fmt(s)} - ${fmt(e)}`;
 }
 
-function formatDateLabel(date: Date): string {
-  if (isToday(date)) return "Today";
-  if (isYesterday(date)) return 'Yesterday';
+function formatDateLabel(date: Date, t: Translate): string {
+  if (isToday(date)) return t('myAppointments.dates.today');
+  if (isYesterday(date)) return t('myAppointments.dates.yesterday');
   return date.toLocaleDateString('en-US', {
     day: 'numeric',
     month: 'long',
@@ -61,15 +64,15 @@ function getDateKey(date: Date): string {
 function getStatusStyle(status: string) {
   switch (status) {
     case 'CONFIRMED':
-      return { bg: '#E8F5E9', text: '#2E7D32', label: 'Upcoming' };
+      return { bg: '#E8F5E9', text: '#2E7D32', labelKey: 'myAppointments.status.upcoming' };
     case 'COMPLETED':
-      return { bg: '#E3F2FD', text: '#1565C0', label: 'Completed' };
+      return { bg: '#E3F2FD', text: '#1565C0', labelKey: 'myAppointments.status.completed' };
     case 'CANCELLED':
-      return { bg: '#FFEBEE', text: '#C62828', label: 'Cancelled' };
+      return { bg: '#FFEBEE', text: '#C62828', labelKey: 'myAppointments.status.cancelled' };
     case 'RESCHEDULED':
-      return { bg: '#FFF3E0', text: '#E65100', label: 'Rescheduled' };
+      return { bg: '#FFF3E0', text: '#E65100', labelKey: 'myAppointments.status.rescheduled' };
     default:
-      return { bg: '#FFF3E0', text: '#E65100', label: status };
+      return { bg: '#FFF3E0', text: '#E65100', labelKey: status };
   }
 }
 
@@ -79,10 +82,11 @@ interface AppointmentCardProps {
 }
 
 function AppointmentCard({ appointment, onPress }: AppointmentCardProps) {
+  const { t } = useTranslation();
   const statusStyle = getStatusStyle(appointment.status);
   const displayName =
-    appointment.animalName || appointment.patientName || 'Animal';
-  const doctorDisplayName = appointment.doctorName || 'Doctor';
+    appointment.animalName || appointment.patientName || t('myAppointments.defaults.animal');
+  const doctorDisplayName = appointment.doctorName || t('myAppointments.defaults.doctor');
 
   return (
     <TouchableOpacity style={styles.card} activeOpacity={0.7} onPress={onPress}>
@@ -103,7 +107,7 @@ function AppointmentCard({ appointment, onPress }: AppointmentCardProps) {
         <View style={styles.cardTopRow}>
           <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
             <Text style={[styles.statusText, { color: statusStyle.text }]}>
-              {statusStyle.label}
+              {t(statusStyle.labelKey)}
             </Text>
           </View>
           <Text style={styles.cardTime}>
@@ -138,6 +142,7 @@ function AppointmentCard({ appointment, onPress }: AppointmentCardProps) {
 
 export default function MyAppointmentsScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<Tab>('upcoming');
 
   const { data: bookings = [], isLoading } = useGetDoctorBookingsQuery();
@@ -178,11 +183,11 @@ export default function MyAppointmentsScreen() {
     map.forEach((data, key) => {
       const [y, m, d] = key.split('-').map(Number);
       const date = new Date(y, m, d);
-      groups.push({ label: formatDateLabel(date), data });
+      groups.push({ label: formatDateLabel(date, t), data });
     });
 
     return groups;
-  }, [pastAppointments]);
+  }, [pastAppointments, t]);
 
   const handleAppointmentPress = useCallback(
     (appointment: DoctorAppointment) => {
@@ -204,7 +209,7 @@ export default function MyAppointmentsScreen() {
         >
           <Ionicons name="arrow-back" size={20} color="#BD632F" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>My Appointments</Text>
+        <Text style={styles.headerTitle}>{t('myAppointments.title')}</Text>
         <View style={{ width: 44 }} />
       </View>
 
@@ -220,7 +225,7 @@ export default function MyAppointmentsScreen() {
               activeTab === 'upcoming' && styles.tabTextActive,
             ]}
           >
-            Upcoming
+            {t('myAppointments.tabs.upcoming')}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -234,7 +239,7 @@ export default function MyAppointmentsScreen() {
               activeTab === 'past' && styles.tabTextActive,
             ]}
           >
-            Past
+            {t('myAppointments.tabs.past')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -256,7 +261,7 @@ export default function MyAppointmentsScreen() {
             ) : (
               <View style={styles.emptyContainer}>
                 <Ionicons name="calendar-outline" size={48} color="#E6E1DC" />
-                <Text style={styles.emptyText}>No upcoming appointments</Text>
+                <Text style={styles.emptyText}>{t('myAppointments.empty.upcoming')}</Text>
               </View>
             )}
           </>
@@ -278,7 +283,7 @@ export default function MyAppointmentsScreen() {
             ) : (
               <View style={styles.emptyContainer}>
                 <Ionicons name="calendar-outline" size={48} color="#E6E1DC" />
-                <Text style={styles.emptyText}>No past appointments</Text>
+                <Text style={styles.emptyText}>{t('myAppointments.empty.past')}</Text>
               </View>
             )}
           </>

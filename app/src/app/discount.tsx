@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { SvgXml } from 'react-native-svg';
 import {
@@ -34,6 +35,7 @@ const QUICK_DISCOUNTS = [5, 10, 15, 20];
 
 export default function DiscountScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const isDoctor = useRequireDoctor();
   const params = useLocalSearchParams<{
     patientId?: string;
@@ -44,8 +46,8 @@ export default function DiscountScreen() {
   }>();
 
   const patientId = params.patientId || '';
-  const patientName = params.patientName || 'Patient';
-  const ownerName = params.ownerName || 'Owner';
+  const patientName = params.patientName || t('discount.patient');
+  const ownerName = params.ownerName || t('discount.owner');
   const patientImage = params.patientImage || '';
 
   const { data: dashboardStats } = useGetDashboardStatsQuery();
@@ -106,20 +108,23 @@ export default function DiscountScreen() {
           data: { percent: discountPercent },
         }).unwrap();
         setIsEditing(false);
-        Alert.alert('Success', 'Discount updated successfully', [
-          { text: 'OK', onPress: () => router.back() },
+        Alert.alert(t('discount.alerts.successTitle'), t('discount.alerts.updated'), [
+          { text: t('discount.alerts.ok'), onPress: () => router.back() },
         ]);
       } else {
         await createDiscount({
           patientId: parseInt(patientId, 10) || 0,
           percent: discountPercent,
         }).unwrap();
-        Alert.alert('Success', 'Discount created successfully', [
-          { text: 'OK', onPress: () => router.back() },
+        Alert.alert(t('discount.alerts.successTitle'), t('discount.alerts.created'), [
+          { text: t('discount.alerts.ok'), onPress: () => router.back() },
         ]);
       }
     } catch {
-      Alert.alert('Error', existingDiscount ? 'Failed to update discount' : 'Failed to create discount');
+      Alert.alert(
+        t('discount.alerts.errorTitle'),
+        existingDiscount ? t('discount.alerts.updateFailed') : t('discount.alerts.createFailed'),
+      );
     }
   };
 
@@ -144,7 +149,7 @@ export default function DiscountScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
             <SvgXml width={20} height={20} xml={backButtonSvg} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Discount details</Text>
+          <Text style={styles.headerTitle}>{t('discount.title')}</Text>
           <View style={{ width: 44 }} />
         </View>
         <View style={styles.loadingContainer}>
@@ -160,7 +165,7 @@ export default function DiscountScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
           <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Discount details</Text>
+        <Text style={styles.headerTitle}>{t('discount.title')}</Text>
         <View style={{ width: 44 }} />
       </View>
 
@@ -177,7 +182,7 @@ export default function DiscountScreen() {
           </View>
           <View style={styles.patientInfo}>
             <Text style={styles.patientName}>{patientName}</Text>
-            <Text style={styles.patientOwner}>Owner: {ownerName}</Text>
+            <Text style={styles.patientOwner}>{t('discount.ownerLabel', { name: ownerName })}</Text>
           </View>
           <View style={styles.contactIcons}>
             <TouchableOpacity style={styles.contactBtn} activeOpacity={0.7}>
@@ -190,29 +195,29 @@ export default function DiscountScreen() {
         </View>
 
         {lastAppointmentText ? (
-          <Text style={styles.lastAppointment}>Last appointment: {lastAppointmentText}</Text>
+          <Text style={styles.lastAppointment}>{t('discount.lastAppointment', { time: lastAppointmentText })}</Text>
         ) : (
           <View style={{ height: 20 }} />
         )}
 
         <View style={styles.priceCard}>
           <View style={styles.priceRow}>
-            <Text style={styles.priceLabel}>Appointment fee</Text>
+            <Text style={styles.priceLabel}>{t('discount.appointmentFee')}</Text>
             <Text style={styles.priceValue}>৳ {appointmentFee.toLocaleString()}</Text>
           </View>
           <View style={styles.priceDividerDashed} />
           <View style={styles.priceRow}>
-            <Text style={styles.priceLabel}>Discount ({discountPercent}%)</Text>
+            <Text style={styles.priceLabel}>{t('discount.discountLabel', { percent: discountPercent })}</Text>
             <Text style={styles.priceValue}>৳ {discountAmount.toLocaleString()}</Text>
           </View>
           <View style={styles.priceDividerDashed} />
           <View style={styles.priceRow}>
-            <Text style={styles.totalLabel}>Patient will pay</Text>
+            <Text style={styles.totalLabel}>{t('discount.patientWillPay')}</Text>
             <Text style={styles.totalValue}>৳ {patientPays.toLocaleString()}</Text>
           </View>
         </View>
 
-        <Text style={styles.sectionTitle}>Quick Discount</Text>
+        <Text style={styles.sectionTitle}>{t('discount.quickDiscount')}</Text>
         <View style={styles.quickDiscountRow}>
           {QUICK_DISCOUNTS.map((percent) => (
             <TouchableOpacity
@@ -236,11 +241,11 @@ export default function DiscountScreen() {
           ))}
         </View>
 
-        <Text style={styles.sectionTitle}>Custom Discount</Text>
+        <Text style={styles.sectionTitle}>{t('discount.customDiscount')}</Text>
         <View style={styles.customInputContainer}>
           <TextInput
             style={styles.customInput}
-            placeholder="Discount %"
+            placeholder={t('discount.placeholder')}
             placeholderTextColor="#A39E99"
             keyboardType="numeric"
             value={customDiscount}
@@ -255,8 +260,7 @@ export default function DiscountScreen() {
           <View style={styles.infoBanner}>
             <Ionicons name="information-circle-outline" size={20} color="#BD632F" />
             <Text style={styles.infoText}>
-              Discounts apply to the patient’s next appointment fee only. They pay the discounted
-              amount when booking.
+              {t('discount.infoBanner')}
             </Text>
           </View>
         )}
@@ -270,14 +274,14 @@ export default function DiscountScreen() {
               onPress={() => setIsEditing(true)}
               activeOpacity={0.85}
             >
-              <Text style={styles.editBtnText}>Edit discount</Text>
+              <Text style={styles.editBtnText}>{t('discount.editDiscount')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.removeBtn}
               onPress={handleRemove}
               activeOpacity={0.85}
             >
-              <Text style={styles.removeBtnText}>Remove discount</Text>
+              <Text style={styles.removeBtnText}>{t('discount.removeDiscount')}</Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -291,7 +295,7 @@ export default function DiscountScreen() {
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
               <Text style={styles.continueBtnText}>
-                {hasExisting ? 'Save Changes' : 'Continue'}
+                {hasExisting ? t('discount.saveChanges') : t('discount.continue')}
               </Text>
             )}
           </TouchableOpacity>
