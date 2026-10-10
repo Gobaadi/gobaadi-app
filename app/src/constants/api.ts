@@ -73,6 +73,13 @@ export async function setLanguage(lang: string): Promise<void> {
   await SecureStore.setItemAsync(LANGUAGE_KEY, lang);
 }
 
+export async function syncLanguage(lang: string): Promise<void> {
+  await apiFetch("/users/me/language", {
+    method: "PATCH",
+    body: JSON.stringify({ language: lang }),
+  });
+}
+
 export async function getLocation(): Promise<string | null> {
   return SecureStore.getItemAsync(LOCATION_KEY);
 }

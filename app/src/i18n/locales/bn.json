@@ -1,0 +1,2792 @@
+{
+  "aboutApp": {
+    "appVersion": "অ্যাপ সংস্করণ",
+    "canDo": "গবাদি দিয়ে আপনি পারবেন:",
+    "docTitle": "গবাদি সম্পর্কে",
+    "features": {
+      "ai": {
+        "description": "AI-চালিত গবাদি পশুর স্বাস্থ্য ও ব্যবস্থাপনার উপযোগী তথ্য পান।",
+        "title": "AI-সহায়তায় তথ্য পান"
+      },
+      "livestock": {
+        "description": "আপনার গবাদি পশু, স্বাস্থ্যসংক্রান্ত রেকর্ড, টিকা ও গুরুত্বপূর্ণ তথ্য সুবিন্যস্ত রাখুন।",
+        "title": "গবাদি পশু ব্যবস্থাপনা"
+      },
+      "market": {
+        "description": "মার্কেটপ্লেসের মাধ্যমে গবাদি পশু, খাদ্য, ওষুধ, সরঞ্জাম ও অন্যান্য কৃষিপণ্য খুঁজুন।",
+        "title": "কিনুন ও বিক্রি করুন"
+      },
+      "reminders": {
+        "description": "টিকা, চিকিৎসা, খাদ্য ও অন্যান্য গুরুত্বপূর্ণ কাজের রিমাইন্ডার পান।",
+        "title": "সময়মতো সচেতন থাকুন"
+      },
+      "vets": {
+        "description": "প্রয়োজনের সময় পশু চিকিৎসাবিদের পরামর্শ ও ডিজিটাল পরামর্শ গ্রহণ করুন।",
+        "title": "পশু চিকিৎসকের সাথে যুক্ত হোন"
+      }
+    },
+    "intro": "গবাদি একটি স্মার্ট গবাদি পশু প্ল্যাটফর্ম, যা কৃষক ও গবাদি পশু মালিকদের তাদের পশু পরিচর্যা, বিশ্বস্ত সহায়তা গ্রহণ ও ভালো সিদ্ধান্ত নিতে সাহায্য করার জন্য তৈরি।",
+    "lastUpdated": "সর্বশেষ হালনাগাদ: {{date}}",
+    "links": {
+      "help": "সহায়তা ও সাপোর্ট",
+      "privacy": "গোপনীয়তা নীতি",
+      "terms": "শর্তাবলি"
+    },
+    "mission": {
+      "body": "আমরা বিশ্বাস করি প্রযুক্তি কৃষকদের সহায়তা করবে, তাদের অভিজ্ঞতার বিকল্প হবে না। গবাদি প্রযুক্তি, পশু চিকিৎসার বিশেষজ্ঞতা ও ব্যবহারিক কৃষিজ্ঞানকে একত্র করে আরও সংযুক্ত গবাদি পশু ইকোসিস্টেম তৈরি করে।",
+      "title": "আমাদের লক্ষ্য"
+    },
+    "tagline": "যেখানে গবাদি পশু মিলেছে বুদ্ধিমত্তার সাথে।",
+    "title": "অ্যাপ সম্পর্কে"
+  },
+  "accountDetails": {
+    "bvcLabel": "বিভিসিএ নিবন্ধন নম্বর : ",
+    "close": "বন্ধ করুন",
+    "defaults": {
+      "doctor": "ডাক্তার"
+    },
+    "doctorName": "ডা. {{name}}",
+    "phoneLabel": "ফোন নম্বর : ",
+    "statusTitle": "আবেদনের অবস্থা",
+    "steps": {
+      "created": "অ্যাকাউন্ট তৈরি",
+      "submitApplication": "আবেদন জমা",
+      "verification": "অ্যাকাউন্ট যাচাই"
+    },
+    "title": "অ্যাকাউন্টের বিস্তারিত"
+  },
+  "addAnimal": {
+    "actions": {
+      "addAnimal": "গবাদি পশু যোগ করুন",
+      "addMore": "আরও যোগ করুন",
+      "back": "পেছনে",
+      "next": "পরবর্তী",
+      "uploading": "আপলোড হচ্ছে..."
+    },
+    "alerts": {
+      "errorTitle": "ত্রুটি",
+      "invalidFileTypeMsg": "শুধু JPEG ও PNG ছবি অনুমোদিত।",
+      "invalidFileTypeTitle": "ভুল ফাইলের ধরন",
+      "invalidInputTitle": "ভুল তথ্য",
+      "permissionMsg": "গবাদি পশুর ছবি আপলোড করতে ফটো গ্যালারি ব্যবহারের অনুমতি প্রয়োজন।",
+      "permissionTitle": "অনুমতি প্রয়োজন",
+      "requiredTitle": "আবশ্যক ঘর",
+      "saveFailedMsg": "গবাদি পশু সংরক্ষণ করা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।",
+      "selectFailedOpenMsg": "ফটো গ্যালারি খোলা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।",
+      "selectFailedReadMsg": "নির্বাচিত ছবিটি পড়া যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।",
+      "selectFailedTitle": "ছবি বেছে নেওয়া যায়নি",
+      "uploadFailedMsg": "ছবি আপলোড করা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।",
+      "uploadFailedTitle": "আপলোড ব্যর্থ হয়েছে",
+      "uploadTooLarge": "ছবিটি খুব বড় — অনুগ্রহ করে ছোট ছবি বেছে নিন।"
+    },
+    "calendar": {
+      "dobTitle": "জন্মতারিখ নির্বাচন করুন",
+      "farmJoinedTitle": "খামারে যোগদানের তারিখ নির্বাচন করুন",
+      "months": {
+        "april": "এপ্রিল",
+        "august": "আগস্ট",
+        "december": "ডিসেম্বর",
+        "february": "ফেব্রুয়ারি",
+        "january": "জানুয়ারি",
+        "july": "জুলাই",
+        "june": "জুন",
+        "march": "মার্চ",
+        "may": "মে",
+        "november": "নভেম্বর",
+        "october": "অক্টোবর",
+        "september": "সেপ্টেম্বর"
+      },
+      "selectDate": "তারিখ নির্বাচন করুন",
+      "weekdays": {
+        "fri": "শুক্র",
+        "mon": "সোম",
+        "sat": "শনি",
+        "sun": "রবি",
+        "thu": "বৃহস্পতি",
+        "tue": "মঙ্গল",
+        "wed": "বুধ"
+      }
+    },
+    "dropdowns": {
+      "breed": "জাত",
+      "gender": "লিঙ্গ",
+      "reproStatus": "প্রজনন অবস্থা",
+      "source": "উৎস"
+    },
+    "fields": {
+      "age": "বয়স",
+      "breed": "জাত",
+      "colorRequired": "রঙ*",
+      "descriptionRequired": "বিবরণ*",
+      "dobRequired": "জন্মতারিখ*",
+      "genderRequired": "লিঙ্গ*",
+      "joinedFarm": "খামারে যোগদান",
+      "liveWeight": "জীবিত ওজন",
+      "liveWeightPrice": "জীবিত ওজনের মূল্য",
+      "nameRequired": "নাম*",
+      "photoRequired": "ছবি*",
+      "purchaseCostRequired": "ক্রয়মূল্য*",
+      "reproStatus": "প্রজনন অবস্থা",
+      "sellingPrice": "বিক্রয় মূল্য",
+      "source": "উৎস",
+      "weightRequired": "ওজন*"
+    },
+    "header": {
+      "add": "নতুন গবাদি পশু যোগ করুন",
+      "edit": "গবাদি পশু সম্পাদনা করুন"
+    },
+    "optional": "(ঐচ্ছিক)",
+    "options": {
+      "breed": {
+        "Albino Buffalo": "অ্যালবিনো মহিষ",
+        "Bangladeshi Cow": "বাংলাদেশি গরু",
+        "Crossbreed": "ক্রসব্রিড",
+        "Gir": "গির",
+        "Holstein": "হলস্টাইন",
+        "Sahiwal": "সাহিওয়াল"
+      },
+      "gender": {
+        "Female": "মহিলা",
+        "Male": "পুরুষ"
+      },
+      "reproStatus": {
+        "Dry": "শুকনা",
+        "Lactating": "দুধদেওয়া",
+        "N/A": "প্রযোজ্য নয়",
+        "Open": "খোলা",
+        "Pregnant": "গর্ভবতী"
+      },
+      "source": {
+        "Born in Farm": "খামারে জন্ম",
+        "Imported": "আমদানি",
+        "Leased": "ভাড়া",
+        "Purchased": "কেনা"
+      }
+    },
+    "photo": {
+      "tapToUpload": "ছবি আপলোড করতে ট্যাপ করুন"
+    },
+    "placeholders": {
+      "breed": "জাত নির্বাচন করুন",
+      "color": "গবাদি পশুর রঙ যোগ করুন",
+      "description": "গবাদি পশুর বিবরণ যোগ করুন",
+      "dob": "জন্মতারিখ যোগ করুন",
+      "farmJoined": "খামারে যোগদানের তারিখ নির্বাচন করুন",
+      "gender": "লিঙ্গ নির্বাচন করুন",
+      "liveWeight": "জীবিত ওজন যোগ করুন",
+      "name": "গবাদি পশুর নাম লিখুন",
+      "purchaseCost": "ক্রয়মূল্য যোগ করুন",
+      "reproStatus": "প্রজনন অবস্থা যোগ করুন",
+      "sellingPrice": "বিক্রয় মূল্য যোগ করুন",
+      "source": "উৎস নির্বাচন করুন",
+      "weight": "খামারে যোগদানের ওজন যোগ করুন"
+    },
+    "steps": {
+      "details": "বিস্তারিত",
+      "info": "তথ্য",
+      "pricing": "মূল্য",
+      "visual": "ছবি"
+    },
+    "validation": {
+      "colorRequired": "অনুগ্রহ করে গবাদি পশুর রঙ যোগ করুন।",
+      "costRequired": "অনুগ্রহ করে ক্রয়মূল্য যোগ করুন।",
+      "descriptionInvalid": "বিবরণে শুধু অক্ষর, সংখ্যা, স্পেস ও সাধারণ যুক্তচিহ্ন থাকতে পারে।",
+      "descriptionRequired": "অনুগ্রহ করে বিবরণ লিখুন।",
+      "dobRequired": "অনুগ্রহ করে জন্মতারিখ লিখুন।",
+      "genderRequired": "অনুগ্রহ করে লিঙ্গ নির্বাচন করুন।",
+      "nameInvalid": "নামে শুধু অক্ষর, সংখ্যা, স্পেস ও সাধারণ যুক্তচিহ্ন থাকতে পারে।",
+      "nameRequired": "অনুগ্রহ করে গবাদি পশুর নাম লিখুন।",
+      "photoRequired": "অনুগ্রহ করে অন্তত একটি ছবি যোগ করুন।",
+      "weightRequired": "অনুগ্রহ করে খামারে যোগদানের ওজন যোগ করুন।"
+    }
+  },
+  "addListing": {
+    "alerts": {
+      "createFailed": "তালিকা তৈরি করা যায়নি",
+      "missingInfo": "তথ্য অনুপস্থিত",
+      "missingMsg": "অনুগ্রহ করে একটি নাম ও সঠিক মূল্য লিখুন।",
+      "tryAgain": "অনুগ্রহ করে আবার চেষ্টা করুন।"
+    },
+    "categories": {
+      "animals": "গবাদি পশু",
+      "dairy": "দুগ্ধজাত",
+      "equipments": "সরঞ্জাম",
+      "food": "খাদ্য",
+      "proteins": "প্রোটিন",
+      "vaccines": "টিকা"
+    },
+    "createListing": "তালিকা তৈরি করুন",
+    "creating": "তৈরি হচ্ছে...",
+    "fields": {
+      "category": "শ্রেণি*",
+      "name": "নাম*",
+      "price": "মূল্য (৳)*"
+    },
+    "namePlaceholder": "যেমন: কোটা ছাগল",
+    "pricePlaceholder": "যেমন: 16000",
+    "title": "নতুন তালিকা"
+  },
+  "addPayment": {
+    "accountNumberLabel": "অ্যাকাউন্ট নম্বর",
+    "accountNumberPlaceholder": "অ্যাকাউন্ট নম্বর লিখুন",
+    "addBankAccount": "ব্যাংক অ্যাকাউন্ট যোগ করুন",
+    "addCard": "কার্ড যোগ করুন",
+    "addCreditCard": "ক্রেডিট কার্ড যোগ করুন",
+    "addDebitCard": "ডেবিট কার্ড যোগ করুন",
+    "alerts": {
+      "bankAdded": "ব্যাংক অ্যাকাউন্ট সফলভাবে যোগ করা হয়েছে",
+      "bankFailed": "ব্যাংক অ্যাকাউন্ট যোগ করা যায়নি",
+      "cardAddedCredit": "ক্রেডিট কার্ড সফলভাবে যোগ করা হয়েছে",
+      "cardAddedDebit": "ডেবিট কার্ড সফলভাবে যোগ করা হয়েছে",
+      "cardFailed": "কার্ড যোগ করা যায়নি",
+      "enterPhone": "অনুগ্রহ করে একটি ফোন নম্বর লিখুন",
+      "error": "ত্রুটি",
+      "fillBank": "অনুগ্রহ করে ব্যাংক অ্যাকাউন্টের সব তথ্য পূরণ করুন",
+      "fillCard": "অনুগ্রহ করে কার্ডের সব তথ্য পূরণ করুন",
+      "methodFailed": "পেমেন্ট পদ্ধতি যোগ করা যায়নি",
+      "ok": "ঠিক আছে",
+      "success": "সফল"
+    },
+    "bankNameLabel": "ব্যাংকের নাম",
+    "bankNamePlaceholder": "যেমন: Dutch-Bangla Bank",
+    "cardHolderLabel": "কার্ডধারীর নাম",
+    "cardHolderPlaceholder": "John Doe",
+    "cardNumberLabel": "কার্ড নম্বর",
+    "continue": "এগিয়ে যান",
+    "cvvLabel": "সিভিভি",
+    "expiryLabel": "মেয়াদ শেষের তারিখ",
+    "header": "পেমেন্ট পদ্ধতি যোগ করুন",
+    "options": {
+      "bank": {
+        "subtitle": "আপনার অ্যাকাউন্ট থেকে সরাসরি ডেবিট",
+        "title": "ব্যাংক অ্যাকাউন্ট"
+      },
+      "credit": {
+        "subtitle": "যেকোনো ক্রেডিট কার্ড দিয়ে পরিশোধ করুন",
+        "title": "ক্রেডিট কার্ড"
+      },
+      "debit": {
+        "subtitle": "আপনার ব্যাংক অ্যাকাউন্টে লিংক করা ভিসা ও মাস্টারকার্ড",
+        "title": "ডেবিট কার্ড"
+      },
+      "mobile": {
+        "subtitle": "বিকাশ, নগদ, রকেট ও আরও অনেক",
+        "title": "মোবাইল ব্যাংকিং"
+      }
+    },
+    "phoneLabel": "ফোন নম্বর",
+    "phonePlaceholder": "ফোন নম্বর",
+    "pinLabel": "পিন নম্বর",
+    "pinPlaceholder": "পিন লিখুন",
+    "providers": {
+      "more": "আরও"
+    },
+    "routingLabel": "রাউটিং নম্বর",
+    "routingPlaceholder": "রাউটিং নম্বর লিখুন",
+    "security": {
+      "bank": "আপনার ব্যাংক অ্যাকাউন্টের তথ্য এনক্রিপ্ট ও নিরাপদ। আমরা শিল্প-মানের নিরাপত্তা প্রোটোকল ব্যবহার করি।",
+      "card": "আপনার কার্ডের তথ্য এনক্রিপ্ট ও নিরাপদ। আমরা কখনো আপনার সম্পূর্ণ কার্ড নম্বর সংরক্ষণ করি না।",
+      "payment": "আপনার পেমেন্ট তথ্য 256-বিট SSL এনক্রিপশন ও PCI DSS সম্মতির মাধ্যমে সুরক্ষিত।",
+      "pin": "আমরা শুধু আপনার অ্যাকাউন্ট লিংক করি — আপনার পিন বা পাসওয়ার্ড আমরা কখনো সংরক্ষণ করি না।"
+    }
+  },
+  "addTask": {
+    "alerts": {
+      "addFailed": "কাজ যোগ করা যায়নি",
+      "enterDescription": "অনুগ্রহ করে আপনার কাজের বিবরণ লিখুন।",
+      "enterTimes": "অনুগ্রহ করে শুরু ও শেষ সময় লিখুন।",
+      "futureDate": "অনুগ্রহ করে ভবিষ্যতের তারিখ ও সময় নির্বাচন করুন।",
+      "invalidDate": "অবৈধ তারিখ",
+      "requiredField": "আবশ্যক ঘর",
+      "tryAgain": "অনুগ্রহ করে আবার চেষ্টা করুন।",
+      "voiceInput": "ভয়েস ইনপুট",
+      "voiceInputSoon": "ভয়েস ইনপুট শীঘ্রই আসছে।"
+    },
+    "banner": "গরুর শেডের জন্য পরিচ্ছন্নতার কাজ সুপারিশ করা হয়েছে",
+    "header": "কাজ যোগ করুন",
+    "instructionLabel": "নির্দেশনা যোগ করুন",
+    "instructionPlaceholder": "কাজের নির্দেশনা লিখুন...",
+    "repeat": "পুনরাবৃত্তি",
+    "repeatOptions": {
+      "daily": "প্রতিদিন",
+      "weekly": "সপ্তাহিক"
+    },
+    "selectFarm": "খামার নির্বাচন করুন",
+    "selectType": "কাজের ধরন নির্বাচন করুন",
+    "setTime": "সময় নির্ধারণ করুন",
+    "sheds": {
+      "cow": "গরুর শেড",
+      "goat": "ছাগলের শেড",
+      "poultry": "মুরগির শেড"
+    },
+    "submit": "কাজ যোগ করুন",
+    "taskHeadingPlaceholder": "আপনার কাজের শিরোনাম লিখুন",
+    "types": {
+      "cleaning": "পরিষ্কার",
+      "feeding": "খাদ্য প্রদান",
+      "health": "স্বাস্থ্য পরীক্ষা",
+      "hygiene": "পরিচ্ছন্নতা",
+      "vaccination": "টিকাদান",
+      "water": "পানি সরবরাহ"
+    },
+    "workEnd": "কাজ শেষ",
+    "workStart": "কাজ শুরু"
+  },
+  "aiHold": {
+    "actionPlan": "তাৎক্ষণিক পদক্ষেপ পরিকল্পনা",
+    "analyzing": "বিশ্লেষণ চলছে…",
+    "cow": "গরু",
+    "detailsSummary": "বিস্তারিত সারসংক্ষেপ",
+    "detected": "শনাক্ত : {{time}}",
+    "errors": {
+      "analysisIncomplete": "বিশ্লেষণ সম্পন্ন করা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।",
+      "captureFailed": "ছবি তোলা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।",
+      "photoTooLarge": "ছবিটি খুব বড় — অনুগ্রহ করে ছোট ছবি তুলুন।",
+      "startFailed": "বিশ্লেষণ শুরু করা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।",
+      "timeout": "বিশ্লেষণে প্রত্যাশার চেয়ে বেশি সময় লাচ্ছে। অনুগ্রহ করে আবার চেষ্টা করুন।",
+      "title": "বিশ্লেষণ সম্পন্ন করা যায়নি",
+      "uploadFailed": "আপলোড ব্যর্থ হয়েছে। অনুগ্রহ করে সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।"
+    },
+    "holdStill": "অনুগ্রহ করে স্থির থাকুন…",
+    "permission": {
+      "allow": "ক্যামেরা অনুমোদন করুন",
+      "goBack": "ফিরে যান",
+      "message": "আপনার গবাদি পশুর রোগ ও পুষ্টির ঘাটতি স্ক্যান করতে ক্যামেরা ব্যবহারের অনুমতি দিন।",
+      "title": "ক্যামেরা ব্যবহারের অনুমতি প্রয়োজন"
+    },
+    "tryAgain": "আবার চেষ্টা করুন",
+    "uploadingScan": "স্ক্যান আপলোড হচ্ছে…"
+  },
+  "aiScan": {
+    "alerts": {
+      "moreInfoMsg": "বিশ্লেষণের আগে ছবি যোগ করুন বা উপসর্গগুলো বর্ণনা করুন।",
+      "moreInfoTitle": "আরও তথ্য প্রয়োজন",
+      "permissionMsg": "ছবি আপলোড করতে ফটো লাইব্রেরি ব্যবহারের অনুমতি দিন।",
+      "permissionTitle": "অনুমতি প্রয়োজন",
+      "photoTooLarge": "ছবিটি খুব বড় — অনুগ্রহ করে ছোট ছবি বেছে নিন।",
+      "tryAgain": "অনুগ্রহ করে আবার চেষ্টা করুন।",
+      "uploadFailed": "আপলোড ব্যর্থ"
+    },
+    "analyzeNow": "এখনই বিশ্লেষণ করুন",
+    "retake": "আবার তুলুন",
+    "startScan": "এখনই স্ক্যান করুন",
+    "subtitle": "গবাদি পশুর রোগ, ছত্রাক আক্রমণ ও পুষ্টির ঘাটতি শনাক্ত করতে ছবি তুলুন বা আপলোড করুন",
+    "symptomsPlaceholder": "যা দেখছেন তা লিখুন — জ্বর, চর্মের ক্ষত, কাশি ইত্যাদি (কমা দিয়ে আলাদা করুন)",
+    "title": "AI-সহায়তায় গবাদি পশুর রোগ নির্ণয়",
+    "uploadFromGallery": "গ্যালারি থেকে আপলোড করুন",
+    "uploading": "আপলোড হচ্ছে…"
+  },
+  "aiSummary": {
+    "actionPlan": "তাৎক্ষণিক পদক্ষেপ পরিকল্পনা",
+    "clinicalSigns": "গবাদি পশুতে মূল ক্লিনিক্যাল লক্ষণ",
+    "cow": "গরু",
+    "detected": "শনাক্ত : {{time}}",
+    "empty": {
+      "noDiagnosis": "কোনো রোগ নির্ণয় নির্বাচন করা হয়নি",
+      "startScan": "নতুন স্ক্যান শুরু করুন"
+    },
+    "error": {
+      "loadFailed": "এই রোগ নির্ণয় লোড করা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।",
+      "retry": "আবার চেষ্টা করুন"
+    },
+    "failureFallback": "এই স্ক্যানের স্বয়ংক্রিয় বিশ্লেষণ ব্যর্থ হয়েছে।",
+    "headerTitle": "সারাংশ",
+    "loading": "রোগ নির্ণয় লোড হচ্ছে…",
+    "noActions": "এই রোগ নির্ণয়ের জন্য কোনো নির্দিষ্ট পদক্ষেপ সুপারিশ করা হয়নি। পশুর অবস্থা পর্যবেক্ষণ চালিয়ে যান এবং উপসর্গ থাকলে পশুচিকিৎসকের পরামর্শ নিন।",
+    "noDiagnosisAvailable": "কোনো রোগ নির্ণয় নেই",
+    "viewDoctor": "সুপারিশকৃত ডাক্তার দেখুন"
+  },
+  "allClinics": {
+    "doctors": "| {{count}} ডাক্তার",
+    "emptyNoSearch": "শীঘ্রই আবার দেখুন — নতুন চিকিৎসা কেন্দ্র নিয়মিত যোগ করা হয়।",
+    "emptySearch": "ভিন্ন নাম বা অবস্থান দিয়ে চেষ্টা করুন।",
+    "emptyTitle": "কোনো চিকিৎসা কেন্দ্র পাওয়া যায়নি",
+    "searchPlaceholder": "চিকিৎসা কেন্দ্র খুঁজুন",
+    "title": "সব চিকিৎসা কেন্দ্র"
+  },
+  "allDoctors": {
+    "bookSlot": "স্লট বুক করুন",
+    "details": "বিস্তারিত",
+    "empty": {
+      "description": "শীঘ্রই আবার দেখুন — নতুন ভেটেরিনারিয়ান নিয়মিত যোগ করা হয়।",
+      "title": "কোনো ডাক্তার পাওয়া যায়নি"
+    },
+    "filters": {
+      "all_one": "সব ({{count}})",
+      "all_other": "সব ({{count}})",
+      "gynaecology_one": "গাইনোকোলজি({{count}})",
+      "gynaecology_other": "গাইনোকোলজি({{count}})",
+      "medicine_one": "মেডিসিন({{count}})",
+      "medicine_other": "মেডিসিন({{count}})",
+      "settings": "ফিল্টার"
+    },
+    "modal": {
+      "apply": "ফিল্টার প্রয়োগ করুন",
+      "reset": "রিসেট",
+      "specialty": "বিশেষত্ব",
+      "title": "ডাক্তার ফিল্টার করুন"
+    },
+    "reviews_one": "| {{count}}টি রিভিউ",
+    "reviews_other": "| {{count}}টি রিভিউ",
+    "searchPlaceholder": "ডাক্তার খুঁজুন",
+    "specialties": {
+      "all": "সব",
+      "dermatology": "ডার্মাটোলজি",
+      "gynaecology": "গাইনোকোলজি",
+      "medicine": "মেডিসিন",
+      "surgery": "সার্জারি"
+    },
+    "title": "সব ডাক্তার"
+  },
+  "allReviews": {
+    "anonymous": "বেনামী",
+    "count_one": "{{count}} রিভিউ",
+    "count_other": "{{count}} রিভিউ",
+    "empty": "এখনো কোনো রিভিউ নেই",
+    "title": "রোগীদের রিভিউ"
+  },
+  "animalBillingDetails": {
+    "backToHome": "← হোমে ফিরে যান",
+    "deliveryAddress": "ডেলিভারি ঠিকানা",
+    "deliveryCharge": "ডেলিভারি চার্জ",
+    "discount": "ছাড়",
+    "item": "আইটেম:",
+    "loading": "লোড হচ্ছে...",
+    "orderId": "অর্ডার আইডি:",
+    "quantity": "পরিমাণ:",
+    "status": "স্ট্যাটাস:",
+    "subtotal": "উপমোট",
+    "tax": "কর",
+    "title": "বিলিংয়ের বিবরণ",
+    "totalPayment": "মোট পরিশোধ"
+  },
+  "animalDetails": {
+    "anonymous": "বেনামী",
+    "bookAnimal": "পশু বুক করুন",
+    "buyAnimal": "পশু কিনুন",
+    "category": "শ্রেণি",
+    "details": "বিস্তারিত",
+    "helpful": "সহায়ক ({{count}})",
+    "livestock": "গবাদি পশু",
+    "loading": "লোড হচ্ছে...",
+    "message": "বার্তা",
+    "noReviews": "এখনো কোনো রিভিউ নেই।",
+    "question": "এই তালিকা নিয়ে কোনো প্রশ্ন আছে?",
+    "reviews": "রিভিউ",
+    "reviewsWithStats": "রিভিউ ({{rating}} ★, {{count}})",
+    "shareMessage": "এই পশুর তালিকা দেখুন: {{name}} - ৳{{price}}"
+  },
+  "animalsTab": {
+    "addAnimal": "পশু যোগ করুন",
+    "age": "বয়স",
+    "ageMonths_one": "{{count}} মাস",
+    "ageMonths_other": "{{count}} মাস",
+    "chips": {
+      "all_one": "সব ({{count}})",
+      "all_other": "সব ({{count}})",
+      "bull_one": "ষাঁড় ({{count}})",
+      "bull_other": "ষাঁড় ({{count}})",
+      "calf_one": "বাছুর ({{count}})",
+      "calf_other": "বাছুর ({{count}})"
+    },
+    "clearFilters": "ফিল্টার মুছুন",
+    "coloredCoat": "{{color}} রঙের লোম ও বৈশিষ্ট্য",
+    "defaultCoat": "ক্রিম রঙের লোম ও সোনালি চুলের ঝুড়ি",
+    "empty": {
+      "noAnimalsDesc": "স্বাস্থ্য, কাজ ও রেকর্ড ট্র্যাক করতে আপনার গবাদি পশু যোগ করুন।",
+      "noAnimalsTitle": "এখনো কোনো পশু নেই",
+      "noResultsDesc": "অন্য সার্চ চেষ্টা করুন অথবা আপনার ফিল্টার মুছে দিন।",
+      "noResultsTitle": "কোনো পশু পাওয়া যায়নি"
+    },
+    "filter": "ফিল্টার",
+    "gender": {
+      "all": "সব",
+      "female": "মাদা",
+      "male": "পুরুষ"
+    },
+    "modal": {
+      "gender": "লিঙ্গ",
+      "reset": "রিসেট",
+      "show_one": "{{count}}টি পশু দেখান",
+      "show_other": "{{count}}টি পশু দেখান",
+      "title": "ফিল্টার"
+    },
+    "notAvailable": "প্রযোজ্য নয়",
+    "searchPlaceholder": "পশু খুঁজুন...",
+    "species": "প্রজাতি",
+    "title": "আমার পশু",
+    "unnamed": "নামহীন পশু",
+    "weight": "ওজন",
+    "weightKg": "{{weight}} কেজি"
+  },
+  "applyDiscount": {
+    "allTab": "সব ({{count}})",
+    "discountGivenTab": "ছাড় দেওয়া হয়েছে({{count}})",
+    "info": "ছাড় কেবল রোগীর পরবর্তী অ্যাপয়েন্টমেন্ট ফি-এ প্রযোজ্য। বুকিংয়ের সময় তারা ছাড় মূল্য পরিশোধ করে।",
+    "lastAppointment": "সর্বশেষ অ্যাপয়েন্টমেন্ট: {{date}}",
+    "owner": "মালিক: {{name}}",
+    "recentPatients": "সাম্প্রতিক রোগী",
+    "searchPlaceholder": "রোগী বা মালিক দিয়ে খুঁজুন",
+    "title": "ছাড় প্রয়োগ করুন"
+  },
+  "appointmentCancel": {
+    "alerts": {
+      "cancelFailed": "অ্যাপয়েন্টমেন্ট বাতিল করা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।",
+      "error": "ত্রুটি",
+      "required": "আবশ্যক",
+      "selectReason": "অনুগ্রহ করে বাতিলের একটি কারণ নির্বাচন করুন।"
+    },
+    "cancelBtn": "বাতিল",
+    "cancellationReason": "বাতিলের কারণ",
+    "cancelling": "বাতিল করা হচ্ছে...",
+    "notFound": "অ্যাপয়েন্টমেন্ট পাওয়া যায়নি",
+    "noteOptional": "নোট (ঐচ্ছিক)",
+    "owner": "মালিক: {{name}}",
+    "patient": "রোগী",
+    "reasons": {
+      "emergency": "জরুরি",
+      "other": "অন্যান্য",
+      "scheduleConflict": "সময়সূচির দ্বন্দ্ব"
+    },
+    "title": "অ্যাপয়েন্টমেন্ট বাতিল"
+  },
+  "appointmentCancelled": {
+    "cancelledLabel": "বাতিল অ্যাপয়েন্টমেন্ট",
+    "goHome": "হোমে যান",
+    "headerTitle": "অ্যাপয়েন্টমেন্ট বাতিল হয়েছে",
+    "owner": "মালিক: {{name}}",
+    "patient": "রোগী",
+    "subtitle": "এই অ্যাপয়েন্টমেন্টটি বাতিল করা হয়েছে।\nমালিককে জানানো হয়েছে।",
+    "title": "অ্যাপয়েন্টমেন্ট বাতিল",
+    "unknown": "অজানা"
+  },
+  "appointmentDetails": {
+    "cancel": "বাতিল",
+    "consultation": {
+      "chat": "অনলাইন - চ্যাট",
+      "inPerson": "সরাসরি",
+      "video": "অনলাইন - ভিডিও",
+      "voice": "অনলাইন - ভয়েস"
+    },
+    "consultationType": "পরামর্শের ধরন",
+    "doctor": "ডাক্তার",
+    "doctorLabel": "ডাক্তার",
+    "fee": "ফি",
+    "notFound": "অ্যাপয়েন্টমেন্ট পাওয়া যায়নি",
+    "owner": "মালিক: {{name}}",
+    "patient": "রোগী",
+    "payment": {
+      "failed": "ব্যর্থ",
+      "paid": "পরিশোধিত",
+      "pending": "মুলতবি",
+      "refunded": "ফেরতকৃত"
+    },
+    "paymentLabel": "পেমেন্ট",
+    "reason": "পরামর্শের কারণ",
+    "reschedule": "পুনর্নির্ধারণ করুন",
+    "status": {
+      "cancelled": "বাতিল",
+      "completed": "সম্পন্ন",
+      "rescheduled": "পুনর্নির্ধারিত",
+      "upcoming": "আসন্ন"
+    },
+    "symptoms": "উপসর্গ",
+    "title": "অ্যাপয়েন্টমেন্টের বিবরণ"
+  },
+  "appointmentFilter": {
+    "apply": "প্রয়োগ করুন",
+    "clear": "ক্লিয়ার",
+    "consultation": {
+      "all": "সব",
+      "chat": "অনলাইন - চ্যাট",
+      "physical": "সরাসরি",
+      "video": "অনলাইন - ভিডিও",
+      "voice": "অনলাইন - ভয়েস"
+    },
+    "consultationSection": "পরামর্শের ধরন",
+    "dateSection": "তারিখ",
+    "dates": {
+      "thisWeek": "এই সপ্তাহ",
+      "today": "আজ",
+      "tomorrow": "আগামীকাল"
+    },
+    "status": {
+      "all": "সব",
+      "cancelled": "বাতিল",
+      "completed": "সম্পন্ন",
+      "upcoming": "আসন্ন"
+    },
+    "statusSection": "বুক করা অ্যাপয়েন্টমেন্ট",
+    "title": "অ্যাপয়েন্টমেন্ট ফিল্টার"
+  },
+  "appointmentReschedule": {
+    "alerts": {
+      "errorTitle": "ত্রুটি",
+      "required": "আবশ্যক",
+      "rescheduleFailed": "অ্যাপয়েন্টমেন্ট পুনর্নির্ধারণ করা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।",
+      "rescheduled": "অ্যাপয়েন্টমেন্ট সফলভাবে পুনর্নির্ধারণ করা হয়েছে।",
+      "selectDateTime": "অনুগ্রহ করে একটি তারিখ ও সময় নির্বাচন করুন।",
+      "successTitle": "সফল"
+    },
+    "dayShort": {
+      "fri": "শুক্র",
+      "mon": "সোম",
+      "sat": "শনি",
+      "sun": "রবি",
+      "thu": "বৃহস্পতি",
+      "tue": "মঙ্গল",
+      "wed": "বুধ"
+    },
+    "months": {
+      "april": "এপ্রিল",
+      "august": "আগস্ট",
+      "december": "ডিসেম্বর",
+      "february": "ফেব্রুয়ারি",
+      "january": "জানুয়ারি",
+      "july": "জুলাই",
+      "june": "জুন",
+      "march": "মার্চ",
+      "may": "মে",
+      "november": "নভেম্বর",
+      "october": "অক্টোবর",
+      "september": "সেপ্টেম্বর"
+    },
+    "noSlots": "এই তারিখে কোনো স্লট নেই",
+    "notFound": "অ্যাপয়েন্টমেন্ট পাওয়া যায়নি",
+    "owner": "মালিক: {{name}}",
+    "patient": "রোগী",
+    "reschedule": "পুনর্নির্ধারণ করুন",
+    "rescheduling": "পুনর্নির্ধারণ করা হচ্ছে...",
+    "selectDate": "তারিখ নির্বাচন করুন",
+    "selectTime": "সময় নির্বাচন করুন",
+    "title": "অ্যাপয়েন্টমেন্ট পুনর্নির্ধারণ করুন"
+  },
+  "appointments": {
+    "dates": {
+      "today": "আজকের",
+      "yesterday": "গতকাল"
+    },
+    "empty": {
+      "clearFilters": "ফিল্টার মুছুন",
+      "noMatch": "আপনার ফিল্টারে মিলে যাওয়া কোনো অ্যাপয়েন্টমেন্ট নেই",
+      "previous": "আগের কোনো অ্যাপয়েন্টমেন্ট নেই",
+      "today": "আজ কোনো অ্যাপয়েন্টমেন্ট নেই"
+    },
+    "fallback": {
+      "patient": "রোগী"
+    },
+    "filters": {
+      "date": {
+        "thisWeek": "এই সপ্তাহ",
+        "today": "আজ",
+        "tomorrow": "আগামীকাল"
+      },
+      "status": {
+        "cancelled": "বাতিল",
+        "completed": "সম্পন্ন",
+        "upcoming": "আসন্ন"
+      },
+      "type": {
+        "chat": "অনলাইন - চ্যাট",
+        "physical": "সরাসরি",
+        "video": "অনলাইন - ভিডিও",
+        "voice": "অনলাইন - ভয়েস"
+      }
+    },
+    "liveChat": "লাইভ চ্যাট",
+    "minsLeft": "{{mins}} মিনিট বাকি",
+    "owner": "মালিক: {{name}}",
+    "searchPlaceholder": "রোগী খুঁজুন",
+    "sections": {
+      "inProgress": "এখনো চলছে",
+      "nextConsults": "পরবর্তী পরামর্শ [{{upcomingCount}}]"
+    },
+    "status": {
+      "cancelled": "বাতিল",
+      "completed": "সম্পন্ন",
+      "confirmed": "নিশ্চিত",
+      "pending": "অপেক্ষমাণ",
+      "rescheduled": "নতুন সময়ে নির্ধারিত"
+    },
+    "stillInProgress": "এখনো চলছে",
+    "tabs": {
+      "previous": "আগের",
+      "today": "আজকের"
+    },
+    "title": "অ্যাপয়েন্টমেন্ট"
+  },
+  "billingDetails": {
+    "appsFee": "অ্যাপের ফি",
+    "backToHome": "← হোমে ফিরে যান",
+    "bookingReason": "বুকিংয়ের কারণ",
+    "dates": "তারিখ",
+    "doctorsFee": "ডাক্তারের ফি",
+    "feesDetails": "ফি-এর বিবরণ",
+    "fullDate": "সোম, {{day}} {{monthYear}}",
+    "hour": "সময়",
+    "monthYear": "ডিসেম্বর 2026",
+    "paid": "পরিশোধিত",
+    "reviews": "| {{count}}টি রিভিউ",
+    "status": "স্ট্যাটাস",
+    "title": "বিলিং বিবরণ",
+    "totalFees": "মোট ফি",
+    "visitType": "ভিজিটের ধরন",
+    "visitTypes": {
+      "online": "অনলাইন",
+      "physical": "ফিজিক্যাল"
+    },
+    "yourSlot": "আপনার স্লট"
+  },
+  "bkashNumber": {
+    "payNow": "এখনই পরিশোধ করুন",
+    "placeholder": "বিকাশ ফোন নম্বর",
+    "sectionTitle": "বিকাশ নম্বর",
+    "title": "পেমেন্ট"
+  },
+  "blockTime": {
+    "actions": {
+      "back": "পেছনে",
+      "cancel": "বাতিল",
+      "confirm": "নিশ্চিত করুন",
+      "continue": "এগিয়ে যান",
+      "done": "হয়ে গেছে",
+      "remove": "সরান",
+      "viewCalendar": "ক্যালেন্ডার দেখুন"
+    },
+    "alerts": {
+      "conflictMsg": "এই সময়টুকু ব্লক করলে বিদ্যমান অ্যাপয়েন্টমেন্টগুলো বাতিল হবে, তবে তাদের বিস্তারিত আনা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।",
+      "conflictTitle": "বিদ্যমান অ্যাপয়েন্টমেন্টের সংঘাত"
+    },
+    "billing": {
+      "appointmentsFee": "অ্যাপয়েন্টমেন্ট ফি",
+      "bookingTimeOff": "সময় ব্লকের বুকিং",
+      "cancellationFee": "বাতিলকরণ ফি",
+      "feesTitle": "ফি বিস্তারিত",
+      "reason": "কারণ",
+      "status": "অবস্থা",
+      "title": "বিলিং বিস্তারিত",
+      "totalFees": "মোট ফি",
+      "walletDeduction": "আনুমানিক ওয়ালেট কর্তন"
+    },
+    "blockedPeriods": "ব্লক করা সময়",
+    "cancelled": {
+      "appointmentFallback": "অ্যাপয়েন্টমেন্ট #{{id}}",
+      "badge": "বাতিল হয়েছে",
+      "owner": "মালিক: {{name}}",
+      "title": "বাতিল অ্যাপয়েন্টমেন্ট"
+    },
+    "confirmation": {
+      "info": "নিশ্চিত করলে আপনি রাজি হচ্ছেন যে এই পরিমাণটি আপনার Gobadi ওয়ালেট থেকে কাটা হবে এবং অ্যাপয়েন্টমেন্টগুলো বাতিল হবে।"
+    },
+    "confirmed": {
+      "header": "ব্লক নিশ্চিত হয়েছে",
+      "subtitle": "এই সময়ে আপনি কোনো বুকিং পাবেন না।",
+      "title": "আপনার সময়টি ব্লক করা হয়েছে"
+    },
+    "dateRange": "{{start}} থেকে {{end}} পর্যন্ত ব্লক করা হচ্ছে",
+    "errors": {
+      "generic": "কিছু একটা সমস্যা হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।"
+    },
+    "fields": {
+      "endDate": "শেষ তারিখ",
+      "note": "নোট",
+      "reason": "কারণ",
+      "startDate": "শুরুর তারিখ"
+    },
+    "formInfo": "বিদ্যমান অ্যাপয়েন্টমেন্ট থাকা অবস্থায় সময় ব্লক করলে ফেরত ও বাতিলকরণ ফি প্রযোজ্য হবে, যা আপনার ওয়ালেট থেকে কাটা হবে।",
+    "months": {
+      "april": "এপ্রিল",
+      "august": "আগস্ট",
+      "december": "ডিসেম্বর",
+      "february": "ফেব্রুয়ারি",
+      "january": "জানুয়ারি",
+      "july": "জুলাই",
+      "june": "জুন",
+      "march": "মার্চ",
+      "may": "মে",
+      "november": "নভেম্বর",
+      "october": "অক্টোবর",
+      "september": "সেপ্টেম্বর"
+    },
+    "optional": "(ঐচ্ছিক)",
+    "reasons": {
+      "conference_training": "সম্মেলন/প্রশিক্ষণ",
+      "emergency": "জরুরি",
+      "other": "অন্যান্য",
+      "sick_leave": "অসুস্থতার ছুটি",
+      "vacation": "ছুটি"
+    },
+    "remove": {
+      "msg": "আপনি কি এই ব্লক করা সময়টুকু সরাতে চান?",
+      "title": "ব্লক সরান"
+    },
+    "required": "(আবশ্যক)",
+    "selectDate": "তারিখ নির্বাচন করুন",
+    "title": "সময় ব্লক করুন",
+    "warning": {
+      "description_one": "এই সময়টি ব্লক করলে {{count}}টি অ্যাপয়েন্টমেন্ট বাতিল হবে। তাদের বুকিং টাকা ফেরত দেওয়া হবে এবং প্রযোজ্য বাতিলকরণ ফি আপনার ওয়ালেট থেকে কাটা হবে।",
+      "description_other": "এই সময়টি ব্লক করলে {{count}}টি অ্যাপয়েন্টমেন্ট বাতিল হবে। তাদের বুকিং টাকা ফেরত দেওয়া হবে এবং প্রযোজ্য বাতিলকরণ ফি আপনার ওয়ালেট থেকে কাটা হবে।",
+      "title": "আপনার বিদ্যমান অ্যাপয়েন্টমেন্ট আছে"
+    },
+    "weekdays": {
+      "fri": "শুক্র",
+      "mon": "সোম",
+      "sat": "শনি",
+      "sun": "রবি",
+      "thu": "বৃহস্পতি",
+      "tue": "মঙ্গল",
+      "wed": "বুধ"
+    }
+  },
+  "bookAnimal": {
+    "age": "বয়স:",
+    "alerts": {
+      "failedMessage": "এই গবাদি পশুটি বুক করা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।",
+      "failedTitle": "বুকিং ব্যর্থ"
+    },
+    "animalDetails": "গবাদি পশুর বিবরণ",
+    "bookingOptions": "বুকিং অপশন",
+    "breed": "জাত:",
+    "costPrefix": "নিশ্চিত করতে খরচ হবে মাত্র",
+    "costSuffix": "।",
+    "kg": "কেজি",
+    "liveWeight": "ওজন:",
+    "loading": "লোড হচ্ছে...",
+    "options": {
+      "description10": "এই অপশনটি নির্বাচন করলে আপনার বুকিং থেকে ১০ দিনের জন্য একই দামে গবাদি পশুটি লক করে রাখা হবে।",
+      "description20": "এই অপশনটি নির্বাচন করলে আপনার বুকিং থেকে ২০ দিনের জন্য একই দামে গবাদি পশুটি লক করে রাখা হবে।",
+      "description3": "এই অপশনটি নির্বাচন করলে আপনার বুকিং থেকে ৩ দিনের জন্য একই দামে গবাদি পশুটি লক করে রাখা হবে।",
+      "description5": "এই অপশনটি নির্বাচন করলে আপনার বুকিং থেকে ৫ দিনের জন্য একই দামে গবাদি পশুটি লক করে রাখা হবে।",
+      "saveFor10Days": "১০ দিনের জন্য সংরক্ষণ করুন",
+      "saveFor20Days": "২০ দিনের জন্য সংরক্ষণ করুন",
+      "saveFor3Days": "৩ দিনের জন্য সংরক্ষণ করুন",
+      "saveFor5Days": "৫ দিনের জন্য সংরক্ষণ করুন"
+    },
+    "proceedBooking": "বুকিং এগিয়ে নিন",
+    "species": "প্রজাতি:",
+    "termsNote": "শর্তাবলি প্রযোজ্য",
+    "title": "গবাদি পশু বুক করুন"
+  },
+  "bookSlot": {
+    "alerts": {
+      "enterReason": "অনুগ্রহ করে এগিয়ে যাওয়ার আগে বুকিংয়ের কারণ লিখুন।",
+      "required": "আবশ্যক",
+      "selectPet": "অনুগ্রহ করে এই অ্যাপয়েন্টমেন্টের জন্য পোষা পশু নির্বাচন করুন।"
+    },
+    "bookingReason": "বুকিংয়ের কারণ",
+    "calendarMonth": "ডিসেম্বর 2026",
+    "choosePet": "আপনার পোষা পশু বেছে নিন",
+    "confirmReschedule": "পুনর্নির্ধারণ নিশ্চিত করুন",
+    "confirmSlot": "স্লট নিশ্চিত করুন",
+    "doctorNotFound": "ডাক্তার খুঁজে পাওয়া যায়নি",
+    "goBack": "ফিরে যান",
+    "loading": "ডাক্তারের তথ্য লোড হচ্ছে...",
+    "noSlots": "এই তারিখে কোনো খালি স্লট নেই।",
+    "petFallback": "পোষা পশু",
+    "reasonPlaceholder": "লক্ষণগুলোর বিবরণ লিখুন",
+    "required": "(আবশ্যক)",
+    "reschedule": "পুনর্নির্ধারণ",
+    "reviews": "| {{count}}টি রিভিউ",
+    "selectAnimal": "গবাদি পশু নির্বাচন করুন",
+    "selectDate": "তারিখ নির্বাচন করুন",
+    "selectPet": "পোষা পশু নির্বাচন করুন",
+    "selectTimeSlot": "সময়ের স্লট নির্বাচন করুন",
+    "title": "স্লট বুক করুন",
+    "visitType": "ভিজিটের ধরন",
+    "visitTypes": {
+      "online": "অনলাইন",
+      "physical": "ফিজিক্যাল"
+    },
+    "weekdays": {
+      "fri": "শুক্র",
+      "mon": "সোম",
+      "sat": "শনি",
+      "sun": "রবি",
+      "thu": "বৃহঃ",
+      "tue": "মঙ্গল",
+      "wed": "বুধ"
+    }
+  },
+  "bookingBkashNumber": {
+    "payNow": "এখনই পরিশোধ করুন",
+    "placeholder": "বিকাশ ফোন নম্বর",
+    "sectionTitle": "বিকাশ নম্বর",
+    "title": "বুকিং পেমেন্ট"
+  },
+  "bookingDetails": {
+    "backToHome": "হোমে ফিরে যান",
+    "bookingReason": "বুকিংয়ের কারণ",
+    "dates": "তারিখ",
+    "days": {
+      "fri": "শুক্র",
+      "mon": "সোম",
+      "sat": "শনি",
+      "sun": "রবি",
+      "thu": "বৃহঃ",
+      "tue": "মঙ্গল",
+      "wed": "বুধ"
+    },
+    "defaults": {
+      "city": "उत्तर बाद्धा, ढाका",
+      "location": "कार्डिओलजि सेन्टार, युक्तराष्ट्र",
+      "name": "डा. डेभिड प्याटेल",
+      "specialty": "भेटेरिनारि सार्जारि"
+    },
+    "hour": "সময়",
+    "months": {
+      "april": "এপ্রিল",
+      "august": "আগস্ট",
+      "december": "ডিসেম্বর",
+      "february": "ফেব্রুয়ারি",
+      "january": "জানুয়ারি",
+      "july": "জুলাই",
+      "june": "জুন",
+      "march": "মার্চ",
+      "may": "মে",
+      "november": "নভেম্বর",
+      "october": "অক্টোবর",
+      "september": "সেপ্টেম্বর"
+    },
+    "reviews": "| {{count}}টি রিভিউ",
+    "title": "বুকিং বিবরণ",
+    "visitType": "পরিদর্শনের ধরন",
+    "yourSlot": "আপনার স্লট"
+  },
+  "bookingPayment": {
+    "bkash": "বিকাশ",
+    "payNow": "এখনই পরিশোধ করুন",
+    "sectionTitle": "পেমেন্ট পদ্ধতি",
+    "title": "বুকিং পেমেন্ট"
+  },
+  "calendarSettings": {
+    "blockTime": "সময় ব্লক করুন",
+    "title": "ক্যালেন্ডার সেটিংস",
+    "workingHours": "কর্মঘণ্টা"
+  },
+  "callControls": {
+    "camera": "ক্যামেরা",
+    "cameraOff": "ক্যামেরা বন্ধ",
+    "earpiece": "ইয়ারপিস",
+    "end": "শেষ",
+    "endCall": "কল শেষ করুন",
+    "flip": "উল্টান",
+    "mic": "মাইক",
+    "muted": "মিউট",
+    "speaker": "স্পিকার"
+  },
+  "cart": {
+    "browseMarketplace": "মার্কেটপ্লেস দেখুন",
+    "empty": "আপনার কার্ট খালি।",
+    "proceedToCheckout": "চেকআউট এগিয়ে নিন",
+    "remove": "মুছুন",
+    "shipping": "ডেলিভারি",
+    "subtotal": "উপমোট",
+    "tax": "কর",
+    "title": "আমার কার্ট",
+    "total": "মোট",
+    "unavailable": "অনুপলব্ধ"
+  },
+  "chat": {
+    "actions": {
+      "endConsultation": "পরামর্শ শেষ করুন",
+      "sendNote": "নোট পাঠান",
+      "sendPrescription": "প্রেসক্রিপশন পাঠান",
+      "sendPrescriptionLower": "প্রেসক্রিপশন পাঠান",
+      "sendRecommendation": "সুপারিশ পাঠান",
+      "sendRecommendationLower": "সুপারিশ পাঠান",
+      "startConsultation": "পরামর্শ শুরু করুন"
+    },
+    "alerts": {
+      "attachmentFailed": "সংযুক্তি পাঠানো যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।",
+      "attachmentTooLarge": "ছবিটি খুব বড় — অনুগ্রহ করে ছোট ছবি বেছে নিন।",
+      "audioMsg": "অডিও রেকর্ডিং ফিচার আসছে শীঘ্রই।",
+      "audioTitle": "অডিও রেকর্ডিং",
+      "callEndedOnlyMsg": "পরামর্শ শেষ হয়েছে — শুধু মেসেজিং ব্যবহার করা যাবে।",
+      "callNotAvailableMsg": "এই অ্যাপয়েন্টমেন্টে এখন কল করা যাচ্ছে না।",
+      "callsUnavailableTitle": "কল অনুপলব্ধ",
+      "congratsMsg": "পরামর্শ শেষ হয়েছে।",
+      "congratsTitle": "অভিনন্দন!",
+      "endFailed": "পরামর্শ শেষ করা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।",
+      "error": "ত্রুটি",
+      "goToHome": "হোমে যান",
+      "messageFailed": "মেসেজ পাঠানো যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।",
+      "missingAppointment": "অ্যাপয়েন্টমেন্টের তথ্য নেই। অনুগ্রহ করে অ্যাপয়েন্টমেন্ট থেকে এই চ্যাটটি খুলুন।",
+      "openFromAppointment": "ছবি পাঠাতে অ্যাপয়েন্টমেন্ট থেকে এই চ্যাটটি খুলুন।",
+      "permissionRequiredTitle": "অনুমতি প্রয়োজন",
+      "permissionTitle": "অনুমতি প্রয়োজন",
+      "saveImageFailed": "এই ছবিটি সংরক্ষণ করা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।",
+      "savePermissionMsg": "ছবিটি গ্যালারিতে সংরক্ষণ করতে ফটো ব্যবহারের অনুমতি দিন।",
+      "sendNoteMsg": "রোগীর জন্য একটি নোট লিখুন",
+      "sendPermissionMsg": "ছবি পাঠাতে অনুগ্রহ করে ফটো লাইব্রেরি ব্যবহারের অনুমতি দিন।",
+      "shareFailed": "এই ছবিটি শেয়ার করা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।",
+      "startFailed": "পরামর্শ শুরু করা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।"
+    },
+    "consultation": {
+      "endedDesc": "আপনার {{name}}-এর সাথে পরামর্শ শেষ হয়েছে।",
+      "endedTitle": "পরামর্শ শেষ!",
+      "maxDuration": "•  সর্বোচ্চ সময়: 30 মিনিট",
+      "remainingTime": "•  বাকি থাকা সময়: {{time}}",
+      "startTime": "•  শুরুর সময়: {{time}}",
+      "startedDesc": "আপনি এখন {{name}}-এর সাথে পরামর্শে আছেন",
+      "startedTitle": "পরামর্শ শুরু হয়েছে"
+    },
+    "date": {
+      "today": "আজ",
+      "yesterday": "গতকাল"
+    },
+    "fallbacks": {
+      "doctor": "ডাক্তার",
+      "patient": "রোগী"
+    },
+    "input": {
+      "placeholder": "একটি মেসেজ লিখুন..."
+    },
+    "nextStep": {
+      "option": "প্রেসক্রিপশন, সুপারিশ, নোট পাঠান",
+      "title": "পরবর্তী ধাপ"
+    },
+    "prescription": {
+      "file": "ফাইল",
+      "title": "প্রেসক্রিপশন - {{date}}"
+    },
+    "upcoming": {
+      "join": "যোগ দিন",
+      "owner": "মালিক   {{name}}"
+    },
+    "viewer": {
+      "closeImage": "ছবি বন্ধ করুন",
+      "downloadImage": "ছবি ডাউনলোড করুন",
+      "loadFailed": "ছবিটি লোড করা যায়নি",
+      "shareDialogTitle": "ছবি শেয়ার করুন",
+      "shareImage": "ছবি শেয়ার করুন",
+      "tapToOpen": "ছবি খুলতে ট্যাপ করুন",
+      "you": "আপনি"
+    }
+  },
+  "checkout": {
+    "address": "রোড# 9, বাড়ি# 5, লেন#3, মিরপুর 11/a, ঢাকা-1216।",
+    "alerts": {
+      "changeAddress": "ঠিকানা পরিবর্তন করুন",
+      "comingSoon": "ঠিকানা নির্বাচনের ফিচার শীঘ্রই আসছে।",
+      "orderFailed": "অর্ডার ব্যর্থ হয়েছে",
+      "orderFailedMessage": "আপনার অর্ডার দেওয়া যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।"
+    },
+    "cartCheckout": "কার্ট চেকআউট ({{count}}টি আইটেম)",
+    "category": "ক্যাটাগরি:",
+    "changeAddress": "ঠিকানা পরিবর্তন করুন",
+    "deliveryCharge": "ডেলিভারি খরচ",
+    "deliveryDetails": "ডেলিভারি বিবরণ",
+    "homeDelivery": "হোম ডেলিভারি",
+    "item": "আইটেম:",
+    "itemPrice": "আইটেমের দাম",
+    "livestock": "গবাদি পশু",
+    "loading": "লোড হচ্ছে...",
+    "orderSummary": "অর্ডার সারাংশ",
+    "placeOrder": "অর্ডার করুন",
+    "pricingDetails": "মূল্যের বিবরণ",
+    "title": "চেকআউট",
+    "totalPayment": "মোট পরিশোধ",
+    "various": "বিভিন্ন",
+    "vat": "ভ্যাট (5%)"
+  },
+  "common": {
+    "identifierTabs": {
+      "email": "ইমেইল",
+      "phone": "ফোন নম্বর"
+    }
+  },
+  "confirmBooking": {
+    "bookingReason": "বুকিংয়ের কারণ",
+    "confirmPayment": "পেমেন্ট নিশ্চিত করুন",
+    "dates": "তারিখ",
+    "daysShort": {
+      "fri": "শুক্র",
+      "mon": "সোম",
+      "sat": "শনি",
+      "sun": "রবি",
+      "thu": "বৃহস্পতি",
+      "tue": "মঙ্গল",
+      "wed": "বুধ"
+    },
+    "defaultDoctor": "ডাক্তার",
+    "fullDate": "{{day}}, {{dayNum}} {{month}} {{year}}",
+    "hour": "সময়",
+    "loading": "লোড হচ্ছে…",
+    "months": {
+      "april": "এপ্রিল",
+      "august": "আগস্ট",
+      "december": "ডিসেম্বর",
+      "february": "ফেব্রুয়ারি",
+      "january": "জানুয়ারি",
+      "july": "জুলাই",
+      "june": "জুন",
+      "march": "মার্চ",
+      "may": "মে",
+      "november": "নভেম্বর",
+      "october": "অক্টোবর",
+      "september": "সেপ্টেম্বর"
+    },
+    "reviews": "| {{reviews}} রিভিউ",
+    "title": "বুকিং নিশ্চিত করুন",
+    "visitType": "দেখার ধরন",
+    "yourSlot": "আপনার স্লট"
+  },
+  "confirmPay": {
+    "appsFee": "অ্যাপের ফি",
+    "bookingReason": "বুকিংয়ের কারণ",
+    "confirmBooking": "বুকিং নিশ্চিত করুন",
+    "dates": "তারিখ",
+    "doctorFallback": "ডাক্তার",
+    "doctorsFee": "ডাক্তারের ফি",
+    "feesDetails": "ফি-এর বিবরণ",
+    "fullDate": "সোম, {{day}} {{monthYear}}",
+    "hour": "সময়",
+    "loading": "লোড হচ্ছে…",
+    "monthYear": "ডিসেম্বর 2026",
+    "reviews": "| {{count}}টি রিভিউ",
+    "title": "নিশ্চিত করুন এবং পরিশোধ করুন",
+    "totalFees": "মোট ফি",
+    "visitType": "ভিজিটের ধরন",
+    "visitTypes": {
+      "online": "অনলাইন",
+      "physical": "ফিজিক্যাল"
+    },
+    "yourSlot": "আপনার স্লট"
+  },
+  "congo": {
+    "body": "আমরা আপনার কাছে একটি যাচাইকরণ ইমেইল পেয়েছি, অনুগ্রহ করে ইনবক্স দেখুন এবং অ্যাকাউন্ট যাচাই করতে নির্দেশনা অনুসরণ করুন।",
+    "signIn": "সাইন ইন",
+    "thankYou": "আমাদের সাথে সাইন আপ করার জন্য ধন্যবাদ!",
+    "title": "অভিনন্দন!"
+  },
+  "consultationEnded": {
+    "backToChat": "চ্যাটে ফিরে যান",
+    "heading": "পরামর্শ শেষ!",
+    "maxDuration": "•  সর্বোচ্চ সময়: 30 মিনিট",
+    "nextStep": "পরবর্তী ধাপ",
+    "nextStepOption": "প্রেসক্রিপশন, সুপারিশ, নোট পাঠান",
+    "patient": "রোগী",
+    "remainingTime": "•  অবশিষ্ট সময়: {{time}}",
+    "sendPrescription": "প্রেসক্রিপশন পাঠান",
+    "startTime": "•  শুরুর সময়: {{time}}",
+    "subtitle": "আপনার {{name}}-এর সাথে পরামর্শ শেষ হয়েছে।",
+    "summaryDesc": "আপনি ছিলেন {{name}}-এর সাথে পরামর্শে",
+    "title": "পরামর্শ শেষ হয়েছে"
+  },
+  "contactSupport": {
+    "customerService": "কাস্টমার সার্ভিস",
+    "email": "ইমেইল",
+    "title": "সাপোর্টে যোগাযোগ করুন"
+  },
+  "discount": {
+    "alerts": {
+      "createFailed": "ছাড় তৈরি করা যায়নি",
+      "created": "ছাড় সফলভাবে তৈরি হয়েছে",
+      "errorTitle": "ত্রুটি",
+      "ok": "ঠিক আছে",
+      "successTitle": "সফল",
+      "updateFailed": "ছাড় আপডেট করা যায়নি",
+      "updated": "ছাড় সফলভাবে আপডেট হয়েছে"
+    },
+    "appointmentFee": "অ্যাপয়েন্টমেন্ট ফি",
+    "continue": "এগিয়ে যান",
+    "customDiscount": "কাস্টম ছাড়",
+    "discountLabel": "ছাড় ({{percent}}%)",
+    "editDiscount": "ছাড় সম্পাদনা করুন",
+    "infoBanner": "ছাড় কেবল রোগীর পরবর্তী অ্যাপয়েন্টমেন্ট ফিতে প্রযোজ্য। বুকিং করার সময় তারা ছাড়মূলক পরিমাণ পরিশোধ করেন।",
+    "lastAppointment": "সর্বশেষ অ্যাপয়েন্টমেন্ট: {{time}}",
+    "owner": "মালিক",
+    "ownerLabel": "মালিক: {{name}}",
+    "patient": "রোগী",
+    "patientWillPay": "রোগী পরিশোধ করবেন",
+    "placeholder": "ছাড় %",
+    "quickDiscount": "দ্রুত ছাড়",
+    "removeDiscount": "ছাড় সরান",
+    "saveChanges": "পরিবর্তন সংরক্ষণ করুন",
+    "title": "ছাড়ের বিবরণ"
+  },
+  "doctorAvailability": {
+    "alerts": {
+      "saveError": {
+        "msg": "অনুগ্রহ করে সময়ের ফরম্যাট (HH:mm) দেখুন এবং আবার চেষ্টা করুন।",
+        "title": "সংরক্ষণ করা যায়নি"
+      },
+      "saved": {
+        "msg": "আপনার সময়সূচি আপডেট হয়েছে।",
+        "title": "সংরক্ষিত হয়েছে"
+      }
+    },
+    "days": {
+      "friday": "শুক্রবার",
+      "monday": "সোমবার",
+      "saturday": "শনিবার",
+      "sunday": "রবিবার",
+      "thursday": "বৃহস্পতিবার",
+      "tuesday": "মঙ্গলবার",
+      "wednesday": "বুধবার"
+    },
+    "save": "সময়সূচি সংরক্ষণ করুন",
+    "title": "আমার সময়সূচি",
+    "to": "থেকে"
+  },
+  "doctorBookings": {
+    "appointmentsCount_one": "{{count}}টি অ্যাপয়েন্টমেন্ট",
+    "appointmentsCount_other": "{{count}}টি অ্যাপয়েন্টমেন্ট",
+    "blockedDays": "বন্ধ দিন",
+    "dayShort": {
+      "fri": "শুক্র",
+      "mon": "সোম",
+      "sat": "শনি",
+      "sun": "রবি",
+      "thu": "বৃহস্পতি",
+      "tue": "মঙ্গল",
+      "wed": "বুধ"
+    },
+    "emptyDay": "এই দিনে কোনো অ্যাপয়েন্টমেন্ট নেই",
+    "fallback": {
+      "generalCheckup": "সাধারণ পরীক্ষা",
+      "patient": "রোগী"
+    },
+    "monthly": "মাসিক",
+    "months": {
+      "april": "এপ্রিল",
+      "august": "আগস্ট",
+      "december": "ডিসেম্বর",
+      "february": "ফেব্রুয়ারি",
+      "january": "জানুয়ারি",
+      "july": "জুলাই",
+      "june": "জুন",
+      "march": "মার্চ",
+      "may": "মে",
+      "november": "নভেম্বর",
+      "october": "অক্টোবর",
+      "september": "সেপ্টেম্বর"
+    },
+    "openDays": "খোলা দিন",
+    "physicalConsultation": "সরাসরি পরামর্শ",
+    "showLess": "কম দেখুন",
+    "status": {
+      "confirmed": "নিশ্চিত"
+    },
+    "title": "ক্যালেন্ডার",
+    "totalAppointments": "মোট অ্যাপয়েন্টমেন্ট",
+    "upcoming": "আসন্ন অ্যাপয়েন্টমেন্ট",
+    "viewAll": "সব দেখুন",
+    "viewAllCount_one": "সব দেখুন ({{count}})",
+    "viewAllCount_other": "সব দেখুন ({{count}})",
+    "weekly": "সাপ্তাহিক"
+  },
+  "doctorDetail": {
+    "availability": "সময়সূচি",
+    "bookSlot": "স্লট বুক করুন",
+    "defaults": {
+      "specialty": "ভেটেরিনারি সার্জারি"
+    },
+    "reviews": "| {{count}}টি রিভিউ",
+    "serviceMeta": "৳ {{price}} · {{minutes}} মিনিট",
+    "servicesTitle": "সেবা",
+    "specializations": {
+      "canineBehaviour": "ক্যানাইন আচরণ ব্যবস্থাপনায় প্রশিক্ষিত",
+      "clinicalMedicine": "ভেটেরিনারি ক্লিনিক্যাল মেডিসিন",
+      "contrastRadiography": "টানুভাস কর্তৃক কনট্রাস্ট রেডিওগ্রাফিতে প্রশিক্ষিত",
+      "dermatology": "কুকুরের গুরুতর চর্মরোগ ব্যবস্থাপনায় উন্নত চিকিৎসা ব্যবস্থাপনায় প্রশিক্ষিত",
+      "emergency": "জরুরি ও ট্রমা কিউর",
+      "felineManagement": "এফসিআই কর্তৃক উন্নত ফেলাইন ব্যবস্থাপনায় প্রশিক্ষিত",
+      "geriatrics": "ভেটেরিনারি জেরিয়াট্রিক্স",
+      "pediatrics": "জয়পুর রাজস্থানের পিজিআইভিআর ভেট মেডিসিন বিভাগ কর্তৃক কুকুর ও বিড়ালের শিশুস্বাস্থ্য ব্যবস্থাপনায় প্রশিক্ষিত",
+      "renalMedicine": "টানুভাস কর্তৃক ক্ষুদ্র প্রাণীর কিডনি ও কিডনি জরুরি চিকিৎসায় উন্নত প্রশিক্ষিত"
+    },
+    "specializationsTitle": "বিশেষত্ব",
+    "title": "ডাক্তারের বিস্তারিত"
+  },
+  "doctorHome": {
+    "alerts": {
+      "openChatError": {
+        "msg": "কথোপকথন খোলা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।",
+        "title": "ত্রুটি"
+      }
+    },
+    "completed": "সম্পন্ন",
+    "completedOf": "{{total}} এর মধ্যে {{completed}}",
+    "consultsForToday": "আজকের জন্য",
+    "consultsOrange": "পরামর্শ",
+    "emptyPatients": "এই মুহূর্তে কোনো চলমান রোগী নেই",
+    "fallback": {
+      "doctor": "ডাক্তার",
+      "patient": "রোগী"
+    },
+    "greeting": {
+      "afternoon": "শুভ দুপুর",
+      "evening": "শুভ সন্ধ্যা",
+      "morning": "শুভ সকাল"
+    },
+    "ongoingPatients": "চলমান রোগী",
+    "patientWithId": "রোগী #{{id}}",
+    "pending": "বাকি",
+    "tiles": {
+      "appointments": "অ্যাপয়েন্টমেন্ট",
+      "discount": "ছাড় প্রয়োগ করুন",
+      "patients": "রোগী",
+      "schedule": "সূচি"
+    }
+  },
+  "doctorMessages": {
+    "empty": {
+      "desc": "অন্য নাম বা বার্তা দিয়ে চেষ্টা করুন।",
+      "title": "কোনো চ্যাট পাওয়া যায়নি"
+    },
+    "fallback": {
+      "patient": "রোগী",
+      "pet": "পশু"
+    },
+    "join": "যোগ দিন",
+    "owner": "মালিক",
+    "recentChats": "সাম্প্রতিক চ্যাট",
+    "searchPlaceholder": "চ্যাট খুঁজুন...",
+    "startConversation": "কথোপকথন শুরু করুন",
+    "tapToChat": "শুরু করতে ট্যাপ করুন",
+    "title": "চ্যাট",
+    "today": "আজ",
+    "upcomingAppointment": "আসন্ন অ্যাপয়েন্টমেন্ট"
+  },
+  "doctorNotificationPreferences": {
+    "alerts": {
+      "error": "ত্রুটি",
+      "updateFailed": "পছন্দসমূহ আপডেট করা যায়নি"
+    },
+    "items": {
+      "appointmentReminders": {
+        "description": "আসন্ন অ্যাপয়েন্টমেন্ট সম্পর্কে জানানো হবে",
+        "title": "অ্যাপয়েন্টমেন্ট রিমাইন্ডার"
+      },
+      "chatMessages": {
+        "description": "রোগীরা বার্তা পাঠালে জানানো হবে",
+        "title": "রোগীদের বার্তা"
+      },
+      "systemUpdates": {
+        "description": "প্ল্যাটফর্ম থেকে গুরুত্বপূর্ণ আপডেট",
+        "title": "সিস্টেম আপডেট"
+      },
+      "taskReminders": {
+        "description": "নির্ধারিত ফলো-আপের রিমাইন্ডার",
+        "title": "ফলো-আপ রিমাইন্ডার"
+      },
+      "weatherAlerts": {
+        "description": "পরিচ্ছন্নতার আপডেট সম্পর্কে জানানো হবে",
+        "title": "পরিচ্ছন্নতার রিমাইন্ডার"
+      }
+    },
+    "loadError": "পছন্দসমূহ লোড করা যায়নি",
+    "tabs": {
+      "all": "সব",
+      "appointments": "অ্যাপয়েন্টমেন্ট",
+      "messages": "বার্তা",
+      "patients": "রোগী"
+    },
+    "title": "নোটিফিকেশন সেটিংস",
+    "tryAgain": "আবার চেষ্টা করুন"
+  },
+  "doctorNotifications": {
+    "earlier": "আগের",
+    "empty": "এখনো কোনো নোটিফিকেশন নেই",
+    "loadFailed": "নোটিফিকেশন লোড করা যায়নি",
+    "tabs": {
+      "all": "সব",
+      "appointments": "অ্যাপয়েন্টমেন্ট",
+      "messages": "বার্তা",
+      "patients": "রোগী"
+    },
+    "thisWeek": "এই সপ্তাহ",
+    "title": "নোটিফিকেশন",
+    "today": "আজ"
+  },
+  "doctorPatients": {
+    "empty": {
+      "description": "প্রথম অ্যাপয়েন্টমেন্টের পর রোগীরা এখানে দেখা যাবে।",
+      "searchDescription": "অন্য শব্দ দিয়ে খুঁজে দেখুন।",
+      "searchTitle": "কোনো রোগী পাওয়া যায়নি",
+      "title": "এখনো কোনো রোগী নেই"
+    },
+    "meta": {
+      "age": "বয়স",
+      "owner": "মালিক",
+      "weight": "ওজন"
+    },
+    "searchPlaceholder": "রোগী খুঁজুন...",
+    "title": "রোগী"
+  },
+  "doctorRegistrationSuccess": {
+    "checkStatus": "স্ট্যাটাস দেখুন",
+    "successSubtitle": "আপনার নিবন্ধন সফলভাবে সম্পন্ন হয়েছে। আপনি এখন অ্যাপের সব ফিচার ব্যবহার করতে পারবেন।",
+    "successTitle": "সফল হয়েছে"
+  },
+  "doctors": {
+    "ai": {
+      "scanNow": "এখনই স্ক্যান করুন",
+      "subtitle": "আমাদের সর্বশেষ AI মডিউল দিয়ে আপনার গবাদি পশুর সঙ্গে সঙ্গে বিশ্লেষণ করুন",
+      "title": "AI দিয়ে বিশ্লেষণ করুন"
+    },
+    "alerts": {
+      "consultationNotStarted": {
+        "msg": "কল দেওয়ার আগে চ্যাটে পরামর্শ শুরু করুন।",
+        "title": "পরামর্শ শুরু হয়নি"
+      },
+      "startChatError": {
+        "msg": "কথোপকথন শুরু করা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।",
+        "title": "ত্রুটি"
+      }
+    },
+    "bookSlot": "স্লট বুক করুন",
+    "categories": {
+      "avian": "পাখি ও অন্যান্য",
+      "general": "সাধারণ",
+      "gynaecology": "স্ত্রী ও প্রসূতি",
+      "medicine": "ওষুধ",
+      "surgery": "অস্ত্রোপচার"
+    },
+    "clinicDoctors_one": "{{count}} জন ডাক্তার",
+    "clinicDoctors_other": "{{count}} জন ডাক্তার",
+    "details": "বিস্তারিত",
+    "empty": {
+      "categorySubtext": "এই ক্যাটাগরিতে কোনো ডাক্তার পাওয়া যায়নি।",
+      "centersCheckBack": "শীঘ্রই আবার দেখুন — নতুন মেডিকেল সেন্টার নিয়মিত যোগ হচ্ছে।",
+      "checkBack": "শীঘ্রই আবার দেখুন — নতুন ভেটেরিনারিয়ান নিয়মিত যোগ হচ্ছে।",
+      "noCenters": "কোনো মেডিকেল সেন্টার পাওয়া যায়নি",
+      "noDoctors": "কোনো ডাক্তার পাওয়া যায়নি",
+      "searchSubtext": "অন্য নাম বা বিশেষত্ব দিয়ে খুঁজুন।"
+    },
+    "fallback": {
+      "doctor": "ডাক্তার",
+      "patient": "রোগী"
+    },
+    "locationLabel": "এলাকা",
+    "myTreatment": "আমার চিকিৎসা",
+    "reviews_one": "{{count}}টি রিভিউ",
+    "reviews_other": "{{count}}টি রিভিউ",
+    "searchPlaceholder": "ডাক্তার খুঁজুন...",
+    "sections": {
+      "categories": "ক্যাটাগরি",
+      "nearbyCenters": "কাছাকাছি মেডিকেল সেন্টার",
+      "nearbyDoctors": "কাছাকাছি ডাক্তার"
+    },
+    "startCall": "কল শুরু করুন",
+    "title": "ডাক্তার",
+    "upcomingTreatment": "আসন্ন চিকিৎসা",
+    "viewAll": "সব দেখুন"
+  },
+  "editProfile": {
+    "alerts": {
+      "cameraPermission": "প্রোফাইল ছবি তুলতে ক্যামেরা ব্যবহারের অনুমতি প্রয়োজন।",
+      "cancel": "বাতিল",
+      "changePhoto": "প্রোফাইল ছবি পরিবর্তন করুন",
+      "chooseLibrary": "গ্যালারি থেকে বাছুন",
+      "chooseOption": "একটি অপশন নির্বাচন করুন",
+      "enterName": "অনুগ্রহ করে আপনার নাম লিখুন।",
+      "error": "ত্রুটি",
+      "libraryPermission": "প্রোফাইল ছবি বাছাই করতে ফটো লাইব্রেরির অনুমতি প্রয়োজন।",
+      "ok": "ঠিক আছে",
+      "permissionRequired": "অনুমতি প্রয়োজন",
+      "photoSelectionFailed": "ছবি নির্বাচন ব্যর্থ",
+      "photoSelectionFailedMsg": "ক্যামেরা বা গ্যালারি খোলা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।",
+      "photoTooLarge": "ছবিটি খুব বড়। অনুগ্রহ করে ছোট একটি ছবি ব্যবহার করুন।",
+      "profileUpdated": "প্রোফাইল সফলভাবে হালনাগাদ হয়েছে।",
+      "requiredField": "আবশ্যক ঘর",
+      "success": "সফল",
+      "takePhoto": "ছবি তুলুন",
+      "updateProfileFailed": "প্রোফাইল হালনাগাদ করতে ব্যর্থ হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।",
+      "uploadFailed": "আপলোড ব্যর্থ",
+      "uploadPhotoFailed": "ছবি আপলোড করতে ব্যর্থ হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।"
+    },
+    "header": "প্রোফাইল সম্পাদনা করুন",
+    "locationLabel": "অবস্থান",
+    "locationPlaceholder": "অবস্থান লিখুন",
+    "nameLabel": "আপনার নাম",
+    "namePlaceholder": "নাম লিখুন",
+    "phoneLabel": "মোবাইল নম্বর",
+    "phonePlaceholder": "ফোন লিখুন",
+    "saveChanges": "পরিবর্তন সংরক্ষণ করুন"
+  },
+  "editTask": {
+    "alerts": {
+      "invalidId": "অবৈধ কাজের আইডি। ফিরে গিয়ে কাজের তালিকা থেকে আবার চেষ্টা করুন।",
+      "missingId": "কাজের আইডি নেই। ফিরে গিয়ে কাজের তালিকা থেকে আবার চেষ্টা করুন।",
+      "tryAgain": "অনুগ্রহ করে আবার চেষ্টা করুন।",
+      "updateFailed": "কাজ হালনাগাদ করা যায়নি",
+      "voiceInput": "ভয়েস ইনপুট",
+      "voiceInputSoon": "ভয়েস ইনপুট শীঘ্রই আসছে।"
+    },
+    "customTaskPlaceholder": "কাস্টম কাজ",
+    "header": "কাজ সম্পাদনা করুন",
+    "instructionLabel": "নির্দেশনা যোগ করুন",
+    "instructionPlaceholder": "কাজের নির্দেশনা লিখুন...",
+    "repeat": "পুনরাবৃত্তি",
+    "repeatOptions": {
+      "daily": "প্রতিদিন",
+      "weekly": "সপ্তাহিক"
+    },
+    "selectFarm": "খামার নির্বাচন করুন",
+    "selectType": "কাজের ধরন নির্বাচন করুন",
+    "setTime": "সময় নির্ধারণ করুন",
+    "sheds": {
+      "cow": "গরুর শেড",
+      "goat": "ছাগলের শেড",
+      "poultry": "মুরগির শেড"
+    },
+    "submit": "কাজ হালনাগাদ করুন",
+    "types": {
+      "cleaning": "পরিষ্কার",
+      "feeding": "খাদ্য প্রদান",
+      "health": "স্বাস্থ্য পরীক্ষা",
+      "hygiene": "পরিচ্ছন্নতা",
+      "vaccination": "টিকাদান",
+      "water": "পানি সরবরাহ"
+    },
+    "workEnd": "কাজ শেষ",
+    "workStart": "কাজ শুরু"
+  },
+  "errorBoundary": {
+    "description": "চিন্তা করবেন না, আপনার তথ্য নিরাপদ।",
+    "title": "কিছু ভুল হয়েছে",
+    "tryAgain": "আবার চেষ্টা করুন"
+  },
+  "faqs": {
+    "empty": "এই বিভাগে কোনো প্রশ্ন নেই",
+    "loadError": "প্রশ্নোত্তর লোড করা যায়নি",
+    "tabs": {
+      "doctor": "ডাক্তার সংযোগ",
+      "general": "সাধারণ",
+      "photo": "ফটো ডায়াগনোসিস"
+    },
+    "title": "সাধারণ জিজ্ঞাসা"
+  },
+  "forgot": {
+    "emailLabel": "ইমেইল",
+    "errors": {
+      "failed": "OTP পাঠানো যায়নি। আবার চেষ্টা করুন।",
+      "invalidEmail": "সঠিক ইমেইল ঠিকানা লিখুন।",
+      "required": "ইমেইল আবশ্যক।"
+    },
+    "submit": "পাসওয়ার্ড রিসেট করুন",
+    "subtitle": "পাসওয়ার্ড রিসেট কোড পেতে আপনার ইমেইল ঠিকানা লিখুন।",
+    "title": "পাসওয়ার্ড ভুলে গেছেন?"
+  },
+  "helpSupport": {
+    "contact": {
+      "subtitle": "আমাদের টিম থেকে সাহায্য নিন",
+      "title": "সাপোর্টে যোগাযোগ করুন"
+    },
+    "faqs": {
+      "subtitle": "সাধারণ প্রশ্নোত্তর",
+      "title": "সচরাচর জিজ্ঞাসা"
+    },
+    "myReports": {
+      "subtitle": "আপনার জমা দেওয়া রিপোর্ট দেখুন",
+      "title": "আমার রিপোর্ট"
+    },
+    "report": {
+      "subtitle": "সমস্যা বা অপব্যবহার জানান",
+      "title": "সমস্যা জানান"
+    },
+    "title": "সাহায্য ও সাপোর্ট"
+  },
+  "hintRow": {
+    "title": "সম্পাদনা করে দেখুন"
+  },
+  "home": {
+    "animals": {
+      "addFirst": "আপনার প্রথম পশু যোগ করুন",
+      "empty": "এখনো কোনো পশু যোগ করা হয়নি"
+    },
+    "appointments": {
+      "bookConsult": "একটি পরামর্শ বুক করুন",
+      "consultation": "পরামর্শ",
+      "doctor": "ডাক্তার",
+      "empty": "কোনো আসন্ন অ্যাপয়েন্টমেন্ট নেই"
+    },
+    "greeting": "শুভ সকাল",
+    "referral": {
+      "alerts": {
+        "claimFailMsg": "কোডটি অবৈধ বা ইতিমধ্যে ব্যবহৃত হতে পারে।",
+        "claimFailTitle": "দাবি করা যায়নি",
+        "enterCodeMsg": "অনুগ্রহ করে দাবি করার জন্য একটি রেফারেল কোড লিখুন।",
+        "enterCodeTitle": "কোড লিখুন",
+        "invalidCodeMsg": "রেফারেল কোড ৪-১২টি অক্ষর ও সংখ্যার হয়।",
+        "invalidCodeTitle": "অবৈধ কোড",
+        "successMsg": "রেফারেল কোড দাবি করা হয়েছে!",
+        "successTitle": "সফল"
+      },
+      "claim": "দাবি করুন",
+      "earned": "আপনি রেফারের মাধ্যমে ৳{{amount}} আয় করেছেন ({{count}} রেফার)",
+      "enterCode": "কোড লিখুন",
+      "haveCode": "কোড আছে?",
+      "perReferral": "প্রতিটি রেফারে ৳১০০ আয় করুন",
+      "referNow": "এখনই রেফার করুন",
+      "shareMsg": "গবাডিতে আমার সাথে যোগ দিন! সাইন আপ করতে আমার রেফারেল কোড {{code}} ব্যবহার করুন: {{link}}",
+      "title": "বন্ধুকে রেফার করুন আর আয় করুন"
+    },
+    "sections": {
+      "myAnimals": "আমার গবাদি পশু",
+      "myAppointments": "আমার অ্যাপয়েন্টমেন্ট",
+      "todaysTask": "আজকের কাজ",
+      "viewAll": "সব দেখুন"
+    },
+    "tasks": {
+      "add": "কাজ যোগ করুন",
+      "empty": "আজকের জন্য কোনো কাজ নেই",
+      "markFailedMsg": "অনুগ্রহ করে আবার চেষ্টা করুন।",
+      "markFailedTitle": "চিহ্নিত করা যায়নি",
+      "markedMsg": "আপনার কাজটি চিহ্নিত করা হয়েছে।",
+      "markedTitle": "কাজ চিহ্নিত হয়েছে",
+      "viewAll": "সব দেখুন"
+    },
+    "weather": {
+      "defaultPlace": "মুন্সিগঞ্জ",
+      "high": "সর্বোচ্চ:",
+      "humidity": "আর্দ্রতা",
+      "low": "সর্বনিম্ন:",
+      "precipitation": "বৃষ্টিপাত",
+      "pressure": "চাপ",
+      "sunrise": "সূর্যোদয়",
+      "sunset": "সূর্যাস্ত",
+      "title": "খামারের আবহাওয়া - {{place}}",
+      "wind": "বাতাস"
+    }
+  },
+  "legalAbout": {
+    "about": {
+      "subtitle": "আমাদের দৃষ্টিভঙ্গি ও লক্ষ্য",
+      "title": "অ্যাপ সম্পর্কে"
+    },
+    "terms": {
+      "subtitle": "শর্তাবলি",
+      "title": "সেবার শর্তাবলি"
+    },
+    "title": "আইনি ও তথ্য"
+  },
+  "locationSheet": {
+    "helper": "কাছাকাছি প্রাসঙ্গিক ডাক্তার ও সেবা দেখতে আপনার এলাকা বেছে নিন।",
+    "save": "পরিবর্তন সংরক্ষণ করুন",
+    "title": "এলাকা নির্বাচন করুন",
+    "typePlaceholder": "অথবা আপনার এলাকা লিখুন"
+  },
+  "login": {
+    "divider": "অথবা এর মাধ্যমে সাইন ইন করুন",
+    "emailLabel": "ইমেইল",
+    "forgotPassword": "পাসওয়ার্ড ভুলে গেছেন?",
+    "invalidCreds": "ভুল তথ্য। অনুগ্রহ করে আবার চেষ্টা করুন।",
+    "invalidEmail": "অনুগ্রহ করে সঠিক ইমেইল ঠিকানা লিখুন।",
+    "invalidPhone": "অনুগ্রহ করে সঠিক ১১ সংখ্যার বাংলাদেশি ফোন নম্বর লিখুন (যেমন, 01712345678)।",
+    "noAccount": "অ্যাকাউন্ট নেই?",
+    "passwordLabel": "পাসওয়ার্ড*",
+    "phoneLabel": "ফোন নম্বর*",
+    "phonePlaceholder": "ফোন নম্বর",
+    "rememberMe": "আমাকে সাইন ইন থাকতে দিন",
+    "signIn": "সাইন ইন",
+    "signUp": "সাইন আপ",
+    "submit": "সাইন ইন",
+    "welcome": "আবারও স্বাগতম!"
+  },
+  "market": {
+    "active": "সক্রিয়",
+    "addListing": "তালিকা যোগ করুন",
+    "age": "বয়স",
+    "bookAnimal": "পশু বুক করুন",
+    "buy": "কিনুন",
+    "buyAnimal": "পশু কিনুন",
+    "categories": {
+      "animals": "পশু",
+      "dairy": "দুগ্ধজাত",
+      "equipments": "সরঞ্জাম",
+      "food": "খাদ্য",
+      "proteins": "প্রোটিন",
+      "vaccines": "টিকা"
+    },
+    "chips": {
+      "all_one": "সব ({{count}})",
+      "all_other": "সব ({{count}})",
+      "bull_one": "ষাঁড় ({{count}})",
+      "bull_other": "ষাঁড় ({{count}})",
+      "calf_one": "বাছুর ({{count}})",
+      "calf_other": "বাছুর ({{count}})"
+    },
+    "clearAll": "সব মুছুন",
+    "empty": {
+      "noListingsDesc": "আপনি এখনো কিছু বিক্রির জন্য তালিকাভুক্ত করেননি।",
+      "noListingsTitle": "এখনো কোনো তালিকা নেই",
+      "nothingDesc": "এই ক্যাটাগরিতে এখন কোনো আইটেম মেলে না।",
+      "nothingTitle": "এখনো কিছু নেই"
+    },
+    "fallback": {
+      "cattle": "গরু",
+      "feedMed": "খাদ্য/ওষুধ",
+      "seller": "বিক্রেতা"
+    },
+    "filter": "ফিল্টার",
+    "filters": "ফিল্টার",
+    "filtersActive": "ফিল্টার সক্রিয়",
+    "filtersActiveResults_one": "ফিল্টার সক্রিয় — {{count}}টি ফলাফল",
+    "filtersActiveResults_other": "ফিল্টার সক্রিয় — {{count}}টি ফলাফল",
+    "justNow": "এইমাত্র",
+    "liveWeight": "লাইভ ওজন",
+    "max": "সর্বোচ্চ",
+    "me": "আমি",
+    "message": "বার্তা",
+    "min": "সর্বনিম্ন",
+    "myCart": "আমার কার্ট",
+    "myFarm": "আমার খামার",
+    "myListings": "আমার তালিকা",
+    "notAvailable": "প্রযোজ্য নয়",
+    "priceRange": "দামের পরিসর (৳)",
+    "reset": "রিসেট",
+    "searchPlaceholder": "কিছুও খুঁজুন....",
+    "sell": "বিক্রি করুন",
+    "showResults_one": "{{count}}টি ফলাফল দেখান",
+    "showResults_other": "{{count}}টি ফলাফল দেখান",
+    "species": "প্রজাতি",
+    "title": "বাজার",
+    "trending": "সর্বাধিক ট্রেন্ডিং পশু",
+    "weightKg": "{{weight}} কেজি"
+  },
+  "medicalRecords": {
+    "empty": "এখনো কোনো চিকিৎসা রেকর্ড আপলোড করা হয়নি।",
+    "permissionBody": "ডকুমেন্ট আপলোড করতে অনুগ্রহ করে ফটো লাইব্রেরি অ্যাক্সেসের অনুমতি দিন।",
+    "permissionTitle": "অনুমতি প্রয়োজন",
+    "title": "চিকিৎসা রেকর্ড",
+    "tooLarge": "ছবি খুব বড় — অনুগ্রহ করে ছোট ছবি নির্বাচন করুন।",
+    "tryAgain": "অনুগ্রহ করে আবার চেষ্টা করুন।",
+    "upload": "＋ ডকুমেন্ট আপলোড করুন",
+    "uploadFailedTitle": "আপলোড ব্যর্থ হয়েছে"
+  },
+  "monthPicker": {
+    "cancel": "বাতিল",
+    "confirm": "নিশ্চিত করুন",
+    "month": "মাস",
+    "year": "বছর"
+  },
+  "myAnimalDetail": {
+    "addToMarket": "মার্কেটপ্লেসে যোগ করুন",
+    "addedMessage": "{{name}} গবাদি মার্কেটপ্লেসে তালিকাভুক্ত করা হয়েছে।",
+    "addedTitle": "মার্কেটপ্লেসে যোগ করা হয়েছে",
+    "age": "বয়স",
+    "animal": "পশু",
+    "basicInfo": "মৌলিক তথ্য",
+    "breed": "জাত",
+    "cancel": "বাতিল",
+    "color": "রঙ",
+    "delete": "মুছুন",
+    "deleteMessage": "{{name}} কি আপনার খামার থেকে সরাবেন?",
+    "deleteTitle": "পশু মুছুন",
+    "dob": "জন্ম তারিখ",
+    "editDetails": "পশুর বিস্তারিত সম্পাদনা করুন",
+    "gender": "লিঙ্গ",
+    "healthy": "সুস্থ",
+    "joinedFarm": "খামারে যোগদান",
+    "liveWeight": "জীবন্ত ওজন",
+    "livestock": "গবাদি পশু",
+    "negotiable": "(আলোচনা সাপেক্ষে/জীবন্ত ওজন)",
+    "pricePerKg": "কেজি প্রতি দাম",
+    "shareDetails": "বিস্তারিত শেয়ার করুন",
+    "shareMessage": "গবাদিতে {{name}} ({{breed}}) দেখুন! জীবন্ত ওজন: {{weight}}।",
+    "source": "উৎস",
+    "stage": "পর্যায়",
+    "thisAnimal": "এই পশু"
+  },
+  "myAppointments": {
+    "dates": {
+      "today": "আজ",
+      "yesterday": "গতকাল"
+    },
+    "defaults": {
+      "animal": "পশু",
+      "doctor": "ডাক্তার"
+    },
+    "empty": {
+      "past": "কোনো অতীত অ্যাপয়েন্টমেন্ট নেই",
+      "upcoming": "কোনো আসন্ন অ্যাপয়েন্টমেন্ট নেই"
+    },
+    "status": {
+      "cancelled": "বাতিল",
+      "completed": "সম্পন্ন",
+      "rescheduled": "পুনর্নির্ধারিত",
+      "upcoming": "আসন্ন"
+    },
+    "tabs": {
+      "past": "অতীত",
+      "upcoming": "আসন্ন"
+    },
+    "title": "আমার অ্যাপয়েন্টমেন্ট"
+  },
+  "myOrders": {
+    "browse": "মার্কেটপ্লেস দেখুন",
+    "emptyDescription": "আপনি এখনো কোনো অর্ডার দেননি।",
+    "emptyTitle": "এখনো কোনো অর্ডার নেই",
+    "title": "আমার অর্ডার",
+    "total": "মোট"
+  },
+  "myReports": {
+    "count_one": "{{count}}টি রিপোর্ট",
+    "count_other": "{{count}}টি রিপোর্ট",
+    "empty": {
+      "description": "আপনার জমাকৃত রিপোর্ট স্ট্যাটাস সহ এখানে দেখা যাবে।",
+      "title": "এখনো কোনো রিপোর্ট নেই"
+    },
+    "loadError": "আপনার রিপোর্ট লোড করা যায়নি।",
+    "months": {
+      "apr": "এপ্রিল",
+      "aug": "আগস্ট",
+      "dec": "ডিসেম্বর",
+      "feb": "ফেব্রুয়ারি",
+      "jan": "জানুয়ারি",
+      "jul": "জুলাই",
+      "jun": "জুন",
+      "mar": "মার্চ",
+      "may": "মে",
+      "nov": "নভেম্বর",
+      "oct": "অক্টোবর",
+      "sep": "সেপ্টেম্বর"
+    },
+    "reportIssue": "সমস্যার রিপোর্ট করুন",
+    "retry": "আবার চেষ্টা করুন",
+    "status": {
+      "closed": "বন্ধ",
+      "inProgress": "চলমান",
+      "open": "খোলা"
+    },
+    "title": "আমার রিপোর্ট",
+    "updating": "· হালনাগাদ হচ্ছে…"
+  },
+  "myTask": {
+    "addTask": "কাজ যোগ করুন",
+    "alerts": {
+      "deleteFailed": "কাজ মুছে ফেলা যায়নি",
+      "tryAgain": "অনুগ্রহ করে আবার চেষ্টা করুন।",
+      "updateFailed": "কাজ আপডেট করা যায়নি"
+    },
+    "cowShed": "গরুশালা",
+    "deleteModal": {
+      "cancel": "বাতিল",
+      "confirm": "হ্যাঁ, মুছুন",
+      "deleting": "মুছে ফেলা হচ্ছে…",
+      "message": "আপনি কি সত্যিই \"{{title}}\" মুছে ফেলতে চান? এই কাজটি পূর্বাবস্থায় ফেরানো যাবে না।",
+      "title": "কাজ মুছবেন?"
+    },
+    "editTask": "কাজ সম্পাদনা করুন",
+    "empty": {
+      "subtitle": "{{date}} তারিখে আপনার কোনো কাজ নেই",
+      "title": "নতুন কাজ নির্ধারণ করুন"
+    },
+    "filters": {
+      "all_one": "সব কাজ ({{count}})",
+      "all_other": "সব কাজ ({{count}})",
+      "completed_one": "সম্পন্ন ({{count}})",
+      "completed_other": "সম্পন্ন ({{count}})",
+      "pending_one": "মুলতবি ({{count}})",
+      "pending_other": "মুলতবি ({{count}})"
+    },
+    "markDone": "সম্পন্ন চিহ্নিত করুন",
+    "sections": {
+      "all": "সব কাজ",
+      "completed": "সম্পন্ন কাজ",
+      "pending": "মুলতবি কাজ"
+    },
+    "title": "আমার কাজ",
+    "today": "আজ",
+    "workEnd": "কাজ শেষ",
+    "workStart": "কাজ শুরু"
+  },
+  "myTreatment": {
+    "alerts": {
+      "cancelFailedMessage": "অ্যাপয়েন্টমেন্ট বাতিল করা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।",
+      "cancelFailedTitle": "বাতিল করা যায়নি"
+    },
+    "appointment": "অ্যাপয়েন্টমেন্ট",
+    "bookedOn": "বুকিং তারিখ",
+    "defaultDoctor": "ডাক্তার",
+    "empty": {
+      "noMatch": "আপনার অনুসন্ধানের সাথে মিলে এমন কোনো অ্যাপয়েন্টমেন্ট নেই।",
+      "none": "এখনো কোনো অ্যাপয়েন্টমেন্ট নেই।",
+      "notFound": "কোনো অ্যাপয়েন্টমেন্ট পাওয়া যায়নি।"
+    },
+    "filters": {
+      "all": "সব",
+      "medicine": "ওষুধ",
+      "upcoming": "আসন্ন"
+    },
+    "location": "অবস্থান",
+    "onlineVisit": "অনলাইন পরামর্শ",
+    "paid": "(পরিশোধিত)",
+    "physicalVisit": "সরাসরি পরামর্শ",
+    "searchPlaceholder": "ডাক্তার খুঁজুন",
+    "status": {
+      "completed": "সম্পন্ন",
+      "upcoming": "আসন্ন"
+    },
+    "title": "আমার চিকিৎসা"
+  },
+  "notificationPreferences": {
+    "alerts": {
+      "error": "ত্রুটি",
+      "updateFailed": "পছন্দসমূহ আপডেট করা যায়নি"
+    },
+    "items": {
+      "hygieneReminders": {
+        "description": "নির্ধারিত কাজের রিমাইন্ডার",
+        "title": "পরিচ্ছন্নতার রিমাইন্ডার"
+      },
+      "systemUpdates": {
+        "description": "অনুরোধ ও সাড়া সংক্রান্ত আপডেট",
+        "title": "সাহায্য"
+      },
+      "taskReminders": {
+        "description": "নির্ধারিত কাজের রিমাইন্ডার",
+        "title": "কাজের রিমাইন্ডার"
+      },
+      "vaccinationReminders": {
+        "description": "বৃষ্টি, তাপ ও বাতাসের আপডেট",
+        "title": "গবাদি পশুর স্বাস্থ্য"
+      },
+      "weatherAlerts": {
+        "description": "বৃষ্টি, তাপ ও বাতাসের আপডেট",
+        "title": "আবহাওয়া"
+      }
+    },
+    "loadError": "পছন্দসমূহ লোড করা যায়নি",
+    "tabs": {
+      "all": "সব",
+      "health": "স্বাস্থ্য",
+      "help": "সাহায্য",
+      "hygiene": "পরিচ্ছন্নতা",
+      "tasks": "কাজ"
+    },
+    "title": "নোটিফিকেশন সেটিংস",
+    "tryAgain": "আবার চেষ্টা করুন"
+  },
+  "notifications": {
+    "earlier": "আগের",
+    "empty": "এখনো কোনো নোটিফিকেশন নেই",
+    "loadFailed": "নোটিফিকেশন লোড করা যায়নি",
+    "tabs": {
+      "all": "সব",
+      "health": "স্বাস্থ্য",
+      "help": "সাহায্য",
+      "hygiene": "স্বাস্থ্যবিধি",
+      "tasks": "কাজ"
+    },
+    "thisWeek": "এই সপ্তাহ",
+    "title": "নোটিফিকেশন",
+    "today": "আজ"
+  },
+  "onboarding": {
+    "features": {
+      "healthCheckup": {
+        "subtitle": "নিয়মিত স্বাস্থ্য পর্যবেক্ষণ",
+        "title": "স্বাস্থ্য পরীক্ষা"
+      },
+      "productivity": {
+        "subtitle": "সুখী গবাদি পশু, ভালো ফলন",
+        "title": "উন্নত উৎপাদনশীলতা"
+      },
+      "timelyTreatment": {
+        "subtitle": "রিমাইন্ডার ও রেকর্ড",
+        "title": "সময়মতো চিকিৎসা"
+      }
+    },
+    "getStarted": "শুরু করুন",
+    "next": "পরবর্তী",
+    "skip": "বাদ দিন",
+    "slides": {
+      "slide1": {
+        "subtitle": "আপনার গবাদি পশুকে স্বাস্থ্যবান ও উৎপাদনশীল রাখতে বিশেষজ্ঞ পরামর্শ, রিমাইন্ডার ও চিকিৎসা পান",
+        "titlePart1": "সময়মতো চিকিৎসা,",
+        "titlePart2": "আরও শক্তিশালী আগামী"
+      },
+      "slide2": {
+        "subtitle": "সহজ পরিকল্পনায় আপনার পাল স্বাস্থ্যবান ও সুশৃঙ্খল রাখুন — সময় বাঁচান এবং নিয়ন্ত্রণে থাকুন।",
+        "titleFull": "আপনার খামারের প্রয়োজনীয় সবকিছু\nএকটি অ্যাপে"
+      }
+    }
+  },
+  "orderSuccess": {
+    "back": "← ফিরে যান",
+    "detailBill": "বিস্তারিত বিল",
+    "successSubtitle": "অভিনন্দন! আপনার অর্ডার সফলভাবে দেওয়া হয়েছে। আমাদের একজন এজেন্ট পরবর্তী এক ঘণ্টার মধ্যে আপনার সাথে যোগাযোগ করবেন।",
+    "successTitle": "অর্ডার সফল হয়েছে"
+  },
+  "otp": {
+    "didNotReceive": "OTP পাননি?",
+    "email": "ইমেইল",
+    "phoneNumber": "ফোন নম্বর",
+    "resend": "OTP আবার পাঠান",
+    "resendFailed": "OTP আবার পাঠানো যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।",
+    "resendIn": "{{seconds}}s পর OTP আবার পাঠান",
+    "resending": "পাঠানো হচ্ছে...",
+    "subtitle": "আমরা আপনার {{target}}-এ এইমাত্র পাঠানো যাচাইকোডটি লিখুন",
+    "title": "OTP যাচাইকরণ",
+    "verify": "যাচাই করুন",
+    "verifyFailed": "OTP যাচাই করা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।"
+  },
+  "otpVerification": {
+    "accountLinked": "অ্যাকাউন্ট লিংক হয়েছে!",
+    "addAnotherMethod": "আরেকটি পদ্ধতি যোগ করুন",
+    "alerts": {
+      "error": "ত্রুটি",
+      "idNotFound": "পেমেন্ট পদ্ধতির আইডি পাওয়া যায়নি",
+      "invalidOtp": "অবৈধ ওটিপি। অনুগ্রহ করে আবার চেষ্টা করুন।"
+    },
+    "defaultProvider": "পেমেন্ট পদ্ধতি",
+    "illustrationSubtitle": "আপনার কোড হলো",
+    "illustrationTitle": "যাচাই",
+    "instruction": "আপনার ফোন নম্বরে আমরা যে যাচাইকরণ কোড পাঠিয়েছি সেটি লিখুন",
+    "linkedBadge": "{{provider}} সফলভাবে লিংক হয়েছে",
+    "resendIn": "{{seconds}} সেকেন্ড পর ওটিপি পুনরায় পাঠান",
+    "resendOtp": "ওটিপি পুনরায় পাঠান",
+    "resendQuestion": "ওটিপি পাননি?",
+    "successDesc": "আপনার {{provider}} অ্যাকাউন্টটি, যার শেষ নম্বর {{lastDigits}}, সফলভাবে লিংক হয়েছে। এখন আপনি এটি রাইড ও পেমেন্টের জন্য ব্যবহার করতে পারেন।",
+    "title": "ওটিপি যাচাই",
+    "verifiedDetail": "{{phone}} · যাচাইকৃত",
+    "verify": "যাচাই করুন"
+  },
+  "passwordSetup": {
+    "confirmLabel": "পাসওয়ার্ড নিশ্চিত করুন*",
+    "continue": "এগিয়ে যান",
+    "createAccountError": "অ্যাকাউন্ট তৈরি করা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।",
+    "doctorFallback": "ডাক্তার",
+    "passwordLabel": "পাসওয়ার্ড*",
+    "passwordLength": "পাসওয়ার্ড কমপক্ষে 8 অক্ষরের হতে হবে।",
+    "passwordMismatch": "পাসওয়ার্ড দুটি মিলছে না।",
+    "passwordRequired": "পাসওয়ার্ড আবশ্যক।",
+    "welcome": "স্বাগতম"
+  },
+  "patientDetails": {
+    "age": "বয়স",
+    "alerts": {
+      "consultFailed": "পরামর্শ খোলা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।",
+      "error": "ত্রুটি",
+      "noOwner": "এই গবাদি পশুর কোনো মালিক পাওয়া যায়নি।"
+    },
+    "allTab": {
+      "empty": "এখনো কোনো কার্যকলাপ নথিভুক্ত করা হয়নি।",
+      "title": "সাম্প্রতিক কার্যকলাপ"
+    },
+    "color": "রঙ",
+    "doctorId": "ডাক্তার #{{id}}",
+    "emptyConsultations": "এখনো কোনো পরামর্শ নথিভুক্ত করা হয়নি।",
+    "emptyFiles": "এখনো কোনো ফাইল আপলোড করা হয়নি।",
+    "emptyLabTests": "এখনো কোনো ল্যাব টেস্ট নথিভুক্ত করা হয়নি।",
+    "emptyTreatments": "এখনো কোনো চিকিৎসা নথিভুক্ত করা হয়নি।",
+    "emptyVaccinations": "এখনো কোনো টিকাদান নথিভুক্ত করা হয়নি।",
+    "fileTypeFallback": "ফাইল",
+    "medicalEvent": "চিকিৎসা ঘটনা",
+    "medicines": "ওষুধসমূহ:",
+    "nextFollowUp": "পরবর্তি ফলো-আপ:",
+    "notFound": "রোগী খুঁজে পাওয়া যায়নি",
+    "patientFallback": "রোগী",
+    "prescriptionTitle": "প্রেসক্রিপশন ({{count}}টি ওষুধ)",
+    "species": "জাত",
+    "startConsultation": "পরামর্শ শুরু করুন",
+    "status": {
+      "completed": "সম্পন্ন",
+      "ongoing": "চলমান"
+    },
+    "statusLine": "স্ট্যাটাস: {{status}}",
+    "tabs": {
+      "all": "সব",
+      "consults": "পরামর্শ",
+      "files": "ফাইল",
+      "labTests": "ল্যাব টেস্ট",
+      "treatments": "চিকিৎসা",
+      "vaccination": "টিকাদান"
+    },
+    "title": "রোগীর বিবরণ",
+    "titles": {
+      "consultations": "পরামর্শসমূহ",
+      "labTests": "ল্যাব টেস্ট",
+      "treatments": "চিকিৎসাসমূহ",
+      "vaccinations": "টিকাদানসমূহ"
+    },
+    "weight": "ওজন"
+  },
+  "paymentMethod": {
+    "bkash": "বিকাশ",
+    "payNow": "এখনই পরিশোধ করুন",
+    "sectionTitle": "পেমেন্ট পদ্ধতি",
+    "title": "পেমেন্ট"
+  },
+  "paymentMethods": {
+    "addAccount": "অ্যাকাউন্ট যোগ করুন",
+    "alerts": {
+      "cancel": "বাতিল",
+      "error": "ত্রুটি",
+      "remove": "মুছুন",
+      "removeConfirm": "আপনি কি এই পেমেন্ট পদ্ধতিটি মুছে ফেলতে চান?",
+      "removeFailed": "পেমেন্ট পদ্ধতি মুছে ফেলা যায়নি",
+      "removeTitle": "পেমেন্ট পদ্ধতি মুছুন",
+      "setDefaultFailed": "ডিফল্ট হিসেবে সেট করা যায়নি"
+    },
+    "defaultBadge": "ডিফল্ট",
+    "empty": "এখনো কোনো পেমেন্ট পদ্ধতি যোগ করা হয়নি",
+    "loadFailed": "পেমেন্ট পদ্ধতি লোড করা যায়নি",
+    "setAsDefault": "ডিফল্ট হিসেবে সেট করুন",
+    "title": "পেমেন্ট পদ্ধতি"
+  },
+  "paymentSuccess": {
+    "back": "← ফিরে যান",
+    "detailBill": "বিস্তারিত বিল",
+    "successSubtitle": "আপনার ৳ 120 পেমেন্ট সফলভাবে সম্পন্ন হয়েছে। আপনার স্লট নিশ্চিত হয়েছে।",
+    "successTitle": "পেমেন্ট সফল হয়েছে"
+  },
+  "prescription": {
+    "addMedication": "ওষুধ যোগ করুন",
+    "dosage": "মাত্রা",
+    "duration": "মেয়াদ",
+    "frequency": "কতবার",
+    "instructions": "নির্দেশনা",
+    "instructionsPlaceholder": "কৃষকের জন্য নির্দেশনা যোগ করুন...",
+    "medicationName": "ওষুধের নাম*",
+    "namePlaceholder": "ওষুধের নাম লিখুন",
+    "noSummary": "এখনো কোনো সারাংশ নেই",
+    "noteLabel": "ওষুধের নোট (ঐচ্ছিক)",
+    "quantity": "পরিমাণ",
+    "send": "প্রেসক্রিপশন পাঠান",
+    "summary": "সারাংশ: {{summary}}",
+    "title": "প্রেসক্রিপশন",
+    "units": {
+      "days": "দিন",
+      "ml": "মিলি",
+      "vial": "ভায়াল"
+    }
+  },
+  "privacyPolicy": {
+    "lastUpdated": "সর্বশেষ হালনাগাদ: {{date}}",
+    "s1": {
+      "body": "গবাদি অ্যাকাউন্ট তৈরি বা আমাদের সেবা ব্যবহারের সময় আপনার দেওয়া তথ্য সংগ্রহ করতে পারে, যার মধ্যে রয়েছে আপনার নাম, ফোন নম্বর, ইমেইল ঠিকানা, খামারের বিবরণ, গবাদি পশুর তথ্য, অবস্থান, ছবি, ভিডিও এবং আপনার কৃষিকাজ সংক্রান্ত অন্যান্য তথ্য। পশুর স্বাস্থ্য, টিকাদান, খাদ্যাভ্যাস, চিকিৎসা, মার্কেটপ্লেস তালিকা, ক্রয়, বিক্রয় এবং ভেটেরিনারিয়ান বা সেবা প্রদানকারীদের সাথে আলাপচারিতার তথ্যও সংগ্রহ করা হতে পারে। ডিভাইসের ধরন, অপারেটিং সিস্টেম, অ্যাপ ব্যবহার ও ডায়াগনস্টিক তথ্যের মতো কারিগরি তথ্য অ্যাপ রক্ষণাবেক্ষণ ও উন্নয়নের জন্য সংগ্রহ করা হতে পারে।",
+      "heading": "1. আমরা যেসব তথ্য সংগ্রহ করি"
+    },
+    "s2": {
+      "body": "গবাদি ও এর ফিচার প্রদান, পরিচালনা, রক্ষণাবেক্ষণ ও উন্নয়নের জন্য আমরা আপনার তথ্য ব্যবহার করি। এর মধ্যে থাকতে পারে অ্যাকাউন্ট ব্যবস্থাপনা, গবাদি পশুর রেকর্ড সংরক্ষণ, রিমাইন্ডার ও ব্যক্তিগতকৃত পশু ব্যবস্থাপনার তথ্য প্রদান, ভেটেরিনারিয়ান ও সেবা প্রদানকারীদের সাথে যোগাযোগ সহজতর করা, মার্কেটপ্লেস কার্যক্রম সমর্থন, লেনদেন প্রক্রিয়াকরণ, আমাদের এআই-চালিত ফিচার উন্নয়ন এবং কাস্টমার সাপোর্ট প্রদান। ব্যবহারকারীরা অ্যাপটি কীভাবে ব্যবহার করেন তা বোঝা, সেবা উন্নয়ন, অপব্যবহার প্রতিরোধ এবং গবাদির নিরাপত্তা ও নির্ভরযোগ্যতা রক্ষায়ও আমরা তথ্য ব্যবহার করতে পারি।",
+      "heading": "2. আপনার ব্যক্তিগত তথ্যের ব্যবহার"
+    },
+    "s3": {
+      "body": "সেবা প্রদানের জন্য প্রয়োজন হলে গবাদি ভেটেরিনারিয়ান, মার্কেটপ্লেসের বিক্রেতা বা ক্রেতা, ডেলিভারি ও পেমেন্ট সেবা প্রদানকারী, প্রযুক্তি ও ক্লাউড সেবা প্রদানকারী, অ্যানালিটিক্স প্রদানকারী এবং অন্যান্য বিশ্বস্ত সেবা অংশীদারদের সাথে প্রাসঙ্গিক তথ্য ভাগ করতে পারে। সংশ্লিষ্ট সেবা বা ব্যবসায়িক উদ্দেশ্যে যুক্তিসঙ্গতভাবে প্রয়োজন হলে তবেই আমরা তথ্য ভাগ করি। আইন, আইনি প্রক্রিয়ার দাবি থাকলে বা গবাদি, আমাদের ব্যবহারকারী, গবাদি পশু বা অন্যান্য পক্ষের অধিকার, নিরাপত্তা ও সুরক্ষা রক্ষায় আমরা তথ্য প্রকাশ করতে পারি। তৃতীয় পক্ষের স্বতন্ত্র মার্কেটিং উদ্দেশ্যে আমরা আপনার ব্যক্তিগত তথ্য বিক্রি করি না।",
+      "heading": "3. আপনার ব্যক্তিগত তথ্য প্রকাশ"
+    },
+    "title": "গোপনীয়তা নীতি"
+  },
+  "profile": {
+    "counts": {
+      "buffalo": "মহিষ",
+      "cow": "গরু",
+      "goat": "ছাগল"
+    },
+    "doctor": {
+      "nameFallback": "ডা. ডেভিড প্যাটেল",
+      "reviews": "({{count}} রিভিউ)",
+      "specialtyFallback": "ভেটেরিনারি সার্জারি"
+    },
+    "farmer": {
+      "locationFallback": "লোকেশন যোগ করা হয়নি",
+      "nameFallback": "মিশাল উইলসন"
+    },
+    "header": "প্রোফাইল",
+    "logout": {
+      "cancel": "বাতিল",
+      "confirm": "লগ আউট",
+      "msg": "আপনি কি লগ আউট করতে চান?",
+      "title": "লগ আউট"
+    },
+    "menu": {
+      "edit": "সম্পাদনা",
+      "helpSupport": "সাহায্য ও সাপোর্ট",
+      "language": "ভাষা",
+      "legalAbout": "আইনি ও পরিচিতি",
+      "logout": "লগ আউট",
+      "myTask": "আমার কাজ",
+      "notification": "নোটিফিকেশন",
+      "personalInformation": "ব্যক্তিগত তথ্য",
+      "privacyPolicy": "গোপনীয়তা নীতি",
+      "referEarn": "রেফার করে আয়"
+    },
+    "stats": {
+      "consultations": "পরামর্শ",
+      "patients": "রোগী",
+      "yearsExperience": "বছরের অভিজ্ঞতা"
+    },
+    "subscription": {
+      "currentPlan": "বর্তমান প্ল্যান",
+      "nextBilling": "পরবর্তী বিলিং : ",
+      "section": "সাবস্ক্রিপশন"
+    },
+    "wallet": {
+      "section": "মানিব্যাগ",
+      "totalEarnings": "মোট আয়"
+    }
+  },
+  "profileDetails": {
+    "actions": {
+      "addMore": "আরও যোগ করুন",
+      "cancel": "বাতিল",
+      "delete": "মুছুন",
+      "savePhoto": "ছবি সংরক্ষণ করুন",
+      "seeAll": "সব দেখুন",
+      "tapToUpload": "ছবি আপলোড করতে ট্যাপ করুন"
+    },
+    "alerts": {
+      "credentialSavedMsg": "সনদের ছবি সফলভাবে সংরক্ষণ করা হয়েছে",
+      "credentialsDeletedMsg": "সনদপত্রগুলো সফলভাবে মুছে ফেলা হয়েছে",
+      "datesFailedMsg": "আপনার তারিখগুলো সংরক্ষণ করা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।",
+      "deleteCredentialsFailedMsg": "সনদপত্র মুছে ফেলা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।",
+      "deleteCredentialsMsg": "আপনি কি সব পেশাগত সনদপত্র মুছে ফেলতে চান?",
+      "deleteCredentialsTitle": "সনদপত্র মুছে ফেলুন",
+      "errorTitle": "ত্রুটি",
+      "permissionMsg": "ডকুমেন্ট আপলোড করতে অনুগ্রহ করে ফটো লাইব্রেরি ব্যবহারের অনুমতি দিন।",
+      "permissionTitle": "অনুমতি প্রয়োজন",
+      "photoTooLarge": "ছবিটি খুব বড়। অনুগ্রহ করে ছোট ছবি বেছে নিন।",
+      "saveFailedTitle": "সংরক্ষণ ব্যর্থ হয়েছে",
+      "savePhotoFailedMsg": "ছবি সংরক্ষণ করা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।",
+      "successTitle": "সফল হয়েছে"
+    },
+    "currentlyStudying": "আমি বর্তমানে এখানে পড়ছি",
+    "doctorFallback": "ডাক্তার",
+    "empty": {
+      "experiences": "কোনো অভিজ্ঞতা যোগ করা হয়নি",
+      "qualifications": "কোনো যোগ্যতা যোগ করা হয়নি",
+      "reviews": "এখনো কোনো রিভিউ নেই",
+      "specializations": "কোনো বিশেষজ্ঞ বিষয় যোগ করা হয়নি"
+    },
+    "fields": {
+      "academicCredentialsRequired": "শিক্ষাগত যোগ্যতা*",
+      "certifications": "সনদপত্র",
+      "endDate": "শেষ তারিখ",
+      "instituteName": "প্রতিষ্ঠানের নাম",
+      "location": "অবস্থান (গ্রাম/জেলা)",
+      "mobileNumber": "মোবাইল নম্বর",
+      "name": "আপনার নাম",
+      "startDate": "শুরুর তারিখ"
+    },
+    "months": {
+      "April": "এপ্রিল",
+      "August": "আগস্ট",
+      "December": "ডিসেম্বর",
+      "February": "ফেব্রুয়ারি",
+      "January": "জানুয়ারি",
+      "July": "জুলাই",
+      "June": "জুন",
+      "March": "মার্চ",
+      "May": "মে",
+      "November": "নভেম্বর",
+      "October": "অক্টোবর",
+      "September": "সেপ্টেম্বর"
+    },
+    "noData": "কোনো তথ্য নেই",
+    "noLocationAdded": "কোনো অবস্থান যোগ করা হয়নি",
+    "notProvided": "দেওয়া হয়নি",
+    "present": "বর্তমান",
+    "reviewer": {
+      "anonymous": "বেনামী"
+    },
+    "reviewsCount_one": "{{count}}টি রিভিউ",
+    "reviewsCount_other": "{{count}}টি রিভিউ",
+    "reviews_one": "{{count}}টি রিভিউ",
+    "reviews_other": "{{count}}টি রিভিউ",
+    "sections": {
+      "about": "সম্পর্কে",
+      "credentials": "পেশাগত সনদপত্র",
+      "experiences": "অভিজ্ঞতা",
+      "patientReviews": "রোগীদের রিভিউ",
+      "personalInfo": "ব্যক্তিগত তথ্য",
+      "qualifications": "যোগ্যতা",
+      "specialization": "বিশেষজ্ঞ বিষয়"
+    },
+    "stats": {
+      "consultations": "পরামর্শ",
+      "patients": "রোগী",
+      "yearsExperience": "বছরের অভিজ্ঞতা"
+    },
+    "tabs": {
+      "about": "সম্পর্কে",
+      "credentials": "পেশাগত সনদপত্র",
+      "experience": "অভিজ্ঞতা"
+    },
+    "title": "প্রোফাইল"
+  },
+  "profileEdit": {
+    "a11y": {
+      "addQualification": "যোগ্যতা যোগ করুন",
+      "addSpecialization": "বিশেষজ্ঞ বিষয় যোগ করুন",
+      "deleteExperience": "অভিজ্ঞতা মুছে ফেলুন",
+      "editExperience": "অভিজ্ঞতা সম্পাদনা করুন"
+    },
+    "actions": {
+      "addExperience": "অভিজ্ঞতা যোগ করুন",
+      "cancel": "বাতিল",
+      "updateExperience": "অভিজ্ঞতা আপডেট করুন"
+    },
+    "doctorFallback": "ডাক্তার",
+    "empty": {
+      "experiences": "এখনো কোনো অভিজ্ঞতা যোগ করা হয়নি",
+      "qualifications": "এখনো অন্যান্য কোনো যোগ্যতা যোগ করা হয়নি",
+      "specializations": "এখনো কোনো বিশেষজ্ঞ বিষয় যোগ করা হয়নি"
+    },
+    "errors": {
+      "expRequired": "আগে পদবি বা প্রতিষ্ঠানের নাম লিখুন",
+      "qualificationRequired": "আগে যোগ্যতা লিখুন",
+      "saveFailed": "পরিবর্তনগুলো সংরক্ষণ করা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।",
+      "specializationRequired": "আগে বিশেষজ্ঞ বিষয় লিখুন",
+      "title": "ত্রুটি"
+    },
+    "fields": {
+      "bio": "সম্পর্কে / জীবনী",
+      "description": "বিবরণ",
+      "district": "জেলা",
+      "duration": "সময়কাল",
+      "instituteName": "প্রতিষ্ঠানের নাম",
+      "name": "আপনার নাম",
+      "positionTitle": "পদবি",
+      "specialty": "বিশেষজ্ঞ বিষয়",
+      "upazilaVillage": "উপজেলা / গ্রাম",
+      "yearsExperience": "অভিজ্ঞতার বছর"
+    },
+    "noSpecialty": "কোনো বিশেষজ্ঞ বিষয় নেই",
+    "photo": {
+      "cameraPermission": "প্রোফাইল ছবি তুলতে ক্যামেরা ব্যবহারের অনুমতি প্রয়োজন।",
+      "cancel": "বাতিল",
+      "chooseOption": "একটি অপশন বেছে নিন",
+      "fromLibrary": "গ্যালারি থেকে বেছে নিন",
+      "libraryPermission": "প্রোফাইল ছবি বেছে নিতে ফটো লাইব্রেরি ব্যবহারের অনুমতি প্রয়োজন।",
+      "permissionTitle": "অনুমতি প্রয়োজন",
+      "selectFailedMsg": "ক্যামেরা বা ফটো গ্যালারি খোলা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।",
+      "selectFailedTitle": "ছবি বেছে নেওয়া যায়নি",
+      "takePhoto": "ছবি তুলুন",
+      "title": "প্রোফাইল ছবি পরিবর্তন করুন",
+      "uploadFailedMsg": "ছবি আপলোড করা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।",
+      "uploadFailedTitle": "আপলোড ব্যর্থ হয়েছে",
+      "uploadTooLarge": "ছবিটি খুব বড়। অনুগ্রহ করে ছোট ছবি বেছে নিন।"
+    },
+    "placeholders": {
+      "addQualification": "যোগ্যতা যোগ করুন...",
+      "addSpecialization": "বিশেষজ্ঞ বিষয় যোগ করুন...",
+      "bio": "রোগীদের কাছে নিজের কথা লিখুন...",
+      "certifications": "যেমন: DVM, BAU",
+      "description": "আপনার ভূমিকা ও অর্জন বর্ণনা করুন...",
+      "district": "যেমন: নারায়ণগঞ্জ",
+      "duration": "যেমন: জানুয়ারি 2020 - বর্তমান",
+      "experience": "যেমন: 5 বছর",
+      "instituteName": "যেমন: সিটি ভেট ক্লিনিক",
+      "licenseNumber": "লাইসেন্স নম্বর লিখুন...",
+      "name": "আপনার নাম লিখুন",
+      "otherInstitute": "যেমন: বাংলাদেশ কৃষি বিশ্ববিদ্যালয়",
+      "positionTitle": "যেমন: সিনিয়র ভেটেরিনারিয়ান",
+      "specialty": "যেমন: ভেটেরিনারি সার্জারি",
+      "upazila": "যেমন: বন্দর"
+    },
+    "reviews_one": "{{count}}টি রিভিউ",
+    "reviews_other": "{{count}}টি রিভিউ",
+    "saveChanges": "পরিবর্তন সংরক্ষণ করুন",
+    "sections": {
+      "certifications": "সনদপত্র",
+      "experiences": "অভিজ্ঞতা",
+      "licenseNumber": "লাইসেন্স নম্বর",
+      "otherQualifications": "অন্যান্য যোগ্যতা",
+      "personalInfo": "ব্যক্তিগত তথ্য",
+      "specializations": "বিশেষজ্ঞ বিষয়সমূহ"
+    },
+    "stats": {
+      "consultations": "পরামর্শ",
+      "patients": "রোগী",
+      "yearsExperience": "বছরের অভিজ্ঞতা"
+    },
+    "success": {
+      "saved": "পরিবর্তনগুলো সফলভাবে সংরক্ষণ করা হয়েছে",
+      "title": "সফল হয়েছে"
+    },
+    "tabs": {
+      "about": "সম্পর্কে",
+      "credentials": "সনদপত্র",
+      "experience": "অভিজ্ঞতা"
+    },
+    "title": "প্রোফাইল"
+  },
+  "referEarn": {
+    "action": "এখনই রেফার করে আয় করুন",
+    "codeFallback": "N/A",
+    "codeLabel": "আপনার রেফারেল কোড",
+    "heading": "বন্ধু রেফার করুন এবং আয় করুন",
+    "loadError": "রেফারেল তথ্য লোড করা যায়নি",
+    "pending": "বাকি আছে",
+    "referrals": "রেফারেল",
+    "shareWithCode": "গবাদি ফার্ম ম্যানেজমেন্ট অ্যাপে আমার সাথে যোগ দিন! বোনাস পুরস্কার পেতে আমার রেফারেল কোড {{code}} ব্যবহার করুন।",
+    "shareWithLink": "গবাদি ফার্ম ম্যানেজমেন্ট অ্যাপে আমার সাথে যোগ দিন! আমার রেফারেল লিংক ব্যবহার করুন: {{link}}",
+    "step1": "আপনার কোড বা আমন্ত্রণ লিংক কৃষক বন্ধুদের সাথে শেয়ার করুন।",
+    "step2": "তারা সাইন আপ করে প্রোফাইল সেটআপ সম্পন্ন করবে।",
+    "step3": "তারা সাইন আপ করে তাদের প্রথম পশু সেটআপ সম্পন্ন করবে।",
+    "subtitle": "আপনার কোড শেয়ার করুন এবং পুরস্কার আয় করুন",
+    "title": "রেফার করে আয় করুন",
+    "totalEarned": "মোট আয়"
+  },
+  "removeDiscount": {
+    "alerts": {
+      "error": "ত্রুটি",
+      "removeFailed": "ডিসকাউন্ট অপসারণ করা যায়নি"
+    },
+    "bodyText": "{{name}}-এর জন্য {{percent}}% ডিসকাউন্ট অপসারণ করা হবে এবং পরবর্তী অ্যাপয়েন্টমেন্টে প্রযোজ্য হবে না",
+    "bodyTitle": "এই ডিসকাউন্টটি অপসারণ করবেন?",
+    "cancel": "বাতিল",
+    "defaults": {
+      "owner": "মালিক",
+      "patient": "রোগী"
+    },
+    "owner": "মালিক: {{name}}",
+    "removeBtn": "ডিসকাউন্ট অপসারণ করুন",
+    "title": "ডিসকাউন্ট অপসারণ"
+  },
+  "reportIssues": {
+    "alerts": {
+      "attachmentTooLarge": "সংযুক্তি খুব বড়",
+      "attachmentTooLargeMsg": "সংকোচনের পরেও এই সংযুক্তিটি খুব বড়। অনুগ্রহ করে ছোট একটি ফাইল নির্বাচন করুন।",
+      "describeIssue": "অনুগ্রহ করে সমস্যাটি বিস্তারিত বর্ণনা করুন।",
+      "error": "ত্রুটি",
+      "fileTooLarge": "ফাইল খুব বড়",
+      "fileUnder900": "ফাইল 900 KB-এর চেয়ে ছোট হতে হবে। ছবি স্বয়ংক্রিয়ভাবে সংকুচিত হয়।",
+      "imageTooLarge": "ছবি 15 MB-এর চেয়ে ছোট হতে হবে।",
+      "missingInfo": "তথ্য অনুপস্থিত",
+      "ok": "ঠিক আছে",
+      "selectFileFailed": "ফাইলটি নির্বাচন করা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।",
+      "selectIssueType": "অনুগ্রহ করে একটি সমস্যার ধরন নির্বাচন করুন।",
+      "submitFailed": "রিপোর্ট জমা দিতে ব্যর্থ হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।",
+      "submitted": "রিপোর্ট জমা হয়েছে",
+      "submittedMsg": "রিপোর্টের জন্য ধন্যবাদ। আমাদের দল দ্রুত তদারকি করবে।",
+      "tooLarge413": "সংযুক্তি খুব বড় — ফাইল 1 MB-এর চেয়ে ছোট হতে হবে। অনুগ্রহ করে ছোট একটি ফাইল নির্বাচন করুন।"
+    },
+    "browseFile": "ফাইল ব্রাউজ করুন",
+    "descriptionLabel": "বিবরণ",
+    "descriptionPlaceholder": "অনুগ্রহ করে বিস্তারিত লিখুন কী হয়েছে",
+    "dragDrop": "ড্র্যাগ ও ড্রপ",
+    "dropdownPlaceholder": "যেমন: অ্যাপ কাজ করছে না",
+    "header": "সমস্যা জানান",
+    "submit": "রিপোর্ট জমা দিন",
+    "types": {
+      "animalSyncError": "পশুর রেকর্ড সিঙ্ক ত্রুটি",
+      "appNotWorking": "অ্যাপ কাজ করছে না",
+      "doctorConsultation": "ডাক্তার পরামর্শ সমস্যা",
+      "otherBug": "অন্যান্য কারিগরি বাগ",
+      "paymentIssue": "পেমেন্ট সমস্যা"
+    },
+    "uploadHint": "এখানে ফাইল নির্বাচন করে আপলোড করুন",
+    "whatHappened": "কী হয়েছে ?"
+  },
+  "resetPassword": {
+    "errors": {
+      "failed": "পাসওয়ার্ড রিসেট করা যায়নি। আবার চেষ্টা করুন।",
+      "mismatch": "পাসওয়ার্ড দুটি মিলছে না।",
+      "tooShort": "পাসওয়ার্ড অন্তত 8 অক্ষরের হতে হবে।"
+    },
+    "labels": {
+      "confirmPassword": "নিশ্চিতকরণ পাসওয়ার্ড*",
+      "password": "পাসওয়ার্ড*"
+    },
+    "submit": "পাসওয়ার্ড রিসেট করুন",
+    "subtitle": "নতুন পাসওয়ার্ড রিসেট করতে নিচে আপনার নতুন পাসওয়ার্ডটি দুবার লিখুন",
+    "title": "পাসওয়ার্ড রিসেট করুন"
+  },
+  "schedule": {
+    "appointmentCount_one": "{{count}}টি অ্যাপয়েন্টমেন্ট",
+    "appointmentCount_other": "{{count}}টি অ্যাপয়েন্টমেন্ট",
+    "clear": "মুছুন",
+    "consultationTypeLabel": "পরামর্শের ধরন",
+    "dayFull": {
+      "friday": "শুক্রবার",
+      "monday": "সোমবার",
+      "saturday": "শনিবার",
+      "sunday": "রবিবার",
+      "thursday": "বৃহস্পতিবার",
+      "tuesday": "মঙ্গলবার",
+      "wednesday": "বুধবার"
+    },
+    "dayLetters": {
+      "fri": "শ",
+      "mon": "স",
+      "sat": "শ",
+      "sun": "র",
+      "thu": "ব",
+      "tue": "ম",
+      "wed": "ব"
+    },
+    "dayShort": {
+      "fri": "শুক্র",
+      "mon": "সোম",
+      "sat": "শনি",
+      "sun": "রবি",
+      "thu": "বৃহস্পতি",
+      "tue": "মঙ্গল",
+      "wed": "বুধ"
+    },
+    "empty": {
+      "day": "এই দিনে কোনো অ্যাপয়েন্টমেন্ট নেই",
+      "list": "কোনো অ্যাপয়েন্টমেন্ট নির্ধারিত করা হয়নি"
+    },
+    "filter": "ফিল্টার",
+    "filterPanelTitle": "সময়সূচি ফিল্টার করুন",
+    "filters": {
+      "consultation": {
+        "all": "সব",
+        "chat": "চ্যাট",
+        "physical": "সরাসরি",
+        "video": "ভিডিও",
+        "voice": "ভয়েস"
+      },
+      "status": {
+        "all": "সব",
+        "cancelled": "বাতিল",
+        "completed": "সম্পন্ন",
+        "upcoming": "আসন্ন"
+      }
+    },
+    "fullCalendar": "সম্পূর্ণ ক্যালেন্ডার",
+    "listView": "তালিকা দৃশ্য",
+    "monthly": "মাসিক",
+    "months": {
+      "april": "এপ্রিল",
+      "august": "আগস্ট",
+      "december": "ডিসেম্বর",
+      "february": "ফেব্রুয়ারি",
+      "january": "জানুয়ারি",
+      "july": "জুলাই",
+      "june": "জুন",
+      "march": "মার্চ",
+      "may": "মে",
+      "november": "নভেম্বর",
+      "october": "অক্টোবর",
+      "september": "সেপ্টেম্বর"
+    },
+    "patient": "রোগী",
+    "statusLabel": "স্ট্যাটাস",
+    "title": "সময়সূচি",
+    "upcoming": "আসন্ন",
+    "yearly": "বার্ষিক"
+  },
+  "search": {
+    "hintMinChars": "খুঁজতে অন্তত 2 অক্ষর লিখুন।",
+    "noResults": "\"{{query}}\" পাওয়া যায়নি। অন্য পশু খুঁজুন বা মার্কেটপ্লেস দেখুন।",
+    "placeholder": "গবাদি পশু, মার্কেটপ্লেস, ডাক্তার, সতর্কতা খুঁজুন...",
+    "sections": {
+      "alerts": "সতর্কতা",
+      "animals": "গবাদি পশু",
+      "doctors": "ডাক্তার",
+      "marketplace": "মার্কেটপ্লেস"
+    },
+    "title": "খুঁজুন"
+  },
+  "selectLanguage": {
+    "helper": "ইন্টারফেস ও নোটিফিকেশনের জন্য আপনার পছন্দের ভাষা নির্বাচন করুন।",
+    "save": "পরিবর্তন সংরক্ষণ করুন",
+    "title": "ভাষা নির্বাচন করুন",
+    "voiceMode": "ভয়েস সিলেকশন মোড"
+  },
+  "sendPrescription": {
+    "errorTitle": "ত্রুটি",
+    "missingAppointment": "অ্যাপয়েন্টমেন্টের তথ্য নেই। অনুগ্রহ করে অ্যাপয়েন্টমেন্ট চ্যাট থেকে এটি খুলুন।",
+    "patient": "রোগী",
+    "sendFailed": "প্রেসক্রিপশন পাঠানো যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।"
+  },
+  "signup": {
+    "bvcLabel": "বিভিসি নিবন্ধন নম্বর*",
+    "bvcPlaceholder": "বিভিসি নিবন্ধন নম্বর লিখুন",
+    "confirmLabel": "পাসওয়ার্ড নিশ্চিত করুন*",
+    "divider": "অথবা",
+    "emailLabel": "ইমেইল ঠিকানা*",
+    "emailPlaceholder": "আপনার ইমেইল লিখুন",
+    "errors": {
+      "bvcRequired": "ডাক্তারদের জন্য বিভিসি নিবন্ধন নম্বর আবশ্যক।",
+      "createFailed": "অ্যাকাউন্ট তৈরি করা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।",
+      "emailRequired": "ইমেইল আবশ্যক।",
+      "invalidEmail": "অনুগ্রহ করে সঠিক ইমেইল ঠিকানা লিখুন।",
+      "invalidPhone": "অনুগ্রহ করে সঠিক ১১ সংখ্যার বাংলাদেশি ফোন নম্বর লিখুন (যেমন, 01712345678)।",
+      "nameRequired": "নাম আবশ্যক।",
+      "passwordMismatch": "পাসওয়ার্ড মিলছে না।",
+      "passwordRequired": "পাসওয়ার্ড আবশ্যক।",
+      "passwordTooShort": "পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে।",
+      "phoneRequired": "ফোন নম্বর আবশ্যক।",
+      "roleRequired": "অনুগ্রহ করে একটি ভূমিকা নির্বাচন করুন।",
+      "termsRequired": "আপনাকে সেবার শর্তাবলীতে সম্মতি দিতে হবে।"
+    },
+    "footerPrefix": "ইতিমধ্যে অ্যাকাউন্ট আছে?",
+    "nameLabel": "নাম",
+    "namePlaceholder": "আপনার নাম লিখুন",
+    "passwordLabel": "পাসওয়ার্ড*",
+    "phoneLabel": "ফোন নম্বর*",
+    "phonePlaceholder": "ফোন নম্বর",
+    "roleDoctor": "ডাক্তার",
+    "roleLabel": "ভূমিকা*",
+    "roleSelect": "আপনার ভূমিকা নির্বাচন করুন",
+    "roleUser": "ব্যবহারকারী",
+    "signIn": "সাইন ইন",
+    "submitDoctor": "এগিয়ে যান",
+    "submitUser": "সাইন আপ",
+    "termsLink": "সেবার শর্তাবলীতে সম্মতি দিচ্ছেন",
+    "termsPrefix": "এগিয়ে যাওয়ার মাধ্যমে আপনি আমাদের",
+    "title": "আপনার অ্যাকাউন্ট তৈরি করুন"
+  },
+  "subscription": {
+    "alerts": {
+      "comingSoonMsg": "সাবস্ক্রিপশন প্ল্যান ভবিষ্যতে উপলব্ধ হবে। আমাদের সাথে যুক্ত হোন!",
+      "comingSoonTitle": "শীঘ্রই আসছে",
+      "contactUs": "যোগাযোগ করুন",
+      "manageMsg": "পেমেন্ট বিলিং পরিচালনা পোর্টালে নিয়ে যাওয়া হচ্ছে...",
+      "manageTitle": "বিলিং পরিচালনা",
+      "ok": "ঠিক আছে"
+    },
+    "cancelSubscription": "সাবস্ক্রিপশন বাতিল করুন",
+    "currentPlan": "বর্তমান প্ল্যান",
+    "manageBillings": "বিলিং পরিচালনা করুন",
+    "nextBilling": "পরবর্তী বিলিং : {{date}}",
+    "title": "সাবস্ক্রিপশন"
+  },
+  "tabBar": {
+    "animals": "পশু",
+    "calendar": "ক্যালেন্ডার",
+    "chat": "চ্যাট",
+    "doctors": "ডাক্তার",
+    "home": "হোম",
+    "market": "বাজার",
+    "profile": "প্রোফাইল",
+    "schedule": "সূচি"
+  },
+  "tabBarWeb": {
+    "animals": "পশু",
+    "brand": "গবাদি ওয়েব পোর্টাল",
+    "doctors": "ডাক্তার",
+    "home": "হোম",
+    "market": "বাজার",
+    "profile": "প্রোফাইল"
+  },
+  "termsOfService": {
+    "closing": "গবাদি ব্যবহার চালিয়ে যাওয়ার মাধ্যমে আপনি স্বীকার করছেন যে আপনি এই শর্তাবলী ও নিয়মাবলী পড়েছেন এবং সেগুলোতে সম্মত।",
+    "contactLabel": "ইমেইল:",
+    "intro": "গবাদি অ্যাপ ব্যবহার করে আপনি এই শর্তাবলী ও নিয়মাবলীতে সম্মত হচ্ছেন।",
+    "lastUpdated": "সর্বশেষ হালনাগাদ: {{date}}",
+    "s1": {
+      "body": "গবাদি কৃষি প্রযুক্তিগত সেবা প্রদান করে, যার মধ্যে রয়েছে এআই-চালিত টুল, পশুর স্বাস্থ্য তথ্য, পেশাদার পরামর্শ, মার্কেটপ্লেস সেবা, ট্র্যাকিং এবং কাজ ব্যবস্থাপনা।\n\nআপনি সঠিক তথ্য প্রদান করতে এবং অ্যাপটি কেবল বৈধ উদ্দেশ্যে ব্যবহার করতে সম্মত হচ্ছেন।",
+      "heading": "1. গবাদি ব্যবহার"
+    },
+    "s10": {
+      "body": "প্রয়োজন অনুযায়ী আমরা এই শর্তাবলী হালনাগাদ করতে বা ফিচার পরিবর্তন, স্থগিত বা বন্ধ করতে পারি। এই শর্তাবলী লঙ্ঘনকারী অ্যাকাউন্ট আমরা স্থগিত বা বন্ধ করতে পারি।",
+      "heading": "10. পরিবর্তন ও বিলুপ্তি"
+    },
+    "s11": {
+      "body": "প্রশ্ন বা সাপোর্টের জন্য:",
+      "heading": "11. যোগাযোগ"
+    },
+    "s2": {
+      "body": "গবাদি এআই দ্বারা তৈরি পশুর স্বাস্থ্য বা কৃষি সংক্রান্ত তথ্য প্রদান করতে পারে। এআই ফলাফল কেবল তথ্যের জন্য এবং যোগ্য ভেটেরিনারিয়ান বা কৃষি পেশাদারের বিকল্প নয়।\n\nগবাদি এআই ফলাফল সবসময় সঠিক হবে তা নিশ্চিত করে না।",
+      "heading": "2. এআই তথ্য"
+    },
+    "s3": {
+      "body": "ভেটেরিনারিয়ান বা অন্যান্য পেশাদারদের দ্বারা প্রদত্ত তথ্য বা পরামর্শের দায়িত্ব সংশ্লিষ্ট পেশাদারের। জরুরি পরিস্থিতিতে সরাসরি উপযুক্ত স্থানীয় পেশাদার বা পরিষেবার সাথে যোগাযোগ করুন।",
+      "heading": "3. পেশাদার পরামর্শ"
+    },
+    "s4": {
+      "body": "তৃতীয় পক্ষের বিক্রেতারা পণ্য ও সেবা প্রদান করতে পারেন। গবাদি তৃতীয় পক্ষের পণ্য বা সেবার মান, নিরাপত্তা, প্রাপ্যতা বা উপযোগিতা নিশ্চিত করে না।\n\nক্রয়ের আগে পণ্য ও বিক্রেতার তথ্য যাচাই করা ব্যবহারকারীর দায়িত্ব।",
+      "heading": "4. মার্কেটপ্লেস"
+    },
+    "s5": {
+      "bullet1": "পেমেন্ট, বাতিলকরণ, ফেরত ও প্রত্যর্পণ প্রযোজ্য লেনদেন, বিক্রেতা বা গবাদি নীতিমালার অধীন।",
+      "bullet2": "প্রযোজ্য লেনদেনের আগে অতিরিক্ত চার্জ দেখানো হবে।",
+      "heading": "5. পেমেন্ট ও ফেরত"
+    },
+    "s6": {
+      "body": "আপনি গবাদিতে জমা দেওয়া তথ্য, ছবি, ভিডিও ও অন্যান্য কনটেন্টের দায়ী। এসব কনটেন্ট জমা দেওয়ার জন্য আপনার প্রয়োজনীয় অধিকার বা অনুমতি থাকতে হবে।",
+      "heading": "6. ব্যবহারকারীর কনটেন্ট"
+    },
+    "s7": {
+      "body": "বেআইনি কার্যক্রম, প্রতারণা, হয়রানি, অননুমোদিত প্রবেশ, ক্ষতিকর সফটওয়্যার ছড়ানো বা অন্যান্য ব্যবহারকারী বা প্ল্যাটফর্মের ক্ষতি করার জন্য গবাদি ব্যবহার করা যাবে না।",
+      "heading": "7. নিষিদ্ধ ব্যবহার"
+    },
+    "s8": {
+      "body": "আপনার ব্যক্তিগত তথ্য গবাদি গোপনীয়তা নীতি ও প্রযোজ্য আইন অনুসারে পরিচালিত হয়।",
+      "heading": "8. গোপনীয়তা"
+    },
+    "s9": {
+      "body": "আমরা গবাদিকে সবসময় প্রাপ্য ও নির্ভরযোগ্য রাখার চেষ্টা করি, তবে বিরতিহীন বা ত্রুটিহীন সেবার নিশ্চয়তা দিই না।",
+      "heading": "9. উপলব্ধতা"
+    },
+    "title": "সেবার শর্তাবলী"
+  },
+  "videoCall": {
+    "alerts": {
+      "callDeclined": "কল প্রত্যাখ্যাত",
+      "callDeclinedMsg": "অন্য পক্ষ কলটি প্রত্যাখ্যান করেছে।",
+      "error": "ত্রুটি",
+      "missingAppointment": "অ্যাপয়েন্টমেন্টের তথ্য নেই। অনুগ্রহ করে আবার চেষ্টা করুন।",
+      "ok": "ঠিক আছে",
+      "permissionsAudio": "অডিও কলের জন্য মাইক্রোফোনের অনুমতি প্রয়োজন। অনুগ্রহ করে আপনার ডিভাইসের সেটিংসে এটি চালু করুন।",
+      "permissionsTitle": "অনুমতি প্রয়োজন",
+      "permissionsVideo": "ভিডিও কলের জন্য ক্যামেরা ও মাইক্রোফোনের অনুমতি প্রয়োজন। অনুগ্রহ করে আপনার ডিভাইসের সেটিংসে এগুলো চালু করুন।"
+    },
+    "audioCall": "অডিও কল",
+    "backToHome": "হোমে ফিরে যান",
+    "cameraOff": "ক্যামেরা বন্ধ",
+    "connecting": "সংযোগ হচ্ছে...",
+    "consultationEnded": "পরামর্শ শেষ হয়েছে!",
+    "consultationEndedMsg": "আপনার পরামর্শ সফলভাবে শেষ হয়েছে।",
+    "doctorFallback": "ডাক্তার",
+    "failedToJoin": "কলে যোগ দিতে ব্যর্থ হয়েছে",
+    "goBack": "ফিরে যান",
+    "missingAppointment": "অ্যাপয়েন্টমেন্টের তথ্য নেই",
+    "patientFallback": "রোগী",
+    "permissionsDenied": "অনুমতি দেওয়া হয়নি",
+    "retry": "আবার চেষ্টা করুন",
+    "sendPrescription": "প্রেসক্রিপশন পাঠান",
+    "sendRecommendation": "সুপারিশ পাঠান",
+    "waitingParticipant": "অংশগ্রহণকারীর অপেক্ষায়..."
+  },
+  "wallet": {
+    "days": {
+      "fri": "শুক্র",
+      "mon": "সোম",
+      "sat": "শনি",
+      "sun": "রবি",
+      "thu": "বৃহস্পতি",
+      "tue": "মঙ্গল",
+      "wed": "বুধ"
+    },
+    "empty": "এখনো কোনো লেনদেন হয়নি",
+    "lastTransactions": "সর্বশেষ লেনদেন",
+    "loadError": "ওয়ালেট লোড করা যায়নি",
+    "paymentMethod": "পেমেন্ট পদ্ধতি",
+    "performance": "7 দিনের পারফরম্যান্স",
+    "recentTransactions": "সাম্প্রতিক লেনদেন",
+    "retry": "আবার চেষ্টা করুন",
+    "thisMonth": "এই মাসে",
+    "title": "ওয়ালেট",
+    "totalEarnings": "মোট আয়",
+    "weekly": "সাপ্তাহিক"
+  },
+  "wishlist": {
+    "browse": "মার্কেটপ্লেস দেখুন",
+    "empty": "আপনার উইশলিস্ট খালি।",
+    "item": "আইটেম",
+    "remove": "সরান",
+    "title": "উইশলিস্ট"
+  },
+  "workingHours": {
+    "alerts": {
+      "errorTitle": "ত্রুটি",
+      "saveFailedMsg": "কর্মঘণ্টা সংরক্ষণ করা যায়নি।",
+      "savedMsg": "কর্মঘণ্টা সফলভাবে হালনাগাদ হয়েছে।",
+      "savedTitle": "সংরক্ষিত হয়েছে"
+    },
+    "days": {
+      "friday": "শুক্রবার",
+      "monday": "সোমবার",
+      "saturday": "শনিবার",
+      "sunday": "রবিবার",
+      "thursday": "বৃহস্পতিবার",
+      "tuesday": "মঙ্গলবার",
+      "wednesday": "বুধবার"
+    },
+    "end": "শেষ",
+    "save": "সংরক্ষণ করুন",
+    "start": "শুরু",
+    "title": "কর্মঘণ্টা"
+  }
+}
