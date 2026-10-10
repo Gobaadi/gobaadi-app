@@ -50,8 +50,13 @@ export default function AiScanScreen() {
       .map((s) => s.trim())
       .filter(Boolean);
 
-    if (!imageUri && symptoms.length === 0) {
+    if (!imageUri) {
       Alert.alert(t('aiScan.alerts.moreInfoTitle'), t('aiScan.alerts.moreInfoMsg'));
+      return;
+    }
+
+    if (symptoms.length === 0) {
+      Alert.alert(t('aiScan.alerts.symptomsRequiredTitle'), t('aiScan.alerts.symptomsRequiredMsg'));
       return;
     }
 

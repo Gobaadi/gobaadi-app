@@ -185,12 +185,18 @@ export default function AiHoldScreen() {
   useEffect(() => {
     if (displayPhase === 'uploading' || displayPhase === 'analyzing') {
       progress.setValue(0);
-      Animated.timing(progress, {
-        toValue: 1,
-        duration: 3500,
-        useNativeDriver: true,
-      }).start();
+      Animated.loop(
+        Animated.timing(progress, {
+          toValue: 1,
+          duration: 3500,
+          useNativeDriver: true,
+        }),
+        { iterations: -1 }
+      ).start();
+    } else {
+      progress.stopAnimation();
     }
+    return () => progress.stopAnimation();
   }, [displayPhase, progress]);
 
   // Slide the result sheet up once the diagnosis settles (READY / FAILED).
