@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -50,6 +51,7 @@ import { useLocation } from '@/hooks/use-location';
 import LocationBottomSheet from '@/components/LocationBottomSheet';
 import { DoctorAvatar } from '@/components/doctor-avatar';
 import { useTranslation } from '@/hooks/use-translation';
+import { DEFAULT_DOCTOR_LOCATION, matchesDoctorLocation } from '@/utils/location';
 
 interface Category {
   id: string;
@@ -262,6 +264,7 @@ export default function DoctorsScreen() {
     return doctors
       .filter(
         (d) =>
+          matchesDoctorLocation(d.location, location) &&
           (!q ||
             d.name.toLowerCase().includes(q) ||
             d.specialty.toLowerCase().includes(q)) &&
@@ -271,17 +274,21 @@ export default function DoctorsScreen() {
         id: d.id,
         name: d.name,
         specialty: d.specialty,
-        location: 'Uttar Badda, Dhaka',
+        location: d.location || DEFAULT_DOCTOR_LOCATION,
         rating: d.rating || 4.8,
         reviews: 124,
         avatar: d.avatar ?? '',
       }));
-  }, [doctors, debouncedSearch, activeCategory]);
+  }, [doctors, debouncedSearch, activeCategory, location]);
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FAF9F6" />
-      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+      <KeyboardAwareScrollView
+        contentContainerStyle={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>{t('doctors.title')}</Text>
@@ -381,14 +388,14 @@ export default function DoctorsScreen() {
                         >
                           <SvgXml width={16} height={16} xml={messageSvg} />
                         </TouchableOpacity>
-                        <TouchableOpacity
+                        {/* <TouchableOpacity
                           style={styles.callButton}
                           activeOpacity={0.8}
                           onPress={handleStartCall}
                         >
                           <SvgXml width={14} height={14} xml={videoCallSvg} style={{ marginRight: 4 }} />
                           <Text style={styles.callText}>{t('doctors.startCall')}</Text>
-                        </TouchableOpacity>
+                        </TouchableOpacity> */}
                       </View>
                     </View>
 
@@ -627,7 +634,7 @@ export default function DoctorsScreen() {
             ))}
           </ScrollView>
         )}
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }

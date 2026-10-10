@@ -12,6 +12,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useGetDoctorByIdQuery } from '@/store/doctorsApi';
 import { DoctorAvatar } from '@/components/doctor-avatar';
+import { DEFAULT_DOCTOR_LOCATION } from '@/utils/location';
 import { SvgXml } from 'react-native-svg';
 
 import {
@@ -54,7 +55,7 @@ export default function ConfirmBookingScreen() {
       id: String(doctorData.id),
       name: doctorData.name,
       specialty: doctorData.specialty,
-      location: 'Uttar Badda, Dhaka',
+      location: doctorData.location || DEFAULT_DOCTOR_LOCATION,
       rating: doctorData.rating || 4.8,
       reviews: 124,
       avatar: doctorData.avatar ?? '',

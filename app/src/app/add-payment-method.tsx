@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -162,7 +163,7 @@ export default function AddPaymentMethodScreen() {
           <View style={{ width: 40 }} />
         </View>
 
-        <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <KeyboardAwareScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           <View style={styles.providerRow}>
             {PROVIDERS.map((p) => (
               <TouchableOpacity
@@ -231,7 +232,7 @@ export default function AddPaymentMethodScreen() {
               <Text style={styles.continueBtnText}>{t('addPayment.continue')}</Text>
             )}
           </TouchableOpacity>
-        </ScrollView>
+        </KeyboardAwareScrollView>
       </SafeAreaView>
     );
   }
@@ -250,7 +251,7 @@ export default function AddPaymentMethodScreen() {
           <View style={{ width: 40 }} />
         </View>
 
-        <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <KeyboardAwareScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           <Text style={styles.fieldLabel}>{t('addPayment.cardNumberLabel')}</Text>
           <TextInput
             style={styles.textInput}
@@ -330,7 +331,7 @@ export default function AddPaymentMethodScreen() {
               <Text style={styles.continueBtnText}>{t('addPayment.addCard')}</Text>
             )}
           </TouchableOpacity>
-        </ScrollView>
+        </KeyboardAwareScrollView>
       </SafeAreaView>
     );
   }
@@ -346,7 +347,7 @@ export default function AddPaymentMethodScreen() {
           <View style={{ width: 40 }} />
         </View>
 
-        <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <KeyboardAwareScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           <Text style={styles.fieldLabel}>{t('addPayment.bankNameLabel')}</Text>
           <TextInput
             style={styles.textInput}
@@ -395,7 +396,7 @@ export default function AddPaymentMethodScreen() {
               <Text style={styles.continueBtnText}>{t('addPayment.addBankAccount')}</Text>
             )}
           </TouchableOpacity>
-        </ScrollView>
+        </KeyboardAwareScrollView>
       </SafeAreaView>
     );
   }

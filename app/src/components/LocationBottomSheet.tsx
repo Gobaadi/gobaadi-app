@@ -8,6 +8,7 @@ import {
   Modal,
   ScrollView,
 } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { LOCATIONS } from '@/constants/locations';
 import { useTranslation } from '@/hooks/use-translation';
 
@@ -53,6 +54,7 @@ export default function LocationBottomSheet({
     >
       <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose}>
         <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
+          <KeyboardAvoidingView behavior="padding">
           <View style={styles.sheetContainer}>
             <View style={styles.handleBar} />
 
@@ -103,6 +105,7 @@ export default function LocationBottomSheet({
               <Text style={styles.saveBtnText}>{t('locationSheet.save')}</Text>
             </TouchableOpacity>
           </View>
+          </KeyboardAvoidingView>
         </TouchableOpacity>
       </TouchableOpacity>
     </Modal>

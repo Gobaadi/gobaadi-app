@@ -14,6 +14,7 @@ export interface DoctorProfile {
   specializations?: string[];
   experiences?: DoctorExperience[];
   licenseNumber?: string;
+  location?: string;
   credentialDocuments?: string[];
   credentialPeriod?: CredentialPeriod | null;
 }
@@ -263,6 +264,7 @@ export const doctorPortalApi = createApi({
         bio?: string;
         consultationFee?: number;
         licenseNumber?: string;
+        location?: string;
         credentialPeriod?: CredentialPeriod;
       }
     >({

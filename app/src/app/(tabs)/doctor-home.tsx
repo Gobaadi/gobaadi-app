@@ -14,7 +14,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { SvgXml } from 'react-native-svg';
+import Svg, { Circle, SvgXml } from 'react-native-svg';
 import { useSelector } from 'react-redux';
 import type { RootState } from '@/store/store';
 import {
@@ -50,6 +50,9 @@ function formatBookingTime(iso: string): string {
   return formatTime12h(iso);
 }
 
+const PENDING_RING_RADIUS = 31;
+const PENDING_RING_CIRCUMFERENCE = 2 * Math.PI * PENDING_RING_RADIUS;
+
 const QUICK_TILES = [
   { id: 'appointments', labelKey: 'doctorHome.tiles.appointments', icon: doctorHomeAppointmentsSvg, route: '/appointments' },
   { id: 'schedule', labelKey: 'doctorHome.tiles.schedule', icon: doctorHomeScheduleSvg, route: '/schedule' },
@@ -72,6 +75,13 @@ export default function DoctorHomeScreen() {
   });
   const { data: conversations = [] } = useGetConversationsQuery();
   const [createConversation] = useCreateConversationMutation();
+
+  const baseName = (doctorProfile?.name || user?.name || '').trim();
+  const doctorDisplayName = baseName
+    ? /^(?:dr|ডা)\.?(?:\s|$)/iu.test(baseName)
+      ? baseName
+      : `${t('doctorHome.doctorTitle')} ${baseName}`
+    : t('doctorHome.fallback.doctor');
 
   const openPatientChat = async (booking: (typeof bookings)[number]) => {
     try {
@@ -110,8 +120,10 @@ export default function DoctorHomeScreen() {
 
   const totalConsults = todayStats?.totalToday ?? 0;
   const completedToday = todayStats?.completedToday ?? 0;
-  const pendingCount = totalConsults - completedToday;
+  const pendingCount = Math.max(totalConsults - completedToday, 0);
   const displayTotalConsults = totalConsults;
+  const pendingFraction =
+    totalConsults > 0 ? Math.min(Math.max(pendingCount / totalConsults, 0), 1) : 0;
 
   return (
     <View style={styles.container}>
@@ -133,9 +145,7 @@ export default function DoctorHomeScreen() {
             <View style={styles.headerTop}>
               <View>
                 <Text style={styles.greetingText}>{getGreeting(t)}</Text>
-                <Text style={styles.doctorName}>
-                  {doctorProfile?.name || user?.name || t('doctorHome.fallback.doctor')}
-                </Text>
+                <Text style={styles.doctorName}>{doctorDisplayName}</Text>
               </View>
 
               <View style={styles.headerActions}>
@@ -229,6 +239,21 @@ export default function DoctorHomeScreen() {
 
             {/* Pending Circle */}
             <View style={styles.pendingCircle}>
+              <Svg width={68} height={68}>
+                <Circle cx={34} cy={34} r={PENDING_RING_RADIUS} stroke="#E6E1DC" strokeWidth={3} fill="none" />
+                <Circle
+                  cx={34}
+                  cy={34}
+                  r={PENDING_RING_RADIUS}
+                  stroke="#BD632F"
+                  strokeWidth={3}
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeDasharray={PENDING_RING_CIRCUMFERENCE}
+                  strokeDashoffset={PENDING_RING_CIRCUMFERENCE * (1 - pendingFraction)}
+                  transform="rotate(-90 34 34)"
+                />
+              </Svg>
               <View style={styles.pendingContent}>
                 <Text style={styles.pendingCount}>{pendingCount}</Text>
                 <Text style={styles.pendingLabel}>{t('doctorHome.pending')}</Text>
@@ -246,7 +271,7 @@ export default function DoctorHomeScreen() {
                 activeOpacity={0.85}
               >
                 <View style={styles.tileIconCircle}>
-                  <SvgXml width={34} height={34} xml={tile.icon} />
+                  <SvgXml width={40} height={40} xml={tile.icon} />
                 </View>
                 <Text style={styles.tileLabel}>{t(tile.labelKey)}</Text>
               </TouchableOpacity>
@@ -449,16 +474,16 @@ const styles = StyleSheet.create({
   pendingCircle: {
     width: 68,
     height: 68,
-    borderRadius: 34,
-    borderWidth: 3,
-    borderColor: '#BD632F',
-    borderBottomColor: '#E6E1DC',
     justifyContent: 'center',
     alignItems: 'center',
-    transform: [{ rotate: '-45deg' }],
   },
   pendingContent: {
-    transform: [{ rotate: '45deg' }],
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
     alignItems: 'center',
   },
   pendingCount: {
@@ -475,11 +500,11 @@ const styles = StyleSheet.create({
   tilesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     gap: 16,
   },
   tile: {
-    width: '47%',
+    width: '40%',
     backgroundColor: '#FFFFFF',
     borderRadius: 24,
     paddingVertical: 24,
@@ -491,8 +516,8 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   tileIconCircle: {
-    width: 60,
-    height: 60,
+    width: 70,
+    height: 70,
     borderRadius: 20,
     backgroundColor: '#FFF6F0',
     justifyContent: 'center',

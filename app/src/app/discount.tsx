@@ -6,10 +6,10 @@ import {
   Text,
   TouchableOpacity,
   TextInput,
-  ScrollView,
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -169,9 +169,10 @@ export default function DiscountScreen() {
         <View style={{ width: 44 }} />
       </View>
 
-      <ScrollView
+      <KeyboardAwareScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContainer}
+        keyboardShouldPersistTaps="handled"
       >
         <View style={styles.patientCard}>
           <View style={styles.patientAvatarWrap}>
@@ -264,7 +265,7 @@ export default function DiscountScreen() {
             </Text>
           </View>
         )}
-      </ScrollView>
+        </KeyboardAwareScrollView>
 
       <View style={styles.bottomBar}>
         {hasExisting && !isEditing ? (

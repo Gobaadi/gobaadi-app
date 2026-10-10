@@ -5,9 +5,9 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  ScrollView,
   ActivityIndicator,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from '@/hooks/use-translation';
 
@@ -103,7 +103,7 @@ export default function PrescriptionForm({ onSend, sending }: PrescriptionFormPr
 
   return (
     <View style={styles.container}>
-      <ScrollView
+      <KeyboardAwareScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -265,7 +265,7 @@ export default function PrescriptionForm({ onSend, sending }: PrescriptionFormPr
           />
           <Text style={styles.charCount}>{note.length}/500</Text>
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
       <View style={styles.sendBtnContainer}>
         <TouchableOpacity

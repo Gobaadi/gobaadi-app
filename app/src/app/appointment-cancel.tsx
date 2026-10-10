@@ -5,11 +5,11 @@ import {
   Text,
   TouchableOpacity,
   TextInput,
-  ScrollView,
   Image,
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -137,9 +137,10 @@ export default function AppointmentCancelScreen() {
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView
+      <KeyboardAwareScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
       >
         <View style={styles.infoCard}>
           <View style={styles.cardRow}>
@@ -210,7 +211,7 @@ export default function AppointmentCancelScreen() {
           multiline
           textAlignVertical="top"
         />
-      </ScrollView>
+        </KeyboardAwareScrollView>
 
       <View style={styles.bottomContainer}>
         <TouchableOpacity

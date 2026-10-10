@@ -1310,6 +1310,7 @@
     "completedOf": "{{completed}} of {{total}}",
     "consultsForToday": "for today",
     "consultsOrange": "Consults",
+    "doctorTitle": "Dr.",
     "emptyPatients": "No ongoing patients right now",
     "fallback": {
       "doctor": "Doctor",
@@ -1563,6 +1564,7 @@
     "emailLabel": "Email",
     "errors": {
       "failed": "Could not send OTP. Please try again.",
+      "emailNotAllowed": "Please use an email from a supported provider (Gmail, Yahoo, Hotmail, Outlook, etc.).",
       "invalidEmail": "Please enter a valid email address.",
       "required": "Email is required."
     },
@@ -1640,7 +1642,6 @@
       "viewAll": "View All"
     },
     "weather": {
-      "defaultPlace": "Munshiganj",
       "high": "H:",
       "humidity": "Humidity",
       "low": "L:",
@@ -1649,6 +1650,7 @@
       "sunrise": "Sunrise",
       "sunset": "Sunset",
       "title": "Farm Weather - {{place}}",
+      "titleOnly": "Farm Weather",
       "wind": "Wind"
     }
   },
@@ -1672,6 +1674,7 @@
   "login": {
     "divider": "or sign in with",
     "emailLabel": "Email",
+    "emailNotAllowed": "Please use an email from a supported provider (Gmail, Yahoo, Hotmail, Outlook, etc.).",
     "forgotPassword": "Forgot Password?",
     "invalidCreds": "Invalid credentials. Please try again.",
     "invalidEmail": "Please enter a valid email address.",
@@ -2340,6 +2343,7 @@
       "district": "District",
       "duration": "Duration",
       "instituteName": "Institute Name",
+      "location": "Practice Location",
       "name": "Your Name",
       "positionTitle": "Position Title",
       "specialty": "Specialty",
@@ -2373,6 +2377,7 @@
       "experience": "e.g. 5 Years",
       "instituteName": "e.g. City Vet Clinic",
       "licenseNumber": "Enter license number...",
+      "location": "Select your practice location",
       "name": "Enter your name",
       "otherInstitute": "e.g. Bangladesh Agricultural University",
       "positionTitle": "e.g. Senior Veterinarian",
@@ -2597,8 +2602,9 @@
     "emailPlaceholder": "Enter your email",
     "errors": {
       "bvcRequired": "BVC Registration Number is required for doctors.",
-      "createFailed": "Could not create account. Please try again.",
-      "emailRequired": "Email is required.",
+    "createFailed": "Could not create account. Please try again.",
+    "emailNotAllowed": "Please use an email from a supported provider (Gmail, Yahoo, Hotmail, Outlook, etc.).",
+    "emailRequired": "Email is required.",
       "invalidEmail": "Please enter a valid email address.",
       "invalidPhone": "Please enter a valid 11-digit Bangladeshi phone number (e.g., 01712345678).",
       "nameRequired": "Name is required.",

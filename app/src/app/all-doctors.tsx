@@ -33,6 +33,7 @@ import { useLocation } from '@/hooks/use-location';
 import LocationBottomSheet from '@/components/LocationBottomSheet';
 import { DoctorAvatar } from '@/components/doctor-avatar';
 import { useTranslation } from 'react-i18next';
+import { DEFAULT_DOCTOR_LOCATION, matchesDoctorLocation } from '@/utils/location';
 
 const SPECIALTY_OPTIONS: { value: string; labelKey: string }[] = [
   { value: 'All', labelKey: 'allDoctors.specialties.all' },
@@ -64,15 +65,17 @@ export default function AllDoctorsScreen() {
   const { data: doctorList = [], isLoading } = useGetDoctorsQuery();
 
   const doctors: DoctorView[] = useMemo(() => {
-    let filtered = doctorList.map((d) => ({
-      id: d.id,
-      name: d.name,
-      specialty: d.specialty,
-      location: 'Uttar Badda, Dhaka',
-      rating: d.rating || 4.8,
-      reviews: 124,
-      avatar: d.avatar ?? '',
-    }));
+    let filtered = doctorList
+      .filter((d) => matchesDoctorLocation(d.location, location))
+      .map((d) => ({
+        id: d.id,
+        name: d.name,
+        specialty: d.specialty,
+        location: d.location || DEFAULT_DOCTOR_LOCATION,
+        rating: d.rating || 4.8,
+        reviews: 124,
+        avatar: d.avatar ?? '',
+      }));
 
     if (activeFilter !== 'All') {
       filtered = filtered.filter((d) =>
@@ -90,7 +93,7 @@ export default function AllDoctorsScreen() {
     }
 
     return filtered;
-  }, [doctorList, activeFilter, searchText]);
+  }, [doctorList, activeFilter, searchText, location]);
 
   const totalCount = doctorList.length;
   const medicineCount = doctorList.filter((d) =>

@@ -7,10 +7,8 @@ import {
   Image,
   TextInput,
   Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -95,8 +93,7 @@ export default function AiScanScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-        {/* Header */}
+      {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.circleButton}
@@ -111,7 +108,7 @@ export default function AiScanScreen() {
           </TouchableOpacity>
         </View>
 
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <KeyboardAwareScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           {imageUri ? (
             <Image source={{ uri: imageUri }} style={styles.previewImage} resizeMode="cover" />
           ) : (
@@ -167,8 +164,7 @@ export default function AiScanScreen() {
               <Text style={styles.uploadButtonText}>{t('aiScan.retake')}</Text>
             </TouchableOpacity>
           )}
-        </ScrollView>
-      </KeyboardAvoidingView>
+        </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }

@@ -72,6 +72,14 @@ export class UpdateDoctorProfileDto {
   licenseNumber?: string;
 
   @ApiPropertyOptional({
+    example: 'Uttar Badda, Dhaka',
+    description: "Area/city where the doctor practices, shown on the doctor's public card",
+  })
+  @IsString()
+  @IsOptional()
+  location?: string;
+
+  @ApiPropertyOptional({
     description:
       "Academic credential period shown on the doctor's profile (start/end month-year and current-study flag)",
     type: CredentialPeriodDto,

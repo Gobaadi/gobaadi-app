@@ -6,11 +6,11 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  ScrollView,
   ActivityIndicator,
   Alert,
   Switch,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   useGetMyDoctorProfileQuery,
@@ -94,7 +94,11 @@ export default function DoctorAvailabilityScreen() {
       {isLoading ? (
         <ActivityIndicator size="small" color="#BD632F" style={{ marginTop: 30 }} />
       ) : (
-        <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+        <KeyboardAwareScrollView
+        contentContainerStyle={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
           {rows.map((row) => (
             <View key={row.dayOfWeek} style={styles.dayCard}>
               <View style={styles.dayHeader}>
@@ -124,7 +128,7 @@ export default function DoctorAvailabilityScreen() {
               ) : null}
             </View>
           ))}
-        </ScrollView>
+        </KeyboardAwareScrollView>
       )}
 
       <View style={styles.bottomBar}>

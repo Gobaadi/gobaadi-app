@@ -97,8 +97,7 @@ export class OpenMeteoProvider implements IWeatherProvider {
     const weatherCode = current.weather_code ?? 0;
 
     return {
-      location:
-        district || this.cityFromTimezone(data.timezone) || 'Munshiganj',
+      location: district || this.cityFromTimezone(data.timezone) || '',
       temperature: Math.round(current.temperature_2m ?? 0),
       highTemp: Math.round(daily.temperature_2m_max?.[0] ?? 0),
       lowTemp: Math.round(daily.temperature_2m_min?.[0] ?? 0),

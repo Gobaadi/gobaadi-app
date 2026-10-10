@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -634,7 +635,7 @@ export default function BlockTimeOffScreen() {
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
+      <KeyboardAwareScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
         <Text style={styles.fieldLabel}>{t('blockTime.fields.startDate')}</Text>
         <TouchableOpacity
           style={styles.dateDropdown}
@@ -738,7 +739,7 @@ export default function BlockTimeOffScreen() {
             {t('blockTime.formInfo')}
           </Text>
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
       <View style={styles.bottomBar}>
         <TouchableOpacity

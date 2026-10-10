@@ -39,7 +39,7 @@ export class OpenWeatherProvider implements IWeatherProvider {
   private mapResponse(data: any, district?: string): WeatherDataDto {
     const timezoneOffsetSeconds: number = data.timezone ?? 0;
     return {
-      location: district || data.name || 'Unknown',
+      location: district || '',
       temperature: Math.round(data.main?.temp),
       highTemp: Math.round(data.main?.temp_max),
       lowTemp: Math.round(data.main?.temp_min),

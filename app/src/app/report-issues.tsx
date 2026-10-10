@@ -5,10 +5,10 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  ScrollView,
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -164,7 +164,11 @@ export default function ReportIssuesScreen() {
         <View style={{ width: 42 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+      <KeyboardAwareScrollView
+        contentContainerStyle={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Issue Type Dropdown */}
         <Text style={styles.fieldLabel}>{t('reportIssues.whatHappened')}</Text>
         <TouchableOpacity
@@ -268,8 +272,8 @@ export default function ReportIssuesScreen() {
             <Text style={styles.submitBtnText}>{t('reportIssues.submit')}</Text>
           )}
         </TouchableOpacity>
-      </ScrollView>
-    </SafeAreaView>
+        </KeyboardAwareScrollView>
+      </SafeAreaView>
   );
 }
 

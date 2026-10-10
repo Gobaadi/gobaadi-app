@@ -10,7 +10,7 @@ export class MockWeatherProvider implements IWeatherProvider {
     district?: string,
   ): Promise<WeatherDataDto> {
     return {
-      location: district || 'Munshiganj',
+      location: district || '',
       temperature: 35,
       highTemp: 35,
       lowTemp: 15,

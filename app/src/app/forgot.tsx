@@ -5,18 +5,15 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
   ActivityIndicator,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
 import { useForgotPasswordMutation } from '@/store/authApi';
-
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+import { isValidEmailSyntax, isAllowedEmail } from '@/utils/email';
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
@@ -33,8 +30,12 @@ export default function ForgotPasswordScreen() {
       setErrorMessage(t('forgot.errors.required'));
       return;
     }
-    if (!EMAIL_REGEX.test(identifier)) {
+    if (!isValidEmailSyntax(identifier)) {
       setErrorMessage(t('forgot.errors.invalidEmail'));
+      return;
+    }
+    if (!isAllowedEmail(identifier)) {
+      setErrorMessage(t('forgot.errors.emailNotAllowed'));
       return;
     }
 
@@ -51,11 +52,7 @@ export default function ForgotPasswordScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
-      >
-        {/* Header with Back Button */}
+      {/* Header with Back Button */}
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.backButton}
@@ -66,7 +63,11 @@ export default function ForgotPasswordScreen() {
           </TouchableOpacity>
         </View>
 
-        <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+      <KeyboardAwareScrollView
+        contentContainerStyle={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
           {/* Title */}
           <Text style={styles.title}>{t('forgot.title')}</Text>
           <Text style={styles.subtitle}>{t('forgot.subtitle')}</Text>
@@ -103,8 +104,7 @@ export default function ForgotPasswordScreen() {
               )}
             </TouchableOpacity>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }

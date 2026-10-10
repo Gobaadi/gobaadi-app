@@ -6,11 +6,9 @@ import {
   TextInput,
   TouchableOpacity,
   Image,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
   ActivityIndicator,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -23,10 +21,10 @@ import { IdentifierTabs, IdentifierMode } from '@/components/identifier-tabs';
 import { store } from '@/store/store';
 import { setCredentials } from '@/store/authSlice';
 import { jwtToAuthUser } from '@/store/decode-jwt';
+import { isValidEmailSyntax, isAllowedEmail } from '@/utils/email';
 import { useTranslation } from '@/hooks/use-translation';
 
 const BD_PHONE_REGEX = /^01[3-9]\d{8}$/;
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -53,14 +51,20 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     setErrorMessage('');
     // console.log('[LOGIN] API_URL =', API_URL);
-    const identifier = mode === 'phone' ? phone : email;
+    const identifier = mode === 'phone' ? phone : email.trim();
     if (mode === 'phone' && !BD_PHONE_REGEX.test(phone)) {
       setErrorMessage(t('login.invalidPhone'));
       return;
     }
-    if (mode === 'email' && !EMAIL_REGEX.test(email.trim())) {
-      setErrorMessage(t('login.invalidEmail'));
-      return;
+    if (mode === 'email') {
+      if (!isValidEmailSyntax(identifier)) {
+        setErrorMessage(t('login.invalidEmail'));
+        return;
+      }
+      if (!isAllowedEmail(identifier)) {
+        setErrorMessage(t('login.emailNotAllowed'));
+        return;
+      }
     }
     try {
       const data = await login({ identifier, password, rememberMe }).unwrap();
@@ -78,11 +82,11 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
+      <KeyboardAwareScrollView
+        contentContainerStyle={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
-        <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
           {/* Heading */}
           <Text style={styles.title}>{t('login.signIn')}</Text>
           <Text style={styles.subtitle}>{t('login.welcome')}</Text>
@@ -217,8 +221,7 @@ export default function LoginScreen() {
               </Text>
             </View>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }

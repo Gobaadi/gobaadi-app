@@ -11,6 +11,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 
 import { useGetDoctorByIdQuery } from '@/store/doctorsApi';
 import { DoctorAvatar } from '@/components/doctor-avatar';
+import { DEFAULT_DOCTOR_LOCATION } from '@/utils/location';
 import { useTranslation } from 'react-i18next';
 
 function visitTypeLabelKey(value: string): string {
@@ -32,7 +33,7 @@ export default function ConfirmPayScreen() {
       id: String(doctorData.id),
       name: doctorData.name,
       specialty: doctorData.specialty,
-      location: 'Uttar Badda, Dhaka',
+      location: doctorData.location || DEFAULT_DOCTOR_LOCATION,
       rating: doctorData.rating || 4.8,
       reviews: 124,
       avatar: doctorData.avatar ?? '',

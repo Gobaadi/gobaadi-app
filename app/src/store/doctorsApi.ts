@@ -10,6 +10,8 @@ export interface DoctorSummary {
   rating: number;
   avatar: string;
   bio: string;
+  specializations?: string[];
+  location?: string;
 }
 
 export const doctorsApi = createApi({

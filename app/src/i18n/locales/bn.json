@@ -1310,6 +1310,7 @@
     "completedOf": "{{total}} এর মধ্যে {{completed}}",
     "consultsForToday": "আজকের জন্য",
     "consultsOrange": "পরামর্শ",
+    "doctorTitle": "ডা.",
     "emptyPatients": "এই মুহূর্তে কোনো চলমান রোগী নেই",
     "fallback": {
       "doctor": "ডাক্তার",
@@ -1563,6 +1564,7 @@
     "emailLabel": "ইমেইল",
     "errors": {
       "failed": "OTP পাঠানো যায়নি। আবার চেষ্টা করুন।",
+      "emailNotAllowed": "অনুগ্রহ করে সমর্থিত ইমেইল প্রোভাইডার ব্যবহার করুন (Gmail, Yahoo, Hotmail, Outlook ইত্যাদি)।",
       "invalidEmail": "সঠিক ইমেইল ঠিকানা লিখুন।",
       "required": "ইমেইল আবশ্যক।"
     },
@@ -1640,7 +1642,6 @@
       "viewAll": "সব দেখুন"
     },
     "weather": {
-      "defaultPlace": "মুন্সিগঞ্জ",
       "high": "সর্বোচ্চ:",
       "humidity": "আর্দ্রতা",
       "low": "সর্বনিম্ন:",
@@ -1649,6 +1650,7 @@
       "sunrise": "সূর্যোদয়",
       "sunset": "সূর্যাস্ত",
       "title": "খামারের আবহাওয়া - {{place}}",
+      "titleOnly": "খামারের আবহাওয়া",
       "wind": "বাতাস"
     }
   },
@@ -1672,6 +1674,7 @@
   "login": {
     "divider": "অথবা এর মাধ্যমে সাইন ইন করুন",
     "emailLabel": "ইমেইল",
+    "emailNotAllowed": "অনুগ্রহ করে সমর্থিত ইমেইল প্রোভাইডার ব্যবহার করুন (Gmail, Yahoo, Hotmail, Outlook ইত্যাদি)।",
     "forgotPassword": "পাসওয়ার্ড ভুলে গেছেন?",
     "invalidCreds": "ভুল তথ্য। অনুগ্রহ করে আবার চেষ্টা করুন।",
     "invalidEmail": "অনুগ্রহ করে সঠিক ইমেইল ঠিকানা লিখুন।",
@@ -2340,6 +2343,7 @@
       "district": "জেলা",
       "duration": "সময়কাল",
       "instituteName": "প্রতিষ্ঠানের নাম",
+      "location": "চিকিৎসার এলাকা",
       "name": "আপনার নাম",
       "positionTitle": "পদবি",
       "specialty": "বিশেষজ্ঞ বিষয়",
@@ -2373,6 +2377,7 @@
       "experience": "যেমন: 5 বছর",
       "instituteName": "যেমন: সিটি ভেট ক্লিনিক",
       "licenseNumber": "লাইসেন্স নম্বর লিখুন...",
+      "location": "আপনার চিকিৎসার এলাকা নির্বাচন করুন",
       "name": "আপনার নাম লিখুন",
       "otherInstitute": "যেমন: বাংলাদেশ কৃষি বিশ্ববিদ্যালয়",
       "positionTitle": "যেমন: সিনিয়র ভেটেরিনারিয়ান",
@@ -2597,8 +2602,9 @@
     "emailPlaceholder": "আপনার ইমেইল লিখুন",
     "errors": {
       "bvcRequired": "ডাক্তারদের জন্য বিভিসি নিবন্ধন নম্বর আবশ্যক।",
-      "createFailed": "অ্যাকাউন্ট তৈরি করা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।",
-      "emailRequired": "ইমেইল আবশ্যক।",
+    "createFailed": "অ্যাকাউন্ট তৈরি করা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।",
+    "emailNotAllowed": "অনুগ্রহ করে সমর্থিত ইমেইল প্রোভাইডার ব্যবহার করুন (Gmail, Yahoo, Hotmail, Outlook ইত্যাদি)।",
+    "emailRequired": "ইমেইল আবশ্যক।",
       "invalidEmail": "অনুগ্রহ করে সঠিক ইমেইল ঠিকানা লিখুন।",
       "invalidPhone": "অনুগ্রহ করে সঠিক ১১ সংখ্যার বাংলাদেশি ফোন নম্বর লিখুন (যেমন, 01712345678)।",
       "nameRequired": "নাম আবশ্যক।",
