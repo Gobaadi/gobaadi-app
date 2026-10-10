@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useGetMyOrdersQuery } from '@/store/ordersApi';
 import { EmptyState } from '@/components/ui/empty-state';
 import { RowSkeleton } from '@/components/ui/skeleton';
@@ -25,6 +26,7 @@ function isPaidStatus(status: string): boolean {
 }
 
 export default function MyOrdersScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { data: orders, isLoading: ordersLoading } = useGetMyOrdersQuery();
 
@@ -34,7 +36,7 @@ export default function MyOrdersScreen() {
         <TouchableOpacity style={styles.circleButton} onPress={() => router.back()} activeOpacity={0.8}>
           <Text style={styles.buttonText}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>My Orders</Text>
+        <Text style={styles.headerTitle}>{t('myOrders.title')}</Text>
         <View style={{ width: 44 }} />
       </View>
 
@@ -46,9 +48,9 @@ export default function MyOrdersScreen() {
           </>
         ) : !orders || orders.length === 0 ? (
           <EmptyState
-            title="No orders yet"
-            description="You haven't placed any orders yet."
-            actionLabel="Browse Marketplace"
+            title={t('myOrders.emptyTitle')}
+            description={t('myOrders.emptyDescription')}
+            actionLabel={t('myOrders.browse')}
             onAction={() => router.push('/market')}
           />
         ) : (
@@ -88,7 +90,7 @@ export default function MyOrdersScreen() {
               </View>
 
               <View style={styles.orderFooter}>
-                <Text style={styles.totalLabel}>Total</Text>
+                <Text style={styles.totalLabel}>{t('myOrders.total')}</Text>
                 <Text style={styles.totalValue}>৳ {order.totalPrice.toLocaleString()}</Text>
               </View>
             </View>

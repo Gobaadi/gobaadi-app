@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useCreatePaymentMethodMutation } from '@/store/paymentMethodsApi';
+import { useTranslation } from '@/hooks/use-translation';
 
 type Step = 'select' | 'mobile_banking' | 'debit_card' | 'credit_card' | 'bank_account';
 
@@ -25,15 +26,16 @@ interface PaymentOption {
 }
 
 const PAYMENT_OPTIONS: PaymentOption[] = [
-  { id: 'mobile', title: 'Mobile Banking', subtitle: 'Bkash, Nagad, Rocket & more', icon: 'phone-portrait-outline' },
-  { id: 'debit', title: 'Debit Card', subtitle: 'Visa, Mastercard linked to your bank account', icon: 'card-outline' },
-  { id: 'credit', title: 'Credit Card', subtitle: 'Pay with any credit card', icon: 'card-outline' },
-  { id: 'bank', title: 'Bank Account', subtitle: 'Direct debit from your account', icon: 'business-outline' },
+  { id: 'mobile', title: 'addPayment.options.mobile.title', subtitle: 'addPayment.options.mobile.subtitle', icon: 'phone-portrait-outline' },
+  { id: 'debit', title: 'addPayment.options.debit.title', subtitle: 'addPayment.options.debit.subtitle', icon: 'card-outline' },
+  { id: 'credit', title: 'addPayment.options.credit.title', subtitle: 'addPayment.options.credit.subtitle', icon: 'card-outline' },
+  { id: 'bank', title: 'addPayment.options.bank.title', subtitle: 'addPayment.options.bank.subtitle', icon: 'business-outline' },
 ];
 
 interface Provider {
   id: string;
   name: string;
+  labelKey?: string;
   icon: string;
   iconBg: string;
   iconColor: string;
@@ -43,10 +45,11 @@ const PROVIDERS: Provider[] = [
   { id: 'bkash', name: 'bKash', icon: 'b', iconBg: '#E53935', iconColor: '#FFFFFF' },
   { id: 'nagad', name: 'Nagad', icon: 'n', iconBg: '#FF9800', iconColor: '#FFFFFF' },
   { id: 'upay', name: 'Upay', icon: 'u', iconBg: '#4CAF50', iconColor: '#FFFFFF' },
-  { id: 'more', name: 'More', icon: '+', iconBg: '#F5F2EC', iconColor: '#7C7672' },
+  { id: 'more', name: 'More', labelKey: 'addPayment.providers.more', icon: '+', iconBg: '#F5F2EC', iconColor: '#7C7672' },
 ];
 
 export default function AddPaymentMethodScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const isDoctor = useRequireDoctor();
   const [step, setStep] = useState<Step>('select');
@@ -73,7 +76,7 @@ export default function AddPaymentMethodScreen() {
 
   const handleContinue = async () => {
     if (!phoneNumber.trim()) {
-      Alert.alert('Error', 'Please enter a phone number');
+      Alert.alert(t('addPayment.alerts.error'), t('addPayment.alerts.enterPhone'));
       return;
     }
 
@@ -95,13 +98,13 @@ export default function AddPaymentMethodScreen() {
         },
       });
     } catch {
-      Alert.alert('Error', 'Failed to add payment method');
+      Alert.alert(t('addPayment.alerts.error'), t('addPayment.alerts.methodFailed'));
     }
   };
 
   const handleCardSubmit = async (cardType: 'debit' | 'credit') => {
     if (!cardNumber.trim() || !cardHolder.trim() || !expiryDate.trim() || !cvv.trim()) {
-      Alert.alert('Error', 'Please fill in all card details');
+      Alert.alert(t('addPayment.alerts.error'), t('addPayment.alerts.fillCard'));
       return;
     }
 
@@ -115,17 +118,19 @@ export default function AddPaymentMethodScreen() {
         maskedNumber: maskedCard,
       }).unwrap();
 
-      Alert.alert('Success', `${cardType === 'debit' ? 'Debit' : 'Credit'} card added successfully`, [
-        { text: 'OK', onPress: () => router.back() },
-      ]);
+      Alert.alert(
+        t('addPayment.alerts.success'),
+        cardType === 'debit' ? t('addPayment.alerts.cardAddedDebit') : t('addPayment.alerts.cardAddedCredit'),
+        [{ text: t('addPayment.alerts.ok'), onPress: () => router.back() }],
+      );
     } catch {
-      Alert.alert('Error', 'Failed to add card');
+      Alert.alert(t('addPayment.alerts.error'), t('addPayment.alerts.cardFailed'));
     }
   };
 
   const handleBankAccountSubmit = async () => {
     if (!accountNumber.trim() || !routingNumber.trim() || !bankName.trim()) {
-      Alert.alert('Error', 'Please fill in all bank account details');
+      Alert.alert(t('addPayment.alerts.error'), t('addPayment.alerts.fillBank'));
       return;
     }
 
@@ -138,11 +143,11 @@ export default function AddPaymentMethodScreen() {
         maskedNumber: maskedAccount,
       }).unwrap();
 
-      Alert.alert('Success', 'Bank account added successfully', [
-        { text: 'OK', onPress: () => router.back() },
+      Alert.alert(t('addPayment.alerts.success'), t('addPayment.alerts.bankAdded'), [
+        { text: t('addPayment.alerts.ok'), onPress: () => router.back() },
       ]);
     } catch {
-      Alert.alert('Error', 'Failed to add bank account');
+      Alert.alert(t('addPayment.alerts.error'), t('addPayment.alerts.bankFailed'));
     }
   };
 
@@ -153,7 +158,7 @@ export default function AddPaymentMethodScreen() {
           <TouchableOpacity onPress={() => setStep('select')} style={styles.backBtn} activeOpacity={0.7}>
             <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Add Payment Method</Text>
+          <Text style={styles.headerTitle}>{t('addPayment.header')}</Text>
           <View style={{ width: 40 }} />
         </View>
 
@@ -170,13 +175,13 @@ export default function AddPaymentMethodScreen() {
                   <Text style={[styles.providerIconText, { color: p.iconColor }]}>{p.icon}</Text>
                 </View>
                 <Text style={[styles.providerName, selectedProvider === p.id && styles.providerNameActive]}>
-                  {p.name}
+                  {p.labelKey ? t(p.labelKey) : p.name}
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
 
-          <Text style={styles.fieldLabel}>Phone Number</Text>
+          <Text style={styles.fieldLabel}>{t('addPayment.phoneLabel')}</Text>
           <View style={styles.phoneRow}>
             <View style={styles.countryCode}>
               <Text style={styles.flagText}>🇧🇩</Text>
@@ -184,7 +189,7 @@ export default function AddPaymentMethodScreen() {
             </View>
             <TextInput
               style={styles.phoneInput}
-              placeholder="Phone number"
+              placeholder={t('addPayment.phonePlaceholder')}
               placeholderTextColor="#A39E99"
               keyboardType="phone-pad"
               value={phoneNumber}
@@ -192,11 +197,11 @@ export default function AddPaymentMethodScreen() {
             />
           </View>
 
-          <Text style={styles.fieldLabel}>Pin Number</Text>
+          <Text style={styles.fieldLabel}>{t('addPayment.pinLabel')}</Text>
           <View style={styles.pinRow}>
             <TextInput
               style={styles.pinInput}
-              placeholder="Enter PIN"
+              placeholder={t('addPayment.pinPlaceholder')}
               placeholderTextColor="#A39E99"
               secureTextEntry={!showPin}
               value={pin}
@@ -210,7 +215,7 @@ export default function AddPaymentMethodScreen() {
           <View style={styles.securityNotice}>
             <Ionicons name="shield-checkmark-outline" size={18} color="#BD632F" />
             <Text style={styles.securityText}>
-              We only link your account — we never store your PIN or password.
+              {t('addPayment.security.pin')}
             </Text>
           </View>
 
@@ -223,7 +228,7 @@ export default function AddPaymentMethodScreen() {
             {isLoading ? (
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
-              <Text style={styles.continueBtnText}>Continue</Text>
+              <Text style={styles.continueBtnText}>{t('addPayment.continue')}</Text>
             )}
           </TouchableOpacity>
         </ScrollView>
@@ -239,12 +244,14 @@ export default function AddPaymentMethodScreen() {
           <TouchableOpacity onPress={() => setStep('select')} style={styles.backBtn} activeOpacity={0.7}>
             <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Add {isDebit ? 'Debit' : 'Credit'} Card</Text>
+          <Text style={styles.headerTitle}>
+            {isDebit ? t('addPayment.addDebitCard') : t('addPayment.addCreditCard')}
+          </Text>
           <View style={{ width: 40 }} />
         </View>
 
         <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-          <Text style={styles.fieldLabel}>Card Number</Text>
+          <Text style={styles.fieldLabel}>{t('addPayment.cardNumberLabel')}</Text>
           <TextInput
             style={styles.textInput}
             placeholder="1234 5678 9012 3456"
@@ -255,10 +262,10 @@ export default function AddPaymentMethodScreen() {
             maxLength={19}
           />
 
-          <Text style={styles.fieldLabel}>Card Holder Name</Text>
+          <Text style={styles.fieldLabel}>{t('addPayment.cardHolderLabel')}</Text>
           <TextInput
             style={styles.textInput}
-            placeholder="John Doe"
+            placeholder={t('addPayment.cardHolderPlaceholder')}
             placeholderTextColor="#A39E99"
             value={cardHolder}
             onChangeText={setCardHolder}
@@ -266,7 +273,7 @@ export default function AddPaymentMethodScreen() {
 
           <View style={styles.row}>
             <View style={styles.halfField}>
-              <Text style={styles.fieldLabel}>Expiry Date</Text>
+              <Text style={styles.fieldLabel}>{t('addPayment.expiryLabel')}</Text>
               <TextInput
                 style={styles.textInput}
                 placeholder="MM/YY"
@@ -285,7 +292,7 @@ export default function AddPaymentMethodScreen() {
               />
             </View>
             <View style={styles.halfField}>
-              <Text style={styles.fieldLabel}>CVV</Text>
+              <Text style={styles.fieldLabel}>{t('addPayment.cvvLabel')}</Text>
               <View style={styles.pinRow}>
                 <TextInput
                   style={styles.pinInput}
@@ -307,7 +314,7 @@ export default function AddPaymentMethodScreen() {
           <View style={styles.securityNotice}>
             <Ionicons name="shield-checkmark-outline" size={18} color="#BD632F" />
             <Text style={styles.securityText}>
-              Your card information is encrypted and secure. We never store your full card number.
+              {t('addPayment.security.card')}
             </Text>
           </View>
 
@@ -320,7 +327,7 @@ export default function AddPaymentMethodScreen() {
             {isLoading ? (
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
-              <Text style={styles.continueBtnText}>Add Card</Text>
+              <Text style={styles.continueBtnText}>{t('addPayment.addCard')}</Text>
             )}
           </TouchableOpacity>
         </ScrollView>
@@ -335,34 +342,34 @@ export default function AddPaymentMethodScreen() {
           <TouchableOpacity onPress={() => setStep('select')} style={styles.backBtn} activeOpacity={0.7}>
             <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Add Bank Account</Text>
+          <Text style={styles.headerTitle}>{t('addPayment.addBankAccount')}</Text>
           <View style={{ width: 40 }} />
         </View>
 
         <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-          <Text style={styles.fieldLabel}>Bank Name</Text>
+          <Text style={styles.fieldLabel}>{t('addPayment.bankNameLabel')}</Text>
           <TextInput
             style={styles.textInput}
-            placeholder="e.g. Dutch-Bangla Bank"
+            placeholder={t('addPayment.bankNamePlaceholder')}
             placeholderTextColor="#A39E99"
             value={bankName}
             onChangeText={setBankName}
           />
 
-          <Text style={styles.fieldLabel}>Account Number</Text>
+          <Text style={styles.fieldLabel}>{t('addPayment.accountNumberLabel')}</Text>
           <TextInput
             style={styles.textInput}
-            placeholder="Enter account number"
+            placeholder={t('addPayment.accountNumberPlaceholder')}
             placeholderTextColor="#A39E99"
             keyboardType="numeric"
             value={accountNumber}
             onChangeText={setAccountNumber}
           />
 
-          <Text style={styles.fieldLabel}>Routing Number</Text>
+          <Text style={styles.fieldLabel}>{t('addPayment.routingLabel')}</Text>
           <TextInput
             style={styles.textInput}
-            placeholder="Enter routing number"
+            placeholder={t('addPayment.routingPlaceholder')}
             placeholderTextColor="#A39E99"
             keyboardType="numeric"
             value={routingNumber}
@@ -372,7 +379,7 @@ export default function AddPaymentMethodScreen() {
           <View style={styles.securityNotice}>
             <Ionicons name="shield-checkmark-outline" size={18} color="#BD632F" />
             <Text style={styles.securityText}>
-              Your bank account information is encrypted and secure. We use industry-standard security protocols.
+              {t('addPayment.security.bank')}
             </Text>
           </View>
 
@@ -385,7 +392,7 @@ export default function AddPaymentMethodScreen() {
             {isLoading ? (
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
-              <Text style={styles.continueBtnText}>Add Bank Account</Text>
+              <Text style={styles.continueBtnText}>{t('addPayment.addBankAccount')}</Text>
             )}
           </TouchableOpacity>
         </ScrollView>
@@ -399,7 +406,7 @@ export default function AddPaymentMethodScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
           <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Add Payment Method</Text>
+        <Text style={styles.headerTitle}>{t('addPayment.header')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -421,8 +428,8 @@ export default function AddPaymentMethodScreen() {
                 <Ionicons name={option.icon as any} size={22} color="#BD632F" />
               </View>
               <View>
-                <Text style={styles.optionTitle}>{option.title}</Text>
-                <Text style={styles.optionSubtitle}>{option.subtitle}</Text>
+                <Text style={styles.optionTitle}>{t(option.title)}</Text>
+                <Text style={styles.optionSubtitle}>{t(option.subtitle)}</Text>
               </View>
             </View>
             <Ionicons name="chevron-forward" size={18} color="#9C9690" />
@@ -432,7 +439,7 @@ export default function AddPaymentMethodScreen() {
         <View style={styles.securityNoticeBottom}>
           <Ionicons name="shield-checkmark-outline" size={18} color="#BD632F" />
           <Text style={styles.securityText}>
-            Your payment information is protected with 256-bit SSL encryption and PCI DSS compliance.
+            {t('addPayment.security.payment')}
           </Text>
         </View>
       </ScrollView>

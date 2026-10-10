@@ -22,6 +22,7 @@ import {
 import { PatientAvatar } from '@/components/patient-avatar';
 import { EmptyState } from '@/components/ui/empty-state';
 import { formatTime12h } from '@/utils/date';
+import { useTranslation } from '@/hooks/use-translation';
 
 interface EnrichedChat {
   id: string;
@@ -62,6 +63,7 @@ function formatAppointmentTime(iso?: string): string {
 
 export default function DoctorMessagesScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const isDoctor = useRequireDoctor();
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -130,8 +132,8 @@ export default function DoctorMessagesScreen() {
           appointment?.patientName ||
           conv.animalName ||
           appointment?.animalName ||
-          'Patient',
-        lastMessage: conv.lastMessageText || 'Start a conversation',
+          t('doctorMessages.fallback.patient'),
+        lastMessage: conv.lastMessageText || t('doctorMessages.startConversation'),
         time: formatChatTime(conv.lastMessageAt),
         unreadCount: conv.unreadCount || 0,
         isPending: false,
@@ -150,7 +152,7 @@ export default function DoctorMessagesScreen() {
       if (!chatMap.has(b.patientId)) {
         chatMap.set(b.patientId, {
           id: `apt-${b.patientId}`,
-          name: b.patientName || b.animalName || 'Patient',
+          name: b.patientName || b.animalName || t('doctorMessages.fallback.patient'),
           lastMessage: '',
           time: formatAppointmentTime(b.startAt),
           unreadCount: 0,
@@ -169,7 +171,7 @@ export default function DoctorMessagesScreen() {
     });
 
     return Array.from(chatMap.values());
-  }, [conversations, bookings, patientLookup]);
+  }, [conversations, bookings, patientLookup, t]);
 
   const filteredChats = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -234,7 +236,7 @@ export default function DoctorMessagesScreen() {
           pathname: '/chat',
           params: {
             conversationId: String(result.id),
-            patientName: appointment.patientName || appointment.animalName || 'Patient',
+            patientName: appointment.patientName || appointment.animalName || t('doctorMessages.fallback.patient'),
             animalImage: appointment.animalImage || '',
             theirAvatar: appointment.patientAvatar,
             appointmentId: String(appointment.id),
@@ -247,7 +249,7 @@ export default function DoctorMessagesScreen() {
       } catch {}
       setCreatingId(null);
     },
-    [createConversation, router]
+    [createConversation, router, t]
   );
 
   if (!isDoctor) return null;
@@ -263,7 +265,7 @@ export default function DoctorMessagesScreen() {
               style={styles.searchInput}
               value={searchQuery}
               onChangeText={setSearchQuery}
-              placeholder="Search chats..."
+              placeholder={t('doctorMessages.searchPlaceholder')}
               placeholderTextColor="#9C9690"
               returnKeyType="search"
               autoCorrect={false}
@@ -280,7 +282,7 @@ export default function DoctorMessagesScreen() {
             )}
           </View>
         ) : (
-          <Text style={styles.headerTitle}>Chat</Text>
+          <Text style={styles.headerTitle}>{t('doctorMessages.title')}</Text>
         )}
         <TouchableOpacity
           style={styles.searchBtn}
@@ -304,16 +306,18 @@ export default function DoctorMessagesScreen() {
           >
             <View style={styles.upcomingContent}>
               <View style={styles.upcomingLeft}>
-                <Text style={styles.upcomingLabel}>Upcoming appointment</Text>
+                <Text style={styles.upcomingLabel}>{t('doctorMessages.upcomingAppointment')}</Text>
                 <Text style={styles.upcomingTime}>
-                  {formatAppointmentTime(nextAppointment.startAt)} · Today
+                  {formatAppointmentTime(nextAppointment.startAt)} · {t('doctorMessages.today')}
                 </Text>
-                <Text style={styles.upcomingPetName}>{nextAppointment.animalName || 'Pet'}</Text>
+                <Text style={styles.upcomingPetName}>
+                  {nextAppointment.animalName || t('doctorMessages.fallback.pet')}
+                </Text>
                 <Text style={styles.upcomingOwner}>
-                  Owner{'   '}
+                  {t('doctorMessages.owner')}{'   '}
                   {nextAppointment.patientName ||
                     nextAppointment.patientPhone ||
-                    'Patient'}
+                    t('doctorMessages.fallback.patient')}
                 </Text>
               </View>
               <View style={styles.upcomingRight}>
@@ -330,19 +334,19 @@ export default function DoctorMessagesScreen() {
                   )}
                 </View>
                 <TouchableOpacity style={styles.joinBtn} activeOpacity={0.85}>
-                  <Text style={styles.joinBtnText}>Join</Text>
+                  <Text style={styles.joinBtnText}>{t('doctorMessages.join')}</Text>
                 </TouchableOpacity>
               </View>
             </View>
           </TouchableOpacity>
         )}
 
-        <Text style={styles.sectionTitle}>Recent chats</Text>
+        <Text style={styles.sectionTitle}>{t('doctorMessages.recentChats')}</Text>
 
         {searchQuery && filteredChats.length === 0 ? (
           <EmptyState
-            title="No chats found"
-            description="Try a different name or message."
+            title={t('doctorMessages.empty.title')}
+            description={t('doctorMessages.empty.desc')}
           />
         ) : (
           filteredChats.map((chat) => (
@@ -370,7 +374,7 @@ export default function DoctorMessagesScreen() {
                     <ActivityIndicator size="small" color="#BD632F" />
                   ) : chat.isPending ? (
                     <Text style={styles.pendingText}>
-                      Tap to start chatting
+                      {t('doctorMessages.tapToChat')}
                     </Text>
                   ) : (
                     <Text style={styles.chatLastMessage} numberOfLines={1}>{chat.lastMessage}</Text>

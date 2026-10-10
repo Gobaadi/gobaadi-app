@@ -19,6 +19,7 @@ import {
   useCancelBookingMutation,
 } from '@/store/doctorPortalApi';
 import { apiErrorMessage } from '@/utils/api-error';
+import { useTranslation } from 'react-i18next';
 
 function formatTimeRange(start: string, end: string): string {
   const s = new Date(start);
@@ -40,6 +41,7 @@ type CancellationReason = 'emergency' | 'schedule_conflict' | 'other' | null;
 
 export default function AppointmentCancelScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const {
     data: fetchedAppointment,
@@ -64,7 +66,7 @@ export default function AppointmentCancelScreen() {
           >
             <Ionicons name="arrow-back" size={20} color="#BD632F" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Cancel Appointment</Text>
+          <Text style={styles.headerTitle}>{t('appointmentCancel.title')}</Text>
           <View style={{ width: 40 }} />
         </View>
         <View style={styles.emptyContainer}>
@@ -85,22 +87,22 @@ export default function AppointmentCancelScreen() {
           >
             <Ionicons name="arrow-back" size={20} color="#BD632F" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Cancel Appointment</Text>
+          <Text style={styles.headerTitle}>{t('appointmentCancel.title')}</Text>
           <View style={{ width: 40 }} />
         </View>
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>Appointment not found</Text>
+          <Text style={styles.emptyText}>{t('appointmentCancel.notFound')}</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   const displayName =
-    appointment.animalName || appointment.patientName || 'Patient';
+    appointment.animalName || appointment.patientName || t('appointmentCancel.patient');
 
   const handleCancel = async () => {
     if (!selectedReason) {
-      Alert.alert('Required', 'Please select a cancellation reason.');
+      Alert.alert(t('appointmentCancel.alerts.required'), t('appointmentCancel.alerts.selectReason'));
       return;
     }
     try {
@@ -115,8 +117,8 @@ export default function AppointmentCancelScreen() {
       });
     } catch (err) {
       Alert.alert(
-        'Error',
-        apiErrorMessage(err, 'Failed to cancel appointment. Please try again.'),
+        t('appointmentCancel.alerts.error'),
+        apiErrorMessage(err, t('appointmentCancel.alerts.cancelFailed')),
       );
     }
   };
@@ -131,7 +133,7 @@ export default function AppointmentCancelScreen() {
         >
           <Ionicons name="arrow-back" size={20} color="#BD632F" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Cancel Appointment</Text>
+        <Text style={styles.headerTitle}>{t('appointmentCancel.title')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -162,7 +164,7 @@ export default function AppointmentCancelScreen() {
                 </Text>
               )}
               {appointment.animalName && appointment.patientName && (
-                <Text style={styles.cardOwner}>Owner: {appointment.patientName}</Text>
+                <Text style={styles.cardOwner}>{t('appointmentCancel.owner', { name: appointment.patientName })}</Text>
               )}
             </View>
           </View>
@@ -172,12 +174,12 @@ export default function AppointmentCancelScreen() {
           </View>
         </View>
 
-        <Text style={styles.sectionTitle}>Cancellation Reason</Text>
+        <Text style={styles.sectionTitle}>{t('appointmentCancel.cancellationReason')}</Text>
         <View style={styles.radioGroup}>
           {([
-            { value: 'emergency' as CancellationReason, label: 'Emergency' },
-            { value: 'schedule_conflict' as CancellationReason, label: 'Schedule conflict' },
-            { value: 'other' as CancellationReason, label: 'Other' },
+            { value: 'emergency' as CancellationReason, labelKey: 'appointmentCancel.reasons.emergency' },
+            { value: 'schedule_conflict' as CancellationReason, labelKey: 'appointmentCancel.reasons.scheduleConflict' },
+            { value: 'other' as CancellationReason, labelKey: 'appointmentCancel.reasons.other' },
           ]).map((option) => (
             <TouchableOpacity
               key={option.value}
@@ -193,12 +195,12 @@ export default function AppointmentCancelScreen() {
               >
                 {selectedReason === option.value && <View style={styles.radioInner} />}
               </View>
-              <Text style={styles.radioLabel}>{option.label}</Text>
+              <Text style={styles.radioLabel}>{t(option.labelKey)}</Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        <Text style={styles.sectionTitle}>Note (Optional)</Text>
+        <Text style={styles.sectionTitle}>{t('appointmentCancel.noteOptional')}</Text>
         <TextInput
           style={styles.noteInput}
           placeholder=""
@@ -218,7 +220,7 @@ export default function AppointmentCancelScreen() {
           disabled={isLoading}
         >
           <Text style={styles.cancelBtnText}>
-            {isLoading ? 'Cancelling...' : 'Cancel'}
+            {isLoading ? t('appointmentCancel.cancelling') : t('appointmentCancel.cancelBtn')}
           </Text>
         </TouchableOpacity>
       </View>

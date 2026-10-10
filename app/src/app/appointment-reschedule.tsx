@@ -21,6 +21,7 @@ import {
 } from '@/store/doctorPortalApi';
 import { useGetSlotsQuery } from '@/store/doctorsApi';
 import { apiErrorMessage } from '@/utils/api-error';
+import { useTranslation } from 'react-i18next';
 
 function getDaysInMonth(year: number, month: number): number {
   return new Date(year, month + 1, 0).getDate();
@@ -43,13 +44,16 @@ function isSameDay(a: Date, b: Date): boolean {
 }
 
 const MONTH_NAMES = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
+  'appointmentReschedule.months.january', 'appointmentReschedule.months.february', 'appointmentReschedule.months.march',
+  'appointmentReschedule.months.april', 'appointmentReschedule.months.may', 'appointmentReschedule.months.june',
+  'appointmentReschedule.months.july', 'appointmentReschedule.months.august', 'appointmentReschedule.months.september',
+  'appointmentReschedule.months.october', 'appointmentReschedule.months.november', 'appointmentReschedule.months.december',
 ];
-const DAY_LETTERS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAY_LETTERS = ['appointmentReschedule.dayShort.sun', 'appointmentReschedule.dayShort.mon', 'appointmentReschedule.dayShort.tue', 'appointmentReschedule.dayShort.wed', 'appointmentReschedule.dayShort.thu', 'appointmentReschedule.dayShort.fri', 'appointmentReschedule.dayShort.sat'];
 
 export default function AppointmentRescheduleScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const isDoctor = useSelector((state: RootState) => state.auth.user?.role) === 'doctor';
   const {
@@ -92,7 +96,7 @@ export default function AppointmentRescheduleScreen() {
           >
             <Ionicons name="arrow-back" size={20} color="#BD632F" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Reschedule Appointment</Text>
+          <Text style={styles.headerTitle}>{t('appointmentReschedule.title')}</Text>
           <View style={{ width: 40 }} />
         </View>
         <View style={styles.emptyContainer}>
@@ -113,18 +117,18 @@ export default function AppointmentRescheduleScreen() {
           >
             <Ionicons name="arrow-back" size={20} color="#BD632F" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Reschedule Appointment</Text>
+          <Text style={styles.headerTitle}>{t('appointmentReschedule.title')}</Text>
           <View style={{ width: 40 }} />
         </View>
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>Appointment not found</Text>
+          <Text style={styles.emptyText}>{t('appointmentReschedule.notFound')}</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   const displayName =
-    appointment.animalName || appointment.patientName || 'Patient';
+    appointment.animalName || appointment.patientName || t('appointmentReschedule.patient');
 
   const year = currentMonth.getFullYear();
   const month = currentMonth.getMonth();
@@ -146,7 +150,7 @@ export default function AppointmentRescheduleScreen() {
 
   const handleReschedule = async () => {
     if (!selectedDate || !selectedTime) {
-      Alert.alert('Required', 'Please select a date and time.');
+      Alert.alert(t('appointmentReschedule.alerts.required'), t('appointmentReschedule.alerts.selectDateTime'));
       return;
     }
     try {
@@ -156,7 +160,7 @@ export default function AppointmentRescheduleScreen() {
         date: dateStr,
         time: selectedTime,
       }).unwrap();
-      Alert.alert('Success', 'Appointment rescheduled successfully.');
+      Alert.alert(t('appointmentReschedule.alerts.successTitle'), t('appointmentReschedule.alerts.rescheduled'));
       const target = isDoctor ? '/appointments' : '/my-appointments';
       try {
         // Drop the details/reschedule screens from the stack so Back from the
@@ -168,8 +172,8 @@ export default function AppointmentRescheduleScreen() {
       }
     } catch (err) {
       Alert.alert(
-        'Error',
-        apiErrorMessage(err, 'Failed to reschedule appointment. Please try again.'),
+        t('appointmentReschedule.alerts.errorTitle'),
+        apiErrorMessage(err, t('appointmentReschedule.alerts.rescheduleFailed')),
       );
     }
   };
@@ -184,7 +188,7 @@ export default function AppointmentRescheduleScreen() {
         >
           <Ionicons name="arrow-back" size={20} color="#BD632F" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Reschedule Appointment</Text>
+        <Text style={styles.headerTitle}>{t('appointmentReschedule.title')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -215,7 +219,7 @@ export default function AppointmentRescheduleScreen() {
                 </Text>
               )}
               {appointment.animalName && appointment.patientName && (
-                <Text style={styles.cardOwner}>Owner: {appointment.patientName}</Text>
+                <Text style={styles.cardOwner}>{t('appointmentReschedule.owner', { name: appointment.patientName })}</Text>
               )}
             </View>
           </View>
@@ -237,14 +241,14 @@ export default function AppointmentRescheduleScreen() {
           </View>
         </View>
 
-        <Text style={styles.sectionTitle}>Select date</Text>
+        <Text style={styles.sectionTitle}>{t('appointmentReschedule.selectDate')}</Text>
         <View style={styles.calendarContainer}>
           <View style={styles.calendarHeader}>
             <TouchableOpacity onPress={goToPreviousMonth} activeOpacity={0.7}>
               <Ionicons name="chevron-back" size={20} color="#1A1817" />
             </TouchableOpacity>
             <Text style={styles.monthTitle}>
-              {MONTH_NAMES[month]} {year}
+              {t(MONTH_NAMES[month])} {year}
             </Text>
             <TouchableOpacity onPress={goToNextMonth} activeOpacity={0.7}>
               <Ionicons name="chevron-forward" size={20} color="#1A1817" />
@@ -253,7 +257,7 @@ export default function AppointmentRescheduleScreen() {
 
           <View style={styles.dayHeaderRow}>
             {DAY_LETTERS.map((d, i) => (
-              <Text key={i} style={styles.dayHeaderText}>{d}</Text>
+              <Text key={i} style={styles.dayHeaderText}>{t(d)}</Text>
             ))}
           </View>
 
@@ -307,11 +311,11 @@ export default function AppointmentRescheduleScreen() {
           </View>
         </View>
 
-        <Text style={styles.sectionTitle}>Select time</Text>
+        <Text style={styles.sectionTitle}>{t('appointmentReschedule.selectTime')}</Text>
         {slotsLoading ? (
           <ActivityIndicator size="small" color="#BD632F" style={{ marginTop: 12 }} />
         ) : timeSlots.length === 0 ? (
-          <Text style={styles.emptyText}>No available slots for this date</Text>
+          <Text style={styles.emptyText}>{t('appointmentReschedule.noSlots')}</Text>
         ) : (
           <View style={styles.timeSlotsRow}>
             {timeSlots.map((slot) => (
@@ -346,7 +350,7 @@ export default function AppointmentRescheduleScreen() {
           disabled={isLoading}
         >
           <Text style={styles.rescheduleBtnText}>
-            {isLoading ? 'Rescheduling...' : 'Reschedule'}
+            {isLoading ? t('appointmentReschedule.rescheduling') : t('appointmentReschedule.reschedule')}
           </Text>
         </TouchableOpacity>
       </View>

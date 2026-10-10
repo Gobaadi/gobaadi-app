@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { SvgXml } from 'react-native-svg';
 import {
   backButtonSvg,
@@ -19,6 +20,7 @@ import {
 
 export default function LegalAboutScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -31,7 +33,7 @@ export default function LegalAboutScreen() {
         >
           <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Legal & About</Text>
+        <Text style={styles.headerTitle}>{t('legalAbout.title')}</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -46,8 +48,8 @@ export default function LegalAboutScreen() {
               <SvgXml width={22} height={22} xml={legalAndAboutTermsAndConditionSvg} />
             </View>
             <View>
-              <Text style={styles.cardTitle}>Terms of Service</Text>
-              <Text style={styles.cardSubtitle}>Terms and Conditions</Text>
+              <Text style={styles.cardTitle}>{t('legalAbout.terms.title')}</Text>
+              <Text style={styles.cardSubtitle}>{t('legalAbout.terms.subtitle')}</Text>
             </View>
           </View>
           <SvgXml width={10} height={20} xml={tintSvg(profileArrowRightSvg, '#737373', '#9C9690')} />
@@ -82,8 +84,8 @@ export default function LegalAboutScreen() {
               <SvgXml width={22} height={22} xml={legalAndAboutAppSvg} />
             </View>
             <View>
-              <Text style={styles.cardTitle}>About App</Text>
-              <Text style={styles.cardSubtitle}>Our Vision & Mission</Text>
+              <Text style={styles.cardTitle}>{t('legalAbout.about.title')}</Text>
+              <Text style={styles.cardSubtitle}>{t('legalAbout.about.subtitle')}</Text>
             </View>
           </View>
           <SvgXml width={10} height={20} xml={tintSvg(profileArrowRightSvg, '#737373', '#9C9690')} />

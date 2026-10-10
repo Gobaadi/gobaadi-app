@@ -18,6 +18,8 @@ import {
   doctorNotificationSvg,
 } from '@/components/icons/svg-icon-sources';
 
+import { useTranslation } from 'react-i18next';
+
 import { useGetDiagnosisByIdQuery } from '@/store/aiDiagnosisApi';
 import { getDiseaseInfo } from '@/constants/disease-info';
 import { formatRelativeTime } from '@/utils/date';
@@ -32,6 +34,7 @@ function parseTitleDetail(rec: string): { title: string; detail?: string } {
 
 export default function AiSummaryScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const diagnosisId = id ? Number(id) : undefined;
 
@@ -57,16 +60,16 @@ export default function AiSummaryScreen() {
           <TouchableOpacity style={styles.circleButton} onPress={handleBack} activeOpacity={0.8}>
             <SvgXml width={20} height={20} xml={backButtonSvg} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Summary</Text>
+          <Text style={styles.headerTitle}>{t('aiSummary.headerTitle')}</Text>
           <TouchableOpacity style={styles.circleButton} activeOpacity={0.8}>
             <SvgXml width={20} height={20} xml={doctorNotificationSvg} />
           </TouchableOpacity>
         </View>
         <View style={styles.centerState}>
           <Ionicons name="document-text-outline" size={40} color="#A39E99" />
-          <Text style={styles.centerStateText}>No diagnosis selected</Text>
+          <Text style={styles.centerStateText}>{t('aiSummary.empty.noDiagnosis')}</Text>
           <TouchableOpacity style={styles.retryButton} onPress={() => router.replace('/ai-scan')}>
-            <Text style={styles.retryButtonText}>Start a new scan</Text>
+            <Text style={styles.retryButtonText}>{t('aiSummary.empty.startScan')}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -80,14 +83,14 @@ export default function AiSummaryScreen() {
           <TouchableOpacity style={styles.circleButton} onPress={handleBack} activeOpacity={0.8}>
             <SvgXml width={20} height={20} xml={backButtonSvg} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Summary</Text>
+          <Text style={styles.headerTitle}>{t('aiSummary.headerTitle')}</Text>
           <TouchableOpacity style={styles.circleButton} activeOpacity={0.8}>
             <SvgXml width={20} height={20} xml={doctorNotificationSvg} />
           </TouchableOpacity>
         </View>
         <View style={styles.centerState}>
           <ActivityIndicator size="large" color="#BD632F" />
-          <Text style={styles.centerStateText}>Loading diagnosis…</Text>
+          <Text style={styles.centerStateText}>{t('aiSummary.loading')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -100,7 +103,7 @@ export default function AiSummaryScreen() {
           <TouchableOpacity style={styles.circleButton} onPress={handleBack} activeOpacity={0.8}>
             <SvgXml width={20} height={20} xml={backButtonSvg} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Summary</Text>
+          <Text style={styles.headerTitle}>{t('aiSummary.headerTitle')}</Text>
           <TouchableOpacity style={styles.circleButton} activeOpacity={0.8}>
             <SvgXml width={20} height={20} xml={doctorNotificationSvg} />
           </TouchableOpacity>
@@ -108,10 +111,10 @@ export default function AiSummaryScreen() {
         <View style={styles.centerState}>
           <Ionicons name="cloud-offline-outline" size={40} color="#A39E99" />
           <Text style={styles.centerStateText}>
-            Could not load this diagnosis. Please try again.
+            {t('aiSummary.error.loadFailed')}
           </Text>
           <TouchableOpacity style={styles.retryButton} onPress={() => refetch()}>
-            <Text style={styles.retryButtonText}>Retry</Text>
+            <Text style={styles.retryButtonText}>{t('aiSummary.error.retry')}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -130,7 +133,7 @@ export default function AiSummaryScreen() {
           <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>Summary</Text>
+        <Text style={styles.headerTitle}>{t('aiSummary.headerTitle')}</Text>
 
         <TouchableOpacity style={styles.circleButton} activeOpacity={0.8}>
           <SvgXml width={20} height={20} xml={doctorNotificationSvg} />
@@ -145,8 +148,8 @@ export default function AiSummaryScreen() {
               <SvgXml width={26} height={24} xml={aiScanResultCowSvg} />
             </View>
             <View style={styles.cowMetaCol}>
-              <Text style={styles.cowTitle}>Cow</Text>
-              <Text style={styles.cowTime}>Detected : {formatRelativeTime(diagnosis.createdAt)}</Text>
+              <Text style={styles.cowTitle}>{t('aiSummary.cow')}</Text>
+              <Text style={styles.cowTime}>{t('aiSummary.detected', { time: formatRelativeTime(diagnosis.createdAt) })}</Text>
             </View>
           </View>
           <View style={styles.matchBadge}>
@@ -156,7 +159,7 @@ export default function AiSummaryScreen() {
 
         {/* Diagnostic Detail Card */}
         <View style={styles.detailsCard}>
-          <Text style={styles.diagnosticTitle}>{diagnosis.analysisResult ?? 'No diagnosis available'}</Text>
+          <Text style={styles.diagnosticTitle}>{diagnosis.analysisResult ?? t('aiSummary.noDiagnosisAvailable')}</Text>
           <Text style={styles.diagnosticSubtitle}>{diseaseInfo.subtitle}</Text>
 
           <View style={styles.divider} />
@@ -169,19 +172,18 @@ export default function AiSummaryScreen() {
 
           {diagnosis.status === 'FAILED' && (
             <Text style={styles.failureText}>
-              {diagnosis.failureReason || 'The automated analysis failed for this scan.'}
+              {diagnosis.failureReason || t('aiSummary.failureFallback')}
             </Text>
           )}
 
           <View style={styles.divider} />
 
           {/* Action plan list */}
-          <Text style={styles.actionPlanHeader}>Immediate Action Plan</Text>
+          <Text style={styles.actionPlanHeader}>{t('aiSummary.actionPlan')}</Text>
 
           {diagnosis.recommendations.length === 0 ? (
             <Text style={styles.diagnosticParagraph}>
-              No specific actions were recommended for this diagnosis. Keep monitoring the animal
-              and consult a veterinarian if symptoms continue.
+              {t('aiSummary.noActions')}
             </Text>
           ) : (
             diagnosis.recommendations.map((rec, index) => {
@@ -203,7 +205,7 @@ export default function AiSummaryScreen() {
           {diseaseInfo.clinicalSigns.length > 0 && (
             <>
               <View style={styles.divider} />
-              <Text style={styles.actionPlanHeader}>Key Clinical Signs in Cattle</Text>
+              <Text style={styles.actionPlanHeader}>{t('aiSummary.clinicalSigns')}</Text>
               {diseaseInfo.clinicalSigns.map((sign, index) => (
                 <View key={index} style={styles.actionRow}>
                   <Ionicons name="medkit-outline" size={14} color="#BD632F" style={styles.signIcon} />
@@ -226,7 +228,7 @@ export default function AiSummaryScreen() {
               }
               activeOpacity={0.85}
             >
-              <Text style={styles.summaryButtonText}>View Recommended Doctor</Text>
+              <Text style={styles.summaryButtonText}>{t('aiSummary.viewDoctor')}</Text>
             </TouchableOpacity>
           )}
         </View>

@@ -9,10 +9,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 import { useCreatePaymentIntentMutation, useSimulateSuccessMutation } from '@/store/paymentsApi';
 
 export default function BookingBkashNumberScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -46,7 +48,7 @@ export default function BookingBkashNumberScreen() {
           <Text style={styles.buttonText}>←</Text>
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>Booking Payment</Text>
+        <Text style={styles.headerTitle}>{t('bookingBkashNumber.title')}</Text>
 
         <TouchableOpacity style={styles.circleButton} activeOpacity={0.8}>
           <Text style={styles.buttonText}>🔔</Text>
@@ -55,7 +57,7 @@ export default function BookingBkashNumberScreen() {
 
       {/* Content */}
       <View style={styles.content}>
-        <Text style={styles.sectionTitle}>bKash No.</Text>
+        <Text style={styles.sectionTitle}>{t('bookingBkashNumber.sectionTitle')}</Text>
 
         {/* Input box */}
         <View style={styles.phoneInputRow}>
@@ -71,7 +73,7 @@ export default function BookingBkashNumberScreen() {
 
           <TextInput
             style={styles.textInput}
-            placeholder="bKash phone number"
+            placeholder={t('bookingBkashNumber.placeholder')}
             placeholderTextColor="#A39E99"
             keyboardType="phone-pad"
             value={phoneNumber}
@@ -93,7 +95,7 @@ export default function BookingBkashNumberScreen() {
           ) : (
             <>
               <Text style={styles.payIcon}>🎟️</Text>
-              <Text style={styles.payText}>Pay Now</Text>
+              <Text style={styles.payText}>{t('bookingBkashNumber.payNow')}</Text>
             </>
           )}
         </TouchableOpacity>

@@ -10,6 +10,7 @@ import {
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { useRequireDoctor } from '@/hooks/use-require-doctor';
 import { useGetMyPatientsQuery } from '@/store/discountsApi';
@@ -18,6 +19,7 @@ import { MediaCardSkeleton } from '@/components/ui/skeleton';
 
 export default function DoctorPatientsScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const isDoctor = useRequireDoctor();
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -37,7 +39,7 @@ export default function DoctorPatientsScreen() {
         >
           <Ionicons name="arrow-back" size={20} color="#BD632F" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Patients</Text>
+        <Text style={styles.headerTitle}>{t('doctorPatients.title')}</Text>
         <View style={{ width: 44 }} />
       </View>
 
@@ -45,7 +47,7 @@ export default function DoctorPatientsScreen() {
         <Ionicons name="search" size={18} color="#9C9690" />
         <TextInput
           style={styles.searchInput}
-          placeholder="Search patients..."
+          placeholder={t('doctorPatients.searchPlaceholder')}
           placeholderTextColor="#9C9690"
           value={searchQuery}
           onChangeText={setSearchQuery}
@@ -70,11 +72,11 @@ export default function DoctorPatientsScreen() {
           </>
         ) : patients.length === 0 ? (
           <EmptyState
-            title={searchQuery ? 'No patients found' : 'No patients yet'}
+            title={searchQuery ? t('doctorPatients.empty.searchTitle') : t('doctorPatients.empty.title')}
             description={
               searchQuery
-                ? 'Try a different search term.'
-                : 'Patients will appear here after their first appointment.'
+                ? t('doctorPatients.empty.searchDescription')
+                : t('doctorPatients.empty.description')
             }
           />
         ) : (
@@ -115,7 +117,7 @@ export default function DoctorPatientsScreen() {
                 <View style={styles.patientMetaRow}>
                   {patient.age ? (
                     <View style={styles.metaItem}>
-                      <Text style={styles.metaLabel}>Age</Text>
+                      <Text style={styles.metaLabel}>{t('doctorPatients.meta.age')}</Text>
                       <Text style={styles.metaValue}>{patient.age}</Text>
                     </View>
                   ) : null}
@@ -123,7 +125,7 @@ export default function DoctorPatientsScreen() {
                     <>
                       <View style={styles.metaDivider} />
                       <View style={styles.metaItem}>
-                        <Text style={styles.metaLabel}>Weight</Text>
+                        <Text style={styles.metaLabel}>{t('doctorPatients.meta.weight')}</Text>
                         <Text style={styles.metaValue}>{patient.weight}</Text>
                       </View>
                     </>
@@ -132,7 +134,7 @@ export default function DoctorPatientsScreen() {
                     <>
                       <View style={styles.metaDivider} />
                       <View style={styles.metaItem}>
-                        <Text style={styles.metaLabel}>Owner</Text>
+                        <Text style={styles.metaLabel}>{t('doctorPatients.meta.owner')}</Text>
                         <Text style={styles.metaValue} numberOfLines={1}>
                           {patient.ownerName}
                         </Text>

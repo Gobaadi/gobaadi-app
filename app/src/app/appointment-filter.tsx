@@ -8,14 +8,37 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 
 type DateFilter = 'today' | 'tomorrow' | 'this_week' | null;
 type StatusFilter = 'all' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED' | null;
 type ConsultationFilter = 'all' | 'video' | 'voice' | 'chat' | 'physical' | null;
 
+const DATE_OPTIONS: { value: Exclude<DateFilter, null>; labelKey: string }[] = [
+  { value: 'today', labelKey: 'appointmentFilter.dates.today' },
+  { value: 'tomorrow', labelKey: 'appointmentFilter.dates.tomorrow' },
+  { value: 'this_week', labelKey: 'appointmentFilter.dates.thisWeek' },
+];
+
+const STATUS_OPTIONS: { value: Exclude<StatusFilter, null>; labelKey: string }[] = [
+  { value: 'all', labelKey: 'appointmentFilter.status.all' },
+  { value: 'CONFIRMED', labelKey: 'appointmentFilter.status.upcoming' },
+  { value: 'COMPLETED', labelKey: 'appointmentFilter.status.completed' },
+  { value: 'CANCELLED', labelKey: 'appointmentFilter.status.cancelled' },
+];
+
+const CONSULTATION_OPTIONS: { value: Exclude<ConsultationFilter, null>; labelKey: string }[] = [
+  { value: 'all', labelKey: 'appointmentFilter.consultation.all' },
+  { value: 'video', labelKey: 'appointmentFilter.consultation.video' },
+  { value: 'voice', labelKey: 'appointmentFilter.consultation.voice' },
+  { value: 'chat', labelKey: 'appointmentFilter.consultation.chat' },
+  { value: 'physical', labelKey: 'appointmentFilter.consultation.physical' },
+];
+
 export default function AppointmentFilterScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [selectedDate, setSelectedDate] = useState<DateFilter>('today');
   const [selectedStatus, setSelectedStatus] = useState<StatusFilter>('all');
   const [selectedConsultation, setSelectedConsultation] = useState<ConsultationFilter>('all');
@@ -47,9 +70,9 @@ export default function AppointmentFilterScreen() {
         >
           <Ionicons name="arrow-back" size={20} color="#BD632F" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Filter Appointments</Text>
+        <Text style={styles.headerTitle}>{t('appointmentFilter.title')}</Text>
         <TouchableOpacity onPress={handleClear} activeOpacity={0.7}>
-          <Text style={styles.clearText}>Clear</Text>
+          <Text style={styles.clearText}>{t('appointmentFilter.clear')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -57,39 +80,30 @@ export default function AppointmentFilterScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        <Text style={styles.sectionTitle}>Date</Text>
+        <Text style={styles.sectionTitle}>{t('appointmentFilter.dateSection')}</Text>
         <View style={styles.chipRow}>
-          {(['today', 'tomorrow', 'this_week'] as DateFilter[]).map((option) => (
+          {DATE_OPTIONS.map((option) => (
             <TouchableOpacity
-              key={option}
-              style={[styles.chip, selectedDate === option && styles.chipActive]}
-              onPress={() => setSelectedDate(selectedDate === option ? null : option)}
+              key={option.value}
+              style={[styles.chip, selectedDate === option.value && styles.chipActive]}
+              onPress={() => setSelectedDate(selectedDate === option.value ? null : option.value)}
               activeOpacity={0.7}
             >
               <Text
                 style={[
                   styles.chipText,
-                  selectedDate === option && styles.chipTextActive,
+                  selectedDate === option.value && styles.chipTextActive,
                 ]}
               >
-                {option === 'today'
-                  ? 'Today'
-                  : option === 'tomorrow'
-                  ? 'Tomorrow'
-                  : 'This week'}
+                {t(option.labelKey)}
               </Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        <Text style={styles.sectionTitle}>Booked Appointments</Text>
+        <Text style={styles.sectionTitle}>{t('appointmentFilter.statusSection')}</Text>
         <View style={styles.radioGroup}>
-          {[
-            { value: 'all', label: 'All' },
-            { value: 'CONFIRMED', label: 'Upcoming' },
-            { value: 'COMPLETED', label: 'Completed' },
-            { value: 'CANCELLED', label: 'Cancelled' },
-          ].map((option) => (
+          {STATUS_OPTIONS.map((option) => (
             <TouchableOpacity
               key={option.value}
               style={styles.radioRow}
@@ -104,20 +118,14 @@ export default function AppointmentFilterScreen() {
               >
                 {selectedStatus === option.value && <View style={styles.radioInner} />}
               </View>
-              <Text style={styles.radioLabel}>{option.label}</Text>
+              <Text style={styles.radioLabel}>{t(option.labelKey)}</Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        <Text style={styles.sectionTitle}>Consultation Type</Text>
+        <Text style={styles.sectionTitle}>{t('appointmentFilter.consultationSection')}</Text>
         <View style={styles.radioGroup}>
-          {[
-            { value: 'all', label: 'All' },
-            { value: 'video', label: 'Online - Video' },
-            { value: 'voice', label: 'Online - Voice' },
-            { value: 'chat', label: 'Online - Chat' },
-            { value: 'physical', label: 'Physical' },
-          ].map((option) => (
+          {CONSULTATION_OPTIONS.map((option) => (
             <TouchableOpacity
               key={option.value}
               style={styles.radioRow}
@@ -132,7 +140,7 @@ export default function AppointmentFilterScreen() {
               >
                 {selectedConsultation === option.value && <View style={styles.radioInner} />}
               </View>
-              <Text style={styles.radioLabel}>{option.label}</Text>
+              <Text style={styles.radioLabel}>{t(option.labelKey)}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -140,7 +148,7 @@ export default function AppointmentFilterScreen() {
 
       <View style={styles.bottomContainer}>
         <TouchableOpacity style={styles.applyBtn} onPress={handleApply} activeOpacity={0.8}>
-          <Text style={styles.applyBtnText}>Apply</Text>
+          <Text style={styles.applyBtnText}>{t('appointmentFilter.apply')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

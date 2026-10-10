@@ -29,8 +29,10 @@ import {
   editProfileNumberCheckSvg,
   editProfileLocationSvg,
 } from '@/components/icons/svg-icon-sources';
+import { useTranslation } from '@/hooks/use-translation';
 
 export default function EditProfileScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { data: profile } = useGetMyProfileQuery();
   const [updateProfile, { isLoading: isSaving }] = useUpdateMyProfileMutation();
@@ -60,10 +62,10 @@ export default function EditProfileScreen() {
       : require('@/assets/images/user_profile.webp');
 
   const openPhotoPicker = () => {
-    Alert.alert('Change Profile Photo', 'Choose an option', [
-      { text: 'Take Photo', onPress: () => pickPhoto('camera') },
-      { text: 'Choose from Library', onPress: () => pickPhoto('library') },
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('editProfile.alerts.changePhoto'), t('editProfile.alerts.chooseOption'), [
+      { text: t('editProfile.alerts.takePhoto'), onPress: () => pickPhoto('camera') },
+      { text: t('editProfile.alerts.chooseLibrary'), onPress: () => pickPhoto('library') },
+      { text: t('editProfile.alerts.cancel'), style: 'cancel' },
     ]);
   };
 
@@ -75,10 +77,10 @@ export default function EditProfileScreen() {
           : await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permission.granted) {
         Alert.alert(
-          'Permission required',
+          t('editProfile.alerts.permissionRequired'),
           source === 'camera'
-            ? 'Camera access is required to take a profile photo.'
-            : 'Photo library access is required to choose a profile photo.',
+            ? t('editProfile.alerts.cameraPermission')
+            : t('editProfile.alerts.libraryPermission'),
         );
         return;
       }
@@ -90,8 +92,8 @@ export default function EditProfileScreen() {
       await uploadPhoto(result.assets[0].uri);
     } catch {
       Alert.alert(
-        'Photo selection failed',
-        'Could not open the camera or photo gallery. Please try again.',
+        t('editProfile.alerts.photoSelectionFailed'),
+        t('editProfile.alerts.photoSelectionFailedMsg'),
       );
     }
   };
@@ -114,12 +116,12 @@ export default function EditProfileScreen() {
     } catch (err: any) {
       setPickedPhotoUri(null);
       Alert.alert(
-        'Upload failed',
+        t('editProfile.alerts.uploadFailed'),
         err?.status === 413
-          ? 'The photo is too large. Please try a smaller image.'
+          ? t('editProfile.alerts.photoTooLarge')
           : err?.data?.message ||
             err?.message ||
-            'Failed to upload photo. Please try again.',
+            t('editProfile.alerts.uploadPhotoFailed'),
       );
     } finally {
       setIsUploadingPhoto(false);
@@ -128,18 +130,21 @@ export default function EditProfileScreen() {
 
   const handleSave = async () => {
     if (!name.trim()) {
-      Alert.alert('Required field', 'Please enter your name.');
+      Alert.alert(t('editProfile.alerts.requiredField'), t('editProfile.alerts.enterName'));
       return;
     }
     try {
       await updateProfile({ name: name.trim(), phone: phone.trim() }).unwrap();
     } catch (err) {
-      Alert.alert('Error', apiErrorMessage(err, 'Failed to update profile. Please try again.'));
+      Alert.alert(
+        t('editProfile.alerts.error'),
+        apiErrorMessage(err, t('editProfile.alerts.updateProfileFailed')),
+      );
       return;
     }
     await setLocation((locationInput ?? '').trim() || location);
-    Alert.alert('Success', 'Profile updated successfully.', [
-      { text: 'OK', onPress: () => router.back() },
+    Alert.alert(t('editProfile.alerts.success'), t('editProfile.alerts.profileUpdated'), [
+      { text: t('editProfile.alerts.ok'), onPress: () => router.back() },
     ]);
   };
 
@@ -155,7 +160,7 @@ export default function EditProfileScreen() {
           <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>Edit Profile</Text>
+        <Text style={styles.headerTitle}>{t('editProfile.header')}</Text>
 
         <View style={{ width: 42 }} />
       </View>
@@ -182,13 +187,13 @@ export default function EditProfileScreen() {
 
           {/* Form Fields */}
           <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Your name</Text>
+            <Text style={styles.fieldLabel}>{t('editProfile.nameLabel')}</Text>
             <View style={styles.inputWrapper}>
               <TextInput
                 style={styles.textInput}
                 value={name}
                 onChangeText={setName}
-                placeholder="Enter name"
+                placeholder={t('editProfile.namePlaceholder')}
                 placeholderTextColor="#A39E99"
               />
               <TouchableOpacity style={styles.inputActionBtn} activeOpacity={0.7}>
@@ -198,14 +203,14 @@ export default function EditProfileScreen() {
           </View>
 
           <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Mobile Number</Text>
+            <Text style={styles.fieldLabel}>{t('editProfile.phoneLabel')}</Text>
             <View style={styles.inputWrapper}>
               <TextInput
                 style={styles.textInput}
                 value={phone}
                 onChangeText={setPhone}
                 editable={true}
-                placeholder="Enter Phone"
+                placeholder={t('editProfile.phonePlaceholder')}
                 placeholderTextColor="#A39E99"
                 keyboardType="phone-pad"
               />
@@ -214,13 +219,13 @@ export default function EditProfileScreen() {
           </View>
 
           <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Location</Text>
+            <Text style={styles.fieldLabel}>{t('editProfile.locationLabel')}</Text>
             <View style={styles.inputWrapper}>
               <TextInput
                 style={styles.textInput}
                 value={locationInput ?? location}
                 onChangeText={setLocationInput}
-                placeholder="Enter location"
+                placeholder={t('editProfile.locationPlaceholder')}
                 placeholderTextColor="#A39E99"
               />
               <SvgXml width={20} height={20} xml={editProfileLocationSvg} />
@@ -240,7 +245,7 @@ export default function EditProfileScreen() {
           {isSaving ? (
             <ActivityIndicator size="small" color="#FFFFFF" />
           ) : (
-            <Text style={styles.saveButtonText}>Save Changes</Text>
+            <Text style={styles.saveButtonText}>{t('editProfile.saveChanges')}</Text>
           )}
         </TouchableOpacity>
       </View>

@@ -1,9 +1,16 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from '@/hooks/use-translation';
 
 interface Props {
   children: ReactNode;
+}
+
+type T = ReturnType<typeof useTranslation>['t'];
+
+interface BoundaryProps extends Props {
+  t: T;
 }
 
 interface State {
@@ -12,7 +19,7 @@ interface State {
   errorInfo: ErrorInfo | null;
 }
 
-export class ErrorBoundary extends Component<Props, State> {
+class ErrorBoundaryInner extends Component<BoundaryProps, State> {
   public state: State = {
     hasError: false,
     error: null,
@@ -45,9 +52,9 @@ export class ErrorBoundary extends Component<Props, State> {
               <Text style={styles.errorIcon}>⚠️</Text>
             </View>
 
-            <Text style={styles.title}>Something went wrong</Text>
+            <Text style={styles.title}>{this.props.t('errorBoundary.title')}</Text>
             <Text style={styles.description}>
-              Don&apos;t worry, your data is safe.
+              {this.props.t('errorBoundary.description')}
             </Text>
 
             {this.state.error && (
@@ -64,7 +71,7 @@ export class ErrorBoundary extends Component<Props, State> {
             )}
 
             <TouchableOpacity style={styles.button} onPress={this.handleReset} activeOpacity={0.85}>
-              <Text style={styles.buttonText}>Try Again</Text>
+              <Text style={styles.buttonText}>{this.props.t('errorBoundary.tryAgain')}</Text>
             </TouchableOpacity>
           </View>
         </SafeAreaView>
@@ -73,6 +80,11 @@ export class ErrorBoundary extends Component<Props, State> {
 
     return this.props.children;
   }
+}
+
+export function ErrorBoundary({ children }: Props) {
+  const { t } = useTranslation();
+  return <ErrorBoundaryInner t={t}>{children}</ErrorBoundaryInner>;
 }
 
 const styles = StyleSheet.create({

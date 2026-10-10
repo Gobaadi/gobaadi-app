@@ -18,6 +18,7 @@ import {
   doctorCardStarSvg,
   doctorNotificationSvg,
 } from '@/components/icons/svg-icon-sources';
+import { useTranslation } from 'react-i18next';
 
 function pad(n: number): string {
   return String(n).padStart(2, '0');
@@ -25,6 +26,7 @@ function pad(n: number): string {
 
 export default function BookingDetailsScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const params = useLocalSearchParams();
   const doctorId = String(params.id || '');
   const selectedDay = params.day ? String(params.day) : '28';
@@ -38,9 +40,9 @@ export default function BookingDetailsScreen() {
     if (!doctorData) {
       return {
         id: doctorId || '1',
-        name: 'Dr. David Patel',
-        specialty: 'Veterinary Surgery',
-        location: 'Cardiology Center, USA',
+        name: t('bookingDetails.defaults.name'),
+        specialty: t('bookingDetails.defaults.specialty'),
+        location: t('bookingDetails.defaults.location'),
         rating: 5,
         reviews: 1872,
         avatar: '',
@@ -50,21 +52,21 @@ export default function BookingDetailsScreen() {
       id: String(doctorData.id),
       name: doctorData.name,
       specialty: doctorData.specialty,
-      location: 'Uttar Badda, Dhaka',
+      location: t('bookingDetails.defaults.city'),
       rating: doctorData.rating || 4.8,
       reviews: 124,
       avatar: doctorData.avatar ?? '',
     };
-  }, [doctorData, doctorId]);
+  }, [doctorData, doctorId, t]);
 
   const today = new Date();
-  const monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December',
+  const monthKeys = [
+    'january', 'february', 'march', 'april', 'may', 'june',
+    'july', 'august', 'september', 'october', 'november', 'december',
   ];
-  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const dayKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
   const dateObj = new Date(today.getFullYear(), today.getMonth(), Number(selectedDay));
-  const fullDateDisplay = `${dayNames[dateObj.getDay()]}, ${pad(Number(selectedDay))} ${monthNames[today.getMonth()]} ${today.getFullYear()}`;
+  const fullDateDisplay = `${t(`bookingDetails.days.${dayKeys[dateObj.getDay()]}`)}, ${pad(Number(selectedDay))} ${t(`bookingDetails.months.${monthKeys[today.getMonth()]}`)} ${today.getFullYear()}`;
 
   const barcodePattern = [
     2, 1, 4, 2, 1, 3, 1, 2, 4, 1, 2, 3, 1, 4, 2, 1, 2, 3, 1, 4,
@@ -84,7 +86,7 @@ export default function BookingDetailsScreen() {
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         {/* Main Card */}
         <View style={styles.billCard}>
-          <Text style={styles.billTitle}>Booking Details</Text>
+          <Text style={styles.billTitle}>{t('bookingDetails.title')}</Text>
           <View style={styles.divider} />
 
           {/* Doctor Row */}
@@ -106,32 +108,32 @@ export default function BookingDetailsScreen() {
               <View style={styles.ratingRow}>
                 <SvgXml width={11} height={11} xml={doctorCardStarSvg} style={styles.starIcon} />
                 <Text style={styles.ratingValue}>{doctor.rating}</Text>
-                <Text style={styles.reviewsText}>| {doctor.reviews} Reviews</Text>
+                <Text style={styles.reviewsText}>{t('bookingDetails.reviews', { count: doctor.reviews })}</Text>
               </View>
             </View>
           </View>
 
           {/* Booking Reason */}
-          <Text style={styles.sectionHeader}>Booking Reason</Text>
+          <Text style={styles.sectionHeader}>{t('bookingDetails.bookingReason')}</Text>
           <Text style={styles.reasonText}>{bookingReason || '—'}</Text>
 
           <View style={styles.divider} />
 
           {/* Your Slot */}
-          <Text style={styles.sectionHeader}>Your Slot</Text>
+          <Text style={styles.sectionHeader}>{t('bookingDetails.yourSlot')}</Text>
 
           <View style={styles.slotDetailRow}>
-            <Text style={styles.slotLabel}>Hour</Text>
+            <Text style={styles.slotLabel}>{t('bookingDetails.hour')}</Text>
             <Text style={styles.slotValue}>{selectedTime}</Text>
           </View>
 
           <View style={styles.slotDetailRow}>
-            <Text style={styles.slotLabel}>Dates</Text>
+            <Text style={styles.slotLabel}>{t('bookingDetails.dates')}</Text>
             <Text style={styles.slotValue}>{fullDateDisplay}</Text>
           </View>
 
           <View style={styles.slotDetailRow}>
-            <Text style={styles.slotLabel}>Visit Type</Text>
+            <Text style={styles.slotLabel}>{t('bookingDetails.visitType')}</Text>
             <Text style={[styles.slotValue, styles.onlineText]}>{selectedVisitType}</Text>
           </View>
 
@@ -164,7 +166,7 @@ export default function BookingDetailsScreen() {
           activeOpacity={0.85}
         >
           <SvgXml width={16} height={16} xml={backButtonSvg} style={styles.homeButtonIcon} />
-          <Text style={styles.homeButtonText}>Back to home</Text>
+          <Text style={styles.homeButtonText}>{t('bookingDetails.backToHome')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

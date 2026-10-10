@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import {
   useGetForAppointmentQuery,
   consultationStartedAt,
@@ -19,8 +20,9 @@ function formatTimeRemaining(seconds: number): string {
 
 export default function ConsultationEndedScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const {
-    patientName = 'Patient',
+    patientName = '',
     peerName = '',
     startedAt = '',
     conversationId = '',
@@ -36,7 +38,8 @@ export default function ConsultationEndedScreen() {
     appointmentId?: string;
   }>();
 
-  const displayName = peerName || patientName;
+  const resolvedPatientName = patientName || t('consultationEnded.patient');
+  const displayName = peerName || resolvedPatientName;
 
   // Fallback when the caller (video-call screen) could not pass startedAt —
   // re-derive it so Start time / Remaining time bullets still render.
@@ -81,7 +84,7 @@ export default function ConsultationEndedScreen() {
 
   const chatParams = {
     conversationId,
-    patientName,
+    patientName: resolvedPatientName,
     appointmentId,
     animalId,
   };
@@ -92,7 +95,7 @@ export default function ConsultationEndedScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
           <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Consultation Ended</Text>
+        <Text style={styles.headerTitle}>{t('consultationEnded.title')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -102,30 +105,32 @@ export default function ConsultationEndedScreen() {
             <Ionicons name="checkmark" size={48} color="#FFFFFF" />
           </View>
         </View>
-        <Text style={styles.title}>Consultation ended!</Text>
+        <Text style={styles.title}>{t('consultationEnded.heading')}</Text>
         <Text style={styles.subtitle}>
-          Your consultation with {displayName} has ended.
+          {t('consultationEnded.subtitle', { name: displayName })}
         </Text>
 
         <View style={styles.summaryCard}>
-          <Text style={styles.summaryTitle}>Consultation Ended</Text>
-          <Text style={styles.summaryDesc}>You were in consultation with {displayName}</Text>
+          <Text style={styles.summaryTitle}>{t('consultationEnded.title')}</Text>
+          <Text style={styles.summaryDesc}>
+            {t('consultationEnded.summaryDesc', { name: displayName })}
+          </Text>
           {startTimeStr ? (
-            <Text style={styles.summaryBullet}>•  Start time: {startTimeStr}</Text>
+            <Text style={styles.summaryBullet}>{t('consultationEnded.startTime', { time: startTimeStr })}</Text>
           ) : null}
-          <Text style={styles.summaryBullet}>•  Max Duration: 30 min</Text>
+          <Text style={styles.summaryBullet}>{t('consultationEnded.maxDuration')}</Text>
           <Text style={styles.summaryRemaining}>
-            •  Remaining time: {formatTimeRemaining(remaining)}
+            {t('consultationEnded.remainingTime', { time: formatTimeRemaining(remaining) })}
           </Text>
         </View>
 
         <View style={styles.nextStepCard}>
-          <Text style={styles.nextStepTitle}>Next Step</Text>
+          <Text style={styles.nextStepTitle}>{t('consultationEnded.nextStep')}</Text>
           <View style={styles.nextStepOption}>
             <View style={styles.radioOuter}>
               <View style={styles.radioInner} />
             </View>
-            <Text style={styles.nextStepText}>Send prescription, recommendation, note</Text>
+            <Text style={styles.nextStepText}>{t('consultationEnded.nextStepOption')}</Text>
           </View>
         </View>
       </View>
@@ -141,13 +146,13 @@ export default function ConsultationEndedScreen() {
                 appointmentId,
                 conversationId,
                 animalId,
-                patientName,
+                patientName: resolvedPatientName,
                 userEmail: ownerEmail,
               },
             });
           }}
         >
-          <Text style={styles.primaryBtnText}>Send Prescription</Text>
+          <Text style={styles.primaryBtnText}>{t('consultationEnded.sendPrescription')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -155,7 +160,7 @@ export default function ConsultationEndedScreen() {
           activeOpacity={0.8}
           onPress={() => router.replace({ pathname: '/chat', params: chatParams })}
         >
-          <Text style={styles.secondaryBtnText}>Back to Chat</Text>
+          <Text style={styles.secondaryBtnText}>{t('consultationEnded.backToChat')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

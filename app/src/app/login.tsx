@@ -23,12 +23,14 @@ import { IdentifierTabs, IdentifierMode } from '@/components/identifier-tabs';
 import { store } from '@/store/store';
 import { setCredentials } from '@/store/authSlice';
 import { jwtToAuthUser } from '@/store/decode-jwt';
+import { useTranslation } from '@/hooks/use-translation';
 
 const BD_PHONE_REGEX = /^01[3-9]\d{8}$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
 
   const [mode, setMode] = useState<IdentifierMode>('phone');
   const [phone, setPhone] = useState('');
@@ -53,11 +55,11 @@ export default function LoginScreen() {
     // console.log('[LOGIN] API_URL =', API_URL);
     const identifier = mode === 'phone' ? phone : email;
     if (mode === 'phone' && !BD_PHONE_REGEX.test(phone)) {
-      setErrorMessage('Please enter a valid 11-digit Bangladeshi phone number (e.g., 01712345678).');
+      setErrorMessage(t('login.invalidPhone'));
       return;
     }
     if (mode === 'email' && !EMAIL_REGEX.test(email.trim())) {
-      setErrorMessage('Please enter a valid email address.');
+      setErrorMessage(t('login.invalidEmail'));
       return;
     }
     try {
@@ -70,7 +72,7 @@ export default function LoginScreen() {
       }));
       goToTabs();
     } catch (err: any) {
-      setErrorMessage(err?.data?.message || 'Invalid credentials. Please try again.');
+      setErrorMessage(err?.data?.message || t('login.invalidCreds'));
     }
   };
 
@@ -82,8 +84,8 @@ export default function LoginScreen() {
       >
         <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
           {/* Heading */}
-          <Text style={styles.title}>Sign in</Text>
-          <Text style={styles.subtitle}>Welcome Back!</Text>
+          <Text style={styles.title}>{t('login.signIn')}</Text>
+          <Text style={styles.subtitle}>{t('login.welcome')}</Text>
 
           {/* Form Fields */}
           <View style={styles.form}>
@@ -91,7 +93,7 @@ export default function LoginScreen() {
 
             {mode === 'phone' ? (
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Phone Number*</Text>
+                <Text style={styles.label}>{t('login.phoneLabel')}</Text>
                 <View style={styles.phoneInputContainer}>
                   <View style={styles.countryCodeSelector}>
                     <Text style={styles.flagEmoji}>🇧🇩</Text>
@@ -102,7 +104,7 @@ export default function LoginScreen() {
                     style={styles.phoneInput}
                     value={phone}
                     onChangeText={setPhone}
-                    placeholder="Phone number"
+                    placeholder={t('login.phonePlaceholder')}
                     placeholderTextColor="#A39E99"
                     keyboardType="phone-pad"
                     maxLength={11}
@@ -111,7 +113,7 @@ export default function LoginScreen() {
               </View>
             ) : (
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Email</Text>
+                <Text style={styles.label}>{t('login.emailLabel')}</Text>
                 <TextInput
                   style={styles.emailInput}
                   value={email}
@@ -128,13 +130,13 @@ export default function LoginScreen() {
 
             {/* Password */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Password*</Text>
+              <Text style={styles.label}>{t('login.passwordLabel')}</Text>
               <PasswordField value={password} onChangeText={setPassword} />
               <TouchableOpacity
                 style={styles.forgotPasswordContainer}
                 onPress={() => router.push('/forgot')}
               >
-                <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+                <Text style={styles.forgotPasswordText}>{t('login.forgotPassword')}</Text>
               </TouchableOpacity>
             </View>
 
@@ -147,7 +149,7 @@ export default function LoginScreen() {
               <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
                 {rememberMe && <Ionicons name="checkmark" size={14} color="#FFFFFF" />}
               </View>
-              <Text style={styles.rememberMeText}>Keep me signed in</Text>
+              <Text style={styles.rememberMeText}>{t('login.rememberMe')}</Text>
             </TouchableOpacity>
 
             {/* Error message */}
@@ -163,14 +165,14 @@ export default function LoginScreen() {
               {isLoading ? (
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
-                <Text style={styles.loginButtonText}>Sign In</Text>
+                <Text style={styles.loginButtonText}>{t('login.submit')}</Text>
               )}
             </TouchableOpacity>
 
             {/* Divider */}
             <View style={styles.dividerContainer}>
               <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>or sign in with</Text>
+              <Text style={styles.dividerText}>{t('login.divider')}</Text>
               <View style={styles.dividerLine} />
             </View>
 
@@ -208,9 +210,9 @@ export default function LoginScreen() {
             {/* Footer */}
             <View style={styles.footerContainer}>
               <Text style={styles.footerText}>
-                Don't have any account?{' '}
+                {t('login.noAccount')}{' '}
                 <Text style={styles.signUpLink} onPress={() => router.push('/signup')}>
-                  Sign Up
+                  {t('login.signUp')}
                 </Text>
               </Text>
             </View>

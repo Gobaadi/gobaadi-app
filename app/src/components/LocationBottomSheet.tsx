@@ -9,6 +9,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { LOCATIONS } from '@/constants/locations';
+import { useTranslation } from '@/hooks/use-translation';
 
 interface LocationBottomSheetProps {
   visible: boolean;
@@ -23,6 +24,7 @@ export default function LocationBottomSheet({
   onClose,
   onSave,
 }: LocationBottomSheetProps) {
+  const { t } = useTranslation();
   const [tempSelected, setTempSelected] = useState(selectedLocation);
   const [typedValue, setTypedValue] = useState('');
 
@@ -54,14 +56,14 @@ export default function LocationBottomSheet({
           <View style={styles.sheetContainer}>
             <View style={styles.handleBar} />
 
-            <Text style={styles.title}>Select Location</Text>
+            <Text style={styles.title}>{t('locationSheet.title')}</Text>
             <Text style={styles.helperText}>
-              Choose your area to see relevant doctors and services nearby.
+              {t('locationSheet.helper')}
             </Text>
 
             <TextInput
               style={styles.input}
-              placeholder="Or type your area"
+              placeholder={t('locationSheet.typePlaceholder')}
               placeholderTextColor="#A39E99"
               value={typedValue}
               onChangeText={setTypedValue}
@@ -98,7 +100,7 @@ export default function LocationBottomSheet({
             </ScrollView>
 
             <TouchableOpacity style={styles.saveBtn} activeOpacity={0.85} onPress={handleSave}>
-              <Text style={styles.saveBtnText}>Save Changes</Text>
+              <Text style={styles.saveBtnText}>{t('locationSheet.save')}</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>

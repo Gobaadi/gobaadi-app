@@ -14,6 +14,7 @@ import {
   navigationProfileSvg,
   tintNavSvg,
 } from '@/components/icons/svg-icon-sources';
+import { useTranslation } from '@/hooks/use-translation';
 
 const { width } = Dimensions.get('window');
 
@@ -50,21 +51,21 @@ function getLabel(routeName: string) {
   switch (routeName) {
     case 'index':
     case 'doctor-home':
-      return 'Home';
+      return 'tabBar.home';
     case 'animals':
-      return 'Animals';
+      return 'tabBar.animals';
     case 'doctors':
-      return 'Doctors';
+      return 'tabBar.doctors';
     case 'market':
-      return 'Market';
+      return 'tabBar.market';
     case 'doctor-bookings':
-      return 'Calendar';
+      return 'tabBar.calendar';
     case 'doctor-availability':
-      return 'Schedule';
+      return 'tabBar.schedule';
     case 'doctor-messages':
-      return 'Chat';
+      return 'tabBar.chat';
     case 'profile':
-      return 'Profile';
+      return 'tabBar.profile';
     default:
       return routeName;
   }
@@ -72,6 +73,7 @@ function getLabel(routeName: string) {
 
 function CustomTabBar({ state, descriptors, navigation }: any) {
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
 
   const visibleRoutes = state.routes.filter((route: any) => {
     const { options } = descriptors[route.key];
@@ -108,7 +110,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
             });
           };
 
-          const label = getLabel(route.name);
+          const label = t(getLabel(route.name));
 
           return (
             <View key={route.key} style={styles.tabItemContainer}>
@@ -152,6 +154,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
 export default function AppTabs() {
   const user = useSelector((state: RootState) => state.auth.user);
   const isDoctor = user?.role === 'doctor';
+  const { t } = useTranslation();
 
   return (
     <Tabs
@@ -166,7 +169,7 @@ export default function AppTabs() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
+          title: t('tabBar.home'),
           href: isDoctor ? null : undefined,
           tabBarItemStyle: isDoctor ? { display: 'none' } : undefined,
         }}
@@ -174,7 +177,7 @@ export default function AppTabs() {
       <Tabs.Screen
         name="animals"
         options={{
-          title: 'Animals',
+          title: t('tabBar.animals'),
           href: isDoctor ? null : undefined,
           tabBarItemStyle: isDoctor ? { display: 'none' } : undefined,
         }}
@@ -182,7 +185,7 @@ export default function AppTabs() {
       <Tabs.Screen
         name="doctors"
         options={{
-          title: 'Doctors',
+          title: t('tabBar.doctors'),
           href: isDoctor ? null : undefined,
           tabBarItemStyle: isDoctor ? { display: 'none' } : undefined,
         }}
@@ -190,7 +193,7 @@ export default function AppTabs() {
       <Tabs.Screen
         name="market"
         options={{
-          title: 'Market',
+          title: t('tabBar.market'),
           href: null,
           tabBarItemStyle: { display: 'none' },
         }}
@@ -200,7 +203,7 @@ export default function AppTabs() {
       <Tabs.Screen
         name="doctor-home"
         options={{
-          title: 'Home',
+          title: t('tabBar.home'),
           href: isDoctor ? undefined : null,
           tabBarItemStyle: isDoctor ? undefined : { display: 'none' },
         }}
@@ -208,7 +211,7 @@ export default function AppTabs() {
       <Tabs.Screen
         name="doctor-bookings"
         options={{
-          title: 'Calendar',
+          title: t('tabBar.calendar'),
           href: isDoctor ? undefined : null,
           tabBarItemStyle: isDoctor ? undefined : { display: 'none' },
         }}
@@ -216,7 +219,7 @@ export default function AppTabs() {
       <Tabs.Screen
         name="doctor-availability"
         options={{
-          title: 'Schedule',
+          title: t('tabBar.schedule'),
           href: null,
           tabBarItemStyle: { display: 'none' },
         }}
@@ -224,7 +227,7 @@ export default function AppTabs() {
       <Tabs.Screen
         name="doctor-messages"
         options={{
-          title: 'Chat',
+          title: t('tabBar.chat'),
           href: isDoctor ? undefined : null,
           tabBarItemStyle: isDoctor ? undefined : { display: 'none' },
         }}
@@ -234,7 +237,7 @@ export default function AppTabs() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profile',
+          title: t('tabBar.profile'),
         }}
       />
     </Tabs>

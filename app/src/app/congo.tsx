@@ -9,10 +9,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import type { RootState } from '@/store/store';
 
 export default function CongoScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const user = useSelector((state: RootState) => state.auth.user);
 
@@ -46,21 +48,21 @@ export default function CongoScreen() {
         />
 
         {/* Title */}
-        <Text style={styles.title}>Congratulations!</Text>
+        <Text style={styles.title}>{t('congo.title')}</Text>
 
         {/* Subtitle / Copy */}
         <View style={styles.textContainer}>
           <Text style={styles.bodyText}>
-            We have sent you a verification email, please check your inbox and follow the instructions to verify your account.
+            {t('congo.body')}
           </Text>
           <Text style={styles.thankYouText}>
-            Thank you for signing up with us!
+            {t('congo.thankYou')}
           </Text>
         </View>
 
         {/* Sign In Button */}
         <TouchableOpacity style={styles.signInButton} activeOpacity={0.8} onPress={handleSignIn}>
-          <Text style={styles.signInButtonText}>Sign In</Text>
+          <Text style={styles.signInButtonText}>{t('congo.signIn')}</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

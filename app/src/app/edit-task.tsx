@@ -28,20 +28,21 @@ import {
   addTaskHealthCheckSvg,
   addTaskMicrophoneSvg,
 } from '@/components/icons/svg-icon-sources';
+import { useTranslation } from '@/hooks/use-translation';
 
 const SHEDS = [
-  { id: 'cow', name: 'Cow Shed', icon: cowShedSvg },
-  { id: 'goat', name: 'Goat Shed', icon: goatShedSvg },
-  { id: 'poultry', name: 'Poultry Shed', icon: poultryShedSvg },
+  { id: 'cow', name: 'Cow Shed', nameKey: 'editTask.sheds.cow', icon: cowShedSvg },
+  { id: 'goat', name: 'Goat Shed', nameKey: 'editTask.sheds.goat', icon: goatShedSvg },
+  { id: 'poultry', name: 'Poultry Shed', nameKey: 'editTask.sheds.poultry', icon: poultryShedSvg },
 ];
 
 const TASK_TYPES = [
-  { id: 'feeding', name: 'Feeding', icon: addTaskFeedingSvg },
-  { id: 'water', name: 'Water Supply', icon: addTaskWaterSupplySvg },
-  { id: 'hygiene', name: 'Hygiene', icon: addTaskHygieneSvg },
-  { id: 'cleaning', name: 'Cleaning', icon: addTaskCleaningSvg },
-  { id: 'vaccination', name: 'Vaccination', icon: addTaskVaccinationSvg },
-  { id: 'health', name: 'Health Check', icon: addTaskHealthCheckSvg },
+  { id: 'feeding', name: 'Feeding', nameKey: 'editTask.types.feeding', icon: addTaskFeedingSvg },
+  { id: 'water', name: 'Water Supply', nameKey: 'editTask.types.water', icon: addTaskWaterSupplySvg },
+  { id: 'hygiene', name: 'Hygiene', nameKey: 'editTask.types.hygiene', icon: addTaskHygieneSvg },
+  { id: 'cleaning', name: 'Cleaning', nameKey: 'editTask.types.cleaning', icon: addTaskCleaningSvg },
+  { id: 'vaccination', name: 'Vaccination', nameKey: 'editTask.types.vaccination', icon: addTaskVaccinationSvg },
+  { id: 'health', name: 'Health Check', nameKey: 'editTask.types.health', icon: addTaskHealthCheckSvg },
 ];
 
 function parseExistingTask(title?: string, detail?: string) {
@@ -90,6 +91,7 @@ function parseExistingTask(title?: string, detail?: string) {
 }
 
 export default function EditTaskScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const params = useLocalSearchParams<{ id?: string; title?: string; detail?: string; scheduledTime?: string }>();
   const [updateTask, { isLoading: isSubmitting }] = useUpdateTaskMutation();
@@ -107,8 +109,8 @@ export default function EditTaskScreen() {
   async function handleUpdate() {
     if (!params.id) {
       Alert.alert(
-        'Could not update task',
-        'Missing task ID. Go back to the task list and try again.',
+        t('editTask.alerts.updateFailed'),
+        t('editTask.alerts.missingId'),
       );
       return;
     }
@@ -116,14 +118,14 @@ export default function EditTaskScreen() {
     const taskId = Number(params.id);
     if (!Number.isFinite(taskId) || taskId <= 0) {
       Alert.alert(
-        'Could not update task',
-        'Invalid task ID. Go back to the task list and try again.',
+        t('editTask.alerts.updateFailed'),
+        t('editTask.alerts.invalidId'),
       );
       return;
     }
 
-    const typeObj = TASK_TYPES.find((t) => t.id === selectedType);
-    const shedObj = SHEDS.find((s) => s.id === selectedShed);
+    const typeObj = TASK_TYPES.find((type) => type.id === selectedType);
+    const shedObj = SHEDS.find((shed) => shed.id === selectedShed);
     const title = customTask.trim() || `${typeObj?.name || 'Task'} - ${shedObj?.name || 'Farm'}`;
 
     const detailParts = [`${shedObj?.name || 'Farm'} • ${startTime} - ${endTime}`];
@@ -144,7 +146,7 @@ export default function EditTaskScreen() {
       router.back();
     } catch (err) {
       console.log('Error updating task:', err);
-      Alert.alert('Could not update task', apiErrorMessage(err, 'Please try again.'));
+      Alert.alert(t('editTask.alerts.updateFailed'), apiErrorMessage(err, t('editTask.alerts.tryAgain')));
     }
   }
 
@@ -160,7 +162,7 @@ export default function EditTaskScreen() {
           <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>Edit Task</Text>
+        <Text style={styles.headerTitle}>{t('editTask.header')}</Text>
 
         <TouchableOpacity style={styles.headerSquareBtn} activeOpacity={0.8}>
           <SvgXml width={20} height={20} xml={myTaskCalendarSvg} />
@@ -171,7 +173,7 @@ export default function EditTaskScreen() {
         {/* Card Form */}
         <View style={styles.formCard}>
           {/* Select Farm */}
-          <Text style={styles.sectionHeading}>Select Farm</Text>
+          <Text style={styles.sectionHeading}>{t('editTask.selectFarm')}</Text>
           <View style={styles.shedsList}>
             {SHEDS.map((s) => {
               const isSel = s.id === selectedShed;
@@ -187,7 +189,7 @@ export default function EditTaskScreen() {
                       <SvgXml width={24} height={24} xml={s.icon} />
                     </View>
                     <Text style={[styles.shedName, isSel && styles.shedNameSelected]}>
-                      {s.name}
+                      {t(s.nameKey)}
                     </Text>
                   </View>
                   <Ionicons
@@ -201,15 +203,15 @@ export default function EditTaskScreen() {
           </View>
 
           {/* Select Task Type */}
-          <Text style={styles.sectionHeading}>Select Task Type</Text>
+          <Text style={styles.sectionHeading}>{t('editTask.selectType')}</Text>
           <View style={styles.typesGrid}>
-            {TASK_TYPES.map((t) => {
-              const isSel = t.id === selectedType;
+            {TASK_TYPES.map((type) => {
+              const isSel = type.id === selectedType;
               return (
                 <TouchableOpacity
-                  key={t.id}
+                  key={type.id}
                   style={[styles.typeCard, isSel && styles.typeCardSelected]}
-                  onPress={() => setSelectedType(t.id)}
+                  onPress={() => setSelectedType(type.id)}
                   activeOpacity={0.7}
                 >
                   <View style={styles.typeRadioPos}>
@@ -220,10 +222,10 @@ export default function EditTaskScreen() {
                     />
                   </View>
                   <View style={styles.typeIconCircle}>
-                    <SvgXml width={24} height={24} xml={t.icon} />
+                    <SvgXml width={24} height={24} xml={type.icon} />
                   </View>
                   <Text style={[styles.typeName, isSel && styles.typeNameSelected]}>
-                    {t.name}
+                    {t(type.nameKey)}
                   </Text>
                 </TouchableOpacity>
               );
@@ -234,14 +236,16 @@ export default function EditTaskScreen() {
           <View style={styles.customTaskWrapper}>
             <TextInput
               style={styles.customTaskInput}
-              placeholder="Custom Task"
+              placeholder={t('editTask.customTaskPlaceholder')}
               placeholderTextColor="#A39E99"
               value={customTask}
               onChangeText={setCustomTask}
             />
             <TouchableOpacity
               style={styles.micBtn}
-              onPress={() => Alert.alert('Voice input', 'Voice input is coming soon.')}
+              onPress={() =>
+                Alert.alert(t('editTask.alerts.voiceInput'), t('editTask.alerts.voiceInputSoon'))
+              }
               activeOpacity={0.7}
             >
               <SvgXml width={20} height={20} xml={addTaskMicrophoneSvg} />
@@ -249,7 +253,7 @@ export default function EditTaskScreen() {
           </View>
 
           {/* Repeat */}
-          <Text style={styles.sectionHeading}>Repeat</Text>
+          <Text style={styles.sectionHeading}>{t('editTask.repeat')}</Text>
           <View style={styles.repeatRow}>
             {(['daily', 'weekly'] as const).map((opt) => {
               const isSel = repeat === opt;
@@ -261,7 +265,7 @@ export default function EditTaskScreen() {
                   activeOpacity={0.7}
                 >
                   <Text style={[styles.repeatChipText, isSel && styles.repeatChipTextSelected]}>
-                    {opt.charAt(0).toUpperCase() + opt.slice(1)}
+                    {t(`editTask.repeatOptions.${opt}`)}
                   </Text>
                 </TouchableOpacity>
               );
@@ -269,10 +273,10 @@ export default function EditTaskScreen() {
           </View>
 
           {/* Add Instruction */}
-          <Text style={styles.sectionHeading}>Add Instruction</Text>
+          <Text style={styles.sectionHeading}>{t('editTask.instructionLabel')}</Text>
           <TextInput
             style={styles.instructionTextarea}
-            placeholder="Write task instructions..."
+            placeholder={t('editTask.instructionPlaceholder')}
             placeholderTextColor="#A39E99"
             value={instruction}
             onChangeText={setInstruction}
@@ -281,10 +285,10 @@ export default function EditTaskScreen() {
           />
 
           {/* Set Time */}
-          <Text style={styles.sectionHeading}>Set Time</Text>
+          <Text style={styles.sectionHeading}>{t('editTask.setTime')}</Text>
           <View style={styles.timeInputsRow}>
             <View style={styles.timeInputCol}>
-              <Text style={styles.timeInputLabel}>Work Start</Text>
+              <Text style={styles.timeInputLabel}>{t('editTask.workStart')}</Text>
               <TextInput
                 style={styles.timeInputBox}
                 value={startTime}
@@ -292,7 +296,7 @@ export default function EditTaskScreen() {
               />
             </View>
             <View style={styles.timeInputCol}>
-              <Text style={styles.timeInputLabel}>Work End</Text>
+              <Text style={styles.timeInputLabel}>{t('editTask.workEnd')}</Text>
               <TextInput
                 style={styles.timeInputBox}
                 value={endTime}
@@ -309,7 +313,7 @@ export default function EditTaskScreen() {
           disabled={isSubmitting}
           activeOpacity={0.85}
         >
-          <Text style={styles.submitBtnText}>Update Task</Text>
+          <Text style={styles.submitBtnText}>{t('editTask.submit')}</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

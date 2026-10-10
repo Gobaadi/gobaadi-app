@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useGetAnimalByIdQuery, useDeleteAnimalMutation } from '@/store/animalsApi';
 import { isRenderableImageUri } from '@/utils/photo-uri';
 
@@ -24,6 +25,7 @@ const AUTO_SCROLL_MS = 3000;
 const SLIDE_HEIGHT = 320;
 
 export default function MyAnimalDetailScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const params = useLocalSearchParams();
   const id = String(params.id || '');
@@ -102,27 +104,35 @@ export default function MyAnimalDetailScreen() {
   };
 
   function confirmDelete() {
-    Alert.alert('Delete Animal', `Remove ${animal?.name || 'this animal'} from your farm?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await deleteAnimal(id).unwrap();
-            router.back();
-          } catch (err) {
-            console.log('Error deleting animal:', err);
-          }
+    Alert.alert(
+      t('myAnimalDetail.deleteTitle'),
+      t('myAnimalDetail.deleteMessage', { name: animal?.name || t('myAnimalDetail.thisAnimal') }),
+      [
+        { text: t('myAnimalDetail.cancel'), style: 'cancel' },
+        {
+          text: t('myAnimalDetail.delete'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteAnimal(id).unwrap();
+              router.back();
+            } catch (err) {
+              console.log('Error deleting animal:', err);
+            }
+          },
         },
-      },
-    ]);
+      ],
+    );
   }
 
   async function handleShare() {
     try {
       await Share.share({
-        message: `Check out ${animal?.name || 'this animal'} (${animal?.breed || 'Livestock'}) on Gobadi! Live Weight: ${animal?.weight || '725 Kg'}.`,
+        message: t('myAnimalDetail.shareMessage', {
+          name: animal?.name || t('myAnimalDetail.thisAnimal'),
+          breed: animal?.breed || t('myAnimalDetail.livestock'),
+          weight: animal?.weight || '725 Kg',
+        }),
       });
     } catch (err) {
       console.log('Error sharing:', err);
@@ -130,20 +140,23 @@ export default function MyAnimalDetailScreen() {
   }
 
   function handleAddToMarketplace() {
-    Alert.alert('Added to Marketplace', `${animal?.name || 'Animal'} has been listed in the Gobadi marketplace.`);
+    Alert.alert(
+      t('myAnimalDetail.addedTitle'),
+      t('myAnimalDetail.addedMessage', { name: animal?.name || t('myAnimalDetail.animal') }),
+    );
   }
 
   const basicInfo = [
-    { label: 'Date Of Birth', value: animal?.dob || 'N/A' },
-    { label: 'Gender', value: animal?.gender || 'N/A' },
-    { label: 'Source', value: animal?.source || 'N/A' },
-    { label: 'Breed', value: animal?.breed || 'N/A' },
-    { label: 'Age', value: animal?.age || 'N/A' },
-    { label: 'Color', value: animal?.color || 'N/A' },
-    { label: 'Joined Farm', value: animal?.joinedFarm || 'N/A' },
-    { label: 'Stage', value: animal?.source || 'N/A' },
-    { label: 'Live Weight', value: animal?.liveWeight || 'N/A' },
-    { label: 'Price per kg', value: animal?.liveWeightPrice || 'N/A' },
+    { label: t('myAnimalDetail.dob'), value: animal?.dob || 'N/A' },
+    { label: t('myAnimalDetail.gender'), value: animal?.gender || 'N/A' },
+    { label: t('myAnimalDetail.source'), value: animal?.source || 'N/A' },
+    { label: t('myAnimalDetail.breed'), value: animal?.breed || 'N/A' },
+    { label: t('myAnimalDetail.age'), value: animal?.age || 'N/A' },
+    { label: t('myAnimalDetail.color'), value: animal?.color || 'N/A' },
+    { label: t('myAnimalDetail.joinedFarm'), value: animal?.joinedFarm || 'N/A' },
+    { label: t('myAnimalDetail.stage'), value: animal?.source || 'N/A' },
+    { label: t('myAnimalDetail.liveWeight'), value: animal?.liveWeight || 'N/A' },
+    { label: t('myAnimalDetail.pricePerKg'), value: animal?.liveWeightPrice || 'N/A' },
   ];
 
   return (
@@ -224,12 +237,12 @@ export default function MyAnimalDetailScreen() {
             <View style={styles.headerLeft}>
               <Text style={styles.animalTitle}>{animal?.name}</Text>
               <View style={styles.healthyBadge}>
-                <Text style={styles.healthyBadgeText}>Healthy</Text>
+                <Text style={styles.healthyBadgeText}>{t('myAnimalDetail.healthy')}</Text>
               </View>
             </View>
             <View style={styles.headerRight}>
               <Text style={styles.priceText}>৳ {animal?.liveWeightPrice || 0}</Text>
-              <Text style={styles.priceSubtext}>(Negotiable/Live wight)</Text>
+              <Text style={styles.priceSubtext}>{t('myAnimalDetail.negotiable')}</Text>
             </View>
           </View>
 
@@ -240,7 +253,7 @@ export default function MyAnimalDetailScreen() {
               activeOpacity={0.8}
               onPress={handleAddToMarketplace}
             >
-              <Text style={styles.addToMarketBtnText}>🛒 Add To Marketplace</Text>
+              <Text style={styles.addToMarketBtnText}>🛒 {t('myAnimalDetail.addToMarket')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -248,12 +261,12 @@ export default function MyAnimalDetailScreen() {
               activeOpacity={0.8}
               onPress={handleShare}
             >
-              <Text style={styles.shareDetailsBtnText}>📤 Share Details</Text>
+              <Text style={styles.shareDetailsBtnText}>📤 {t('myAnimalDetail.shareDetails')}</Text>
             </TouchableOpacity>
           </View>
 
           {/* Basic Informations Grid */}
-          <Text style={styles.sectionTitle}>Basic Informations</Text>
+          <Text style={styles.sectionTitle}>{t('myAnimalDetail.basicInfo')}</Text>
 
           <View style={styles.gridContainer}>
             {basicInfo.map((info, idx) => (
@@ -273,7 +286,7 @@ export default function MyAnimalDetailScreen() {
           onPress={() => router.push({ pathname: '/add-animal', params: { id, edit: '1' } })}
           activeOpacity={0.85}
         >
-          <Text style={styles.editBtnText}>✏️ Edit Animal Details</Text>
+          <Text style={styles.editBtnText}>✏️ {t('myAnimalDetail.editDetails')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

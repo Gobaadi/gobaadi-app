@@ -19,8 +19,11 @@ import { MediaCardSkeleton } from '@/components/ui/skeleton';
 import { useLanguage } from '@/hooks/use-language';
 import { useDebounce } from '@/hooks/use-debounce';
 import { isRenderableImageUri } from '@/utils/photo-uri';
+import { useTranslation } from '@/hooks/use-translation';
 
 type Chip = 'All' | 'Calf' | 'Bull';
+
+type T = ReturnType<typeof useTranslation>['t'];
 
 function animalImage(breed: string) {
   return breed.toLowerCase().includes('buffalo')
@@ -65,49 +68,50 @@ function monthsSince(from: Date, to: Date = new Date()): number {
   return Math.max(0, months);
 }
 
-function formatAge(age?: string, dob?: string): string {
+function formatAge(t: T, age?: string, dob?: string): string {
   const fromDob = parseDate(dob);
   if (fromDob) {
     const m = monthsSince(fromDob);
-    return `${m} month${m === 1 ? '' : 's'}`;
+    return t('animalsTab.ageMonths', { count: m });
   }
 
-  if (!age) return 'N/A';
+  if (!age) return t('animalsTab.notAvailable');
 
   const fromDate = parseDate(age);
   if (fromDate) {
     const m = monthsSince(fromDate);
-    return `${m} month${m === 1 ? '' : 's'}`;
+    return t('animalsTab.ageMonths', { count: m });
   }
 
   const years = age.match(/^(\d+)\s*years?$/i);
   if (years) {
     const m = Number(years[1]) * 12;
-    return `${m} month${m === 1 ? '' : 's'}`;
+    return t('animalsTab.ageMonths', { count: m });
   }
 
   const months = age.match(/^(\d+)\s*months?$/i);
-  if (months) return `${months[1]} month${Number(months[1]) === 1 ? '' : 's'}`;
+  if (months) return t('animalsTab.ageMonths', { count: Number(months[1]) });
 
   return age;
 }
 
-function formatWeight(weight?: string): string {
-  if (!weight) return 'N/A';
+function formatWeight(t: T, weight?: string): string {
+  if (!weight) return t('animalsTab.notAvailable');
   const w = weight.trim();
-  if (!w) return 'N/A';
+  if (!w) return t('animalsTab.notAvailable');
   if (/[a-z]/i.test(w)) return w;
-  return `${w} Kg`;
+  return t('animalsTab.weightKg', { weight: w });
 }
 
-function cardDescription(a: Animal): string {
+function cardDescription(t: T, a: Animal): string {
   if (a.description) return a.description;
-  if (a.color) return `${a.color} colored coat and characteristics`;
-  return 'cream-colored coat and tuft of blond hair';
+  if (a.color) return t('animalsTab.coloredCoat', { color: a.color });
+  return t('animalsTab.defaultCoat');
 }
 
 export default function AnimalsListScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [activeFilter, setActiveFilter] = useState<Chip>('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterModalVisible, setFilterModalVisible] = useState(false);
@@ -156,7 +160,7 @@ export default function AnimalsListScreen() {
       <StatusBar barStyle="dark-content" backgroundColor="#FAF9F6" />
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>My Animals</Text>
+        <Text style={styles.headerTitle}>{t('animalsTab.title')}</Text>
         <View style={styles.headerRightControls}>
           <TouchableOpacity
             style={styles.langBadge}
@@ -181,7 +185,7 @@ export default function AnimalsListScreen() {
         <Ionicons name="search" size={18} color="#7C7672" style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
-          placeholder="Search animals..."
+          placeholder={t('animalsTab.searchPlaceholder')}
           placeholderTextColor="#A39E99"
           value={searchQuery}
           onChangeText={setSearchQuery}
@@ -208,7 +212,7 @@ export default function AnimalsListScreen() {
           onPress={() => setFilterModalVisible(true)}
         >
           <Ionicons name="options-outline" size={16} color="#7C7672" style={{ marginRight: 6 }} />
-          <Text style={styles.filterIconText}>Filter</Text>
+          <Text style={styles.filterIconText}>{t('animalsTab.filter')}</Text>
           {genderFilter !== 'All' && <View style={styles.filterDot} />}
         </TouchableOpacity>
 
@@ -217,7 +221,7 @@ export default function AnimalsListScreen() {
           onPress={() => setActiveFilter('All')}
         >
           <Text style={[styles.filterTabText, activeFilter === 'All' && styles.filterTabTextActive]}>
-            All ({counts.all})
+            {t('animalsTab.chips.all', { count: counts.all })}
           </Text>
         </TouchableOpacity>
 
@@ -226,7 +230,7 @@ export default function AnimalsListScreen() {
           onPress={() => setActiveFilter('Calf')}
         >
           <Text style={[styles.filterTabText, activeFilter === 'Calf' && styles.filterTabTextActive]}>
-            Calf ({counts.calf})
+            {t('animalsTab.chips.calf', { count: counts.calf })}
           </Text>
         </TouchableOpacity>
 
@@ -235,7 +239,7 @@ export default function AnimalsListScreen() {
           onPress={() => setActiveFilter('Bull')}
         >
           <Text style={[styles.filterTabText, activeFilter === 'Bull' && styles.filterTabTextActive]}>
-            Bull ({counts.bull})
+            {t('animalsTab.chips.bull', { count: counts.bull })}
           </Text>
         </TouchableOpacity>
       </ScrollView>
@@ -255,16 +259,16 @@ export default function AnimalsListScreen() {
             </>
           ) : animals.length === 0 ? (
             <EmptyState
-              title="No animals yet"
-              description="Add your livestock to start tracking health, tasks, and records."
-              actionLabel="Add Animal"
+              title={t('animalsTab.empty.noAnimalsTitle')}
+              description={t('animalsTab.empty.noAnimalsDesc')}
+              actionLabel={t('animalsTab.addAnimal')}
               onAction={() => router.push('/add-animal')}
             />
           ) : displayAnimals.length === 0 ? (
             <EmptyState
-              title="No animals found"
-              description="Try a different search or clear your filters."
-              actionLabel={hasQuery ? 'Clear filters' : 'Add Animal'}
+              title={t('animalsTab.empty.noResultsTitle')}
+              description={t('animalsTab.empty.noResultsDesc')}
+              actionLabel={hasQuery ? t('animalsTab.clearFilters') : t('animalsTab.addAnimal')}
               onAction={hasQuery ? resetAdvancedFilters : () => router.push('/add-animal')}
             />
           ) : (
@@ -300,29 +304,29 @@ export default function AnimalsListScreen() {
                 <View style={styles.cardContent}>
                   <View style={styles.cardHeader}>
                     <Text style={styles.cardName} numberOfLines={1}>
-                      {item.name || item.breed || 'Unnamed Animal'}
+                      {item.name || item.breed || t('animalsTab.unnamed')}
                     </Text>
                   </View>
 
                   <Text style={styles.cardDesc} numberOfLines={1}>
-                    {cardDescription(item)}
+                    {cardDescription(t, item)}
                   </Text>
 
                   {/* Specs Row */}
                   <View style={styles.specsRow}>
                     <View style={styles.specItem}>
-                      <Text style={styles.specLabel}>Species</Text>
+                      <Text style={styles.specLabel}>{t('animalsTab.species')}</Text>
                       <Text style={styles.specValue} numberOfLines={1}>
-                        {item.breed || 'N/A'}
+                        {item.breed || t('animalsTab.notAvailable')}
                       </Text>
                     </View>
                     <View style={styles.specItem}>
-                      <Text style={styles.specLabel}>Age</Text>
-                      <Text style={styles.specValue}>{formatAge(item.age, item.dob)}</Text>
+                      <Text style={styles.specLabel}>{t('animalsTab.age')}</Text>
+                      <Text style={styles.specValue}>{formatAge(t, item.age, item.dob)}</Text>
                     </View>
                     <View style={styles.specItem}>
-                      <Text style={styles.specLabel}>Weight</Text>
-                      <Text style={styles.specValue}>{formatWeight(item.weight)}</Text>
+                      <Text style={styles.specLabel}>{t('animalsTab.weight')}</Text>
+                      <Text style={styles.specValue}>{formatWeight(t, item.weight)}</Text>
                     </View>
                   </View>
                 </View>
@@ -342,7 +346,7 @@ export default function AnimalsListScreen() {
         <View style={styles.fabPlusCircle}>
           <Text style={styles.fabPlusSign}>+</Text>
         </View>
-        <Text style={styles.fabText}>Add Animal</Text>
+        <Text style={styles.fabText}>{t('animalsTab.addAnimal')}</Text>
       </TouchableOpacity>
 
       {/* Advanced Filter Modal */}
@@ -357,14 +361,14 @@ export default function AnimalsListScreen() {
             <TouchableOpacity onPress={() => setFilterModalVisible(false)} activeOpacity={0.7}>
               <Ionicons name="close" size={24} color="#1A1817" />
             </TouchableOpacity>
-            <Text style={styles.modalTitle}>Filters</Text>
+            <Text style={styles.modalTitle}>{t('animalsTab.modal.title')}</Text>
             <TouchableOpacity onPress={resetAdvancedFilters} activeOpacity={0.7}>
-              <Text style={styles.modalClearBtn}>Reset</Text>
+              <Text style={styles.modalClearBtn}>{t('animalsTab.modal.reset')}</Text>
             </TouchableOpacity>
           </View>
 
           <ScrollView contentContainerStyle={styles.modalBodyContent}>
-            <Text style={styles.modalSectionTitle}>Gender</Text>
+            <Text style={styles.modalSectionTitle}>{t('animalsTab.modal.gender')}</Text>
             <View style={styles.modalChipRow}>
               {(['All', 'Male', 'Female'] as const).map((g) => {
                 const isActive = genderFilter === g;
@@ -375,7 +379,7 @@ export default function AnimalsListScreen() {
                     onPress={() => setGenderFilter(g)}
                     activeOpacity={0.7}
                   >
-                    <Text style={[styles.modalChipText, isActive && styles.modalChipTextActive]}>{g}</Text>
+                    <Text style={[styles.modalChipText, isActive && styles.modalChipTextActive]}>{t(`animalsTab.gender.${g.toLowerCase()}`)}</Text>
                   </TouchableOpacity>
                 );
               })}
@@ -389,7 +393,7 @@ export default function AnimalsListScreen() {
               onPress={() => setFilterModalVisible(false)}
             >
               <Text style={styles.modalApplyText}>
-                Show {displayAnimals.length} animal{displayAnimals.length === 1 ? '' : 's'}
+                {t('animalsTab.modal.show', { count: displayAnimals.length })}
               </Text>
             </TouchableOpacity>
           </View>

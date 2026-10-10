@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 import { useGetLivestockItemQuery, useReserveListingMutation } from '@/store/livestockApi';
 
@@ -22,6 +23,7 @@ interface BookingOption {
 
 export default function BookAnimalScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const livestockId = id ? parseInt(id, 10) : undefined;
   const { data: animal } = useGetLivestockItemQuery(livestockId!, { skip: !livestockId });
@@ -31,26 +33,26 @@ export default function BookAnimalScreen() {
   const options: BookingOption[] = [
     {
       id: '1',
-      title: 'Save For 20 Days',
-      description: 'By selecting this option the animal will be locked for 20 days from your booking with the same price.',
+      title: 'bookAnimal.options.saveFor20Days',
+      description: 'bookAnimal.options.description20',
       cost: '15000',
     },
     {
       id: '2',
-      title: 'Save For 10 Days',
-      description: 'By selecting this option the animal will be locked for 10 days from your booking with the same price.',
+      title: 'bookAnimal.options.saveFor10Days',
+      description: 'bookAnimal.options.description10',
       cost: '12000',
     },
     {
       id: '3',
-      title: 'Save For 5 Days',
-      description: 'By selecting this option the animal will be locked for 5 days from your booking with the same price.',
+      title: 'bookAnimal.options.saveFor5Days',
+      description: 'bookAnimal.options.description5',
       cost: '8000',
     },
     {
       id: '4',
-      title: 'Save For 3 Days',
-      description: 'By selecting this option the animal will be locked for 3 days from your booking with the same price.',
+      title: 'bookAnimal.options.saveFor3Days',
+      description: 'bookAnimal.options.description3',
       cost: '5000',
     },
   ];
@@ -67,7 +69,7 @@ export default function BookAnimalScreen() {
           <Text style={styles.buttonText}>←</Text>
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>Book Animal</Text>
+        <Text style={styles.headerTitle}>{t('bookAnimal.title')}</Text>
 
         <TouchableOpacity style={styles.circleButton} activeOpacity={0.8} onPress={() => router.push('/notifications')}>
           <Text style={styles.buttonText}>🔔</Text>
@@ -76,7 +78,7 @@ export default function BookAnimalScreen() {
 
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         {/* Animal Details */}
-        <Text style={styles.sectionTitle}>Animal Details</Text>
+        <Text style={styles.sectionTitle}>{t('bookAnimal.animalDetails')}</Text>
 
         <View style={styles.animalCard}>
           <Image
@@ -85,26 +87,26 @@ export default function BookAnimalScreen() {
           />
           <View style={styles.animalMeta}>
             <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Species:</Text>
-              <Text style={styles.detailValue}>{animal?.species ?? 'Loading...'}</Text>
+              <Text style={styles.detailLabel}>{t('bookAnimal.species')}</Text>
+              <Text style={styles.detailValue}>{animal?.species ?? t('bookAnimal.loading')}</Text>
             </View>
             <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Live Weight:</Text>
-              <Text style={styles.detailValue}>{animal ? `${animal.weight} Kg` : '—'}</Text>
+              <Text style={styles.detailLabel}>{t('bookAnimal.liveWeight')}</Text>
+              <Text style={styles.detailValue}>{animal ? `${animal.weight} ${t('bookAnimal.kg')}` : '—'}</Text>
             </View>
             <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Age:</Text>
+              <Text style={styles.detailLabel}>{t('bookAnimal.age')}</Text>
               <Text style={styles.detailValue}>{animal?.age ?? '—'}</Text>
             </View>
             <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Breed:</Text>
+              <Text style={styles.detailLabel}>{t('bookAnimal.breed')}</Text>
               <Text style={styles.detailValue}>{animal?.breed ?? '—'}</Text>
             </View>
           </View>
         </View>
 
         {/* Booking Options */}
-        <Text style={styles.sectionTitle}>Booking Options</Text>
+        <Text style={styles.sectionTitle}>{t('bookAnimal.bookingOptions')}</Text>
 
         <View style={styles.optionsList}>
           {options.map((opt) => {
@@ -121,11 +123,11 @@ export default function BookAnimalScreen() {
                   <View style={styles.radioOuterCircle}>
                     {isSelected && <View style={styles.radioInnerCircle} />}
                   </View>
-                  <Text style={styles.optionTitle}>{opt.title}</Text>
+                  <Text style={styles.optionTitle}>{t(opt.title)}</Text>
                 </View>
-                <Text style={styles.optionDescription}>{opt.description}</Text>
+                <Text style={styles.optionDescription}>{t(opt.description)}</Text>
                 <Text style={styles.optionCostText}>
-                  It will cost only <Text style={styles.costHighlight}>৳ {opt.cost}</Text> to confirm.
+                  {t('bookAnimal.costPrefix')} <Text style={styles.costHighlight}>৳ {opt.cost}</Text> {t('bookAnimal.costSuffix')}
                 </Text>
               </TouchableOpacity>
             );
@@ -144,17 +146,17 @@ export default function BookAnimalScreen() {
               router.push({ pathname: '/booking-payment', params: { id: String(livestockId), cost: option.cost } });
             } catch (err: any) {
               console.log('Error reserving listing:', err);
-              Alert.alert('Booking Failed', err?.data?.message || 'Could not book this animal. Please try again.');
+              Alert.alert(t('bookAnimal.alerts.failedTitle'), err?.data?.message || t('bookAnimal.alerts.failedMessage'));
             }
           }}
           activeOpacity={0.85}
         >
           <Text style={styles.proceedIcon}>✓</Text>
-          <Text style={styles.proceedText}>Proceed Booking</Text>
+          <Text style={styles.proceedText}>{t('bookAnimal.proceedBooking')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.tcButton} activeOpacity={0.7} onPress={() => router.push('/terms-of-service')}>
-          <Text style={styles.tcText}>Terms & Conditions applicable</Text>
+          <Text style={styles.tcText}>{t('bookAnimal.termsNote')}</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

@@ -12,16 +12,18 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useGetMyReferralQuery } from '@/store/referralsApi';
+import { useTranslation } from 'react-i18next';
 
 export default function ReferEarnScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { data: referralInfo, isLoading, isError } = useGetMyReferralQuery();
 
   async function handleShare() {
     try {
       const message = referralInfo?.shareLink
-        ? `Join me on Gobaadi Farm Management App! Use my referral link: ${referralInfo.shareLink}`
-        : `Join me on Gobaadi Farm Management App! Use my referral code ${referralInfo?.referralCode || ''} to get a bonus reward.`;
+        ? t('referEarn.shareWithLink', { link: referralInfo.shareLink })
+        : t('referEarn.shareWithCode', { code: referralInfo?.referralCode || '' });
       await Share.share({ message });
     } catch (err) {
       console.log('Error sharing:', err);
@@ -35,7 +37,7 @@ export default function ReferEarnScreen() {
           <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} activeOpacity={0.8}>
             <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Refer & Earn</Text>
+          <Text style={styles.headerTitle}>{t('referEarn.title')}</Text>
           <View style={{ width: 42 }} />
         </View>
         <View style={styles.loadingContainer}>
@@ -52,12 +54,12 @@ export default function ReferEarnScreen() {
           <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} activeOpacity={0.8}>
             <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Refer & Earn</Text>
+          <Text style={styles.headerTitle}>{t('referEarn.title')}</Text>
           <View style={{ width: 42 }} />
         </View>
         <View style={styles.loadingContainer}>
           <Ionicons name="cloud-offline-outline" size={48} color="#9C9690" />
-          <Text style={styles.errorText}>Failed to load referral info</Text>
+          <Text style={styles.errorText}>{t('referEarn.loadError')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -69,22 +71,22 @@ export default function ReferEarnScreen() {
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} activeOpacity={0.8}>
           <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Refer & Earn</Text>
+        <Text style={styles.headerTitle}>{t('referEarn.title')}</Text>
         <View style={{ width: 42 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         <View style={styles.mainCard}>
-          <Text style={styles.cardHeading}>Refer Friend and Earn</Text>
-          <Text style={styles.rewardSubtitle}>Share your code and earn rewards</Text>
+          <Text style={styles.cardHeading}>{t('referEarn.heading')}</Text>
+          <Text style={styles.rewardSubtitle}>{t('referEarn.subtitle')}</Text>
 
           <View style={styles.illustrationCircle}>
             <Text style={styles.farmerEmoji}>👨‍🌾</Text>
           </View>
 
           <View style={styles.codeBox}>
-            <Text style={styles.codeLabel}>Your Referral Code</Text>
-            <Text style={styles.codeValue}>{referralInfo?.referralCode || 'N/A'}</Text>
+            <Text style={styles.codeLabel}>{t('referEarn.codeLabel')}</Text>
+            <Text style={styles.codeValue}>{referralInfo?.referralCode || t('referEarn.codeFallback')}</Text>
           </View>
 
           <View style={styles.dashedDivider} />
@@ -93,17 +95,17 @@ export default function ReferEarnScreen() {
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{referralInfo?.referralCount ?? 0}</Text>
-              <Text style={styles.statLabel}>Referrals</Text>
+              <Text style={styles.statLabel}>{t('referEarn.referrals')}</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
               <Text style={styles.statValue}>${referralInfo?.totalEarned ?? 0}</Text>
-              <Text style={styles.statLabel}>Total Earned</Text>
+              <Text style={styles.statLabel}>{t('referEarn.totalEarned')}</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
               <Text style={styles.statValue}>${referralInfo?.pendingAmount ?? 0}</Text>
-              <Text style={styles.statLabel}>Pending</Text>
+              <Text style={styles.statLabel}>{t('referEarn.pending')}</Text>
             </View>
           </View>
 
@@ -115,7 +117,7 @@ export default function ReferEarnScreen() {
                 <Text style={styles.stepNumber}>1</Text>
               </View>
               <Text style={styles.stepText}>
-                Share your code or invite link with farmer friends.
+                {t('referEarn.step1')}
               </Text>
             </View>
 
@@ -124,7 +126,7 @@ export default function ReferEarnScreen() {
                 <Text style={styles.stepNumber}>2</Text>
               </View>
               <Text style={styles.stepText}>
-                They sign up and complete their profile setup.
+                {t('referEarn.step2')}
               </Text>
             </View>
 
@@ -133,14 +135,14 @@ export default function ReferEarnScreen() {
                 <Text style={styles.stepNumber}>3</Text>
               </View>
               <Text style={styles.stepText}>
-                They sign up and complete their first animal setup.
+                {t('referEarn.step3')}
               </Text>
             </View>
           </View>
         </View>
 
         <TouchableOpacity style={styles.actionBtn} onPress={handleShare} activeOpacity={0.85}>
-          <Text style={styles.actionBtnText}>Refer & Earn Now</Text>
+          <Text style={styles.actionBtnText}>{t('referEarn.action')}</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

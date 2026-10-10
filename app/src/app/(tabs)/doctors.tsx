@@ -49,10 +49,12 @@ import { useLanguage } from '@/hooks/use-language';
 import { useLocation } from '@/hooks/use-location';
 import LocationBottomSheet from '@/components/LocationBottomSheet';
 import { DoctorAvatar } from '@/components/doctor-avatar';
+import { useTranslation } from '@/hooks/use-translation';
 
 interface Category {
   id: string;
   name: string;
+  labelKey: string;
   svg: string;
 }
 
@@ -74,6 +76,7 @@ interface DoctorView {
 
 export default function DoctorsScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [activeSlide, setActiveSlide] = useState(0);
   const [activeCategory, setActiveCategory] = useState('General');
   const { data: clinics = [], isLoading: clinicsLoading } = useGetClinicsQuery();
@@ -131,7 +134,7 @@ export default function DoctorsScreen() {
         }).unwrap();
         conversationId = created.id;
       } catch {
-        Alert.alert('Error', 'Could not start the conversation. Please try again.');
+        Alert.alert(t('doctors.alerts.startChatError.title'), t('doctors.alerts.startChatError.msg'));
         return;
       }
     }
@@ -140,13 +143,13 @@ export default function DoctorsScreen() {
       params: {
         conversationId: String(conversationId),
         appointmentId: String(appointment.id),
-        patientName: appointment.patientName || 'Patient',
-        peerName: appointment.doctorName || treatmentDoctor?.name || 'Doctor',
+        patientName: appointment.patientName || t('doctors.fallback.patient'),
+        peerName: appointment.doctorName || treatmentDoctor?.name || t('doctors.fallback.doctor'),
         animalImage: appointment.animalImage || '',
         theirAvatar: appointment.doctorAvatar || '',
       },
     });
-  }, [activeTreatment, conversations, treatmentDoctor, createConversation, router]);
+  }, [activeTreatment, conversations, treatmentDoctor, createConversation, router, t]);
 
   const { ringCall } = useCallSignalingContext();
 
@@ -164,8 +167,8 @@ export default function DoctorsScreen() {
     if (!activeTreatment) return;
     if (treatmentConsultation?.status !== 'ONGOING') {
       Alert.alert(
-        'Consultation not started',
-        'Start the consultation in the chat before placing a call.',
+        t('doctors.alerts.consultationNotStarted.title'),
+        t('doctors.alerts.consultationNotStarted.msg'),
       );
       return;
     }
@@ -174,7 +177,7 @@ export default function DoctorsScreen() {
       pathname: '/video-call',
       params: { appointmentId: String(activeTreatment.id) },
     });
-  }, [activeTreatment, treatmentConsultation, ringCall, router]);
+  }, [activeTreatment, treatmentConsultation, ringCall, router, t]);
 
   // Keep the slide index in range when the list shrinks (e.g. an appointment
   // is completed/cancelled while the user is on a later treatment slide).
@@ -246,11 +249,11 @@ export default function DoctorsScreen() {
   }
 
   const categories: Category[] = [
-    { id: '1', name: 'General', svg: categoryGeneralSvg },
-    { id: '2', name: 'Medicine', svg: categoryMedicineSvg },
-    { id: '3', name: 'Surgery', svg: categorySurgerySvg },
-    { id: '4', name: 'Gynaecology', svg: categoryGynaecologySvg },
-    { id: '5', name: 'Avian & Co.', svg: categoryAvianSvg },
+    { id: '1', name: 'General', labelKey: 'doctors.categories.general', svg: categoryGeneralSvg },
+    { id: '2', name: 'Medicine', labelKey: 'doctors.categories.medicine', svg: categoryMedicineSvg },
+    { id: '3', name: 'Surgery', labelKey: 'doctors.categories.surgery', svg: categorySurgerySvg },
+    { id: '4', name: 'Gynaecology', labelKey: 'doctors.categories.gynaecology', svg: categoryGynaecologySvg },
+    { id: '5', name: 'Avian & Co.', labelKey: 'doctors.categories.avian', svg: categoryAvianSvg },
   ];
 
   const nearbyDoctors: DoctorView[] = useMemo(() => {
@@ -281,7 +284,7 @@ export default function DoctorsScreen() {
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Doctors</Text>
+          <Text style={styles.headerTitle}>{t('doctors.title')}</Text>
           <View style={styles.headerRightControls}>
             <TouchableOpacity
               style={styles.langBadge}
@@ -304,7 +307,7 @@ export default function DoctorsScreen() {
         {/* Location selector and My Treatment button */}
         <View style={styles.locationContainer}>
           <View>
-            <Text style={styles.locationLabel}>Location</Text>
+            <Text style={styles.locationLabel}>{t('doctors.locationLabel')}</Text>
             <TouchableOpacity
               style={styles.locationSelector}
               activeOpacity={0.7}
@@ -318,7 +321,7 @@ export default function DoctorsScreen() {
 
           <TouchableOpacity style={styles.myTreatmentButton} activeOpacity={0.8} onPress={() => router.push('/my-treatment')}>
             <SvgXml width={14} height={14} xml={treatmentCalendarSvg} style={{ marginRight: 6 }} />
-            <Text style={styles.treatmentText}>My Treatment</Text>
+            <Text style={styles.treatmentText}>{t('doctors.myTreatment')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -334,7 +337,7 @@ export default function DoctorsScreen() {
           <SvgXml width={18} height={18} xml={searchSvg} style={{ marginRight: 10 }} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search doctors..."
+            placeholder={t('doctors.searchPlaceholder')}
             placeholderTextColor="#A39E99"
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -370,7 +373,7 @@ export default function DoctorsScreen() {
                     onPress={handleOpenChat}
                   >
                     <View style={styles.upcomingHeader}>
-                      <Text style={styles.upcomingTitle}>Upcoming Treatment</Text>
+                      <Text style={styles.upcomingTitle}>{t('doctors.upcomingTreatment')}</Text>
                       <View style={styles.upcomingActions}>
                         <TouchableOpacity
                           style={styles.chatButton}
@@ -384,7 +387,7 @@ export default function DoctorsScreen() {
                           onPress={handleStartCall}
                         >
                           <SvgXml width={14} height={14} xml={videoCallSvg} style={{ marginRight: 4 }} />
-                          <Text style={styles.callText}>Start Call</Text>
+                          <Text style={styles.callText}>{t('doctors.startCall')}</Text>
                         </TouchableOpacity>
                       </View>
                     </View>
@@ -401,7 +404,7 @@ export default function DoctorsScreen() {
                       />
                       <View style={styles.doctorMeta}>
                         <Text style={styles.quickDocName}>
-                          {treatmentDoctor?.name ?? 'Doctor'}
+                          {treatmentDoctor?.name ?? t('doctors.fallback.doctor')}
                         </Text>
                         <Text style={styles.quickDocSpecialty}>
                           {treatmentDoctor?.specialty ?? ''}
@@ -432,9 +435,9 @@ export default function DoctorsScreen() {
                 >
                   <View style={styles.aiCardContent}>
                     <View style={styles.aiLeftColumn}>
-                      <Text style={styles.aiCardTitle}>Analyze with AI</Text>
+                      <Text style={styles.aiCardTitle}>{t('doctors.ai.title')}</Text>
                       <Text style={styles.aiCardSubtitle}>
-                        Analyze your animals instantly with our latest AI Module
+                        {t('doctors.ai.subtitle')}
                       </Text>
                       <TouchableOpacity
                         style={styles.scanNowButton}
@@ -442,7 +445,7 @@ export default function DoctorsScreen() {
                         onPress={() => router.push('/ai-scan')}
                       >
                         <SvgXml width={14} height={14} xml={scanCameraSvg} style={{ marginRight: 6 }} />
-                        <Text style={styles.scanNowText}>Scan Now</Text>
+                        <Text style={styles.scanNowText}>{t('doctors.ai.scanNow')}</Text>
                       </TouchableOpacity>
                     </View>
 
@@ -459,9 +462,9 @@ export default function DoctorsScreen() {
 
         {/* Categories Section */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Categories</Text>
+          <Text style={styles.sectionTitle}>{t('doctors.sections.categories')}</Text>
           <TouchableOpacity onPress={() => router.push('/all-doctors')}>
-            <Text style={styles.viewAllText}>View all</Text>
+            <Text style={styles.viewAllText}>{t('doctors.viewAll')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -487,7 +490,7 @@ export default function DoctorsScreen() {
                   />
                 </View>
                 <Text style={[styles.categoryLabel, isActive && styles.categoryLabelActive]}>
-                  {cat.name}
+                  {t(cat.labelKey)}
                 </Text>
               </TouchableOpacity>
             );
@@ -496,22 +499,22 @@ export default function DoctorsScreen() {
 
         {/* Nearby Doctors Section */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Nearby Doctors</Text>
+          <Text style={styles.sectionTitle}>{t('doctors.sections.nearbyDoctors')}</Text>
           <TouchableOpacity onPress={() => router.push('/all-doctors')}>
-            <Text style={styles.viewAllText}>View all</Text>
+            <Text style={styles.viewAllText}>{t('doctors.viewAll')}</Text>
           </TouchableOpacity>
         </View>
 
         {nearbyDoctors.length === 0 ? (
           <View style={styles.emptyDoctorsContainer}>
             <Text style={styles.emptyDoctorsIcon}>👨‍⚕️</Text>
-            <Text style={styles.emptyDoctorsText}>No doctors found</Text>
+            <Text style={styles.emptyDoctorsText}>{t('doctors.empty.noDoctors')}</Text>
             <Text style={styles.emptyDoctorsSubtext}>
               {debouncedSearch.trim()
-                ? 'Try a different name or specialty.'
+                ? t('doctors.empty.searchSubtext')
                 : doctors.length > 0
-                  ? 'No doctors found in this category.'
-                  : 'Check back soon — new vets are added regularly.'}
+                  ? t('doctors.empty.categorySubtext')
+                  : t('doctors.empty.checkBack')}
             </Text>
           </View>
         ) : (
@@ -539,7 +542,7 @@ export default function DoctorsScreen() {
                 <View style={styles.ratingRow}>
                   <SvgXml width={12} height={12} xml={doctorCardStarSvg} style={{ marginRight: 4 }} />
                   <Text style={styles.ratingValue}>{doc.rating}</Text>
-                  <Text style={styles.reviewsText}>| {doc.reviews.toLocaleString()} Reviews</Text>
+                  <Text style={styles.reviewsText}>| {t('doctors.reviews', { count: doc.reviews })}</Text>
                 </View>
 
                 <View style={styles.doctorCardButtons}>
@@ -550,7 +553,7 @@ export default function DoctorsScreen() {
                   >
                     <View style={styles.bookButtonContent}>
                       <SvgXml width={14} height={14} xml={doctorCardBookSlotSvg} style={{ marginRight: 6 }} />
-                      <Text style={styles.bookButtonText}>Book Slot</Text>
+                      <Text style={styles.bookButtonText}>{t('doctors.bookSlot')}</Text>
                     </View>
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -560,7 +563,7 @@ export default function DoctorsScreen() {
                   >
                     <View style={styles.bookButtonContent}>
                       <SvgXml width={14} height={14} xml={doctorCardDetailsSvg} style={{ marginRight: 6 }} />
-                      <Text style={styles.detailsButtonText}>Details</Text>
+                      <Text style={styles.detailsButtonText}>{t('doctors.details')}</Text>
                     </View>
                   </TouchableOpacity>
                 </View>
@@ -571,9 +574,9 @@ export default function DoctorsScreen() {
 
         {/* Nearby Medical Centers Section */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Nearby Medical Centers</Text>
+          <Text style={styles.sectionTitle}>{t('doctors.sections.nearbyCenters')}</Text>
           <TouchableOpacity onPress={() => router.push('/all-clinics')}>
-            <Text style={styles.viewAllText}>View all</Text>
+            <Text style={styles.viewAllText}>{t('doctors.viewAll')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -584,9 +587,9 @@ export default function DoctorsScreen() {
         ) : clinics.length === 0 ? (
           <View style={styles.emptyDoctorsContainer}>
             <Text style={styles.emptyDoctorsIcon}>🏥</Text>
-            <Text style={styles.emptyDoctorsText}>No medical centers found</Text>
+            <Text style={styles.emptyDoctorsText}>{t('doctors.empty.noCenters')}</Text>
             <Text style={styles.emptyDoctorsSubtext}>
-              Check back soon — new medical centers are added regularly.
+              {t('doctors.empty.centersCheckBack')}
             </Text>
           </View>
         ) : (
@@ -617,7 +620,7 @@ export default function DoctorsScreen() {
                   <View style={styles.clinicRatingRow}>
                     <SvgXml width={11} height={11} xml={doctorCardStarSvg} style={{ marginRight: 3 }} />
                     <Text style={styles.clinicRatingValue}>{clinic.rating}</Text>
-                    <Text style={styles.clinicDoctorCount}>| {clinic.doctors?.length || 0} Doctors</Text>
+                    <Text style={styles.clinicDoctorCount}>| {t('doctors.clinicDoctors', { count: clinic.doctors?.length || 0 })}</Text>
                   </View>
                 </View>
               </TouchableOpacity>

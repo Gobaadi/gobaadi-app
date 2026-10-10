@@ -1,8 +1,10 @@
 import '@/utils/install-rn-fetch';
+import '@/i18n';
 
 import { DarkTheme, DefaultTheme, ThemeProvider, Stack, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useColorScheme } from 'react-native';
+import * as Font from 'expo-font';
+import { Platform, useColorScheme } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useEffect } from 'react';
 import { Provider, useSelector } from 'react-redux';
@@ -22,6 +24,7 @@ import { socketManager } from '@/lib/socket-manager';
 import { registerForPushNotifications, unregisterPushNotifications } from '@/lib/push-notifications';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { IncomingCallProvider } from '@/components/IncomingCallProvider';
+import { LanguageProvider } from '@/providers/LanguageProvider';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -190,13 +193,25 @@ export default function RootLayout() {
     bootstrapAuth();
   }, []);
 
+  useEffect(() => {
+    // Native embeds the fonts at build time via the expo-font config plugin;
+    // web has no prebuild step, so load them at runtime.
+    if (Platform.OS !== 'web') return;
+    Font.loadAsync({
+      'Google Sans': require('../../assets/fonts/GoogleSans-Regular.ttf'),
+      'Noto Sans Bengali': require('../../assets/fonts/NotoSansBengali-Regular.ttf'),
+    }).catch((error) => console.warn('Failed to load web fonts:', error));
+  }, []);
+
   return (
     <ErrorBoundary>
       <SafeAreaProvider>
         <Provider store={store}>
           <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-            <AnimatedSplashOverlay />
-            <RootNavigator />
+            <LanguageProvider>
+              <AnimatedSplashOverlay />
+              <RootNavigator />
+            </LanguageProvider>
           </ThemeProvider>
         </Provider>
       </SafeAreaProvider>

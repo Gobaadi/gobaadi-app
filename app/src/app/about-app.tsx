@@ -8,53 +8,54 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, type Href } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 
 const LAST_UPDATED = 'October 1, 2026';
 
 type Feature = {
   emoji: string;
-  title: string;
-  description: string;
+  titleKey: string;
+  descriptionKey: string;
 };
 
 const FEATURES: Feature[] = [
   {
     emoji: '🐄',
-    title: 'Manage Livestock',
-    description: 'Keep your animals, health records, vaccinations, and important information organized.',
+    titleKey: 'aboutApp.features.livestock.title',
+    descriptionKey: 'aboutApp.features.livestock.description',
   },
   {
     emoji: '🩺',
-    title: 'Connect with Vets',
-    description: 'Access veterinary guidance and digital consultation when you need support.',
+    titleKey: 'aboutApp.features.vets.title',
+    descriptionKey: 'aboutApp.features.vets.description',
   },
   {
     emoji: '🤖',
-    title: 'Get AI-Assisted Insights',
-    description: 'Receive helpful livestock health and management insights powered by AI.',
+    titleKey: 'aboutApp.features.ai.title',
+    descriptionKey: 'aboutApp.features.ai.description',
   },
   {
     emoji: '🛒',
-    title: 'Buy & Sell',
-    description:
-      'Discover livestock, feed, medicines, equipment, and other agricultural products through the marketplace.',
+    titleKey: 'aboutApp.features.market.title',
+    descriptionKey: 'aboutApp.features.market.description',
   },
   {
     emoji: '🔔',
-    title: 'Stay on Track',
-    description: 'Get reminders for vaccinations, treatments, feeding, and other important livestock activities.',
+    titleKey: 'aboutApp.features.reminders.title',
+    descriptionKey: 'aboutApp.features.reminders.description',
   },
 ];
 
-const FOOTER_LINKS: { label: string; href: Href }[] = [
-  { label: 'Privacy Policy', href: '/privacy-policy' },
-  { label: 'Terms & Conditions', href: '/terms-of-service' },
-  { label: 'Help & Support', href: '/help-support' },
+const FOOTER_LINKS: { labelKey: string; href: Href }[] = [
+  { labelKey: 'aboutApp.links.privacy', href: '/privacy-policy' },
+  { labelKey: 'aboutApp.links.terms', href: '/terms-of-service' },
+  { labelKey: 'aboutApp.links.help', href: '/help-support' },
 ];
 
 export default function AboutAppScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -67,51 +68,44 @@ export default function AboutAppScreen() {
         >
           <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>About App</Text>
+        <Text style={styles.headerTitle}>{t('aboutApp.title')}</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <Text style={styles.docTitle}>About Gobaadi</Text>
-        <Text style={styles.tagline}>Where livestock meets intelligence.</Text>
-        <Text style={styles.lastUpdated}>Last Updated: {LAST_UPDATED}</Text>
+        <Text style={styles.docTitle}>{t('aboutApp.docTitle')}</Text>
+        <Text style={styles.tagline}>{t('aboutApp.tagline')}</Text>
+        <Text style={styles.lastUpdated}>{t('aboutApp.lastUpdated', { date: LAST_UPDATED })}</Text>
 
-        <Text style={styles.paragraph}>
-          Gobaadi is a smart livestock platform built to help farmers and livestock owners manage
-          their animals, access trusted support, and make better-informed decisions.
-        </Text>
-        <Text style={styles.subheading}>With Gobaadi, you can:</Text>
+        <Text style={styles.paragraph}>{t('aboutApp.intro')}</Text>
+        <Text style={styles.subheading}>{t('aboutApp.canDo')}</Text>
 
         {FEATURES.map((feature) => (
-          <View key={feature.title} style={styles.featureRow}>
+          <View key={feature.titleKey} style={styles.featureRow}>
             <Text style={styles.featureEmoji}>{feature.emoji}</Text>
             <View style={styles.featureBody}>
-              <Text style={styles.featureTitle}>{feature.title}</Text>
-              <Text style={styles.paragraph}>{feature.description}</Text>
+              <Text style={styles.featureTitle}>{t(feature.titleKey)}</Text>
+              <Text style={styles.paragraph}>{t(feature.descriptionKey)}</Text>
             </View>
           </View>
         ))}
 
-        <Text style={styles.sectionHeading}>Our Mission</Text>
-        <Text style={styles.paragraph}>
-          We believe technology should support farmers, not replace their experience. Gobaadi brings
-          technology, veterinary expertise, and practical farming knowledge together to create a
-          more connected livestock ecosystem.
-        </Text>
+        <Text style={styles.sectionHeading}>{t('aboutApp.mission.title')}</Text>
+        <Text style={styles.paragraph}>{t('aboutApp.mission.body')}</Text>
 
         <View style={styles.footer}>
           <Text style={styles.footerBrand}>Gobaadi</Text>
-          <Text style={styles.footerTagline}>Where livestock meets intelligence.</Text>
+          <Text style={styles.footerTagline}>{t('aboutApp.tagline')}</Text>
           <View style={styles.versionRow}>
-            <Text style={styles.versionLabel}>App Version</Text>
+            <Text style={styles.versionLabel}>{t('aboutApp.appVersion')}</Text>
             <Text style={styles.versionValue}>1.0.0</Text>
           </View>
 
           <View style={styles.linksRow}>
             {FOOTER_LINKS.map((link, index) => (
-              <React.Fragment key={link.label}>
+              <React.Fragment key={link.labelKey}>
                 {index > 0 ? <Text style={styles.linkSeparator}>·</Text> : null}
                 <TouchableOpacity activeOpacity={0.7} onPress={() => router.push(link.href)}>
-                  <Text style={styles.link}>{link.label}</Text>
+                  <Text style={styles.link}>{t(link.labelKey)}</Text>
                 </TouchableOpacity>
               </React.Fragment>
             ))}

@@ -10,7 +10,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { SvgXml } from 'react-native-svg';
 import { LANGUAGES } from '@/constants/languages';
+import { getFontFamily } from '@/constants/fonts';
 import { useLanguage } from '@/hooks/use-language';
+import { useTranslation } from '@/hooks/use-translation';
 import {
   backButtonSvg,
   languageActiveSpeakerSvg,
@@ -21,6 +23,8 @@ import {
 export default function SelectLanguageScreen() {
   const router = useRouter();
   const { language, setLanguage } = useLanguage();
+  const { t } = useTranslation();
+  const fontFamily = getFontFamily(language);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -28,14 +32,12 @@ export default function SelectLanguageScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
           <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Select Language</Text>
+        <Text style={[styles.headerTitle, { fontFamily }]}>{t('selectLanguage.title')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-        <Text style={styles.helperText}>
-          Choose your preferred language for the interface and notifications.
-        </Text>
+        <Text style={[styles.helperText, { fontFamily }]}>{t('selectLanguage.helper')}</Text>
 
         {/* Language List */}
         <View style={styles.languageList}>
@@ -49,10 +51,10 @@ export default function SelectLanguageScreen() {
                 activeOpacity={0.8}
               >
                 <View style={styles.languageInfo}>
-                  <Text style={[styles.languageName, isSelected && styles.languageNameActive]}>
+                  <Text style={[styles.languageName, isSelected && styles.languageNameActive, { fontFamily }]}>
                     {lang.name}
                   </Text>
-                  <Text style={[styles.languageNative, isSelected && styles.languageNativeActive]}>
+                  <Text style={[styles.languageNative, isSelected && styles.languageNativeActive, { fontFamily }]}>
                     {lang.nativeName}
                   </Text>
                 </View>
@@ -70,7 +72,7 @@ export default function SelectLanguageScreen() {
 
         {/* Voice Selection Mode */}
         <TouchableOpacity style={styles.voiceRow} activeOpacity={0.8}>
-          <Text style={styles.voiceText}>Voice Selection Mode</Text>
+          <Text style={[styles.voiceText, { fontFamily }]}>{t('selectLanguage.voiceMode')}</Text>
           <View style={styles.micCircle}>
             <SvgXml width={18} height={18} xml={languageSelectionMicrophoneSvg} />
           </View>
@@ -79,8 +81,8 @@ export default function SelectLanguageScreen() {
 
       {/* Save Button */}
       <View style={styles.bottomBar}>
-        <TouchableOpacity style={styles.saveBtn} activeOpacity={0.85}>
-          <Text style={styles.saveBtnText}>Save Changes</Text>
+        <TouchableOpacity style={styles.saveBtn} activeOpacity={0.85} onPress={() => router.back()}>
+          <Text style={[styles.saveBtnText, { fontFamily }]}>{t('selectLanguage.save')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

@@ -32,6 +32,7 @@ import {
 } from '@/store/addressesApi';
 import { compressImageForUpload } from '@/utils/compress-image';
 import { DoctorAvatar } from '@/components/doctor-avatar';
+import { useTranslation } from '@/hooks/use-translation';
 
 type Tab = 'about' | 'experience' | 'credentials';
 
@@ -40,6 +41,7 @@ function parseTab(tab?: string): Tab {
 }
 
 export default function ProfileEditScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { tab, section } = useLocalSearchParams<{ tab?: string; section?: string }>();
   const isDoctor = useRequireDoctor();
@@ -154,10 +156,10 @@ export default function ProfileEditScreen() {
     updatingAddress;
 
   const openPhotoPicker = () => {
-    Alert.alert('Change Profile Photo', 'Choose an option', [
-      { text: 'Take Photo', onPress: () => pickPhoto('camera') },
-      { text: 'Choose from Library', onPress: () => pickPhoto('library') },
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('profileEdit.photo.title'), t('profileEdit.photo.chooseOption'), [
+      { text: t('profileEdit.photo.takePhoto'), onPress: () => pickPhoto('camera') },
+      { text: t('profileEdit.photo.fromLibrary'), onPress: () => pickPhoto('library') },
+      { text: t('profileEdit.photo.cancel'), style: 'cancel' },
     ]);
   };
 
@@ -169,10 +171,10 @@ export default function ProfileEditScreen() {
           : await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permission.granted) {
         Alert.alert(
-          'Permission required',
+          t('profileEdit.photo.permissionTitle'),
           source === 'camera'
-            ? 'Camera access is required to take a profile photo.'
-            : 'Photo library access is required to choose a profile photo.',
+            ? t('profileEdit.photo.cameraPermission')
+            : t('profileEdit.photo.libraryPermission'),
         );
         return;
       }
@@ -184,8 +186,8 @@ export default function ProfileEditScreen() {
       await uploadPhoto(result.assets[0].uri);
     } catch {
       Alert.alert(
-        'Photo selection failed',
-        'Could not open the camera or photo gallery. Please try again.',
+        t('profileEdit.photo.selectFailedTitle'),
+        t('profileEdit.photo.selectFailedMsg'),
       );
     }
   };
@@ -208,12 +210,12 @@ export default function ProfileEditScreen() {
     } catch (err: any) {
       setPickedPhotoUri(null);
       Alert.alert(
-        'Upload failed',
+        t('profileEdit.photo.uploadFailedTitle'),
         err?.status === 413
-          ? 'The photo is too large. Please try a smaller image.'
+          ? t('profileEdit.photo.uploadTooLarge')
           : err?.data?.message ||
             err?.message ||
-            'Failed to upload photo. Please try again.',
+            t('profileEdit.photo.uploadFailedMsg'),
       );
     } finally {
       setIsUploadingPhoto(false);
@@ -272,7 +274,7 @@ export default function ProfileEditScreen() {
 
   const addOrUpdateExperience = () => {
     if (!expTitle.trim() && !expInstitute.trim()) {
-      setExpError('Enter a position title or institute name first');
+      setExpError(t('profileEdit.errors.expRequired'));
       return;
     }
     const entry: DoctorExperience = {
@@ -348,10 +350,10 @@ export default function ProfileEditScreen() {
           }
           break;
       }
-      Alert.alert('Success', 'Changes saved successfully');
+      Alert.alert(t('profileEdit.success.title'), t('profileEdit.success.saved'));
       router.back();
     } catch {
-      Alert.alert('Error', 'Failed to save changes. Please try again.');
+      Alert.alert(t('profileEdit.errors.title'), t('profileEdit.errors.saveFailed'));
     }
   };
 
@@ -376,7 +378,7 @@ export default function ProfileEditScreen() {
       setNewQualification('');
       setQualificationError('');
     } else {
-      setQualificationError('Enter a qualification first');
+      setQualificationError(t('profileEdit.errors.qualificationRequired'));
       qualificationInputRef.current?.focus();
     }
   };
@@ -391,7 +393,7 @@ export default function ProfileEditScreen() {
       setNewSpecialization('');
       setSpecializationError('');
     } else {
-      setSpecializationError('Enter a specialization first');
+      setSpecializationError(t('profileEdit.errors.specializationRequired'));
       specializationInputRef.current?.focus();
     }
   };
@@ -442,7 +444,7 @@ export default function ProfileEditScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
           <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Profile</Text>
+        <Text style={styles.headerTitle}>{t('profileEdit.title')}</Text>
         <TouchableOpacity
           style={[styles.saveBtn, isSaving && { opacity: 0.5 }]}
           onPress={handleSave}
@@ -452,7 +454,7 @@ export default function ProfileEditScreen() {
           {isSaving ? (
             <ActivityIndicator size="small" color="#FFFFFF" />
           ) : (
-            <Text style={styles.saveBtnText}>Save Changes</Text>
+            <Text style={styles.saveBtnText}>{t('profileEdit.saveChanges')}</Text>
           )}
         </TouchableOpacity>
       </View>
@@ -484,28 +486,28 @@ export default function ProfileEditScreen() {
               </View>
             </TouchableOpacity>
             <View style={styles.doctorDetails}>
-              <Text style={styles.doctorName}>Dr {doctorProfile?.name || 'Doctor'}</Text>
-              <Text style={styles.doctorSpecialty}>{doctorProfile?.specialty || 'No specialty'}</Text>
+              <Text style={styles.doctorName}>Dr {doctorProfile?.name || t('profileEdit.doctorFallback')}</Text>
+              <Text style={styles.doctorSpecialty}>{doctorProfile?.specialty || t('profileEdit.noSpecialty')}</Text>
               <View style={styles.ratingRow}>
                 <Ionicons name="star" size={14} color="#F59E0B" />
-                <Text style={styles.ratingText}>{doctorProfile?.rating ?? '0.0'} ({doctorBookings.length} reviews)</Text>
+                <Text style={styles.ratingText}>{doctorProfile?.rating ?? '0.0'} ({t('profileEdit.reviews', { count: doctorBookings.length })})</Text>
               </View>
             </View>
           </View>
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>{uniquePatients}</Text>
-              <Text style={styles.statLabel}>Patients</Text>
+              <Text style={styles.statLabel}>{t('profileEdit.stats.patients')}</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>{completedConsultations}</Text>
-              <Text style={styles.statLabel}>Consultations</Text>
+              <Text style={styles.statLabel}>{t('profileEdit.stats.consultations')}</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>{doctorProfile?.experience || '0'}</Text>
-              <Text style={styles.statLabel}>Years Experience</Text>
+              <Text style={styles.statLabel}>{t('profileEdit.stats.yearsExperience')}</Text>
             </View>
           </View>
         </View>
@@ -520,7 +522,7 @@ export default function ProfileEditScreen() {
               activeOpacity={0.7}
             >
               <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-                {tab === 'about' ? 'About' : tab === 'experience' ? 'Experience' : 'Credentials'}
+                {tab === 'about' ? t('profileEdit.tabs.about') : tab === 'experience' ? t('profileEdit.tabs.experience') : t('profileEdit.tabs.credentials')}
               </Text>
             </TouchableOpacity>
           ))}
@@ -530,42 +532,42 @@ export default function ProfileEditScreen() {
         {activeTab === 'about' && (
           <View>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Personal information</Text>
+              <Text style={styles.sectionTitle}>{t('profileEdit.sections.personalInfo')}</Text>
             </View>
 
-            <Text style={styles.fieldLabel}>Your Name</Text>
+            <Text style={styles.fieldLabel}>{t('profileEdit.fields.name')}</Text>
             <View style={styles.inputRow}>
-              <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Enter your name" placeholderTextColor="#A39E99" />
+              <TextInput style={styles.input} value={name} onChangeText={setName} placeholder={t('profileEdit.placeholders.name')} placeholderTextColor="#A39E99" />
             </View>
 
-            <Text style={styles.fieldLabel}>Specialty</Text>
+            <Text style={styles.fieldLabel}>{t('profileEdit.fields.specialty')}</Text>
             <View style={styles.inputRow}>
-              <TextInput style={styles.input} value={specialty} onChangeText={setSpecialty} placeholder="e.g. Veterinary Surgery" placeholderTextColor="#A39E99" />
+              <TextInput style={styles.input} value={specialty} onChangeText={setSpecialty} placeholder={t('profileEdit.placeholders.specialty')} placeholderTextColor="#A39E99" />
             </View>
 
-            <Text style={styles.fieldLabel}>Years of Experience</Text>
+            <Text style={styles.fieldLabel}>{t('profileEdit.fields.yearsExperience')}</Text>
             <View style={styles.inputRow}>
-              <TextInput style={styles.input} value={experience} onChangeText={setExperience} placeholder="e.g. 5 Years" placeholderTextColor="#A39E99" />
+              <TextInput style={styles.input} value={experience} onChangeText={setExperience} placeholder={t('profileEdit.placeholders.experience')} placeholderTextColor="#A39E99" />
             </View>
 
-            <Text style={styles.fieldLabel}>District</Text>
+            <Text style={styles.fieldLabel}>{t('profileEdit.fields.district')}</Text>
             <View style={styles.inputRow}>
-              <TextInput style={styles.input} value={district} onChangeText={setDistrict} placeholder="e.g. Narayanganj" placeholderTextColor="#A39E99" />
+              <TextInput style={styles.input} value={district} onChangeText={setDistrict} placeholder={t('profileEdit.placeholders.district')} placeholderTextColor="#A39E99" />
             </View>
 
-            <Text style={styles.fieldLabel}>Upazila / Village</Text>
+            <Text style={styles.fieldLabel}>{t('profileEdit.fields.upazilaVillage')}</Text>
             <View style={styles.inputRow}>
-              <TextInput style={styles.input} value={upazila} onChangeText={setUpazila} placeholder="e.g. Bandar" placeholderTextColor="#A39E99" />
+              <TextInput style={styles.input} value={upazila} onChangeText={setUpazila} placeholder={t('profileEdit.placeholders.upazila')} placeholderTextColor="#A39E99" />
             </View>
 
-            <Text style={[styles.fieldLabel, { marginTop: 8 }]}>About / Bio</Text>
+            <Text style={[styles.fieldLabel, { marginTop: 8 }]}>{t('profileEdit.fields.bio')}</Text>
             <TextInput
               style={styles.textarea}
               value={bio}
               onChangeText={setBio}
               multiline
               textAlignVertical="top"
-              placeholder="Tell patients about yourself..."
+              placeholder={t('profileEdit.placeholders.bio')}
               placeholderTextColor="#A39E99"
             />
           </View>
@@ -575,7 +577,7 @@ export default function ProfileEditScreen() {
         {activeTab === 'experience' && (
           <View>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Experiences</Text>
+              <Text style={styles.sectionTitle}>{t('profileEdit.sections.experiences')}</Text>
             </View>
 
             {experiences.length > 0 ? (
@@ -591,7 +593,7 @@ export default function ProfileEditScreen() {
                       onPress={() => editExperience(i)}
                       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                       activeOpacity={0.7}
-                      accessibilityLabel="Edit experience"
+                      accessibilityLabel={t('profileEdit.a11y.editExperience')}
                     >
                       <Ionicons name="create-outline" size={20} color="#7C7672" />
                     </TouchableOpacity>
@@ -599,7 +601,7 @@ export default function ProfileEditScreen() {
                       onPress={() => removeExperience(i)}
                       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                       activeOpacity={0.7}
-                      accessibilityLabel="Delete experience"
+                      accessibilityLabel={t('profileEdit.a11y.deleteExperience')}
                     >
                       <Ionicons name="trash-outline" size={20} color="#E53935" />
                     </TouchableOpacity>
@@ -607,32 +609,32 @@ export default function ProfileEditScreen() {
                 </View>
               ))
             ) : (
-              <Text style={styles.emptyText}>No experiences added yet</Text>
+              <Text style={styles.emptyText}>{t('profileEdit.empty.experiences')}</Text>
             )}
 
-            <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Position Title</Text>
+            <Text style={[styles.fieldLabel, { marginTop: 16 }]}>{t('profileEdit.fields.positionTitle')}</Text>
             <View style={styles.inputRow}>
-              <TextInput style={styles.input} value={expTitle} onChangeText={setExpTitle} placeholder="e.g. Senior Veterinarian" placeholderTextColor="#A39E99" />
+              <TextInput style={styles.input} value={expTitle} onChangeText={setExpTitle} placeholder={t('profileEdit.placeholders.positionTitle')} placeholderTextColor="#A39E99" />
             </View>
 
-            <Text style={styles.fieldLabel}>Institute Name</Text>
+            <Text style={styles.fieldLabel}>{t('profileEdit.fields.instituteName')}</Text>
             <View style={styles.inputRow}>
-              <TextInput style={styles.input} value={expInstitute} onChangeText={setExpInstitute} placeholder="e.g. City Vet Clinic" placeholderTextColor="#A39E99" />
+              <TextInput style={styles.input} value={expInstitute} onChangeText={setExpInstitute} placeholder={t('profileEdit.placeholders.instituteName')} placeholderTextColor="#A39E99" />
             </View>
 
-            <Text style={styles.fieldLabel}>Duration</Text>
+            <Text style={styles.fieldLabel}>{t('profileEdit.fields.duration')}</Text>
             <View style={styles.inputRow}>
-              <TextInput style={styles.input} value={expDuration} onChangeText={setExpDuration} placeholder="e.g. Jan 2020 - Present" placeholderTextColor="#A39E99" />
+              <TextInput style={styles.input} value={expDuration} onChangeText={setExpDuration} placeholder={t('profileEdit.placeholders.duration')} placeholderTextColor="#A39E99" />
             </View>
 
-            <Text style={[styles.fieldLabel, { marginTop: 12 }]}>Description</Text>
+            <Text style={[styles.fieldLabel, { marginTop: 12 }]}>{t('profileEdit.fields.description')}</Text>
             <TextInput
               style={styles.textarea}
               value={expDescription}
               onChangeText={setExpDescription}
               multiline
               textAlignVertical="top"
-              placeholder="Describe your role and achievements..."
+              placeholder={t('profileEdit.placeholders.description')}
               placeholderTextColor="#A39E99"
             />
 
@@ -640,12 +642,12 @@ export default function ProfileEditScreen() {
               <TouchableOpacity style={styles.expPrimaryBtn} onPress={addOrUpdateExperience} activeOpacity={0.8}>
                 <Ionicons name={editingExpIndex !== null ? 'checkmark' : 'add'} size={18} color="#FFFFFF" />
                 <Text style={styles.expPrimaryBtnText}>
-                  {editingExpIndex !== null ? 'Update Experience' : 'Add Experience'}
+                  {editingExpIndex !== null ? t('profileEdit.actions.updateExperience') : t('profileEdit.actions.addExperience')}
                 </Text>
               </TouchableOpacity>
               {editingExpIndex !== null && (
                 <TouchableOpacity style={styles.expCancelBtn} onPress={resetExpForm} activeOpacity={0.8}>
-                  <Text style={styles.expCancelBtnText}>Cancel</Text>
+                  <Text style={styles.expCancelBtnText}>{t('profileEdit.actions.cancel')}</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -661,7 +663,7 @@ export default function ProfileEditScreen() {
               style={[styles.sectionHeader, highlightedSection === 'qualifications' && styles.sectionHeaderHighlight]}
               onLayout={(e) => setQualificationsHeaderY(e.nativeEvent.layout.y)}
             >
-              <Text style={styles.sectionTitle}>Certifications</Text>
+              <Text style={styles.sectionTitle}>{t('profileEdit.sections.certifications')}</Text>
             </View>
 
             <View style={styles.inputRow}>
@@ -669,26 +671,26 @@ export default function ProfileEditScreen() {
                 style={styles.input}
                 value={qualifications[0] ?? ''}
                 onChangeText={(text) => setQualificationAt(0, text)}
-                placeholder="e.g. DVM, BAU"
+                placeholder={t('profileEdit.placeholders.certifications')}
                 placeholderTextColor="#A39E99"
               />
             </View>
 
             {/* Institute Name (qualifications[1]) */}
-            <Text style={styles.fieldLabel}>Institute Name</Text>
+            <Text style={styles.fieldLabel}>{t('profileEdit.fields.instituteName')}</Text>
             <View style={styles.inputRow}>
               <TextInput
                 style={styles.input}
                 value={qualifications[1] ?? ''}
                 onChangeText={(text) => setQualificationAt(1, text)}
-                placeholder="e.g. Bangladesh Agricultural University"
+                placeholder={t('profileEdit.placeholders.otherInstitute')}
                 placeholderTextColor="#A39E99"
               />
             </View>
 
             {/* Other Qualifications (qualifications[2+]) */}
             <View style={[styles.sectionHeader, { marginTop: 24 }]}>
-              <Text style={styles.sectionTitle}>Other Qualifications</Text>
+              <Text style={styles.sectionTitle}>{t('profileEdit.sections.otherQualifications')}</Text>
             </View>
 
             {otherQualifications.length > 0 ? (
@@ -704,7 +706,7 @@ export default function ProfileEditScreen() {
                 </View>
               ))
             ) : (
-              <Text style={styles.emptyText}>No other qualifications added yet</Text>
+              <Text style={styles.emptyText}>{t('profileEdit.empty.qualifications')}</Text>
             )}
 
             <View style={styles.addRow}>
@@ -716,7 +718,7 @@ export default function ProfileEditScreen() {
                   setNewQualification(text);
                   if (qualificationError) setQualificationError('');
                 }}
-                placeholder="Add qualification..."
+                placeholder={t('profileEdit.placeholders.addQualification')}
                 placeholderTextColor="#A39E99"
                 onSubmitEditing={addQualification}
               />
@@ -725,7 +727,7 @@ export default function ProfileEditScreen() {
                 onPress={addQualification}
                 activeOpacity={0.8}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                accessibilityLabel="Add qualification"
+                accessibilityLabel={t('profileEdit.a11y.addQualification')}
               >
                 <Ionicons name="add" size={20} color="#FFFFFF" />
               </TouchableOpacity>
@@ -734,7 +736,7 @@ export default function ProfileEditScreen() {
 
             {/* Specializations */}
             <View style={[styles.sectionHeader, { marginTop: 24 }]}>
-              <Text style={styles.sectionTitle}>Specializations</Text>
+              <Text style={styles.sectionTitle}>{t('profileEdit.sections.specializations')}</Text>
             </View>
 
             {specializations.length > 0 ? (
@@ -750,7 +752,7 @@ export default function ProfileEditScreen() {
                 </View>
               ))
             ) : (
-              <Text style={styles.emptyText}>No specializations added yet</Text>
+              <Text style={styles.emptyText}>{t('profileEdit.empty.specializations')}</Text>
             )}
 
             <View style={styles.addRow}>
@@ -762,7 +764,7 @@ export default function ProfileEditScreen() {
                   setNewSpecialization(text);
                   if (specializationError) setSpecializationError('');
                 }}
-                placeholder="Add specialization..."
+                placeholder={t('profileEdit.placeholders.addSpecialization')}
                 placeholderTextColor="#A39E99"
                 onSubmitEditing={addSpecialization}
               />
@@ -771,7 +773,7 @@ export default function ProfileEditScreen() {
                 onPress={addSpecialization}
                 activeOpacity={0.8}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                accessibilityLabel="Add specialization"
+                accessibilityLabel={t('profileEdit.a11y.addSpecialization')}
               >
                 <Ionicons name="add" size={20} color="#FFFFFF" />
               </TouchableOpacity>
@@ -780,7 +782,7 @@ export default function ProfileEditScreen() {
 
             {/* License Number */}
             <View style={[styles.sectionHeader, { marginTop: 24 }]}>
-              <Text style={styles.sectionTitle}>License Number</Text>
+              <Text style={styles.sectionTitle}>{t('profileEdit.sections.licenseNumber')}</Text>
             </View>
 
             <View style={styles.addRow}>
@@ -788,7 +790,7 @@ export default function ProfileEditScreen() {
                 style={[styles.input, { flex: 1 }]}
                 value={licenseNumber}
                 onChangeText={setLicenseNumber}
-                placeholder="Enter license number..."
+                placeholder={t('profileEdit.placeholders.licenseNumber')}
                 placeholderTextColor="#A39E99"
               />
             </View>

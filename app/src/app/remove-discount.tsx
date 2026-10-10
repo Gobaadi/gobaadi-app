@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { SvgXml } from 'react-native-svg';
 import {
   useGetDiscountForPatientQuery,
@@ -20,6 +21,7 @@ import { backButtonSvg, removeDiscountDeleteSvg, discountDetailsMessageSvg } fro
 
 export default function RemoveDiscountScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const isDoctor = useRequireDoctor();
   const params = useLocalSearchParams<{
     patientId?: string;
@@ -30,8 +32,8 @@ export default function RemoveDiscountScreen() {
   }>();
 
   const patientId = params.patientId || '';
-  const patientName = params.patientName || 'Patient';
-  const ownerName = params.ownerName || 'Owner';
+  const patientName = params.patientName || t('removeDiscount.defaults.patient');
+  const ownerName = params.ownerName || t('removeDiscount.defaults.owner');
   const patientImage = params.patientImage || '';
   const percent = params.percent || '0';
 
@@ -48,7 +50,7 @@ export default function RemoveDiscountScreen() {
       await removeDiscount(existingDiscount.id).unwrap();
       router.replace('/apply-discount');
     } catch {
-      Alert.alert('Error', 'Failed to remove discount');
+      Alert.alert(t('removeDiscount.alerts.error'), t('removeDiscount.alerts.removeFailed'));
     }
   };
 
@@ -61,7 +63,7 @@ export default function RemoveDiscountScreen() {
           <TouchableOpacity onPress={handleCancel} style={styles.backBtn} activeOpacity={0.7}>
             <SvgXml width={20} height={20} xml={backButtonSvg} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Remove Discount</Text>
+          <Text style={styles.headerTitle}>{t('removeDiscount.title')}</Text>
           <View style={{ width: 44 }} />
         </View>
         <View style={styles.loadingContainer}>
@@ -77,7 +79,7 @@ export default function RemoveDiscountScreen() {
         <TouchableOpacity onPress={handleCancel} style={styles.backBtn} activeOpacity={0.7}>
           <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Remove Discount</Text>
+        <Text style={styles.headerTitle}>{t('removeDiscount.title')}</Text>
         <View style={{ width: 44 }} />
       </View>
 
@@ -90,7 +92,7 @@ export default function RemoveDiscountScreen() {
         </View>
         <View style={styles.patientInfo}>
           <Text style={styles.patientName}>{patientName}</Text>
-          <Text style={styles.patientOwner}>Owner: {ownerName}</Text>
+          <Text style={styles.patientOwner}>{t('removeDiscount.owner', { name: ownerName })}</Text>
         </View>
       </View>
 
@@ -98,10 +100,9 @@ export default function RemoveDiscountScreen() {
         <View style={styles.deleteCircle}>
           <SvgXml width={84} height={84} xml={removeDiscountDeleteSvg} />
         </View>
-        <Text style={styles.bodyTitle}>Remove this discount?</Text>
+        <Text style={styles.bodyTitle}>{t('removeDiscount.bodyTitle')}</Text>
         <Text style={styles.bodyText}>
-          {percent}% Discount for {patientName} will be removed and will not be applicable for the
-          next appointment
+          {t('removeDiscount.bodyText', { percent, name: patientName })}
         </Text>
       </View>
 
@@ -115,11 +116,11 @@ export default function RemoveDiscountScreen() {
           {removing ? (
             <ActivityIndicator size="small" color="#FFFFFF" />
           ) : (
-            <Text style={styles.removeBtnText}>Remove discount</Text>
+            <Text style={styles.removeBtnText}>{t('removeDiscount.removeBtn')}</Text>
           )}
         </TouchableOpacity>
         <TouchableOpacity style={styles.cancelBtn} onPress={handleCancel} activeOpacity={0.85}>
-          <Text style={styles.cancelBtnText}>Cancel</Text>
+          <Text style={styles.cancelBtnText}>{t('removeDiscount.cancel')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

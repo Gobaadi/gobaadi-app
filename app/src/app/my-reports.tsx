@@ -9,50 +9,42 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { useGetMyTicketsQuery, type Ticket } from '@/store/supportApi';
 import { apiErrorMessage } from '@/utils/api-error';
 
-const MONTH_NAMES = [
-  'Jan',
-  'Feb',
-  'Mar',
-  'Apr',
-  'May',
-  'Jun',
-  'Jul',
-  'Aug',
-  'Sep',
-  'Oct',
-  'Nov',
-  'Dec',
-];
+type Translate = ReturnType<typeof useTranslation>['t'];
 
-const STATUS_META: Record<string, { label: string; bg: string; fg: string }> = {
-  open: { label: 'Open', bg: '#EEF3F9', fg: '#1565C0' },
-  'in-progress': { label: 'In Progress', bg: '#FFF2EB', fg: '#BD632F' },
-  closed: { label: 'Closed', bg: '#EAF5EB', fg: '#2E7D32' },
+const MONTH_KEYS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+
+const STATUS_META: Record<string, { labelKey: string; bg: string; fg: string }> = {
+  open: { labelKey: 'myReports.status.open', bg: '#EEF3F9', fg: '#1565C0' },
+  'in-progress': { labelKey: 'myReports.status.inProgress', bg: '#FFF2EB', fg: '#BD632F' },
+  closed: { labelKey: 'myReports.status.closed', bg: '#EAF5EB', fg: '#2E7D32' },
 };
 
-function formatDate(iso: string): string {
+function formatDate(iso: string, t: Translate): string {
   const d = new Date(iso);
-  return `${MONTH_NAMES[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+  return `${t(`myReports.months.${MONTH_KEYS[d.getMonth()]}`)} ${d.getDate()}, ${d.getFullYear()}`;
 }
 
 function StatusBadge({ status }: { status: string }) {
+  const { t } = useTranslation();
   const meta = STATUS_META[status] ?? {
-    label: status,
+    labelKey: status,
     bg: '#F5F2EC',
     fg: '#7C7672',
   };
   return (
     <View style={[styles.badge, { backgroundColor: meta.bg }]}>
-      <Text style={[styles.badgeText, { color: meta.fg }]}>{meta.label}</Text>
+      <Text style={[styles.badgeText, { color: meta.fg }]}>{t(meta.labelKey)}</Text>
     </View>
   );
 }
 
 function TicketCard({ ticket }: { ticket: Ticket }) {
+  const { t } = useTranslation();
   return (
     <View style={styles.card}>
       <View style={styles.cardTop}>
@@ -61,7 +53,7 @@ function TicketCard({ ticket }: { ticket: Ticket }) {
         </Text>
         <StatusBadge status={ticket.status} />
       </View>
-      <Text style={styles.cardDate}>{formatDate(ticket.createdAt)}</Text>
+      <Text style={styles.cardDate}>{formatDate(ticket.createdAt, t)}</Text>
       {!!ticket.message && (
         <Text style={styles.cardMessage} numberOfLines={3}>
           {ticket.message}
@@ -81,6 +73,7 @@ function TicketCard({ ticket }: { ticket: Ticket }) {
 
 export default function MyReportsScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const {
     data: tickets,
     isLoading,
@@ -103,7 +96,7 @@ export default function MyReportsScreen() {
         >
           <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>My Reports</Text>
+        <Text style={styles.headerTitle}>{t('myReports.title')}</Text>
         <View style={{ width: 42 }} />
       </View>
 
@@ -121,7 +114,7 @@ export default function MyReportsScreen() {
           <View style={styles.stateContainer}>
             <Ionicons name="cloud-offline-outline" size={48} color="#E6E1DC" />
             <Text style={styles.stateText}>
-              {apiErrorMessage(error, 'Could not load your reports.')}
+              {apiErrorMessage(error, t('myReports.loadError'))}
             </Text>
             <TouchableOpacity
               style={styles.retryBtn}
@@ -129,30 +122,28 @@ export default function MyReportsScreen() {
               activeOpacity={0.8}
             >
               <Ionicons name="refresh" size={16} color="#FFFFFF" />
-              <Text style={styles.retryBtnText}>Retry</Text>
+              <Text style={styles.retryBtnText}>{t('myReports.retry')}</Text>
             </TouchableOpacity>
           </View>
         ) : !tickets?.length ? (
           <View style={styles.stateContainer}>
             <Ionicons name="flag-outline" size={48} color="#E6E1DC" />
-            <Text style={styles.stateTitle}>No reports yet</Text>
-            <Text style={styles.stateText}>
-              Reports you submit will appear here with their status.
-            </Text>
+            <Text style={styles.stateTitle}>{t('myReports.empty.title')}</Text>
+            <Text style={styles.stateText}>{t('myReports.empty.description')}</Text>
             <TouchableOpacity
               style={styles.reportBtn}
               onPress={() => router.push('/report-issues')}
               activeOpacity={0.8}
             >
               <Ionicons name="add" size={18} color="#FFFFFF" />
-              <Text style={styles.reportBtnText}>Report an Issue</Text>
+              <Text style={styles.reportBtnText}>{t('myReports.reportIssue')}</Text>
             </TouchableOpacity>
           </View>
         ) : (
           <>
             <Text style={styles.countText}>
-              {tickets.length} {tickets.length === 1 ? 'Report' : 'Reports'}
-              {isFetching ? ' · updating…' : ''}
+              {t('myReports.count', { count: tickets.length })}
+              {isFetching ? ` ${t('myReports.updating')}` : ''}
             </Text>
             {tickets.map((ticket) => (
               <TicketCard key={ticket.id} ticket={ticket} />

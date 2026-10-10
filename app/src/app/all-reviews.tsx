@@ -10,10 +10,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { useGetReviewsQuery } from '@/store/reviewsApi';
 
 export default function AllReviewsScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { doctorId, doctorName } = useLocalSearchParams<{
     doctorId: string;
@@ -36,14 +38,14 @@ export default function AllReviewsScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
           <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Patient Reviews</Text>
+        <Text style={styles.headerTitle}>{t('allReviews.title')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
       <View style={styles.summaryRow}>
         <Ionicons name="star" size={24} color="#F59E0B" />
         <Text style={styles.avgRating}>{avgRating}</Text>
-        <Text style={styles.totalReviews}>({reviews.length} reviews)</Text>
+        <Text style={styles.totalReviews}>({t('allReviews.count', { count: reviews.length })})</Text>
       </View>
 
       {isLoading ? (
@@ -59,7 +61,7 @@ export default function AllReviewsScreen() {
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Ionicons name="chatbubble-ellipses-outline" size={48} color="#D1CCC7" />
-              <Text style={styles.emptyText}>No reviews yet</Text>
+              <Text style={styles.emptyText}>{t('allReviews.empty')}</Text>
             </View>
           }
           renderItem={({ item }) => (
@@ -73,7 +75,7 @@ export default function AllReviewsScreen() {
                   )}
                 </View>
                 <View style={styles.reviewInfo}>
-                  <Text style={styles.reviewName}>{item.user?.name || 'Anonymous'}</Text>
+                  <Text style={styles.reviewName}>{item.user?.name || t('allReviews.anonymous')}</Text>
                   <View style={styles.reviewStars}>
                     {Array.from({ length: item.rating }).map((_, si) => (
                       <Ionicons key={si} name="star" size={12} color="#F59E0B" />

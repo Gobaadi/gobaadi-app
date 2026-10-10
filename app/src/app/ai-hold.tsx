@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 import { SvgXml } from 'react-native-svg';
@@ -39,6 +40,7 @@ type Phase = 'camera' | 'capturing' | 'uploading' | 'analyzing' | 'done' | 'erro
 
 export default function AiHoldScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { imageUrl, symptoms: symptomsParam } = useLocalSearchParams<{
     imageUrl?: string;
     symptoms?: string;
@@ -68,7 +70,7 @@ export default function AiHoldScreen() {
   const isFailed = diagnosis?.status === 'FAILED';
   const displayPhase: Phase = isReady ? 'done' : isFailed ? 'error' : phase;
   const displayErrorMessage = isFailed
-    ? diagnosis?.failureReason || 'The analysis could not be completed. Please try again.'
+    ? diagnosis?.failureReason || t('aiHold.errors.analysisIncomplete')
     : errorMessage;
 
   function parseSymptoms(): string[] {
@@ -113,8 +115,8 @@ export default function AiHoldScreen() {
         const status = (err as { status?: number | string })?.status;
         setErrorMessage(
           status === 413
-            ? 'Photo is too large — please take a smaller photo.'
-            : 'Upload failed. Please check your connection and try again.',
+            ? t('aiHold.errors.photoTooLarge')
+            : t('aiHold.errors.uploadFailed'),
         );
         setPhase('error');
         showSheet();
@@ -134,7 +136,7 @@ export default function AiHoldScreen() {
     } catch (err) {
       console.log('Error starting analysis:', JSON.stringify(err));
       const serverMsg = (err as { data?: { message?: string } })?.data?.message;
-      setErrorMessage(serverMsg || 'Could not start the analysis. Please try again.');
+      setErrorMessage(serverMsg || t('aiHold.errors.startFailed'));
       setPhase('error');
       showSheet();
     }
@@ -152,7 +154,7 @@ export default function AiHoldScreen() {
       setCapturedUri(photo.uri);
       await runAnalysis();
     } catch {
-      setErrorMessage('Could not capture the photo. Please try again.');
+      setErrorMessage(t('aiHold.errors.captureFailed'));
       setPhase('error');
       showSheet();
     }
@@ -202,12 +204,12 @@ export default function AiHoldScreen() {
   useEffect(() => {
     if (displayPhase !== 'analyzing' && displayPhase !== 'uploading') return;
     const timer = setTimeout(() => {
-      setErrorMessage('The analysis is taking longer than expected. Please try again.');
+      setErrorMessage(t('aiHold.errors.timeout'));
       setPhase('error');
       showSheet();
     }, ANALYSIS_TIMEOUT_MS);
     return () => clearTimeout(timer);
-  }, [displayPhase, showSheet]);
+  }, [displayPhase, showSheet, t]);
 
   const scanLineY = progress.interpolate({
     inputRange: [0, 0.5, 1],
@@ -232,15 +234,13 @@ export default function AiHoldScreen() {
           <View style={styles.permissionIcon}>
             <SvgXml width={44} height={44} xml={aiScanBigCameraSvg} />
           </View>
-          <Text style={styles.permissionTitle}>Camera access needed</Text>
-          <Text style={styles.permissionText}>
-            Allow camera access so you can scan your animal for diseases and nutrient deficiencies.
-          </Text>
+          <Text style={styles.permissionTitle}>{t('aiHold.permission.title')}</Text>
+          <Text style={styles.permissionText}>{t('aiHold.permission.message')}</Text>
           <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
-            <Text style={styles.permissionButtonText}>Allow Camera</Text>
+            <Text style={styles.permissionButtonText}>{t('aiHold.permission.allow')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.permissionLink} onPress={() => router.back()}>
-            <Text style={styles.permissionLinkText}>Go back</Text>
+            <Text style={styles.permissionLinkText}>{t('aiHold.permission.goBack')}</Text>
           </TouchableOpacity>
         </SafeAreaView>
       </View>
@@ -256,7 +256,7 @@ export default function AiHoldScreen() {
               <View style={styles.statusBadge}>
                 <Ionicons name="time-outline" size={14} color="#FFFFFF" style={styles.statusBadgeIcon} />
                 <Text style={styles.statusBadgeText}>
-                  {phase === 'uploading' ? 'Uploading scan…' : 'Please hold still…'}
+                  {phase === 'uploading' ? t('aiHold.uploadingScan') : t('aiHold.holdStill')}
                 </Text>
               </View>
             </View>
@@ -310,7 +310,7 @@ export default function AiHoldScreen() {
         <View style={styles.bottomControls}>
           <View style={styles.statusBadge}>
             <Ionicons name="time-outline" size={14} color="#FFFFFF" style={styles.statusBadgeIcon} />
-            <Text style={styles.statusBadgeText}>Please hold still…</Text>
+            <Text style={styles.statusBadgeText}>{t('aiHold.holdStill')}</Text>
           </View>
 
           <TouchableOpacity
@@ -342,7 +342,7 @@ export default function AiHoldScreen() {
               <View style={styles.errorIcon}>
                 <Ionicons name="alert" size={24} color="#C62828" />
               </View>
-              <Text style={styles.diagnosticTitle}>Analysis could not be completed</Text>
+              <Text style={styles.diagnosticTitle}>{t('aiHold.errors.title')}</Text>
               <Text style={styles.diagnosticParagraph}>{displayErrorMessage}</Text>
             </>
           ) : (
@@ -353,9 +353,9 @@ export default function AiHoldScreen() {
                     <SvgXml width={26} height={24} xml={aiScanResultCowSvg} />
                   </View>
                   <View style={styles.cowMetaCol}>
-                    <Text style={styles.cowTitle}>Cow</Text>
+                    <Text style={styles.cowTitle}>{t('aiHold.cow')}</Text>
                     <Text style={styles.cowTime}>
-                      Detected : {formatRelativeTime(diagnosis?.createdAt)}
+                      {t('aiHold.detected', { time: formatRelativeTime(diagnosis?.createdAt) })}
                     </Text>
                   </View>
                 </View>
@@ -368,7 +368,7 @@ export default function AiHoldScreen() {
 
               <View style={styles.diagnosticBody}>
                 <Text style={styles.diagnosticTitle}>
-                  {diagnosis?.analysisResult ?? 'Analyzing…'}
+                  {diagnosis?.analysisResult ?? t('aiHold.analyzing')}
                 </Text>
                 <Text style={styles.diagnosticSubtitle}>{diseaseInfo.subtitle}</Text>
                 {diseaseInfo.paragraphs.map((paragraph, index) => (
@@ -377,7 +377,7 @@ export default function AiHoldScreen() {
                   </Text>
                 ))}
                 {diagnosis?.recommendations?.length ? (
-                  <Text style={styles.actionPlanLabel}>Immediate Action Plan</Text>
+                  <Text style={styles.actionPlanLabel}>{t('aiHold.actionPlan')}</Text>
                 ) : null}
               </View>
             </>
@@ -387,7 +387,7 @@ export default function AiHoldScreen() {
         {displayPhase === 'error' ? (
           <TouchableOpacity style={styles.summaryButton} onPress={handleRetry} activeOpacity={0.85}>
             <Ionicons name="refresh" size={18} color="#FFFFFF" style={styles.summaryButtonIcon} />
-            <Text style={styles.summaryButtonText}>Try Again</Text>
+            <Text style={styles.summaryButtonText}>{t('aiHold.tryAgain')}</Text>
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
@@ -399,7 +399,7 @@ export default function AiHoldScreen() {
             activeOpacity={0.85}
           >
             <Text style={styles.summaryButtonText}>
-              {!diagnosis || diagnosis.status !== 'READY' ? 'Analyzing…' : 'Details Summary'}
+              {!diagnosis || diagnosis.status !== 'READY' ? t('aiHold.analyzing') : t('aiHold.detailsSummary')}
             </Text>
           </TouchableOpacity>
         )}

@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import * as ImagePicker from 'expo-image-picker';
 import { SvgXml } from 'react-native-svg';
 
@@ -28,6 +29,7 @@ import { compressImageForUpload } from '@/utils/compress-image';
 
 export default function AiScanScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [symptomsText, setSymptomsText] = useState('');
   const [uploadDiagnosisImage, { isLoading: isUploading }] = useUploadDiagnosisImageMutation();
@@ -35,7 +37,7 @@ export default function AiScanScreen() {
   async function pickFromGallery() {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Permission needed', 'Please allow photo library access to upload a photo.');
+      Alert.alert(t('aiScan.alerts.permissionTitle'), t('aiScan.alerts.permissionMsg'));
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
@@ -51,7 +53,7 @@ export default function AiScanScreen() {
       .filter(Boolean);
 
     if (!imageUri && symptoms.length === 0) {
-      Alert.alert('More info needed', 'Add a photo or describe the symptoms before analyzing.');
+      Alert.alert(t('aiScan.alerts.moreInfoTitle'), t('aiScan.alerts.moreInfoMsg'));
       return;
     }
 
@@ -75,8 +77,8 @@ export default function AiScanScreen() {
         console.log('Error uploading scan image:', err);
         const status = (err as { status?: number | string })?.status;
         Alert.alert(
-          'Upload failed',
-          status === 413 ? 'Photo is too large — please pick a smaller image.' : 'Please try again.',
+          t('aiScan.alerts.uploadFailed'),
+          status === 413 ? t('aiScan.alerts.photoTooLarge') : t('aiScan.alerts.tryAgain'),
         );
         return;
       }
@@ -118,16 +120,14 @@ export default function AiScanScreen() {
             </View>
           )}
 
-          <Text style={styles.title}>AI-Powered animals Diagnostics</Text>
+          <Text style={styles.title}>{t('aiScan.title')}</Text>
 
-          <Text style={styles.subtitle}>
-            Take a photo or upload an image to detect animal&apos;s diseases, fungal attack and nutrient deficiencies
-          </Text>
+          <Text style={styles.subtitle}>{t('aiScan.subtitle')}</Text>
 
           {imageUri ? (
             <TextInput
               style={styles.symptomsInput}
-              placeholder="Describe what you're seeing — fever, skin lesions, coughing, etc. (comma separated)"
+              placeholder={t('aiScan.symptomsPlaceholder')}
               placeholderTextColor="#A39E99"
               value={symptomsText}
               onChangeText={setSymptomsText}
@@ -142,7 +142,7 @@ export default function AiScanScreen() {
               activeOpacity={0.85}
               disabled={isUploading}
             >
-              <Text style={styles.scanButtonText}>{isUploading ? 'Uploading…' : 'Analyze Now'}</Text>
+              <Text style={styles.scanButtonText}>{isUploading ? t('aiScan.uploading') : t('aiScan.analyzeNow')}</Text>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
@@ -151,20 +151,20 @@ export default function AiScanScreen() {
               activeOpacity={0.85}
             >
               <SvgXml width={18} height={18} xml={aiScanCameraSvg} style={styles.scanButtonIcon} />
-              <Text style={styles.scanButtonText}>Scan Now</Text>
+              <Text style={styles.scanButtonText}>{t('aiScan.startScan')}</Text>
             </TouchableOpacity>
           )}
 
           {!imageUri && (
             <TouchableOpacity style={styles.uploadButton} activeOpacity={0.8} onPress={pickFromGallery}>
               <SvgXml width={18} height={18} xml={aiScanUploadSvg} style={styles.uploadButtonIcon} />
-              <Text style={styles.uploadButtonText}>Upload From Gallery</Text>
+              <Text style={styles.uploadButtonText}>{t('aiScan.uploadFromGallery')}</Text>
             </TouchableOpacity>
           )}
 
           {imageUri && (
             <TouchableOpacity style={styles.uploadButton} activeOpacity={0.8} onPress={() => setImageUri(null)}>
-              <Text style={styles.uploadButtonText}>Retake</Text>
+              <Text style={styles.uploadButtonText}>{t('aiScan.retake')}</Text>
             </TouchableOpacity>
           )}
         </ScrollView>

@@ -10,6 +10,7 @@ import {
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { useGetClinicsQuery } from '@/store/clinicsApi';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -24,6 +25,7 @@ function clinicImageSource(avatar?: string) {
 }
 
 export default function AllClinicsScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [searchText, setSearchText] = useState('');
   const { location, setLocation } = useLocation();
@@ -52,7 +54,7 @@ export default function AllClinicsScreen() {
           <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>All Medical Centers</Text>
+        <Text style={styles.headerTitle}>{t('allClinics.title')}</Text>
 
         <TouchableOpacity
           style={styles.circleButton}
@@ -88,7 +90,7 @@ export default function AllClinicsScreen() {
         <Ionicons name="search" size={18} color="#7C7672" style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
-          placeholder="Search medical center"
+          placeholder={t('allClinics.searchPlaceholder')}
           placeholderTextColor="#A39E99"
           value={searchText}
           onChangeText={setSearchText}
@@ -116,11 +118,11 @@ export default function AllClinicsScreen() {
           </>
         ) : clinics.length === 0 ? (
           <EmptyState
-            title="No medical centers available"
+            title={t('allClinics.emptyTitle')}
             description={
               searchText.trim()
-                ? 'Try a different name or location.'
-                : 'Check back soon — new medical centers are added regularly.'
+                ? t('allClinics.emptySearch')
+                : t('allClinics.emptyNoSearch')
             }
           />
         ) : (
@@ -151,7 +153,9 @@ export default function AllClinicsScreen() {
                 <View style={styles.clinicRatingRow}>
                   <Ionicons name="star" size={12} color="#F5A623" style={styles.starIcon} />
                   <Text style={styles.clinicRatingValue}>{clinic.rating}</Text>
-                  <Text style={styles.clinicDoctorCount}>| {clinic.doctors?.length || 0} Doctors</Text>
+                  <Text style={styles.clinicDoctorCount}>
+                    {t('allClinics.doctors', { count: clinic.doctors?.length || 0 })}
+                  </Text>
                 </View>
               </View>
             </TouchableOpacity>

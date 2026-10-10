@@ -11,12 +11,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useGetLivestockItemQuery } from '@/store/livestockApi';
 import { useGetReviewsQuery, useVoteHelpfulMutation } from '@/store/reviewsApi';
 
 const { width } = Dimensions.get('window');
 
 export default function AnimalDetailsScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const params = useLocalSearchParams();
   const id = String(params.id || '');
@@ -36,10 +38,10 @@ export default function AnimalDetailsScreen() {
     : (item?.breed || '').toLowerCase().includes('goat')
       ? require('@/assets/images/kota_goat.webp')
       : require('@/assets/images/albino_buffalo.webp');
-  const animalName = item ? `${item.breed} ${item.species}` : 'Loading...';
+  const animalName = item ? `${item.breed} ${item.species}` : t('animalDetails.loading');
   const animalPrice = item?.price?.toLocaleString() || '—';
 
-  const basicInfo = item ? [{ label: 'Category', value: 'Livestock' }] : [];
+  const basicInfo = item ? [{ label: t('animalDetails.category'), value: t('animalDetails.livestock') }] : [];
 
   return (
     <SafeAreaView style={styles.container}>
@@ -63,7 +65,7 @@ export default function AnimalDetailsScreen() {
               onPress={async () => {
                 try {
                   await Share.share({
-                    message: `Check out this animal listing: ${animalName} - ৳${animalPrice}`,
+                    message: t('animalDetails.shareMessage', { name: animalName, price: animalPrice }),
                   });
                 } catch {}
               }}
@@ -91,14 +93,14 @@ export default function AnimalDetailsScreen() {
               <View style={styles.sellerAvatar}>
                 <Text style={styles.avatarEmoji}>👤</Text>
               </View>
-              <Text style={styles.sellerName}>Have a question about this listing?</Text>
+              <Text style={styles.sellerName}>{t('animalDetails.question')}</Text>
             </View>
             <TouchableOpacity
               style={styles.messageBtn}
               onPress={() => router.push('/chat')}
               activeOpacity={0.8}
             >
-              <Text style={styles.messageBtnText}>💬 Message</Text>
+              <Text style={styles.messageBtnText}>💬 {t('animalDetails.message')}</Text>
             </TouchableOpacity>
           </View>
 
@@ -107,7 +109,7 @@ export default function AnimalDetailsScreen() {
 
           {/* Basic Information */}
           <View style={styles.sectionHeaderRow}>
-            <Text style={styles.sectionTitle}>Details</Text>
+            <Text style={styles.sectionTitle}>{t('animalDetails.details')}</Text>
           </View>
 
           <View style={styles.gridContainer}>
@@ -122,22 +124,28 @@ export default function AnimalDetailsScreen() {
           {/* Reviews */}
           <View style={styles.divider} />
           <View style={styles.sectionHeaderRow}>
-            <Text style={styles.sectionTitle}>Reviews {avgRating ? `(${avgRating} ★, ${reviews.length})` : ''}</Text>
+            <Text style={styles.sectionTitle}>
+              {avgRating
+                ? t('animalDetails.reviewsWithStats', { rating: avgRating, count: reviews.length })
+                : t('animalDetails.reviews')}
+            </Text>
           </View>
 
           {reviews.length === 0 ? (
-            <Text style={styles.gridLabel}>No reviews yet.</Text>
+            <Text style={styles.gridLabel}>{t('animalDetails.noReviews')}</Text>
           ) : (
             <View style={{ gap: 12 }}>
               {reviews.map((review) => (
                 <View key={review.id} style={styles.gridCard}>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <Text style={styles.gridValue}>{review.user?.name || 'Anonymous'}</Text>
+                    <Text style={styles.gridValue}>{review.user?.name || t('animalDetails.anonymous')}</Text>
                     <Text style={styles.gridLabel}>{'★'.repeat(review.rating)}</Text>
                   </View>
                   <Text style={[styles.gridLabel, { marginBottom: 8 }]}>{review.text}</Text>
                   <TouchableOpacity onPress={() => voteHelpful(review.id)} activeOpacity={0.7}>
-                    <Text style={styles.messageBtnText}>👍 Helpful ({review.helpfulCount})</Text>
+                    <Text style={styles.messageBtnText}>
+                      👍 {t('animalDetails.helpful', { count: review.helpfulCount })}
+                    </Text>
                   </TouchableOpacity>
                 </View>
               ))}
@@ -153,14 +161,14 @@ export default function AnimalDetailsScreen() {
           onPress={() => router.push({ pathname: '/book-animal', params: { id } })}
           activeOpacity={0.85}
         >
-          <Text style={styles.bookBtnText}>🏷️ Book Animal</Text>
+          <Text style={styles.bookBtnText}>🏷️ {t('animalDetails.bookAnimal')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.buyBtn}
           onPress={() => router.push({ pathname: '/checkout', params: { id } })}
           activeOpacity={0.85}
         >
-          <Text style={styles.buyBtnText}>🛒 Buy Animal</Text>
+          <Text style={styles.buyBtnText}>🛒 {t('animalDetails.buyAnimal')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

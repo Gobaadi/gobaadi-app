@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { SvgXml } from 'react-native-svg';
 import {
@@ -26,8 +27,8 @@ type FilterTab = 'all' | 'appointments' | 'patients' | 'messages';
 
 interface PreferenceItem {
   key: keyof Pick<NotificationPreference, 'appointmentReminders' | 'chatMessages' | 'systemUpdates' | 'weatherAlerts' | 'taskReminders'>;
-  title: string;
-  description: string;
+  titleKey: string;
+  descriptionKey: string;
   icon: string;
   iconBg: string;
   iconColor: string;
@@ -35,15 +36,16 @@ interface PreferenceItem {
 }
 
 const PREFERENCES: PreferenceItem[] = [
-  { key: 'appointmentReminders', title: 'Appointments Reminders', description: 'Get notified about upcoming appointments', icon: 'calendar', iconBg: '#FFF2EB', iconColor: '#BD632F', tab: 'appointments' },
-  { key: 'chatMessages', title: 'Patient Messages', description: 'Get notified when patients send messages', icon: 'chatbubble-ellipses', iconBg: '#FFF2EB', iconColor: '#BD632F', tab: 'messages' },
-  { key: 'taskReminders', title: 'Follow-up Reminders', description: 'Reminders for scheduled follow-ups', icon: 'notifications', iconBg: '#FFF2EB', iconColor: '#BD632F', tab: 'appointments' },
-  { key: 'weatherAlerts', title: 'Hygiene Reminder', description: 'Get notified about hygiene updates', icon: 'medkit', iconBg: '#E8F5E9', iconColor: '#4CAF50', tab: 'patients' },
-  { key: 'systemUpdates', title: 'System Updates', description: 'Important updates from the platform', icon: 'volume-high', iconBg: '#E8F5E9', iconColor: '#4CAF50', tab: 'all' },
+  { key: 'appointmentReminders', titleKey: 'doctorNotificationPreferences.items.appointmentReminders.title', descriptionKey: 'doctorNotificationPreferences.items.appointmentReminders.description', icon: 'calendar', iconBg: '#FFF2EB', iconColor: '#BD632F', tab: 'appointments' },
+  { key: 'chatMessages', titleKey: 'doctorNotificationPreferences.items.chatMessages.title', descriptionKey: 'doctorNotificationPreferences.items.chatMessages.description', icon: 'chatbubble-ellipses', iconBg: '#FFF2EB', iconColor: '#BD632F', tab: 'messages' },
+  { key: 'taskReminders', titleKey: 'doctorNotificationPreferences.items.taskReminders.title', descriptionKey: 'doctorNotificationPreferences.items.taskReminders.description', icon: 'notifications', iconBg: '#FFF2EB', iconColor: '#BD632F', tab: 'appointments' },
+  { key: 'weatherAlerts', titleKey: 'doctorNotificationPreferences.items.weatherAlerts.title', descriptionKey: 'doctorNotificationPreferences.items.weatherAlerts.description', icon: 'medkit', iconBg: '#E8F5E9', iconColor: '#4CAF50', tab: 'patients' },
+  { key: 'systemUpdates', titleKey: 'doctorNotificationPreferences.items.systemUpdates.title', descriptionKey: 'doctorNotificationPreferences.items.systemUpdates.description', icon: 'volume-high', iconBg: '#E8F5E9', iconColor: '#4CAF50', tab: 'all' },
 ];
 
 export default function DoctorNotificationPreferencesScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<FilterTab>('all');
   const { data: preferences, isLoading, isError, refetch } = useGetPreferencesQuery();
   const [updatePreferences, { isLoading: isUpdating }] = useUpdatePreferencesMutation();
@@ -59,10 +61,10 @@ export default function DoctorNotificationPreferencesScreen() {
       try {
         await updatePreferences({ [pref.key]: !preferences[pref.key] }).unwrap();
       } catch {
-        Alert.alert('Error', 'Failed to update preference');
+        Alert.alert(t('doctorNotificationPreferences.alerts.error'), t('doctorNotificationPreferences.alerts.updateFailed'));
       }
     },
-    [preferences, updatePreferences]
+    [preferences, updatePreferences, t]
   );
 
   if (isLoading) {
@@ -72,7 +74,7 @@ export default function DoctorNotificationPreferencesScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
             <SvgXml width={20} height={20} xml={backButtonSvg} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Notifications Settings</Text>
+          <Text style={styles.headerTitle}>{t('doctorNotificationPreferences.title')}</Text>
           <View style={styles.placeholder} />
         </View>
         <View style={styles.loadingContainer}>
@@ -89,14 +91,14 @@ export default function DoctorNotificationPreferencesScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
             <SvgXml width={20} height={20} xml={backButtonSvg} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Notifications Settings</Text>
+          <Text style={styles.headerTitle}>{t('doctorNotificationPreferences.title')}</Text>
           <View style={styles.placeholder} />
         </View>
         <View style={styles.loadingContainer}>
           <Ionicons name="cloud-offline-outline" size={48} color="#9C9690" />
-          <Text style={styles.errorText}>Failed to load preferences</Text>
+          <Text style={styles.errorText}>{t('doctorNotificationPreferences.loadError')}</Text>
           <TouchableOpacity style={styles.retryBtn} onPress={() => refetch()} activeOpacity={0.8}>
-            <Text style={styles.retryBtnText}>Try Again</Text>
+            <Text style={styles.retryBtnText}>{t('doctorNotificationPreferences.tryAgain')}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -109,7 +111,7 @@ export default function DoctorNotificationPreferencesScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
           <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Notifications Settings</Text>
+        <Text style={styles.headerTitle}>{t('doctorNotificationPreferences.title')}</Text>
         <View style={styles.placeholder} />
       </View>
 
@@ -122,7 +124,7 @@ export default function DoctorNotificationPreferencesScreen() {
             activeOpacity={0.7}
           >
             <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              {t(`doctorNotificationPreferences.tabs.${tab}`)}
             </Text>
           </TouchableOpacity>
         ))}
@@ -136,8 +138,8 @@ export default function DoctorNotificationPreferencesScreen() {
                 <Ionicons name={pref.icon as any} size={20} color={pref.iconColor} />
               </View>
               <View style={styles.prefInfo}>
-                <Text style={styles.prefTitle}>{pref.title}</Text>
-                <Text style={styles.prefDesc}>{pref.description}</Text>
+                <Text style={styles.prefTitle}>{t(pref.titleKey)}</Text>
+                <Text style={styles.prefDesc}>{t(pref.descriptionKey)}</Text>
               </View>
             </View>
             <Switch

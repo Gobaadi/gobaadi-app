@@ -9,10 +9,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 import { useCreatePaymentIntentMutation, useSimulateSuccessMutation } from '@/store/paymentsApi';
 
 export default function BkashNumberScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const params = useLocalSearchParams();
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -43,7 +45,7 @@ export default function BkashNumberScreen() {
           <Text style={styles.buttonText}>←</Text>
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>Payment</Text>
+        <Text style={styles.headerTitle}>{t('bkashNumber.title')}</Text>
 
         <TouchableOpacity style={styles.circleButton} activeOpacity={0.8}>
           <Text style={styles.buttonText}>🔔</Text>
@@ -52,7 +54,7 @@ export default function BkashNumberScreen() {
 
       {/* Main Content */}
       <View style={styles.mainContent}>
-        <Text style={styles.sectionTitle}>bKash No.</Text>
+        <Text style={styles.sectionTitle}>{t('bkashNumber.sectionTitle')}</Text>
 
         {/* Custom Input Wrapper */}
         <View style={styles.inputContainer}>
@@ -68,7 +70,7 @@ export default function BkashNumberScreen() {
           {/* Actual text field */}
           <TextInput
             style={styles.textInput}
-            placeholder="bKash phone number"
+            placeholder={t('bkashNumber.placeholder')}
             placeholderTextColor="#A39E99"
             keyboardType="phone-pad"
             value={phoneNumber}
@@ -90,7 +92,7 @@ export default function BkashNumberScreen() {
           ) : (
             <>
               <Text style={styles.payButtonIcon}>💵</Text>
-              <Text style={styles.payButtonText}>Pay Now</Text>
+              <Text style={styles.payButtonText}>{t('bkashNumber.payNow')}</Text>
             </>
           )}
         </TouchableOpacity>
