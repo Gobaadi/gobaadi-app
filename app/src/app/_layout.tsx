@@ -6,6 +6,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import * as Font from 'expo-font';
 import { Platform, useColorScheme } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { useEffect } from 'react';
 import { Provider, useSelector } from 'react-redux';
 import type { NotificationResponse } from 'expo-notifications';
@@ -206,14 +207,16 @@ export default function RootLayout() {
   return (
     <ErrorBoundary>
       <SafeAreaProvider>
-        <Provider store={store}>
-          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-            <LanguageProvider>
-              <AnimatedSplashOverlay />
-              <RootNavigator />
-            </LanguageProvider>
-          </ThemeProvider>
-        </Provider>
+        <KeyboardProvider>
+          <Provider store={store}>
+            <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+              <LanguageProvider>
+                <AnimatedSplashOverlay />
+                <RootNavigator />
+              </LanguageProvider>
+            </ThemeProvider>
+          </Provider>
+        </KeyboardProvider>
       </SafeAreaProvider>
     </ErrorBoundary>
   );

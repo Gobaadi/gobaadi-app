@@ -77,7 +77,6 @@ async function ensureNotificationChannel(): Promise<void> {
       name: 'General',
       description: 'General notifications from Gobaadi',
       importance: Notifications.AndroidImportance.HIGH,
-      sound: 'default',
       vibrationPattern: [0, 250, 250, 250],
       enableVibrate: true,
       lightColor: '#BD632F',

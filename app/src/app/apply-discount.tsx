@@ -6,9 +6,9 @@ import {
   Text,
   TouchableOpacity,
   TextInput,
-  ScrollView,
   ActivityIndicator,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -58,9 +58,10 @@ export default function ApplyDiscountScreen() {
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView
+      <KeyboardAwareScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContainer}
+        keyboardShouldPersistTaps="handled"
       >
         <View style={styles.searchContainer}>
           <SvgXml width={18} height={18} xml={searchSvg} />
@@ -155,7 +156,7 @@ export default function ApplyDiscountScreen() {
             );
           })
         )}
-      </ScrollView>
+        </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }

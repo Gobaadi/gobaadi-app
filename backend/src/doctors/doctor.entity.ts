@@ -71,6 +71,9 @@ export class Doctor {
   @Column({ nullable: true })
   licenseNumber?: string;
 
+  @Column({ nullable: true })
+  location?: string;
+
   @Column('float', { default: 500 })
   consultationFee: number;
 

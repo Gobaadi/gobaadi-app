@@ -6,10 +6,11 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  ScrollView,
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
+import type { KeyboardAwareScrollViewRef } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -32,6 +33,7 @@ import {
 } from '@/store/addressesApi';
 import { compressImageForUpload } from '@/utils/compress-image';
 import { DoctorAvatar } from '@/components/doctor-avatar';
+import LocationBottomSheet from '@/components/LocationBottomSheet';
 import { useTranslation } from '@/hooks/use-translation';
 
 type Tab = 'about' | 'experience' | 'credentials';
@@ -65,7 +67,7 @@ export default function ProfileEditScreen() {
 
   const [activeTab, setActiveTab] = useState<Tab>(() => parseTab(tab));
 
-  const scrollViewRef = useRef<ScrollView>(null);
+  const scrollViewRef = useRef<KeyboardAwareScrollViewRef>(null);
   const qualificationInputRef = useRef<TextInput>(null);
   const specializationInputRef = useRef<TextInput>(null);
   const didScrollToSection = useRef(false);
@@ -81,6 +83,8 @@ export default function ProfileEditScreen() {
   const [bio, setBio] = useState('');
   const [specialty, setSpecialty] = useState('');
   const [experience, setExperience] = useState('');
+  const [doctorLocation, setDoctorLocation] = useState('');
+  const [locationSheetOpen, setLocationSheetOpen] = useState(false);
 
   // Location (from the user's address book)
   const [district, setDistrict] = useState('');
@@ -124,6 +128,7 @@ export default function ProfileEditScreen() {
     setBio(doctorProfile.bio || '');
     setSpecialty(doctorProfile.specialty || '');
     setExperience(doctorProfile.experience || '');
+    setDoctorLocation(doctorProfile.location || '');
     setQualifications(doctorProfile.qualifications || []);
     setSpecializations(doctorProfile.specializations || []);
     setLicenseNumber(doctorProfile.licenseNumber || '');
@@ -228,6 +233,7 @@ export default function ProfileEditScreen() {
       bio,
       specialty,
       experience,
+      location: doctorLocation.trim(),
     }).unwrap();
 
     const nextDistrict = district.trim();
@@ -459,7 +465,7 @@ export default function ProfileEditScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView ref={scrollViewRef} contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+      <KeyboardAwareScrollView ref={scrollViewRef} contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         {/* Doctor Card */}
         <View style={styles.doctorCard}>
           <View style={styles.doctorInfoRow}>
@@ -549,6 +555,24 @@ export default function ProfileEditScreen() {
             <View style={styles.inputRow}>
               <TextInput style={styles.input} value={experience} onChangeText={setExperience} placeholder={t('profileEdit.placeholders.experience')} placeholderTextColor="#A39E99" />
             </View>
+
+            <Text style={styles.fieldLabel}>{t('profileEdit.fields.location')}</Text>
+            <TouchableOpacity
+              style={styles.inputRow}
+              activeOpacity={0.7}
+              onPress={() => setLocationSheetOpen(true)}
+            >
+              <Ionicons name="location-outline" size={18} color="#BD632F" />
+              <TextInput
+                style={styles.input}
+                value={doctorLocation}
+                placeholder={t('profileEdit.placeholders.location')}
+                placeholderTextColor="#A39E99"
+                editable={false}
+                pointerEvents="none"
+              />
+              <Ionicons name="chevron-down" size={18} color="#7C7672" />
+            </TouchableOpacity>
 
             <Text style={styles.fieldLabel}>{t('profileEdit.fields.district')}</Text>
             <View style={styles.inputRow}>
@@ -796,7 +820,14 @@ export default function ProfileEditScreen() {
             </View>
           </View>
         )}
-      </ScrollView>
+      </KeyboardAwareScrollView>
+
+      <LocationBottomSheet
+        visible={locationSheetOpen}
+        selectedLocation={doctorLocation}
+        onClose={() => setLocationSheetOpen(false)}
+        onSave={setDoctorLocation}
+      />
     </SafeAreaView>
   );
 }

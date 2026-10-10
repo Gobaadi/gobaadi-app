@@ -5,9 +5,9 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  ScrollView,
   Alert,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useGetDoctorsQuery } from '@/store/doctorsApi';
@@ -151,7 +151,11 @@ export default function MyTreatmentScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+      <KeyboardAwareScrollView
+        contentContainerStyle={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Location selector */}
         <View style={styles.locationContainer}>
           <Text style={styles.locationLabel}>{t('myTreatment.location')}</Text>
@@ -307,8 +311,8 @@ export default function MyTreatmentScreen() {
             ))
           )}
         </View>
-      </ScrollView>
-    </SafeAreaView>
+        </KeyboardAwareScrollView>
+      </SafeAreaView>
   );
 }
 

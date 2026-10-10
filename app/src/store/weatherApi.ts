@@ -19,8 +19,11 @@ export const weatherApi = createApi({
   reducerPath: 'weatherApi',
   baseQuery: baseQueryWithReauth,
   endpoints: (builder) => ({
-    getWeather: builder.query<WeatherData, void>({
-      query: () => '/weather',
+    getWeather: builder.query<WeatherData, string | void>({
+      query: (district) =>
+        district
+          ? `/weather?district=${encodeURIComponent(district)}`
+          : '/weather',
     }),
   }),
 });

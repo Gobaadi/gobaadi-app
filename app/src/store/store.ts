@@ -97,7 +97,7 @@ export const store = configureStore({
     [videoCallApi.reducerPath]: videoCallApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware().concat(
+    getDefaultMiddleware({ immutableCheck: { warnAfter: 128 } }).concat(
       authApi.middleware,
       medicalRecordsApi.middleware,
       doctorPortalApi.middleware,

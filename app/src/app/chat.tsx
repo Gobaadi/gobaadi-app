@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   FlatList,
   ScrollView,
-  KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
   Image,
@@ -15,6 +14,7 @@ import {
   Alert,
   Modal,
 } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSelector } from 'react-redux';
@@ -525,7 +525,7 @@ export default function ChatScreen() {
       finished = true;
       setConsultationState('ended');
       if (resolvedConsultationId) {
-        endConsultation(resolvedConsultationId).unwrap().catch(() => {});
+        endConsultation(resolvedConsultationId).unwrap().catch(() => { });
       }
     };
     const interval = setInterval(() => {
@@ -748,9 +748,9 @@ export default function ChatScreen() {
       const isImage = (asset.mimeType || 'image/jpeg').startsWith('image/');
       const file = isImage
         ? await compressImageForUpload(asset.uri, {
-            fileName,
-            mimeType: asset.mimeType || 'image/jpeg',
-          })
+          fileName,
+          mimeType: asset.mimeType || 'image/jpeg',
+        })
         : { uri: asset.uri, name: fileName, type: asset.mimeType || 'application/octet-stream' };
 
       let targetConversationId = conversationId;
@@ -961,7 +961,7 @@ export default function ChatScreen() {
                 <Text style={styles.actionsMenuItemText}>{t('chat.actions.sendRecommendation')}</Text>
               </TouchableOpacity>
             )}
-            <TouchableOpacity
+            {/* <TouchableOpacity
               style={styles.actionsMenuItem}
               activeOpacity={0.7}
               onPress={() => {
@@ -971,7 +971,7 @@ export default function ChatScreen() {
             >
               <Ionicons name="chatbubble-outline" size={18} color="#BD632F" />
               <Text style={styles.actionsMenuItemText}>{t('chat.actions.sendNote')}</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </View>
         </>
       )}
@@ -1029,36 +1029,36 @@ export default function ChatScreen() {
 
       {isViewerDoctor &&
         (consultationState === 'ended' || consultationState === 'prescription_sent') && (
-        <View style={styles.consultationBanner}>
-          <Text style={styles.consultationBannerEndedTitle}>{t('chat.consultation.endedTitle')}</Text>
-          <Text style={styles.consultationBannerDesc}>{t('chat.consultation.endedDesc', { name: patientName })}</Text>
-          <Text style={styles.consultationBannerBullet}>{t('chat.consultation.startTime', { time: activeConsultation ? formatDhakaClock(consultationStartedAt(activeConsultation)) : '' })}</Text>
-          <Text style={styles.consultationBannerBullet}>{t('chat.consultation.maxDuration')}</Text>
-          <Text style={styles.consultationBannerRemaining}>{t('chat.consultation.remainingTime', { time: formatTimeRemaining(remainingTime) })}</Text>
-        </View>
-      )}
+          <View style={styles.consultationBanner}>
+            <Text style={styles.consultationBannerEndedTitle}>{t('chat.consultation.endedTitle')}</Text>
+            <Text style={styles.consultationBannerDesc}>{t('chat.consultation.endedDesc', { name: patientName })}</Text>
+            <Text style={styles.consultationBannerBullet}>{t('chat.consultation.startTime', { time: activeConsultation ? formatDhakaClock(consultationStartedAt(activeConsultation)) : '' })}</Text>
+            <Text style={styles.consultationBannerBullet}>{t('chat.consultation.maxDuration')}</Text>
+            <Text style={styles.consultationBannerRemaining}>{t('chat.consultation.remainingTime', { time: formatTimeRemaining(remainingTime) })}</Text>
+          </View>
+        )}
 
       {isViewerDoctor &&
         (consultationState === 'ended' || consultationState === 'prescription_sent') && (
-        <View style={styles.nextStepInline}>
-          <Text style={styles.nextStepInlineTitle}>{t('chat.nextStep.title')}</Text>
-          <View style={styles.nextStepInlineOption}>
-            {prescriptionAlreadySent ? (
-              <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
-            ) : (
-              <View style={styles.radioOuter}>
-                <View style={styles.radioInner} />
-              </View>
+          <View style={styles.nextStepInline}>
+            <Text style={styles.nextStepInlineTitle}>{t('chat.nextStep.title')}</Text>
+            <View style={styles.nextStepInlineOption}>
+              {prescriptionAlreadySent ? (
+                <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
+              ) : (
+                <View style={styles.radioOuter}>
+                  <View style={styles.radioInner} />
+                </View>
+              )}
+              <Text style={styles.nextStepInlineText}>{t('chat.nextStep.option')}</Text>
+            </View>
+            {consultationState === 'ended' && !prescriptionAlreadySent && (
+              <TouchableOpacity style={styles.sendPrescriptionInlineBtn} onPress={openSendPrescription} activeOpacity={0.85}>
+                <Text style={styles.sendPrescriptionInlineBtnText}>{t('chat.actions.sendPrescription')}</Text>
+              </TouchableOpacity>
             )}
-            <Text style={styles.nextStepInlineText}>{t('chat.nextStep.option')}</Text>
           </View>
-          {consultationState === 'ended' && !prescriptionAlreadySent && (
-            <TouchableOpacity style={styles.sendPrescriptionInlineBtn} onPress={openSendPrescription} activeOpacity={0.85}>
-              <Text style={styles.sendPrescriptionInlineBtnText}>{t('chat.actions.sendPrescription')}</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      )}
+        )}
 
       {messagesLoading ? (
         <View style={styles.loadingContainer}>
@@ -1116,10 +1116,7 @@ export default function ChatScreen() {
       )}
 
       {(!!conversationId || consultationState !== 'idle') && (
-        <KeyboardAvoidingView
-          behavior="padding"
-          keyboardVerticalOffset={0}
-        >
+        <KeyboardAvoidingView behavior="padding">
           <View style={styles.inputBar}>
             <TextInput
               ref={textInputRef}

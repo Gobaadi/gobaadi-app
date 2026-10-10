@@ -9,12 +9,14 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useGetDoctorByIdQuery, useGetSlotsQuery, useBookSlotMutation } from '@/store/doctorsApi';
 import { useRescheduleBookingMutation } from '@/store/doctorPortalApi';
 import { useGetAnimalsQuery } from '@/store/animalsApi';
 import { DoctorAvatar } from '@/components/doctor-avatar';
+import { DEFAULT_DOCTOR_LOCATION } from '@/utils/location';
 import { SvgXml } from 'react-native-svg';
 
 import {
@@ -95,7 +97,7 @@ export default function BookSlotScreen() {
       id: String(doctorData.id),
       name: doctorData.name,
       specialty: doctorData.specialty,
-      location: 'Uttar Badda, Dhaka',
+      location: doctorData.location || DEFAULT_DOCTOR_LOCATION,
       rating: doctorData.rating || 4.8,
       reviews: 124,
       avatar: doctorData.avatar ?? '',
@@ -215,7 +217,11 @@ export default function BookSlotScreen() {
 
       {doctor && (
         <>
-          <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+          <KeyboardAwareScrollView
+            contentContainerStyle={styles.scrollContainer}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
             {/* Doctor Summary Card */}
             <View style={styles.doctorCard}>
               <DoctorAvatar
@@ -456,7 +462,7 @@ export default function BookSlotScreen() {
                 );
               })}
             </ScrollView>
-          </ScrollView>
+          </KeyboardAwareScrollView>
 
           {/* Floating Bottom Confirm Button */}
           <View style={styles.bottomBar}>

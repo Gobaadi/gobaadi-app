@@ -6,13 +6,11 @@ import {
   TextInput,
   TouchableOpacity,
   Image,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
   ActivityIndicator,
   Modal,
   FlatList,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRegisterMutation } from '@/store/authApi';
 import { useSocialAuth } from '@/hooks/use-social-auth';
 import { apiErrorMessage } from '@/utils/api-error';
+import { isValidEmailSyntax, isAllowedEmail } from '@/utils/email';
 import { useTranslation } from '@/hooks/use-translation';
 
 const BD_PHONE_REGEX = /^01[3-9]\d{8}$/;
@@ -85,15 +84,20 @@ export default function SignUpScreen() {
       }
       identifier = `+880${phone.trim()}`;
     } else {
-      if (!email.trim()) {
+      const emailValue = email.trim();
+      if (!emailValue) {
         setErrorMessage(t('signup.errors.emailRequired'));
         return;
       }
-      if (!/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/.test(email)) {
+      if (!isValidEmailSyntax(emailValue)) {
         setErrorMessage(t('signup.errors.invalidEmail'));
         return;
       }
-      identifier = email.trim();
+      if (!isAllowedEmail(emailValue)) {
+        setErrorMessage(t('signup.errors.emailNotAllowed'));
+        return;
+      }
+      identifier = emailValue;
     }
 
     if (!agreedToTerms) {
@@ -159,11 +163,11 @@ export default function SignUpScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
+      <KeyboardAwareScrollView
+        contentContainerStyle={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
-        <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
           {/* Logo Section */}
           <View>
             <Image
@@ -395,8 +399,7 @@ export default function SignUpScreen() {
               </Text>
             </View>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
 
       {/* Role Selector Dropdown Modal */}
       <Modal

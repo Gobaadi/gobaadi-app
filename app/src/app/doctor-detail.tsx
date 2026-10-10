@@ -22,7 +22,23 @@ import {
 } from '@/components/icons/svg-icon-sources';
 import { useGetDoctorByIdQuery } from '@/store/doctorsApi';
 import { useGetServicesQuery } from '@/store/servicesApi';
+import { useGetAvailabilityQuery } from '@/store/doctorPortalApi';
 import { DoctorAvatar } from '@/components/doctor-avatar';
+import { DEFAULT_DOCTOR_LOCATION } from '@/utils/location';
+
+const DUMMY_AVAILABILITY = '6 AM - 9 PM';
+
+function formatTime12h(time?: string): string | null {
+  if (!time) return null;
+  const match = /^(\d{1,2}):(\d{2})$/.exec(time.trim());
+  if (!match) return null;
+  const hour = parseInt(match[1], 10);
+  const minute = match[2];
+  if (Number.isNaN(hour) || hour > 23) return null;
+  const period = hour >= 12 ? 'PM' : 'AM';
+  const hour12 = hour % 12 === 0 ? 12 : hour % 12;
+  return minute === '00' ? `${hour12} ${period}` : `${hour12}:${minute} ${period}`;
+}
 
 export default function DoctorDetailScreen() {
   const router = useRouter();
@@ -31,10 +47,37 @@ export default function DoctorDetailScreen() {
   const doctorId = String(id || '');
 
   const { data: doctorData } = useGetDoctorByIdQuery(doctorId, { skip: !doctorId });
+  const { data: availability = [] } = useGetAvailabilityQuery(doctorId ? parseInt(doctorId, 10) : 0, {
+    skip: !doctorId,
+  });
   const { data: services = [] } = useGetServicesQuery(
     { providerType: 'doctor', providerId: doctorId ? parseInt(doctorId, 10) : undefined },
     { skip: !doctorId },
   );
+
+  const availabilityLabel = useMemo(() => {
+    const active = availability.filter((entry) => entry.isActive !== false);
+    if (active.length === 0) return DUMMY_AVAILABILITY;
+    const starts = active
+      .map((entry) => formatTime12h(entry.startTime))
+      .filter((value): value is string => Boolean(value));
+    const ends = active
+      .map((entry) => formatTime12h(entry.endTime))
+      .filter((value): value is string => Boolean(value));
+    if (starts.length === 0 || ends.length === 0) return DUMMY_AVAILABILITY;
+    const earliestStart = starts[0];
+    const latestEnd = ends[0];
+    const toMinutes = (value: string) => {
+      const match = /^(\d{1,2})(?::(\d{2}))? (AM|PM)$/.exec(value);
+      if (!match) return -1;
+      let hour = parseInt(match[1], 10) % 12;
+      if (match[3] === 'PM') hour += 12;
+      return hour * 60 + parseInt(match[2] ?? '0', 10);
+    };
+    const minStart = starts.reduce((min, cur) => (toMinutes(cur) < toMinutes(min) ? cur : min), earliestStart);
+    const maxEnd = ends.reduce((max, cur) => (toMinutes(cur) > toMinutes(max) ? cur : max), latestEnd);
+    return `${minStart} - ${maxEnd}`;
+  }, [availability]);
 
   const doctor = useMemo(() => {
     if (!doctorData) {
@@ -46,32 +89,24 @@ export default function DoctorDetailScreen() {
         rating: 5,
         reviews: 1872,
         avatar: '',
-        availability: '6 AM - 9 PM',
+        availability: DUMMY_AVAILABILITY,
+        specializations: [] as string[],
       };
     }
     return {
       id: String(doctorData.id),
       name: doctorData.name,
       specialty: doctorData.specialty,
-      location: 'Uttar Badda, Dhaka',
+      location: doctorData.location || DEFAULT_DOCTOR_LOCATION,
       rating: doctorData.rating || 4.8,
       reviews: 124,
       avatar: doctorData.avatar ?? '',
-      availability: doctorData.avatar === 'jessica_doctor.png' ? '8 AM - 5 PM' : '6 AM - 9 PM',
+      availability: availabilityLabel,
+      specializations: doctorData.specializations ?? [],
     };
-  }, [doctorData, t]);
+  }, [doctorData, availabilityLabel, t]);
 
-  const specializations = [
-    'doctorDetail.specializations.clinicalMedicine',
-    'doctorDetail.specializations.geriatrics',
-    'doctorDetail.specializations.emergency',
-    'doctorDetail.specializations.contrastRadiography',
-    'doctorDetail.specializations.dermatology',
-    'doctorDetail.specializations.felineManagement',
-    'doctorDetail.specializations.canineBehaviour',
-    'doctorDetail.specializations.renalMedicine',
-    'doctorDetail.specializations.pediatrics',
-  ];
+  const specializations = doctor.specializations.length > 0 ? doctor.specializations.map((spec) => ({ key: spec, label: spec })) : [];
 
   return (
     <SafeAreaView style={styles.container}>
@@ -140,14 +175,30 @@ export default function DoctorDetailScreen() {
         </TouchableOpacity>
 
         {/* Specializations list */}
-        <View style={styles.specCard}>
+        {/* <View style={styles.specCard}>
           <Text style={styles.specTitle}>{t('doctorDetail.specializationsTitle')}</Text>
-          {specializations.map((spec, index) => (
-            <View key={index} style={styles.specBulletRow}>
+          {specializations?.map((spec) => (
+            <View key={spec.key} style={styles.specBulletRow}>
               <Text style={styles.bulletPoint}>•</Text>
-              <Text style={styles.bulletText}>{t(spec)}</Text>
+              <Text style={styles.bulletText}>{spec.label}</Text>
             </View>
           ))}
+        </View> */}
+
+        <View style={styles.specCard}>
+          <Text style={styles.specTitle}>{t('doctorDetail.specializationsTitle')}</Text>
+          {specializations && specializations.length > 0 ? (
+            specializations.map((spec) => (
+              <View key={spec.key} style={styles.specBulletRow}>
+                <Text style={styles.bulletPoint}>•</Text>
+                <Text style={styles.bulletText}>{spec.label}</Text>
+              </View>
+            ))
+          ) : (
+            <Text style={styles.emptyText}>
+              {t('doctorDetail.noSpecializations', 'No specializations listed.')}
+            </Text>
+          )}
         </View>
 
         {/* Services offered */}
@@ -338,6 +389,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#4C4844',
     lineHeight: 18,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: '#4C4844',
+    fontStyle: 'italic',
+    marginTop: 4,
   },
   bottomBar: {
     position: 'absolute',

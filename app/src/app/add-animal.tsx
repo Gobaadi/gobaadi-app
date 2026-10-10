@@ -6,12 +6,11 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  KeyboardAvoidingView,
-  Platform,
   Modal,
   FlatList,
   Alert,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -444,11 +443,7 @@ export default function AddAnimalScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
-      >
-        {/* Header */}
+      {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>{editId ? t('addAnimal.header.edit') : t('addAnimal.header.add')}</Text>
           <TouchableOpacity
@@ -504,7 +499,11 @@ export default function AddAnimalScreen() {
         </View>
 
         {/* Scrollable form */}
-        <ScrollView contentContainerStyle={styles.formContainer} showsVerticalScrollIndicator={false}>
+        <KeyboardAwareScrollView
+          contentContainerStyle={styles.formContainer}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
           {step === 1 && (
             <View style={styles.formStep}>
               {/* Name */}
@@ -817,8 +816,7 @@ export default function AddAnimalScreen() {
               </Text>
             </TouchableOpacity>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        </KeyboardAwareScrollView>
 
       {/* Selector Dropdown Modal */}
       <Modal

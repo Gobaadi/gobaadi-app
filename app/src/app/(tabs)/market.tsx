@@ -8,6 +8,7 @@ import {
   ScrollView,
   Modal,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -222,7 +223,11 @@ export default function MarketScreen() {
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+      <KeyboardAwareScrollView
+        contentContainerStyle={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Buy / Sell Toggle Selector */}
         <View style={styles.toggleRow}>
           <TouchableOpacity
@@ -476,7 +481,7 @@ export default function MarketScreen() {
             </View>
           </>
         )}
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
       {/* Filter Modal */}
       <Modal
@@ -496,7 +501,7 @@ export default function MarketScreen() {
             </TouchableOpacity>
           </View>
 
-          <ScrollView style={styles.modalBody} contentContainerStyle={styles.modalBodyContent}>
+          <KeyboardAwareScrollView style={styles.modalBody} contentContainerStyle={styles.modalBodyContent}>
             {/* Species filter */}
             <Text style={styles.modalSectionTitle}>{t('market.species')}</Text>
             <View style={styles.modalChipRow}>
@@ -538,7 +543,7 @@ export default function MarketScreen() {
                 onChangeText={(v) => setPriceRange((p) => ({ ...p, max: v }))}
               />
             </View>
-          </ScrollView>
+          </KeyboardAwareScrollView>
 
           {/* Apply button */}
           <View style={styles.modalFooter}>

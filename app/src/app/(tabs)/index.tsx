@@ -3,7 +3,6 @@ import {
   StyleSheet,
   View,
   Text,
-  ScrollView,
   TouchableOpacity,
   Dimensions,
   Share,
@@ -12,6 +11,7 @@ import {
   ImageBackground,
   StatusBar,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -21,6 +21,7 @@ import { useGetDoctorBookingsQuery } from '@/store/doctorPortalApi';
 import { useGetWeatherQuery } from '@/store/weatherApi';
 import { useGetMyReferralQuery, useClaimReferralMutation } from '@/store/referralsApi';
 import { useLanguage } from '@/hooks/use-language';
+import { useLocation } from '@/hooks/use-location';
 import { useTranslation } from '@/hooks/use-translation';
 import LanguageBottomSheet from '@/components/LanguageBottomSheet';
 import Svg, { Path, SvgXml } from 'react-native-svg';
@@ -68,7 +69,9 @@ export default function HomeDashboard() {
     refetchOnFocus: true,
     refetchOnReconnect: true,
   });
-  const { data: weather, isLoading: isWeatherLoading } = useGetWeatherQuery();
+  const { location } = useLocation();
+  const zila = location.split(',').map((part) => part.trim()).filter(Boolean).pop();
+  const { data: weather, isLoading: isWeatherLoading } = useGetWeatherQuery(zila);
   const { data: referral } = useGetMyReferralQuery();
   const [claimReferral, { isLoading: isClaiming }] = useClaimReferralMutation();
   const { language, languageCode, setLanguage } = useLanguage();
@@ -136,7 +139,11 @@ export default function HomeDashboard() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#BD632F" translucent />
-      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+      <KeyboardAwareScrollView
+        contentContainerStyle={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Header Section */}
         <View style={styles.headerWrapper}>
           <ImageBackground
@@ -177,7 +184,9 @@ export default function HomeDashboard() {
             <View style={styles.weatherLocationRow}>
               <SvgXml width={16} height={16} xml={homeLocationSvg} />
               <Text style={styles.weatherLocation}>
-                {t('home.weather.title', { place: weather?.location || t('home.weather.defaultPlace') })}
+                {weather?.location
+                  ? t('home.weather.title', { place: weather.location })
+                  : t('home.weather.titleOnly')}
               </Text>
             </View>
             <Image
@@ -485,7 +494,7 @@ export default function HomeDashboard() {
           />
         </View>
 
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
       <LanguageBottomSheet
         visible={showLangSheet}
@@ -953,9 +962,7 @@ const styles = StyleSheet.create({
     color: '#1A1817',
   },
   referImage: {
-    width: 70,
-    height: 70,
-    marginLeft: 10,
-    flex: 1,
+    width: 80,
+    height: 80,
   },
 });

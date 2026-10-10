@@ -5,9 +5,9 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  ScrollView,
   Alert,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -169,7 +169,11 @@ export default function EditTaskScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+      <KeyboardAwareScrollView
+        contentContainerStyle={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Card Form */}
         <View style={styles.formCard}>
           {/* Select Farm */}
@@ -314,9 +318,9 @@ export default function EditTaskScreen() {
           activeOpacity={0.85}
         >
           <Text style={styles.submitBtnText}>{t('editTask.submit')}</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </SafeAreaView>
+          </TouchableOpacity>
+        </KeyboardAwareScrollView>
+      </SafeAreaView>
   );
 }
 

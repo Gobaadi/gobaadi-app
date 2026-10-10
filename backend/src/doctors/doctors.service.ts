@@ -379,6 +379,7 @@ export class DoctorsService {
       bio?: string;
       consultationFee?: number;
       licenseNumber?: string;
+      location?: string;
       credentialPeriod?: {
         startMonth?: string;
         startYear?: string;
@@ -403,6 +404,7 @@ export class DoctorsService {
       doctor.consultationFee = dto.consultationFee;
     if (dto.licenseNumber !== undefined)
       doctor.licenseNumber = dto.licenseNumber;
+    if (dto.location !== undefined) doctor.location = dto.location;
     if (dto.credentialPeriod !== undefined)
       doctor.credentialPeriod = dto.credentialPeriod;
     const saved = await this.doctorRepository.save(doctor);
