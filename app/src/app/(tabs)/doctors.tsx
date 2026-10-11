@@ -298,7 +298,7 @@ export default function DoctorsScreen() {
               activeOpacity={0.8}
               onPress={() => router.push('/select-language')}
             >
-              <SvgXml width={16} height={16} xml={tintSvg(languageGlobeSvg, 'white', '#BD632F')} />
+              <SvgXml width={20} height={20} xml={tintSvg(languageGlobeSvg, 'white', '#BD632F')} />
               <Text style={styles.langText}>{languageCode}</Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -327,7 +327,7 @@ export default function DoctorsScreen() {
           </View>
 
           <TouchableOpacity style={styles.myTreatmentButton} activeOpacity={0.8} onPress={() => router.push('/my-treatment')}>
-            <SvgXml width={14} height={14} xml={treatmentCalendarSvg} style={{ marginRight: 6 }} />
+            <SvgXml width={16} height={16} xml={treatmentCalendarSvg} style={{ marginRight: 6 }} />
             <Text style={styles.treatmentText}>{t('doctors.myTreatment')}</Text>
           </TouchableOpacity>
         </View>
@@ -451,7 +451,7 @@ export default function DoctorsScreen() {
                         activeOpacity={0.8}
                         onPress={() => router.push('/ai-scan')}
                       >
-                        <SvgXml width={14} height={14} xml={scanCameraSvg} style={{ marginRight: 6 }} />
+                        <SvgXml width={16} height={16} xml={scanCameraSvg} style={{ marginRight: 6 }} />
                         <Text style={styles.scanNowText}>{t('doctors.ai.scanNow')}</Text>
                       </TouchableOpacity>
                     </View>
@@ -670,10 +670,6 @@ const styles = StyleSheet.create({
   langBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E6E1DC',
-    borderRadius: 18,
     paddingHorizontal: 12,
     height: 40,
     gap: 6,
@@ -682,7 +678,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   langText: {
-    fontSize: 13,
+    fontSize: 18,
     fontWeight: '700',
     color: '#BD632F',
   },
@@ -729,7 +725,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#BD632F',
-    borderRadius: 14,
+    borderRadius: 8,
     paddingHorizontal: 14,
     height: 38,
     shadowColor: '#BD632F',
@@ -905,22 +901,22 @@ const styles = StyleSheet.create({
     paddingRight: 130,
   },
   aiCardTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '800',
     color: '#BD632F',
-    marginBottom: 4,
+    marginBottom: 10,
   },
   aiCardSubtitle: {
-    fontSize: 11,
+    fontSize: 14,
     color: '#7C7672',
-    lineHeight: 15,
+    lineHeight: 20,
     marginBottom: 10,
   },
   scanNowButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#BD632F',
-    borderRadius: 12,
+    borderRadius: 8,
     paddingHorizontal: 14,
     height: 36,
     alignSelf: 'flex-start',
