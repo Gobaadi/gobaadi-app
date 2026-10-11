@@ -167,6 +167,7 @@
       "tapToUpload": "Tap to upload photo"
     },
     "placeholders": {
+      "age": "Enter age in months",
       "breed": "Select breed",
       "color": "Add animal color",
       "description": "Add descriptions of the animal",

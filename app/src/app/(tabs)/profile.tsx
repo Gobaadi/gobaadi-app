@@ -765,7 +765,7 @@ const styles = StyleSheet.create({
     marginRight: 14,
   },
   menuLabel: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: '#1A1817',
   },

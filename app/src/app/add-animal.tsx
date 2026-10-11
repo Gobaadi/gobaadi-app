@@ -25,6 +25,7 @@ import {
 } from '@/store/animalsApi';
 import { compressImageForUpload } from '@/utils/compress-image';
 import { isRenderableImageUri } from '@/utils/photo-uri';
+import { ageToMonthsInput, digitsOnly } from '@/utils/age';
 import { useTranslation } from '@/hooks/use-translation';
 
 const MONTH_KEYS = [
@@ -189,7 +190,7 @@ export default function AddAnimalScreen() {
   // Calendar Modal States
   const [calendarVisible, setCalendarVisible] = useState(false);
   const [calendarTitle, setCalendarTitle] = useState(() => t('addAnimal.calendar.selectDate'));
-  const [calendarTarget, setCalendarTarget] = useState<'dob' | 'age' | 'joinedFarm' | null>(null);
+  const [calendarTarget, setCalendarTarget] = useState<'dob' | 'joinedFarm' | null>(null);
 
   type OptionGroup = 'gender' | 'source' | 'breed' | 'reproStatus';
 
@@ -210,7 +211,7 @@ export default function AddAnimalScreen() {
     setModalVisible(true);
   };
 
-  const openCalendar = (target: 'dob' | 'age' | 'joinedFarm', title: string) => {
+  const openCalendar = (target: 'dob' | 'joinedFarm', title: string) => {
     setCalendarTarget(target);
     setCalendarTitle(title);
     setCalendarVisible(true);
@@ -219,8 +220,6 @@ export default function AddAnimalScreen() {
   const handleCalendarSelect = (dateStr: string) => {
     if (calendarTarget === 'dob') {
       setDob(dateStr);
-    } else if (calendarTarget === 'age') {
-      setAge(dateStr);
     } else if (calendarTarget === 'joinedFarm') {
       setJoinedFarm(dateStr);
     }
@@ -302,7 +301,7 @@ export default function AddAnimalScreen() {
     setGender(existingAnimal.gender || '');
     setSource(existingAnimal.source || '');
     setBreed(existingAnimal.breed || '');
-    setAge(existingAnimal.age || '');
+    setAge(ageToMonthsInput(existingAnimal.age));
     setJoinedFarm(existingAnimal.joinedFarm || '');
     setWeight(existingAnimal.weight || '');
     setLiveWeight(existingAnimal.liveWeight || '');
@@ -596,19 +595,18 @@ export default function AddAnimalScreen() {
                 </TouchableOpacity>
               </View>
 
-              {/* Age */}
+              {/* Age (months) */}
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>{t('addAnimal.fields.age')} <Text style={styles.optional}>{t('addAnimal.optional')}</Text></Text>
-                <TouchableOpacity
-                  style={styles.dropdown}
-                  activeOpacity={0.8}
-                  onPress={() => openCalendar('age', t('addAnimal.calendar.farmJoinedTitle'))}
-                >
-                  <Text style={[styles.dropdownValue, !age && styles.placeholder]}>
-                    {age || t('addAnimal.placeholders.farmJoined')}
-                  </Text>
-                  <Ionicons name="chevron-down" size={18} color="#7C7672" />
-                </TouchableOpacity>
+                <TextInput
+                  style={styles.input}
+                  value={age}
+                  onChangeText={(text) => setAge(digitsOnly(text))}
+                  placeholder={t('addAnimal.placeholders.age')}
+                  placeholderTextColor="#A39E99"
+                  keyboardType="number-pad"
+                  maxLength={3}
+                />
               </View>
 
               {/* Joined Farm */}

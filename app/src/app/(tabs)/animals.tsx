@@ -19,6 +19,7 @@ import { MediaCardSkeleton } from '@/components/ui/skeleton';
 import { useLanguage } from '@/hooks/use-language';
 import { useDebounce } from '@/hooks/use-debounce';
 import { isRenderableImageUri } from '@/utils/photo-uri';
+import { parseDate, monthsSince } from '@/utils/age';
 import { useTranslation } from '@/hooks/use-translation';
 
 type Chip = 'All' | 'Calf' | 'Bull';
@@ -42,32 +43,6 @@ function isBull(a: Animal): boolean {
   return gender === 'male' || /bull|ox|steer/.test(text);
 }
 
-function parseDate(value?: string | null): Date | null {
-  if (!value) return null;
-  const trimmed = value.trim();
-  if (!trimmed) return null;
-
-  const dmy = trimmed.match(/^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{4})$/);
-  if (dmy) {
-    const first = Number(dmy[1]);
-    const second = Number(dmy[2]);
-    const year = Number(dmy[3]);
-    // Prefer day/month/year when ambiguous (app data uses DD/MM/YYYY).
-    if (first > 12) return new Date(year, second - 1, first);
-    if (second > 12) return new Date(year, first - 1, second);
-    return new Date(year, second - 1, first);
-  }
-
-  const parsed = new Date(trimmed);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-}
-
-function monthsSince(from: Date, to: Date = new Date()): number {
-  let months = (to.getFullYear() - from.getFullYear()) * 12 + (to.getMonth() - from.getMonth());
-  if (to.getDate() < from.getDate()) months -= 1;
-  return Math.max(0, months);
-}
-
 function formatAge(t: T, age?: string, dob?: string): string {
   const fromDob = parseDate(dob);
   if (fromDob) {
@@ -77,19 +52,26 @@ function formatAge(t: T, age?: string, dob?: string): string {
 
   if (!age) return t('animalsTab.notAvailable');
 
-  const fromDate = parseDate(age);
+  const trimmed = age.trim();
+
+  // Numeric age is stored in whole months.
+  if (/^\d+$/.test(trimmed)) {
+    return t('animalsTab.ageMonths', { count: Number(trimmed) });
+  }
+
+  const fromDate = parseDate(trimmed);
   if (fromDate) {
     const m = monthsSince(fromDate);
     return t('animalsTab.ageMonths', { count: m });
   }
 
-  const years = age.match(/^(\d+)\s*years?$/i);
+  const years = trimmed.match(/^(\d+)\s*years?$/i);
   if (years) {
     const m = Number(years[1]) * 12;
     return t('animalsTab.ageMonths', { count: m });
   }
 
-  const months = age.match(/^(\d+)\s*months?$/i);
+  const months = trimmed.match(/^(\d+)\s*months?$/i);
   if (months) return t('animalsTab.ageMonths', { count: Number(months[1]) });
 
   return age;
@@ -167,7 +149,7 @@ export default function AnimalsListScreen() {
             activeOpacity={0.8}
             onPress={() => router.push('/select-language')}
           >
-            <Ionicons name="globe-outline" size={16} color="#BD632F" />
+            <Ionicons name="globe-outline" size={20} color="#BD632F" />
             <Text style={styles.langText}>{languageCode}</Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -276,61 +258,61 @@ export default function AnimalsListScreen() {
               const imageUri = isRenderableImageUri(item.image) ? item.image : undefined;
               const imageFailed = !!imageUri && failedImageUris.includes(imageUri);
               return (
-              <TouchableOpacity
-                key={item.id}
-                style={styles.card}
-                activeOpacity={0.9}
-                onPress={() =>
-                  router.push({
-                    pathname: '/my-animal-detail',
-                    params: { id: item.id },
-                  })
-                }
-              >
-                <Image
-                  source={!imageFailed && imageUri ? { uri: imageUri } : animalImage(item.breed)}
-                  style={styles.cardImage}
-                  contentFit="cover"
-                  onError={
-                    !imageFailed && imageUri
-                      ? () =>
+                <TouchableOpacity
+                  key={item.id}
+                  style={styles.card}
+                  activeOpacity={0.9}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/my-animal-detail',
+                      params: { id: item.id },
+                    })
+                  }
+                >
+                  <Image
+                    source={!imageFailed && imageUri ? { uri: imageUri } : animalImage(item.breed)}
+                    style={styles.cardImage}
+                    contentFit="cover"
+                    onError={
+                      !imageFailed && imageUri
+                        ? () =>
                           setFailedImageUris((prev) =>
                             prev.includes(imageUri) ? prev : [...prev, imageUri],
                           )
-                      : undefined
-                  }
-                />
+                        : undefined
+                    }
+                  />
 
-                <View style={styles.cardContent}>
-                  <View style={styles.cardHeader}>
-                    <Text style={styles.cardName} numberOfLines={1}>
-                      {item.name || item.breed || t('animalsTab.unnamed')}
-                    </Text>
-                  </View>
-
-                  <Text style={styles.cardDesc} numberOfLines={1}>
-                    {cardDescription(t, item)}
-                  </Text>
-
-                  {/* Specs Row */}
-                  <View style={styles.specsRow}>
-                    <View style={styles.specItem}>
-                      <Text style={styles.specLabel}>{t('animalsTab.species')}</Text>
-                      <Text style={styles.specValue} numberOfLines={1}>
-                        {item.breed || t('animalsTab.notAvailable')}
+                  <View style={styles.cardContent}>
+                    <View style={styles.cardHeader}>
+                      <Text style={styles.cardName} numberOfLines={1}>
+                        {item.name || item.breed || t('animalsTab.unnamed')}
                       </Text>
                     </View>
-                    <View style={styles.specItem}>
-                      <Text style={styles.specLabel}>{t('animalsTab.age')}</Text>
-                      <Text style={styles.specValue}>{formatAge(t, item.age, item.dob)}</Text>
-                    </View>
-                    <View style={styles.specItem}>
-                      <Text style={styles.specLabel}>{t('animalsTab.weight')}</Text>
-                      <Text style={styles.specValue}>{formatWeight(t, item.weight)}</Text>
+
+                    <Text style={styles.cardDesc} numberOfLines={1}>
+                      {cardDescription(t, item)}
+                    </Text>
+
+                    {/* Specs Row */}
+                    <View style={styles.specsRow}>
+                      <View style={styles.specItem}>
+                        <Text style={styles.specLabel}>{t('animalsTab.species')}</Text>
+                        <Text style={styles.specValue} numberOfLines={1}>
+                          {item.breed || t('animalsTab.notAvailable')}
+                        </Text>
+                      </View>
+                      <View style={styles.specItem}>
+                        <Text style={styles.specLabel}>{t('animalsTab.age')}</Text>
+                        <Text style={styles.specValue}>{formatAge(t, item.age, item.dob)}</Text>
+                      </View>
+                      <View style={styles.specItem}>
+                        <Text style={styles.specLabel}>{t('animalsTab.weight')}</Text>
+                        <Text style={styles.specValue}>{formatWeight(t, item.weight)}</Text>
+                      </View>
                     </View>
                   </View>
-                </View>
-              </TouchableOpacity>
+                </TouchableOpacity>
               );
             })
           )}
@@ -429,16 +411,12 @@ const styles = StyleSheet.create({
   langBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E6E1DC',
-    borderRadius: 18,
     paddingHorizontal: 12,
     height: 40,
     gap: 6,
   },
   langText: {
-    fontSize: 13,
+    fontSize: 18,
     fontWeight: '700',
     color: '#BD632F',
   },
@@ -493,7 +471,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E6E1DC',
-    borderRadius: 18,
+    borderRadius: 14,
     paddingHorizontal: 16,
     height: 36,
   },
@@ -515,7 +493,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E6E1DC',
-    borderRadius: 18,
+    borderRadius: 14,
     paddingHorizontal: 16,
     height: 36,
   },
@@ -614,7 +592,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#BD632F',
-    borderRadius: 28,
+    borderRadius: 17,
     height: 52,
     paddingHorizontal: 20,
     shadowColor: '#BD632F',
