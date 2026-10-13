@@ -3,17 +3,19 @@ import { useRequireDoctor } from '@/hooks/use-require-doctor';
 import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function CalendarSettingsScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const isDoctor = useRequireDoctor();
   if (!isDoctor) return null;
 
   const menuItems = [
-    { id: 'working-hours', label: 'Working hours', icon: 'hourglass-outline' as const, route: '/working-hours' },
+    { id: 'working-hours', labelKey: 'calendarSettings.workingHours', icon: 'hourglass-outline' as const, route: '/working-hours' },
     // Note: Ionicons doesn't have a crossed-out hourglass, so falling back to a standard hourglass/timer aesthetic
-    { id: 'block-time', label: 'Block time off', icon: 'hourglass-outline' as const, route: '/block-time-off' },
+    { id: 'block-time', labelKey: 'calendarSettings.blockTime', icon: 'hourglass-outline' as const, route: '/block-time-off' },
   ];
 
   return (
@@ -22,7 +24,7 @@ export default function CalendarSettingsScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
           <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Calendar Settings</Text>
+        <Text style={styles.headerTitle}>{t('calendarSettings.title')}</Text>
       </View>
 
       <View style={styles.content}>
@@ -36,7 +38,7 @@ export default function CalendarSettingsScreen() {
               <View style={styles.menuIcon}>
                 <Ionicons name={item.icon} size={24} color="#BD632F" />
               </View>
-              <Text style={styles.menuLabel}>{item.label}</Text>
+              <Text style={styles.menuLabel}>{t(item.labelKey)}</Text>
               <Ionicons name="chevron-forward" size={20} color="#9C9690" />
             </TouchableOpacity>
             {/* Dotted separator line */}

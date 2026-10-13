@@ -12,17 +12,18 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useGetBalanceQuery, useGetTransactionsQuery } from '@/store/walletApi';
+import { useTranslation } from 'react-i18next';
 
 const MAX_BAR_HEIGHT = 120;
 
 const MOCK_WEEKLY_DATA = [
-  { day: 'MON', value: 0.35 },
-  { day: 'TUE', value: 0.55 },
-  { day: 'WED', value: 0.45 },
-  { day: 'THU', value: 0.7 },
-  { day: 'FRI', value: 0.6 },
-  { day: 'SAT', value: 0.9 },
-  { day: 'SUN', value: 0.5 },
+  { day: 'MON', labelKey: 'wallet.days.mon', value: 0.35 },
+  { day: 'TUE', labelKey: 'wallet.days.tue', value: 0.55 },
+  { day: 'WED', labelKey: 'wallet.days.wed', value: 0.45 },
+  { day: 'THU', labelKey: 'wallet.days.thu', value: 0.7 },
+  { day: 'FRI', labelKey: 'wallet.days.fri', value: 0.6 },
+  { day: 'SAT', labelKey: 'wallet.days.sat', value: 0.9 },
+  { day: 'SUN', labelKey: 'wallet.days.sun', value: 0.5 },
 ];
 
 function formatDate(dateStr: string) {
@@ -40,11 +41,22 @@ function getTransactionIcon(type: string): 'medkit' | 'shield-checkmark' | 'clip
 }
 
 export default function WalletScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const isDoctor = useRequireDoctor();
 
-  const { data: balanceData, isLoading: balanceLoading } = useGetBalanceQuery();
-  const { data: transactionsData, isLoading: txLoading } = useGetTransactionsQuery({ page: '1', limit: '10' });
+  const {
+    data: balanceData,
+    isLoading: balanceLoading,
+    isError: balanceError,
+    refetch: refetchBalance,
+  } = useGetBalanceQuery();
+  const {
+    data: transactionsData,
+    isLoading: txLoading,
+    isError: txError,
+    refetch: refetchTransactions,
+  } = useGetTransactionsQuery({ page: '1', limit: '10' });
 
   const totalEarnings = balanceData?.balance ?? 0;
   const thisMonthEarnings = useMemo(() => {
@@ -70,11 +82,39 @@ export default function WalletScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
             <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Wallet</Text>
+          <Text style={styles.headerTitle}>{t('wallet.title')}</Text>
           <View style={{ width: 40 }} />
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#BD632F" />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (balanceError || txError) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
+            <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>{t('wallet.title')}</Text>
+          <View style={{ width: 40 }} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <Ionicons name="alert-circle-outline" size={48} color="#DC2626" />
+          <Text style={styles.errorText}>{t('wallet.loadError')}</Text>
+          <TouchableOpacity
+            style={styles.retryBtn}
+            activeOpacity={0.8}
+            onPress={() => {
+              if (balanceError) refetchBalance();
+              if (txError) refetchTransactions();
+            }}
+          >
+            <Text style={styles.retryBtnText}>{t('wallet.retry')}</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -86,26 +126,26 @@ export default function WalletScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
           <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Wallet</Text>
+        <Text style={styles.headerTitle}>{t('wallet.title')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         {/* Earnings Card */}
         <View style={styles.earningsCard}>
-          <Text style={styles.totalLabel}>Total Earnings</Text>
+          <Text style={styles.totalLabel}>{t('wallet.totalEarnings')}</Text>
           <Text style={styles.totalAmount}>${totalEarnings.toFixed(2)}</Text>
 
           <View style={styles.earningsRow}>
             <View>
-              <Text style={styles.earningsLabel}>This Month</Text>
+              <Text style={styles.earningsLabel}>{t('wallet.thisMonth')}</Text>
               <View style={styles.earningsValue}>
                 <Ionicons name="arrow-up" size={14} color="#4CAF50" />
                 <Text style={styles.earningsGreen}>${thisMonthEarnings.toFixed(2)}</Text>
               </View>
             </View>
             <View>
-              <Text style={styles.earningsLabel}>Last Transactions</Text>
+              <Text style={styles.earningsLabel}>{t('wallet.lastTransactions')}</Text>
               <Text style={styles.earningsValueText}>${lastTransactionAmount.toFixed(2)}</Text>
             </View>
           </View>
@@ -117,7 +157,7 @@ export default function WalletScreen() {
           onPress={() => router.push('/payment-methods')}
           activeOpacity={0.8}
         >
-          <Text style={styles.paymentMethodLabel}>Payment Method</Text>
+          <Text style={styles.paymentMethodLabel}>{t('wallet.paymentMethod')}</Text>
           <View style={styles.paymentIcons}>
             <View style={[styles.paymentIcon, { backgroundColor: '#E53935' }]}>
               <Text style={styles.paymentIconText}>b</Text>
@@ -138,9 +178,9 @@ export default function WalletScreen() {
         {/* 7 Days Performance */}
         <View style={styles.performanceSection}>
           <View style={styles.performanceHeader}>
-            <Text style={styles.performanceTitle}>7 Days Performance</Text>
+            <Text style={styles.performanceTitle}>{t('wallet.performance')}</Text>
             <View style={styles.weeklyBadge}>
-              <Text style={styles.weeklyText}>WEEKLY</Text>
+              <Text style={styles.weeklyText}>{t('wallet.weekly')}</Text>
             </View>
           </View>
 
@@ -159,25 +199,25 @@ export default function WalletScreen() {
                     ]}
                   />
                 </View>
-                <Text style={styles.barLabel}>{item.day}</Text>
+                <Text style={styles.barLabel}>{t(item.labelKey)}</Text>
               </View>
             ))}
           </View>
         </View>
 
         {/* Recent Transactions */}
-        <Text style={styles.sectionTitle}>Recent Transactions</Text>
+        <Text style={styles.sectionTitle}>{t('wallet.recentTransactions')}</Text>
         {!transactionsData || transactionsData.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Ionicons name="receipt-outline" size={48} color="#9C9690" />
-            <Text style={styles.emptyText}>No transactions yet</Text>
+            <Text style={styles.emptyText}>{t('wallet.empty')}</Text>
           </View>
         ) : (
           transactionsData.slice(0, 5).map((tx) => (
             <View key={tx.id} style={styles.transactionCard}>
               <View style={styles.transactionLeft}>
                 <View style={styles.transactionAvatar}>
-                  <Ionicons name={getTransactionIcon(tx.type)} size={18} color="#BD632F" />
+                  <Ionicons name={getTransactionIcon(tx.description)} size={18} color="#BD632F" />
                 </View>
                 <View>
                   <Text style={styles.transactionName}>{tx.description || tx.type}</Text>
@@ -201,7 +241,10 @@ const styles = StyleSheet.create({
   backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#BD632F', justifyContent: 'center', alignItems: 'center' },
   headerTitle: { fontSize: 20, fontWeight: '800', color: '#1A1817' },
   scrollContainer: { paddingHorizontal: 20, paddingBottom: 100 },
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
+  errorText: { fontSize: 14, fontWeight: '500', color: '#DC2626', marginTop: 8 },
+  retryBtn: { backgroundColor: '#BD632F', paddingVertical: 12, paddingHorizontal: 28, borderRadius: 24, marginTop: 8 },
+  retryBtnText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
   totalLabel: { fontSize: 14, fontWeight: '500', color: '#7C7672', marginBottom: 4 },
   totalAmount: { fontSize: 36, fontWeight: '800', color: '#BD632F', marginBottom: 12 },
   earningsCard: { backgroundColor: '#FFFFFF', borderRadius: 16, borderWidth: 1, borderColor: '#E6E1DC', padding: 16, marginBottom: 20 },

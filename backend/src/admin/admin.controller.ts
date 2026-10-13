@@ -18,12 +18,24 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
-import { Admin, AdminRole, AdminDesignation, AdminStatus } from './entities/admin.entity';
+import {
+  Admin,
+  AdminRole,
+  AdminDesignation,
+  AdminStatus,
+} from './entities/admin.entity';
 import { AdminJwtAuthGuard } from './guards/admin-jwt-auth.guard';
 import { AdminRolesGuard } from './guards/admin-roles.guard';
 import { AdminRoles } from './decorators/admin-roles.decorator';
 import { PaginatedResult } from '../common/paginated-result.interface';
-import { IsEmail, IsString, MinLength, MaxLength, IsOptional, IsEnum } from 'class-validator';
+import {
+  IsEmail,
+  IsString,
+  MinLength,
+  MaxLength,
+  IsOptional,
+  IsEnum,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 class CreateAdminDto {

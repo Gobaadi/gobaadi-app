@@ -10,15 +10,18 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useVerifyPaymentMethodOtpMutation } from '@/store/paymentMethodsApi';
 
 type OtpStep = 'input' | 'success';
 
 export default function OtpVerificationScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { paymentMethodId, phone, provider } = useLocalSearchParams<{
     paymentMethodId: string;
     phone: string;
@@ -60,7 +63,7 @@ export default function OtpVerificationScreen() {
 
   const handleVerify = async () => {
     if (!paymentMethodId) {
-      Alert.alert('Error', 'Payment method ID not found');
+      Alert.alert(t('otpVerification.alerts.error'), t('otpVerification.alerts.idNotFound'));
       return;
     }
 
@@ -71,13 +74,13 @@ export default function OtpVerificationScreen() {
       }).unwrap();
       setStep('success');
     } catch {
-      Alert.alert('Error', 'Invalid OTP. Please try again.');
+      Alert.alert(t('otpVerification.alerts.error'), t('otpVerification.alerts.invalidOtp'));
     }
   };
 
   if (step === 'success') {
     const maskedPhone = phone ? phone.replace(/(\d{2})\d+(\d{2})/, '$1•••••$2') : '••••••••';
-    const providerName = provider || 'Payment Method';
+    const providerName = provider || t('otpVerification.defaultProvider');
     const providerInitial = providerName.charAt(0).toLowerCase();
     const providerColors: Record<string, string> = {
       bKash: '#E53935',
@@ -101,12 +104,12 @@ export default function OtpVerificationScreen() {
           </View>
 
           <View style={styles.successBadge}>
-            <Text style={styles.successBadgeText}>{providerName} Linked Successfully</Text>
+            <Text style={styles.successBadgeText}>{t('otpVerification.linkedBadge', { provider: providerName })}</Text>
           </View>
 
-          <Text style={styles.successTitle}>Account Linked!</Text>
+          <Text style={styles.successTitle}>{t('otpVerification.accountLinked')}</Text>
           <Text style={styles.successDesc}>
-            Your {providerName} account ending in {maskedPhone.replace(/.*•+/, '')} has been successfully linked. You can now use it for rides and payments.
+            {t('otpVerification.successDesc', { provider: providerName, lastDigits: maskedPhone.replace(/.*•+/, '') })}
           </Text>
 
           <View style={styles.linkedCard}>
@@ -116,7 +119,7 @@ export default function OtpVerificationScreen() {
               </View>
               <View>
                 <Text style={styles.linkedType}>{providerName}</Text>
-                <Text style={styles.linkedDetail}>{maskedPhone} · Verified</Text>
+                <Text style={styles.linkedDetail}>{t('otpVerification.verifiedDetail', { phone: maskedPhone })}</Text>
               </View>
             </View>
             <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
@@ -128,7 +131,7 @@ export default function OtpVerificationScreen() {
             onPress={() => router.push('/add-payment-method')}
           >
             <Ionicons name="add" size={18} color="#FFFFFF" />
-            <Text style={styles.addAnotherBtnText}>Add another method</Text>
+            <Text style={styles.addAnotherBtnText}>{t('otpVerification.addAnotherMethod')}</Text>
           </TouchableOpacity>
         </ScrollView>
       </SafeAreaView>
@@ -141,18 +144,18 @@ export default function OtpVerificationScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
           <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>OTP Verifications</Text>
+        <Text style={styles.headerTitle}>{t('otpVerification.title')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+      <KeyboardAwareScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         {/* Illustration */}
         <View style={styles.illustrationContainer}>
           <View style={styles.illustrationBg}>
             <View style={styles.phoneIllustration}>
               <Ionicons name="shield-checkmark" size={40} color="#BD632F" />
-              <Text style={styles.illustrationTitle}>Verification</Text>
-              <Text style={styles.illustrationSubtitle}>Your code is</Text>
+              <Text style={styles.illustrationTitle}>{t('otpVerification.illustrationTitle')}</Text>
+              <Text style={styles.illustrationSubtitle}>{t('otpVerification.illustrationSubtitle')}</Text>
               <View style={styles.dotsRow}>
                 {Array.from({ length: 7 }).map((_, i) => (
                   <View key={i} style={styles.dot} />
@@ -165,7 +168,7 @@ export default function OtpVerificationScreen() {
         </View>
 
         <Text style={styles.instructionText}>
-          Enter the verification code we just sent on your phone number
+          {t('otpVerification.instruction')}
         </Text>
 
         {/* OTP Input */}
@@ -186,12 +189,12 @@ export default function OtpVerificationScreen() {
         </View>
 
         {/* Resend */}
-        <Text style={styles.resendQuestion}>Didn't receive an OTP?</Text>
+        <Text style={styles.resendQuestion}>{t('otpVerification.resendQuestion')}</Text>
         {timer > 0 ? (
-          <Text style={styles.timerText}>Resend OTP in {timer}s</Text>
+          <Text style={styles.timerText}>{t('otpVerification.resendIn', { seconds: timer })}</Text>
         ) : (
           <TouchableOpacity activeOpacity={0.7}>
-            <Text style={styles.resendText}>Resend OTP</Text>
+            <Text style={styles.resendText}>{t('otpVerification.resendOtp')}</Text>
           </TouchableOpacity>
         )}
 
@@ -205,10 +208,10 @@ export default function OtpVerificationScreen() {
           {isVerifying ? (
             <ActivityIndicator size="small" color="#FFFFFF" />
           ) : (
-            <Text style={styles.verifyBtnText}>Verify</Text>
+            <Text style={styles.verifyBtnText}>{t('otpVerification.verify')}</Text>
           )}
         </TouchableOpacity>
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }

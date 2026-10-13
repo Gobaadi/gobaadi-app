@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Controller,
   Get,
   Post,
@@ -7,10 +8,15 @@ import {
   Param,
   Body,
   Query,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
   ApiOperation,
   ApiParam,
   ApiQuery,
@@ -60,7 +66,30 @@ export class AnimalsController {
     @Param('id') id: string,
     @CurrentUser() user: JwtPayload,
   ): Promise<Animal> {
-    return this.animalsService.getAnimalById(user.sub, id);
+    return this.animalsService.getAnimalById({ userId: user.sub }, id);
+  }
+
+  @Post('upload-photo')
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { file: { type: 'string', format: 'binary' } },
+    },
+  })
+  @ApiOperation({
+    summary: 'Upload an animal photo and get back its S3 URL',
+  })
+  @ApiResponse({ status: 201, description: 'Image uploaded' })
+  async uploadPhoto(
+    @UploadedFile() file: Express.Multer.File,
+  ): Promise<{ url: string }> {
+    if (!file) {
+      throw new BadRequestException('A file is required');
+    }
+    const url = await this.animalsService.uploadPhoto(file);
+    return { url };
   }
 
   @Post()

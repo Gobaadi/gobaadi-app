@@ -5,21 +5,27 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  ScrollView,
-  Image,
   Alert,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useGetDoctorsQuery } from '@/store/doctorsApi';
+import { useLocation } from '@/hooks/use-location';
+import LocationBottomSheet from '@/components/LocationBottomSheet';
 import {
   useGetDoctorBookingsQuery,
   useCancelBookingMutation,
+  type DoctorAppointment,
   type AppointmentStatus,
 } from '@/store/doctorPortalApi';
+import { apiErrorMessage } from '@/utils/api-error';
+import { DoctorAvatar } from '@/components/doctor-avatar';
+import { useTranslation } from 'react-i18next';
 
 interface Treatment {
   id: string;
+  appointmentId: number;
   doctorId: number;
   name: string;
   specialty: string;
@@ -29,6 +35,9 @@ interface Treatment {
   bookedOn: string;
   status: AppointmentStatus;
   consultationType: string;
+  startAt: string;
+  endAt: string;
+  raw: DoctorAppointment;
 }
 
 function formatDate(iso: string): string {
@@ -46,9 +55,12 @@ function isUpcoming(status: AppointmentStatus): boolean {
 
 export default function MyTreatmentScreen() {
   const router = useRouter();
-  const [activeFilter, setActiveFilter] = useState<'All' | 'Upcoming'>('All');
+  const { t } = useTranslation();
+  const [activeFilter, setActiveFilter] = useState<'All' | 'Upcoming' | 'Medicine'>('All');
   const [activeVisitTab, setActiveVisitTab] = useState<'online' | 'physical'>('online');
   const [searchQuery, setSearchQuery] = useState('');
+  const { location, setLocation } = useLocation();
+  const [locationSheetOpen, setLocationSheetOpen] = useState(false);
 
   const { data: appointments = [] } = useGetDoctorBookingsQuery();
   const { data: doctors = [] } = useGetDoctorsQuery();
@@ -61,9 +73,15 @@ export default function MyTreatmentScreen() {
 
   async function cancelBooking(id: number) {
     try {
-      await cancelBookingMutation(String(id)).unwrap();
+      await cancelBookingMutation({
+        id: String(id),
+        reason: 'Cancelled by patient',
+      }).unwrap();
     } catch (err) {
-      Alert.alert('Could not cancel', 'Appointments can only be cancelled more than 2 hours before the start time.');
+      Alert.alert(
+        t('myTreatment.alerts.cancelFailedTitle'),
+        apiErrorMessage(err, t('myTreatment.alerts.cancelFailedMessage')),
+      );
     }
   }
 
@@ -73,23 +91,27 @@ export default function MyTreatmentScreen() {
         const doctor = doctorsById[a.doctorId];
         return {
           id: String(a.id),
+          appointmentId: a.id,
           doctorId: a.doctorId,
-          name: doctor?.name || 'Doctor',
-          specialty: doctor?.specialty || '',
+          name: a.doctorName || doctor?.name || t('myTreatment.defaultDoctor'),
+          specialty: a.doctorSpecialty || doctor?.specialty || '',
           rating: doctor?.rating || 0,
-          avatar: doctor?.avatar || '',
+          avatar: a.doctorAvatar || doctor?.avatar || '',
           date: formatDate(a.startAt),
           bookedOn: formatDate(a.createdAt),
           status: a.status,
           consultationType: a.consultationType || 'online_video',
+          startAt: a.startAt,
+          endAt: a.endAt,
+          raw: a,
         };
       }),
-    [appointments, doctorsById],
+    [appointments, doctorsById, t],
   );
 
   const filteredTreatments = treatments.filter((item) => {
-    if (searchQuery && !item.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     if (activeFilter === 'Upcoming' && !isUpcoming(item.status)) return false;
+    if (activeFilter === 'Medicine' && !item.specialty?.toLowerCase().includes('medicine')) return false;
 
     // Filter by visit type tab
     if (activeVisitTab === 'online') {
@@ -97,6 +119,14 @@ export default function MyTreatmentScreen() {
       if (!isOnline) return false;
     } else if (activeVisitTab === 'physical') {
       if (item.consultationType !== 'physical') return false;
+    }
+
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      const matches =
+        item.name.toLowerCase().includes(query) ||
+        item.specialty.toLowerCase().includes(query);
+      if (!matches) return false;
     }
 
     return true;
@@ -114,30 +144,45 @@ export default function MyTreatmentScreen() {
           <Text style={styles.buttonText}>←</Text>
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>My Treatment</Text>
+        <Text style={styles.headerTitle}>{t('myTreatment.title')}</Text>
 
         <TouchableOpacity style={styles.circleButton} activeOpacity={0.8}>
           <Text style={styles.buttonText}>🔔</Text>
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+      <KeyboardAwareScrollView
+        contentContainerStyle={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Location selector */}
         <View style={styles.locationContainer}>
-          <Text style={styles.locationLabel}>Location</Text>
-          <TouchableOpacity style={styles.locationSelector} activeOpacity={0.7}>
+          <Text style={styles.locationLabel}>{t('myTreatment.location')}</Text>
+          <TouchableOpacity
+            style={styles.locationSelector}
+            activeOpacity={0.7}
+            onPress={() => setLocationSheetOpen(true)}
+          >
             <Text style={styles.locationPin}>📍</Text>
-            <Text style={styles.locationText}>Uttar Badda, Dhaka</Text>
+            <Text style={styles.locationText}>{location}</Text>
             <Text style={styles.dropdownArrow}>▼</Text>
           </TouchableOpacity>
         </View>
+
+        <LocationBottomSheet
+          visible={locationSheetOpen}
+          selectedLocation={location}
+          onClose={() => setLocationSheetOpen(false)}
+          onSave={setLocation}
+        />
 
         {/* Search Field */}
         <View style={styles.searchBar}>
           <Text style={styles.searchIcon}>🔍</Text>
           <TextInput
             style={styles.textInput}
-            placeholder="Search doctor"
+            placeholder={t('myTreatment.searchPlaceholder')}
             placeholderTextColor="#A39E99"
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -152,7 +197,7 @@ export default function MyTreatmentScreen() {
             activeOpacity={0.7}
           >
             <Text style={[styles.visitTabText, activeVisitTab === 'online' && styles.visitTabTextActive]}>
-              Online Visit
+              {t('myTreatment.onlineVisit')}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -161,7 +206,7 @@ export default function MyTreatmentScreen() {
             activeOpacity={0.7}
           >
             <Text style={[styles.visitTabText, activeVisitTab === 'physical' && styles.visitTabTextActive]}>
-              Physical Visit
+              {t('myTreatment.physicalVisit')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -178,7 +223,7 @@ export default function MyTreatmentScreen() {
                 activeOpacity={0.7}
               >
                 <Text style={[styles.filterChipText, isSelected && styles.filterChipTextActive]}>
-                  {filter}
+                  {t(`myTreatment.filters.${filter.toLowerCase()}`)}
                 </Text>
               </TouchableOpacity>
             );
@@ -188,7 +233,13 @@ export default function MyTreatmentScreen() {
         {/* Treatment card List */}
         <View style={styles.listContainer}>
           {filteredTreatments.length === 0 ? (
-            <Text style={styles.emptyText}>No appointments yet.</Text>
+            <Text style={styles.emptyText}>
+              {appointments.length === 0
+                ? t('myTreatment.empty.none')
+                : searchQuery
+                  ? t('myTreatment.empty.noMatch')
+                  : t('myTreatment.empty.notFound')}
+            </Text>
           ) : (
             filteredTreatments.map((item) => (
               <TouchableOpacity
@@ -199,8 +250,11 @@ export default function MyTreatmentScreen() {
               >
                 {/* Top Card Row */}
                 <View style={styles.cardHeader}>
-                  <Image
-                    source={item.avatar ? { uri: item.avatar } : require('@/assets/images/doctor.png')}
+                  <DoctorAvatar
+                    name={item.name}
+                    avatar={item.avatar}
+                    size={68}
+                    radius={16}
                     style={styles.cardImage}
                   />
                   <View style={styles.cardInfo}>
@@ -217,11 +271,11 @@ export default function MyTreatmentScreen() {
                     {/* Detail Info Grid */}
                     <View style={styles.detailsGrid}>
                       <View style={styles.detailsCol}>
-                        <Text style={styles.gridLabel}>Appointment</Text>
+                        <Text style={styles.gridLabel}>{t('myTreatment.appointment')}</Text>
                         <Text style={styles.gridValue}>{item.date}</Text>
                       </View>
                       <View style={styles.detailsColRight}>
-                        <Text style={styles.gridLabelRight}>Booked on</Text>
+                        <Text style={styles.gridLabelRight}>{t('myTreatment.bookedOn')}</Text>
                         <Text style={styles.gridValueRight}>{item.bookedOn}</Text>
                       </View>
                     </View>
@@ -242,21 +296,23 @@ export default function MyTreatmentScreen() {
                         isUpcoming(item.status) ? styles.statusTextUpcoming : styles.statusTextCompleted,
                       ]}
                     >
-                      {isUpcoming(item.status) ? 'Upcoming' : 'Completed'}
+                      {isUpcoming(item.status) ? t('myTreatment.status.upcoming') : t('myTreatment.status.completed')}
                     </Text>
                   </View>
-                  <View style={styles.priceContainer}>
-                    <Text style={styles.currencySymbol}>৳</Text>
-                    <Text style={styles.priceAmount}> 120 </Text>
-                    <Text style={styles.paidBadge}>(Paid)</Text>
+                  <View style={styles.cardFooterRight}>
+                    <View style={styles.priceContainer}>
+                      <Text style={styles.currencySymbol}>৳</Text>
+                      <Text style={styles.priceAmount}> 120 </Text>
+                      <Text style={styles.paidBadge}>{t('myTreatment.paid')}</Text>
+                    </View>
                   </View>
                 </View>
               </TouchableOpacity>
             ))
           )}
         </View>
-      </ScrollView>
-    </SafeAreaView>
+        </KeyboardAwareScrollView>
+      </SafeAreaView>
   );
 }
 
@@ -593,5 +649,26 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: '#BD632F',
+  },
+  cardFooterRight: {
+    alignItems: 'flex-end',
+    gap: 8,
+  },
+  videoCallBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#BD632F',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 6,
+  },
+  videoCallBtnLoading: {
+    opacity: 0.7,
+  },
+  videoCallBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
 });

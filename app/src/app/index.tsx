@@ -13,40 +13,47 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 
-interface OnboardingSlide {
-  id: string;
-  type: 'slide1' | 'slide2';
-  image: any;
-  titlePart1?: string;
-  titlePart2?: string;
-  titleFull?: string;
-  subtitle: string;
-}
+type OnboardingSlide =
+  | {
+      id: string;
+      image: any;
+      subtitle: string;
+      type: 'slide1';
+      titlePart1: string;
+      titlePart2: string;
+    }
+  | {
+      id: string;
+      image: any;
+      subtitle: string;
+      type: 'slide2';
+      titleFull: string;
+    };
 
 const slides: OnboardingSlide[] = [
   {
     id: '1',
     type: 'slide1',
-    image: require('@/assets/images/OnboardingImage-1.png'),
-    titlePart1: 'Timely Treatment,',
-    titlePart2: 'Stronger Tomorrow',
-    subtitle:
-      'Get expert guidance, reminders, and treatments to keep your animals healthy and productive',
+    image: require('@/assets/images/OnboardingImage-1.webp'),
+    titlePart1: 'onboarding.slides.slide1.titlePart1',
+    titlePart2: 'onboarding.slides.slide1.titlePart2',
+    subtitle: 'onboarding.slides.slide1.subtitle',
   },
   {
     id: '2',
     type: 'slide2',
-    image: require('@/assets/images/OnboardingImage-2.png'),
-    titleFull: 'Everything Your Farm\nNeeds in One App',
-    subtitle:
-      'Keep your herd healthy and organised with simple foods that save time and help you stay in control.',
+    image: require('@/assets/images/OnboardingImage-2.webp'),
+    titleFull: 'onboarding.slides.slide2.titleFull',
+    subtitle: 'onboarding.slides.slide2.subtitle',
   },
 ];
 
 export default function OnboardingScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { width } = useWindowDimensions();
   const [activeIndex, setActiveIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
@@ -93,9 +100,9 @@ export default function OnboardingScreen() {
 
           {/* Titles & Subtitle */}
           <View style={styles.textWrapper}>
-            <Text style={styles.titleDark}>{item.titlePart1}</Text>
-            <Text style={styles.titleTerracotta}>{item.titlePart2}</Text>
-            <Text style={styles.subtitleText}>{item.subtitle}</Text>
+            <Text style={styles.titleDark}>{t(item.titlePart1)}</Text>
+            <Text style={styles.titleTerracotta}>{t(item.titlePart2)}</Text>
+            <Text style={styles.subtitleText}>{t(item.subtitle)}</Text>
           </View>
 
           {/* Feature List Card */}
@@ -106,8 +113,8 @@ export default function OnboardingScreen() {
                 <Ionicons name="shield-outline" size={22} color="#BD632F" />
               </View>
               <View style={styles.cardTextContent}>
-                <Text style={styles.cardTitle}>Health Checkup</Text>
-                <Text style={styles.cardSubtitle}>Regular health monitoring</Text>
+                <Text style={styles.cardTitle}>{t('onboarding.features.healthCheckup.title')}</Text>
+                <Text style={styles.cardSubtitle}>{t('onboarding.features.healthCheckup.subtitle')}</Text>
               </View>
             </View>
 
@@ -119,8 +126,8 @@ export default function OnboardingScreen() {
                 <FontAwesome5 name="syringe" size={20} color="#BD632F" />
               </View>
               <View style={styles.cardTextContent}>
-                <Text style={styles.cardTitle}>Timely Treatment</Text>
-                <Text style={styles.cardSubtitle}>Reminders & records</Text>
+                <Text style={styles.cardTitle}>{t('onboarding.features.timelyTreatment.title')}</Text>
+                <Text style={styles.cardSubtitle}>{t('onboarding.features.timelyTreatment.subtitle')}</Text>
               </View>
             </View>
 
@@ -132,8 +139,8 @@ export default function OnboardingScreen() {
                 <Ionicons name="heart-outline" size={22} color="#BD632F" />
               </View>
               <View style={styles.cardTextContent}>
-                <Text style={styles.cardTitle}>Better Productivity</Text>
-                <Text style={styles.cardSubtitle}>Happy animals, better yield</Text>
+                <Text style={styles.cardTitle}>{t('onboarding.features.productivity.title')}</Text>
+                <Text style={styles.cardSubtitle}>{t('onboarding.features.productivity.subtitle')}</Text>
               </View>
             </View>
           </View>
@@ -160,8 +167,8 @@ export default function OnboardingScreen() {
 
         {/* Titles & Subtitle */}
         <View style={styles.textWrapper}>
-          <Text style={styles.titleFull}>{item.titleFull}</Text>
-          <Text style={styles.subtitleText}>{item.subtitle}</Text>
+          <Text style={styles.titleFull}>{t(item.titleFull)}</Text>
+          <Text style={styles.subtitleText}>{t(item.subtitle)}</Text>
         </View>
 
         <View style={{ flex: 1, minHeight: 20 }} />
@@ -191,7 +198,7 @@ export default function OnboardingScreen() {
         {activeIndex === 0 && (
           <View style={styles.skipRow}>
             <TouchableOpacity onPress={handleSkip} activeOpacity={0.7}>
-              <Text style={styles.skipText}>Skip</Text>
+              <Text style={styles.skipText}>{t('onboarding.skip')}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -216,7 +223,7 @@ export default function OnboardingScreen() {
           onPress={handleNext}
         >
           <Text style={styles.actionButtonText}>
-            {activeIndex === 0 ? 'Next' : 'Get Started'}
+            {activeIndex === 0 ? t('onboarding.next') : t('onboarding.getStarted')}
           </Text>
         </TouchableOpacity>
       </View>

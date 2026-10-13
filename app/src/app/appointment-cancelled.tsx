@@ -8,40 +8,50 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
-import { useGetDoctorBookingsQuery } from '@/store/doctorPortalApi';
+import { SvgXml } from 'react-native-svg';
+import { useSelector } from 'react-redux';
+import type { RootState } from '@/store/store';
+import { useGetBookingByIdQuery, useGetDoctorBookingsQuery } from '@/store/doctorPortalApi';
+import { appointmentCancelCalendarSvg } from '@/components/icons/svg-icon-sources';
 
 export default function AppointmentCancelledScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const isDoctor = useSelector((state: RootState) => state.auth.user?.role) === 'doctor';
+  const { data: fetchedAppointment } = useGetBookingByIdQuery(String(id ?? ''), {
+    skip: !id,
+  });
   const { data: bookings = [] } = useGetDoctorBookingsQuery();
-  const appointment = bookings.find((b) => String(b.id) === id);
+  const appointment = fetchedAppointment ?? bookings.find((b) => String(b.id) === id);
 
   const displayName = appointment
-    ? appointment.animalName || appointment.patientName || `Patient #${appointment.patientId}`
-    : 'Unknown';
+    ? appointment.animalName || appointment.patientName || t('appointmentCancelled.patient')
+    : t('appointmentCancelled.unknown');
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Appointment cancelled</Text>
+        <Text style={styles.headerTitle}>{t('appointmentCancelled.headerTitle')}</Text>
       </View>
 
       <View style={styles.content}>
         <View style={styles.iconContainer}>
           <View style={styles.iconCircle}>
-            <Ionicons name="close" size={32} color="#E74C3C" />
+            <SvgXml width={44} height={44} xml={appointmentCancelCalendarSvg} />
           </View>
         </View>
 
-        <Text style={styles.title}>Appointment Cancelled</Text>
+        <Text style={styles.title}>{t('appointmentCancelled.title')}</Text>
         <Text style={styles.subtitle}>
-          This appointment has been cancelled.{'\n'}The owner has been notified.
+          {t('appointmentCancelled.subtitle')}
         </Text>
 
         {appointment && (
           <View style={styles.infoCard}>
-            <Text style={styles.cancelledLabel}>Cancelled Appointment</Text>
+            <Text style={styles.cancelledLabel}>{t('appointmentCancelled.cancelledLabel')}</Text>
             <View style={styles.cardRow}>
               {appointment.animalImage ? (
                 <Image source={{ uri: appointment.animalImage }} style={styles.avatar} />
@@ -52,15 +62,19 @@ export default function AppointmentCancelledScreen() {
               )}
               <View style={styles.cardInfo}>
                 <Text style={styles.cardName}>{displayName}</Text>
-                {appointment.animalSpecies && (
+                {(appointment.animalSpecies || appointment.animalBreed || appointment.animalAge) && (
                   <Text style={styles.cardDetail}>
-                    {appointment.animalSpecies}
-                    {appointment.animalAge ? ` · ${appointment.animalAge}` : ''}
-                    {appointment.animalBreed ? ` · ${appointment.animalBreed}` : ''}
+                    {[
+                      appointment.animalSpecies,
+                      appointment.animalAge,
+                      appointment.animalBreed,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')}
                   </Text>
                 )}
-                {appointment.patientName && (
-                  <Text style={styles.cardOwner}>Owner: {appointment.patientName}</Text>
+                {appointment.animalName && appointment.patientName && (
+                  <Text style={styles.cardOwner}>{t('appointmentCancelled.owner', { name: appointment.patientName })}</Text>
                 )}
               </View>
             </View>
@@ -71,10 +85,10 @@ export default function AppointmentCancelledScreen() {
       <View style={styles.bottomContainer}>
         <TouchableOpacity
           style={styles.homeBtn}
-          onPress={() => router.replace('/doctor-home')}
+          onPress={() => router.replace(isDoctor ? '/doctor-home' : '/')}
           activeOpacity={0.8}
         >
-          <Text style={styles.homeBtnText}>Go Home</Text>
+          <Text style={styles.homeBtnText}>{t('appointmentCancelled.goHome')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

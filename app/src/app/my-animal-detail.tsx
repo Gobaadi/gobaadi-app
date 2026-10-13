@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -8,43 +9,130 @@ import {
   Alert,
   Dimensions,
   Share,
+  FlatList,
+  ImageSourcePropType,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useGetAnimalByIdQuery, useDeleteAnimalMutation } from '@/store/animalsApi';
+import { isRenderableImageUri } from '@/utils/photo-uri';
 
 const { width } = Dimensions.get('window');
+const AUTO_SCROLL_MS = 3000;
+const SLIDE_HEIGHT = 320;
 
 export default function MyAnimalDetailScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const params = useLocalSearchParams();
   const id = String(params.id || '');
 
   const { data: animal } = useGetAnimalByIdQuery(id, { skip: !id });
   const [deleteAnimal] = useDeleteAnimalMutation();
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [failedUris, setFailedUris] = useState<string[]>([]);
+  const listRef = useRef<FlatList<ImageSourcePropType>>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const fallbackImage = animal?.breed?.toLowerCase().includes('buffalo')
+    ? require('@/assets/images/albino_buffalo.webp')
+    : require('@/assets/images/bangladeshi_cow.webp');
+
+  const photos: ImageSourcePropType[] = (() => {
+    const fromPhotos = (animal?.photos || [])
+      .filter(isRenderableImageUri)
+      .map((uri) => ({ uri }));
+    if (fromPhotos.length > 0) return fromPhotos;
+    if (animal?.image && isRenderableImageUri(animal.image)) {
+      return [{ uri: animal.image }];
+    }
+    return [fallbackImage];
+  })();
+
+  const photoCount = photos.length;
+  const dotIndex = photoCount > 0 ? activeIndex % photoCount : 0;
+
+  const markSlideFailed = useCallback((uri: string) => {
+    setFailedUris((prev) => (prev.includes(uri) ? prev : [...prev, uri]));
+  }, []);
+
+  const safeScrollToIndex = useCallback((index: number) => {
+    try {
+      listRef.current?.scrollToIndex({ index, animated: true });
+    } catch {
+      // Index can be stale right after the photo list changes shape.
+    }
+  }, []);
+
+  const startAutoScroll = useCallback(() => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    intervalRef.current = setInterval(() => {
+      setActiveIndex((prev) => {
+        const next = (prev + 1) % photoCount;
+        safeScrollToIndex(next);
+        return next;
+      });
+    }, AUTO_SCROLL_MS);
+  }, [photoCount, safeScrollToIndex]);
+
+  useEffect(() => {
+    if (photoCount <= 1) return;
+
+    startAutoScroll();
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, [photoCount, startAutoScroll]);
+
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const index = Math.round(event.nativeEvent.contentOffset.x / width);
+    if (index !== activeIndex && index >= 0 && index < photoCount) {
+      setActiveIndex(index);
+    }
+  };
+
+  const handleMomentumEnd = () => {
+    if (photoCount <= 1) return;
+    startAutoScroll();
+  };
 
   function confirmDelete() {
-    Alert.alert('Delete Animal', `Remove ${animal?.name || 'this animal'} from your farm?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await deleteAnimal(id).unwrap();
-            router.back();
-          } catch (err) {
-            console.log('Error deleting animal:', err);
-          }
+    Alert.alert(
+      t('myAnimalDetail.deleteTitle'),
+      t('myAnimalDetail.deleteMessage', { name: animal?.name || t('myAnimalDetail.thisAnimal') }),
+      [
+        { text: t('myAnimalDetail.cancel'), style: 'cancel' },
+        {
+          text: t('myAnimalDetail.delete'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteAnimal(id).unwrap();
+              router.back();
+            } catch (err) {
+              console.log('Error deleting animal:', err);
+            }
+          },
         },
-      },
-    ]);
+      ],
+    );
   }
 
   async function handleShare() {
     try {
       await Share.share({
-        message: `Check out ${animal?.name || 'this animal'} (${animal?.breed || 'Livestock'}) on Gobadi! Live Weight: ${animal?.weight || '725 Kg'}.`,
+        message: t('myAnimalDetail.shareMessage', {
+          name: animal?.name || t('myAnimalDetail.thisAnimal'),
+          breed: animal?.breed || t('myAnimalDetail.livestock'),
+          weight: animal?.weight || '725 Kg',
+        }),
       });
     } catch (err) {
       console.log('Error sharing:', err);
@@ -52,26 +140,23 @@ export default function MyAnimalDetailScreen() {
   }
 
   function handleAddToMarketplace() {
-    Alert.alert('Added to Marketplace', `${animal?.name || 'Animal'} has been listed in the Gobadi marketplace.`);
+    Alert.alert(
+      t('myAnimalDetail.addedTitle'),
+      t('myAnimalDetail.addedMessage', { name: animal?.name || t('myAnimalDetail.animal') }),
+    );
   }
 
-  const image = animal?.image
-    ? { uri: animal.image }
-    : animal?.breed?.toLowerCase().includes('buffalo')
-      ? require('@/assets/images/albino_buffalo.png')
-      : require('@/assets/images/bangladeshi_cow.png');
-
   const basicInfo = [
-    { label: 'Date Of Birth', value: animal?.dob || 'N/A' },
-    { label: 'Gender', value: animal?.gender || 'N/A' },
-    { label: 'Source', value: animal?.source || 'N/A' },
-    { label: 'Breed', value: animal?.breed || 'N/A' },
-    { label: 'Age', value: animal?.age || 'N/A' },
-    { label: 'Color', value: animal?.color || 'N/A' },
-    { label: 'Joined Farm', value: animal?.joinedFarm || 'N/A' },
-    { label: 'Stage', value: animal?.source || 'N/A' },
-    { label: 'Live Weight', value: animal?.liveWeight || 'N/A' },
-    { label: 'Price per kg', value: animal?.liveWeightPrice || 'N/A' },
+    { label: t('myAnimalDetail.dob'), value: animal?.dob || 'N/A' },
+    { label: t('myAnimalDetail.gender'), value: animal?.gender || 'N/A' },
+    { label: t('myAnimalDetail.source'), value: animal?.source || 'N/A' },
+    { label: t('myAnimalDetail.breed'), value: animal?.breed || 'N/A' },
+    { label: t('myAnimalDetail.age'), value: animal?.age || 'N/A' },
+    { label: t('myAnimalDetail.color'), value: animal?.color || 'N/A' },
+    { label: t('myAnimalDetail.joinedFarm'), value: animal?.joinedFarm || 'N/A' },
+    { label: t('myAnimalDetail.stage'), value: animal?.source || 'N/A' },
+    { label: t('myAnimalDetail.liveWeight'), value: animal?.liveWeight || 'N/A' },
+    { label: t('myAnimalDetail.pricePerKg'), value: animal?.liveWeightPrice || 'N/A' },
   ];
 
   return (
@@ -79,17 +164,45 @@ export default function MyAnimalDetailScreen() {
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         {/* Header Image Area */}
         <View style={styles.imageContainer}>
-          <Image source={image} style={styles.mainImage} resizeMode="cover" />
+          <FlatList
+            ref={listRef}
+            key={id}
+            data={photos}
+            keyExtractor={(_, index) => `photo-${index}`}
+            style={styles.gallery}
+            extraData={failedUris}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
+            onScroll={handleScroll}
+            onMomentumScrollEnd={handleMomentumEnd}
+            scrollEventThrottle={16}
+            renderItem={({ item }) => {
+              const uri =
+                typeof item === 'object' && item !== null && !Array.isArray(item)
+                  ? item.uri
+                  : undefined;
+              const failed = !!uri && failedUris.includes(uri);
+              return (
+                <Image
+                  source={!failed && uri ? item : fallbackImage}
+                  style={styles.mainImage}
+                  resizeMode="cover"
+                  onError={uri && !failed ? () => markSlideFailed(uri) : undefined}
+                />
+              );
+            }}
+          />
 
           {/* Carousel Pagination Dots */}
-          <View style={styles.paginationRow}>
-            {[0, 1, 2, 3, 4, 5, 6].map((i) => (
-              <View
-                key={i}
-                style={[styles.dot, i === 1 && styles.dotActive]}
-              />
-            ))}
-          </View>
+          {photoCount > 1 && (
+            <View style={styles.paginationRow}>
+              {photos.map((_, i) => (
+                <View key={i} style={[styles.dot, i === dotIndex && styles.dotActive]} />
+              ))}
+            </View>
+          )}
 
           {/* Header Action Buttons */}
           <SafeAreaView edges={['top']} style={styles.imageHeaderSafeArea}>
@@ -124,12 +237,12 @@ export default function MyAnimalDetailScreen() {
             <View style={styles.headerLeft}>
               <Text style={styles.animalTitle}>{animal?.name}</Text>
               <View style={styles.healthyBadge}>
-                <Text style={styles.healthyBadgeText}>Healthy</Text>
+                <Text style={styles.healthyBadgeText}>{t('myAnimalDetail.healthy')}</Text>
               </View>
             </View>
             <View style={styles.headerRight}>
               <Text style={styles.priceText}>৳ {animal?.liveWeightPrice || 0}</Text>
-              <Text style={styles.priceSubtext}>(Negotiable/Live wight)</Text>
+              <Text style={styles.priceSubtext}>{t('myAnimalDetail.negotiable')}</Text>
             </View>
           </View>
 
@@ -140,7 +253,7 @@ export default function MyAnimalDetailScreen() {
               activeOpacity={0.8}
               onPress={handleAddToMarketplace}
             >
-              <Text style={styles.addToMarketBtnText}>🛒 Add To Marketplace</Text>
+              <Text style={styles.addToMarketBtnText}>🛒 {t('myAnimalDetail.addToMarket')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -148,12 +261,12 @@ export default function MyAnimalDetailScreen() {
               activeOpacity={0.8}
               onPress={handleShare}
             >
-              <Text style={styles.shareDetailsBtnText}>📤 Share Details</Text>
+              <Text style={styles.shareDetailsBtnText}>📤 {t('myAnimalDetail.shareDetails')}</Text>
             </TouchableOpacity>
           </View>
 
           {/* Basic Informations Grid */}
-          <Text style={styles.sectionTitle}>Basic Informations</Text>
+          <Text style={styles.sectionTitle}>{t('myAnimalDetail.basicInfo')}</Text>
 
           <View style={styles.gridContainer}>
             {basicInfo.map((info, idx) => (
@@ -173,7 +286,7 @@ export default function MyAnimalDetailScreen() {
           onPress={() => router.push({ pathname: '/add-animal', params: { id, edit: '1' } })}
           activeOpacity={0.85}
         >
-          <Text style={styles.editBtnText}>✏️ Edit Animal Details</Text>
+          <Text style={styles.editBtnText}>✏️ {t('myAnimalDetail.editDetails')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -190,13 +303,18 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     width: '100%',
-    height: 320,
+    height: SLIDE_HEIGHT,
     position: 'relative',
     backgroundColor: '#EBE5DF',
+    overflow: 'hidden',
+  },
+  gallery: {
+    width: '100%',
+    height: SLIDE_HEIGHT,
   },
   mainImage: {
-    width: '100%',
-    height: '100%',
+    width,
+    height: SLIDE_HEIGHT,
   },
   paginationRow: {
     position: 'absolute',

@@ -7,8 +7,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 export default function PaymentSuccessScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const params = useLocalSearchParams();
 
@@ -37,10 +39,10 @@ export default function PaymentSuccessScreen() {
           </View>
         </View>
 
-        <Text style={styles.successTitle}>Payment Successfully</Text>
+        <Text style={styles.successTitle}>{t('paymentSuccess.successTitle')}</Text>
         
         <Text style={styles.successSubtitle}>
-          Your payment of ৳ 120 has been processed successfully. Your slot is confirmed.
+          {t('paymentSuccess.successSubtitle')}
         </Text>
       </View>
 
@@ -57,7 +59,7 @@ export default function PaymentSuccessScreen() {
           activeOpacity={0.85}
         >
           <Text style={styles.detailButtonIcon}>📄</Text>
-          <Text style={styles.detailButtonText}>Detail Bill</Text>
+          <Text style={styles.detailButtonText}>{t('paymentSuccess.detailBill')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -65,7 +67,7 @@ export default function PaymentSuccessScreen() {
           onPress={() => router.replace('/(tabs)/doctors')}
           activeOpacity={0.85}
         >
-          <Text style={styles.backButtonText}>← Back</Text>
+          <Text style={styles.backButtonText}>{t('paymentSuccess.back')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

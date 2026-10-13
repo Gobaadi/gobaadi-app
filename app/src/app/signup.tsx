@@ -6,30 +6,32 @@ import {
   TextInput,
   TouchableOpacity,
   Image,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
   ActivityIndicator,
   Modal,
   FlatList,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useRegisterMutation } from '@/store/authApi';
 import { useSocialAuth } from '@/hooks/use-social-auth';
+import { apiErrorMessage } from '@/utils/api-error';
+import { isValidEmailSyntax, isAllowedEmail } from '@/utils/email';
+import { useTranslation } from '@/hooks/use-translation';
 
 const BD_PHONE_REGEX = /^01[3-9]\d{8}$/;
 
 export default function SignUpScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
 
   const [name, setName] = useState('');
   const [authMethod, setAuthMethod] = useState<'phone' | 'email'>('phone');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState<'doctor' | 'user' | ''>('');
+  const [role, setRole] = useState<'doctor' | 'farmer' | ''>('');
   const [bvcNumber, setBvcNumber] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -54,9 +56,9 @@ export default function SignUpScreen() {
 
   const openRoleDropdown = () => {
     setModalData({
-      title: 'Select your role',
-      options: ['Doctor', 'User'],
-      onSelect: (val) => setRole(val === 'Doctor' ? 'doctor' : 'user'),
+      title: t('signup.roleSelect'),
+      options: ['doctor', 'farmer'],
+      onSelect: (val) => setRole(val === 'doctor' ? 'doctor' : 'farmer'),
     });
     setModalVisible(true);
   };
@@ -65,7 +67,7 @@ export default function SignUpScreen() {
     setErrorMessage('');
 
     if (!name.trim()) {
-      setErrorMessage('Name is required.');
+      setErrorMessage(t('signup.errors.nameRequired'));
       return;
     }
 
@@ -73,47 +75,56 @@ export default function SignUpScreen() {
 
     if (authMethod === 'phone') {
       if (!phone.trim()) {
-        setErrorMessage('Phone number is required.');
+        setErrorMessage(t('signup.errors.phoneRequired'));
         return;
       }
       if (!BD_PHONE_REGEX.test(phone)) {
-        setErrorMessage('Please enter a valid 11-digit Bangladeshi phone number (e.g., 01712345678).');
+        setErrorMessage(t('signup.errors.invalidPhone'));
         return;
       }
       identifier = `+880${phone.trim()}`;
     } else {
-      if (!email.trim()) {
-        setErrorMessage('Email is required.');
+      const emailValue = email.trim();
+      if (!emailValue) {
+        setErrorMessage(t('signup.errors.emailRequired'));
         return;
       }
-      if (!/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/.test(email)) {
-        setErrorMessage('Please enter a valid email address.');
+      if (!isValidEmailSyntax(emailValue)) {
+        setErrorMessage(t('signup.errors.invalidEmail'));
         return;
       }
-      identifier = email.trim();
+      if (!isAllowedEmail(emailValue)) {
+        setErrorMessage(t('signup.errors.emailNotAllowed'));
+        return;
+      }
+      identifier = emailValue;
     }
 
     if (!agreedToTerms) {
-      setErrorMessage('You must agree to the Terms of Service.');
+      setErrorMessage(t('signup.errors.termsRequired'));
       return;
     }
 
     if (!role) {
-      setErrorMessage('Please select a role.');
+      setErrorMessage(t('signup.errors.roleRequired'));
       return;
     }
     if (role === 'doctor') {
       if (!bvcNumber.trim()) {
-        setErrorMessage('BVC Registration Number is required for doctors.');
+        setErrorMessage(t('signup.errors.bvcRequired'));
         return;
       }
     } else {
       if (!password) {
-        setErrorMessage('Password is required.');
+        setErrorMessage(t('signup.errors.passwordRequired'));
+        return;
+      }
+      if (password.length < 8) {
+        setErrorMessage(t('signup.errors.passwordTooShort'));
         return;
       }
       if (password !== confirmPassword) {
-        setErrorMessage('Passwords do not match.');
+        setErrorMessage(t('signup.errors.passwordMismatch'));
         return;
       }
     }
@@ -132,255 +143,263 @@ export default function SignUpScreen() {
     }
 
     try {
-      await register({
+      const payload = {
         name: name.trim(),
         identifier,
         password,
-        role: role || 'user',
+        role: role || 'farmer',
         bvcRegistrationNumber: undefined,
-      }).unwrap();
+      };
+      console.log('[1/8][FE signup.tsx] Register submit →', payload);
+      await register(payload).unwrap();
+      console.log('[1/8][FE signup.tsx] Register API success → navigating to /otp');
       router.push({ pathname: '/otp', params: { phone: identifier, purpose: 'verify', role: role || 'user' } });
     } catch (err: any) {
-      setErrorMessage(err?.data?.message || 'Could not create account. Please try again.');
+      console.log('[1/8][FE signup.tsx] Register API FAILED →', err?.data ?? err?.message ?? err);
+      setErrorMessage(apiErrorMessage(err, t('signup.errors.createFailed')));
     }
   };
 
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
+      <KeyboardAwareScrollView
+        contentContainerStyle={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
-        <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-          {/* Logo Section */}
-          <View>
-            <Image
-              source={require('@/assets/images/splash-icon.png')}
-              style={styles.logo}
-              resizeMode="contain"
+        {/* Logo Section */}
+        <View>
+          <Image
+            source={require('@/assets/images/splash-icon.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+        </View>
+
+        {/* Heading */}
+        <Text style={styles.title}>{t('signup.title')}</Text>
+
+        {/* Toggle Phone/Email */}
+        <View style={styles.toggleContainer}>
+          <TouchableOpacity
+            style={[styles.toggleButton, authMethod === 'phone' && styles.toggleButtonActive]}
+            onPress={() => setAuthMethod('phone')}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.toggleText, authMethod === 'phone' && styles.toggleTextActive]}>{t('common.identifierTabs.phone')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.toggleButton, authMethod === 'email' && styles.toggleButtonActive]}
+            onPress={() => setAuthMethod('email')}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.toggleText, authMethod === 'email' && styles.toggleTextActive]}>{t('common.identifierTabs.email')}</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Form Fields */}
+        <View style={styles.form}>
+          {/* Name */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>{t('signup.nameLabel')}</Text>
+            <TextInput
+              style={styles.input}
+              value={name}
+              onChangeText={setName}
+              placeholder={t('signup.namePlaceholder')}
+              placeholderTextColor="#A39E99"
             />
           </View>
 
-          {/* Heading */}
-          <Text style={styles.title}>Create Your Account</Text>
-
-          {/* Toggle Phone/Email */}
-          <View style={styles.toggleContainer}>
-            <TouchableOpacity
-              style={[styles.toggleButton, authMethod === 'phone' && styles.toggleButtonActive]}
-              onPress={() => setAuthMethod('phone')}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.toggleText, authMethod === 'phone' && styles.toggleTextActive]}>Phone Number</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.toggleButton, authMethod === 'email' && styles.toggleButtonActive]}
-              onPress={() => setAuthMethod('email')}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.toggleText, authMethod === 'email' && styles.toggleTextActive]}>Email</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Form Fields */}
-          <View style={styles.form}>
-            {/* Name */}
+          {/* Phone Number or Email */}
+          {authMethod === 'phone' ? (
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Name</Text>
+              <Text style={styles.label}>{t('signup.phoneLabel')}</Text>
+              <View style={styles.phoneInputContainer}>
+                <TouchableOpacity style={styles.countryCodeSelector} activeOpacity={0.7}>
+                  <Text style={styles.flagEmoji}>🇧🇩</Text>
+                  <Text style={styles.countryCode}>+88</Text>
+                  <Text style={styles.dropdownArrow}>▼</Text>
+                </TouchableOpacity>
+                <View style={styles.phoneDivider} />
+                <TextInput
+                  style={styles.phoneInput}
+                  value={phone}
+                  onChangeText={setPhone}
+                  placeholder={t('signup.phonePlaceholder')}
+                  placeholderTextColor="#A39E99"
+                  keyboardType="phone-pad"
+                  maxLength={11}
+                />
+              </View>
+            </View>
+          ) : (
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>{t('signup.emailLabel')}</Text>
               <TextInput
                 style={styles.input}
-                value={name}
-                onChangeText={setName}
-                placeholder="Enter your name"
+                value={email}
+                onChangeText={setEmail}
+                placeholder={t('signup.emailPlaceholder')}
                 placeholderTextColor="#A39E99"
+                keyboardType="email-address"
+                autoCapitalize="none"
               />
             </View>
+          )}
 
-            {/* Phone Number or Email */}
-            {authMethod === 'phone' ? (
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Phone Number*</Text>
-                <View style={styles.phoneInputContainer}>
-                  <TouchableOpacity style={styles.countryCodeSelector} activeOpacity={0.7}>
-                    <Text style={styles.flagEmoji}>🇧🇩</Text>
-                    <Text style={styles.countryCode}>+88</Text>
-                    <Text style={styles.dropdownArrow}>▼</Text>
-                  </TouchableOpacity>
-                  <View style={styles.phoneDivider} />
-                  <TextInput
-                    style={styles.phoneInput}
-                    value={phone}
-                    onChangeText={setPhone}
-                    placeholder="Phone number"
-                    placeholderTextColor="#A39E99"
-                    keyboardType="phone-pad"
-                    maxLength={11}
-                  />
-                </View>
-              </View>
-            ) : (
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Email Address*</Text>
-                <TextInput
-                  style={styles.input}
-                  value={email}
-                  onChangeText={setEmail}
-                  placeholder="Enter your email"
-                  placeholderTextColor="#A39E99"
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                />
-              </View>
-            )}
-
-            {/* Role */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Role*</Text>
-              <TouchableOpacity style={styles.dropdownSelector} activeOpacity={0.7} onPress={openRoleDropdown}>
-                <Text style={[styles.dropdownValue, !role && styles.placeholderText]}>
-                  {role === 'doctor' ? 'Doctor' : role === 'user' ? 'User' : 'Select your role'}
-                </Text>
-                <Text style={styles.dropdownArrow}>▼</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Password Fields - Only for Users */}
-            {role !== 'doctor' && (
-              <>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Password*</Text>
-                  <View style={styles.passwordContainer}>
-                    <TextInput
-                      style={styles.passwordInput}
-                      value={password}
-                      onChangeText={setPassword}
-                      placeholder="••••••••••••"
-                      placeholderTextColor="#A39E99"
-                      secureTextEntry={!showPassword}
-                    />
-                    <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon} activeOpacity={0.7}>
-                      <Ionicons name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color="#A39E99" />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Confirm Password*</Text>
-                  <View style={styles.passwordContainer}>
-                    <TextInput
-                      style={styles.passwordInput}
-                      value={confirmPassword}
-                      onChangeText={setConfirmPassword}
-                      placeholder="••••••••••••"
-                      placeholderTextColor="#A39E99"
-                      secureTextEntry={!showConfirmPassword}
-                    />
-                    <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeIcon} activeOpacity={0.7}>
-                      <Ionicons name={showConfirmPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color="#A39E99" />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </>
-            )}
-
-            {/* BVC Registration Number - Only for Doctors */}
-            {role === 'doctor' && (
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>BVC Registration Number*</Text>
-                <TextInput
-                  style={styles.input}
-                  value={bvcNumber}
-                  onChangeText={setBvcNumber}
-                  placeholder="Enter BVC registration number"
-                  placeholderTextColor="#A39E99"
-                  keyboardType="number-pad"
-                />
-              </View>
-            )}
-
-            {/* Terms of Service */}
-            <TouchableOpacity
-              style={styles.termsRow}
-              activeOpacity={0.7}
-              onPress={() => setAgreedToTerms(!agreedToTerms)}
-            >
-              <View style={[styles.checkbox, agreedToTerms && styles.checkboxChecked]}>
-                {agreedToTerms && <Ionicons name="checkmark" size={14} color="#FFFFFF" />}
-              </View>
-              <Text style={styles.termsText}>
-                By continuing, you agree to our{' '}
-                <Text style={styles.termsHighlight}>terms of services</Text>
+          {/* Role */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>{t('signup.roleLabel')}</Text>
+            <TouchableOpacity style={styles.dropdownSelector} activeOpacity={0.7} onPress={openRoleDropdown}>
+              <Text style={[styles.dropdownValue, !role && styles.placeholderText]}>
+                {role === 'doctor' ? t('signup.roleDoctor') : role === 'farmer' ? t('signup.roleUser') : t('signup.roleSelect')}
               </Text>
+              <Text style={styles.dropdownArrow}>▼</Text>
             </TouchableOpacity>
-
-            {/* Error message */}
-            {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
-
-            {/* Continue/Sign Up Button */}
-            <TouchableOpacity
-              style={[styles.signUpButton, isLoading && styles.signUpButtonDisabled]}
-              activeOpacity={0.8}
-              onPress={handleSignUp}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Text style={styles.signUpButtonText}>{role === 'doctor' ? 'Continue' : 'Sign Up'}</Text>
-              )}
-            </TouchableOpacity>
-
-            {/* Divider */}
-            <View style={styles.dividerContainer}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>or</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            {/* Social login error */}
-            {socialError ? <Text style={styles.errorText}>{socialError}</Text> : null}
-
-            {/* Social Logins */}
-            <View style={styles.socialButtonsContainer}>
-              <TouchableOpacity
-                style={styles.socialButton}
-                activeOpacity={0.7}
-                onPress={withGoogle}
-                disabled={isSocialLoading}
-              >
-                <Image
-                  source={require('@/assets/images/Google.png')}
-                  style={styles.socialIcon}
-                  resizeMode="contain"
-                />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.socialButton}
-                activeOpacity={0.7}
-                onPress={withFacebook}
-                disabled={isSocialLoading}
-              >
-                <Image
-                  source={require('@/assets/images/selfhst_facebook.png')}
-                  style={styles.socialIcon}
-                  resizeMode="contain"
-                />
-              </TouchableOpacity>
-            </View>
-
-            {/* Footer */}
-            <View style={styles.footerContainer}>
-              <Text style={styles.footerText}>
-                Already have an account?{' '}
-                <Text style={styles.signInLink} onPress={() => router.push('/login')}>
-                  Sign In
-                </Text>
-              </Text>
-            </View>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+
+          {/* Password Fields - Only for Users */}
+          {role !== 'doctor' && (
+            <>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>{t('signup.passwordLabel')}</Text>
+                <View style={styles.passwordContainer}>
+                  <TextInput
+                    style={styles.passwordInput}
+                    value={password}
+                    onChangeText={setPassword}
+                    placeholder="••••••••••••"
+                    placeholderTextColor="#A39E99"
+                    secureTextEntry={!showPassword}
+                  />
+                  <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon} activeOpacity={0.7}>
+                    <Ionicons name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color="#A39E99" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>{t('signup.confirmLabel')}</Text>
+                <View style={styles.passwordContainer}>
+                  <TextInput
+                    style={styles.passwordInput}
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    placeholder="••••••••••••"
+                    placeholderTextColor="#A39E99"
+                    secureTextEntry={!showConfirmPassword}
+                  />
+                  <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeIcon} activeOpacity={0.7}>
+                    <Ionicons name={showConfirmPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color="#A39E99" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </>
+          )}
+
+          {/* BVC Registration Number - Only for Doctors */}
+          {role === 'doctor' && (
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>{t('signup.bvcLabel')}</Text>
+              <TextInput
+                style={styles.input}
+                value={bvcNumber}
+                onChangeText={setBvcNumber}
+                placeholder={t('signup.bvcPlaceholder')}
+                placeholderTextColor="#A39E99"
+                keyboardType="number-pad"
+              />
+            </View>
+          )}
+
+          {/* Terms of Service */}
+          <TouchableOpacity
+            style={styles.termsRow}
+            activeOpacity={0.7}
+            onPress={() => setAgreedToTerms(!agreedToTerms)}
+          >
+            <View style={[styles.checkbox, agreedToTerms && styles.checkboxChecked]}>
+              {agreedToTerms && <Ionicons name="checkmark" size={14} color="#FFFFFF" />}
+            </View>
+            <Text style={styles.termsText}>
+              {t('signup.termsPrefix')}{' '}
+              <Text
+                style={styles.termsHighlight}
+                onPress={() => router.push('/terms-of-service')}
+              >
+                {t('signup.termsLink')}
+              </Text>
+            </Text>
+          </TouchableOpacity>
+
+          {/* Error message */}
+          {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+
+          {/* Continue/Sign Up Button */}
+          <TouchableOpacity
+            style={[styles.signUpButton, isLoading && styles.signUpButtonDisabled]}
+            activeOpacity={0.8}
+            onPress={handleSignUp}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.signUpButtonText}>{role === 'doctor' ? t('signup.submitDoctor') : t('signup.submitUser')}</Text>
+            )}
+          </TouchableOpacity>
+
+          {/* Divider */}
+          <View style={styles.dividerContainer}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>{t('signup.divider')}</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          {/* Social login error */}
+          {socialError ? <Text style={styles.errorText}>{socialError}</Text> : null}
+
+          {/* Social Logins */}
+          <View style={styles.socialButtonsContainer}>
+            <TouchableOpacity
+              style={styles.socialButton}
+              activeOpacity={0.7}
+              onPress={withGoogle}
+              disabled={isSocialLoading}
+            >
+              <Image
+                source={require('@/assets/images/Google.png')}
+                style={styles.socialIcon}
+                resizeMode="contain"
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.socialButton}
+              activeOpacity={0.7}
+              onPress={withFacebook}
+              disabled={isSocialLoading}
+            >
+              <Image
+                source={require('@/assets/images/selfhst_facebook.png')}
+                style={styles.socialIcon}
+                resizeMode="contain"
+              />
+            </TouchableOpacity>
+          </View>
+
+          {/* Footer */}
+          <View style={styles.footerContainer}>
+            <Text style={styles.footerText}>
+              {t('signup.footerPrefix')}{' '}
+              <Text style={styles.signInLink} onPress={() => router.push('/login')}>
+                {t('signup.signIn')}
+              </Text>
+            </Text>
+          </View>
+        </View>
+      </KeyboardAwareScrollView>
 
       {/* Role Selector Dropdown Modal */}
       <Modal
@@ -407,7 +426,7 @@ export default function SignUpScreen() {
                     setModalVisible(false);
                   }}
                 >
-                  <Text style={styles.modalItemText}>{item}</Text>
+                  <Text style={styles.modalItemText}>{item === 'doctor' ? t('signup.roleDoctor') : t('signup.roleUser')}</Text>
                 </TouchableOpacity>
               )}
             />

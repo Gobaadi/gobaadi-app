@@ -13,6 +13,18 @@ export interface DoctorProfile {
   qualifications: string[];
   specializations?: string[];
   experiences?: DoctorExperience[];
+  licenseNumber?: string;
+  location?: string;
+  credentialDocuments?: string[];
+  credentialPeriod?: CredentialPeriod | null;
+}
+
+export interface CredentialPeriod {
+  startMonth?: string;
+  startYear?: string;
+  endMonth?: string;
+  endYear?: string;
+  isCurrentlyStudying?: boolean;
 }
 
 export interface DoctorExperience {
@@ -33,20 +45,29 @@ export interface DoctorAppointment {
   id: number;
   doctorId: number;
   patientId: number;
+  animalId?: number;
   patientName?: string;
   patientPhone?: string;
+  patientAvatar?: string;
   animalName?: string;
   animalSpecies?: string;
   animalBreed?: string;
   animalAge?: string;
   animalImage?: string;
-  symptoms?: string;
+  symptoms?: string | string[];
   consultationType?: string;
+  reasonForConsultation?: string;
+  price?: number;
+  paymentStatus?: 'pending' | 'paid' | 'failed' | 'refunded';
   consultationNotes?: string;
   startAt: string;
   endAt: string;
   status: AppointmentStatus;
   createdAt: string;
+  doctorName?: string;
+  doctorSpecialty?: string;
+  doctorAvatar?: string;
+  patientImage?: string;
 }
 
 export interface TodayStats {
@@ -96,10 +117,11 @@ export interface Availability extends AvailabilityEntry {
 export const doctorPortalApi = createApi({
   reducerPath: 'doctorPortalApi',
   baseQuery: baseQueryWithReauth,
-  tagTypes: ['DoctorBookings', 'Availability', 'Dashboard'],
+  tagTypes: ['DoctorBookings', 'Availability', 'Dashboard', 'DoctorProfile'],
   endpoints: (builder) => ({
     getMyDoctorProfile: builder.query<DoctorProfile, void>({
       query: () => '/doctors/me',
+      providesTags: ['DoctorProfile'],
     }),
     getDoctorBookings: builder.query<DoctorAppointment[], { filter?: string; consultationType?: string; search?: string } | void>({
       query: (params) => {
@@ -155,8 +177,15 @@ export const doctorPortalApi = createApi({
       }),
       invalidatesTags: ['DoctorBookings'],
     }),
-    cancelBooking: builder.mutation<DoctorAppointment, string>({
-      query: (id) => ({ url: `/doctors/bookings/${id}/cancel`, method: 'PATCH' }),
+    cancelBooking: builder.mutation<
+      DoctorAppointment,
+      { id: string; reason: string; note?: string }
+    >({
+      query: ({ id, reason, note }) => ({
+        url: `/doctors/bookings/${id}/cancel`,
+        method: 'PATCH',
+        body: note ? { reason, note } : { reason },
+      }),
       invalidatesTags: ['DoctorBookings'],
     }),
     rescheduleBooking: builder.mutation<
@@ -207,7 +236,7 @@ export const doctorPortalApi = createApi({
         method: 'PATCH',
         body: { qualifications },
       }),
-      invalidatesTags: ['Dashboard'],
+      invalidatesTags: ['Dashboard', 'DoctorProfile'],
     }),
     updateSpecializations: builder.mutation<DoctorProfile, string[]>({
       query: (specializations) => ({
@@ -215,7 +244,7 @@ export const doctorPortalApi = createApi({
         method: 'PATCH',
         body: { specializations },
       }),
-      invalidatesTags: ['Dashboard'],
+      invalidatesTags: ['Dashboard', 'DoctorProfile'],
     }),
     updateExperiences: builder.mutation<DoctorProfile, DoctorExperience[]>({
       query: (experiences) => ({
@@ -223,7 +252,7 @@ export const doctorPortalApi = createApi({
         method: 'PATCH',
         body: { experiences },
       }),
-      invalidatesTags: ['Dashboard'],
+      invalidatesTags: ['Dashboard', 'DoctorProfile'],
     }),
     updateProfile: builder.mutation<
       DoctorProfile,
@@ -235,6 +264,8 @@ export const doctorPortalApi = createApi({
         bio?: string;
         consultationFee?: number;
         licenseNumber?: string;
+        location?: string;
+        credentialPeriod?: CredentialPeriod;
       }
     >({
       query: (dto) => ({
@@ -242,7 +273,31 @@ export const doctorPortalApi = createApi({
         method: 'PATCH',
         body: dto,
       }),
-      invalidatesTags: ['Dashboard'],
+      invalidatesTags: ['Dashboard', 'DoctorProfile'],
+    }),
+    uploadCredentialDocument: builder.mutation<DoctorProfile, FormData>({
+      query: (formData) => ({
+        url: '/doctors/me/credential-documents',
+        method: 'POST',
+        body: formData,
+      }),
+      invalidatesTags: ['Dashboard', 'DoctorProfile'],
+    }),
+    uploadMyPhoto: builder.mutation<{ url: string }, FormData>({
+      query: (formData) => ({
+        url: '/doctors/me/photo',
+        method: 'POST',
+        body: formData,
+      }),
+      invalidatesTags: ['Dashboard', 'DoctorProfile'],
+    }),
+    updateCredentialDocuments: builder.mutation<DoctorProfile, string[]>({
+      query: (documents) => ({
+        url: '/doctors/me/credential-documents',
+        method: 'PATCH',
+        body: { documents },
+      }),
+      invalidatesTags: ['Dashboard', 'DoctorProfile'],
     }),
     getAvailability: builder.query<Availability[], number>({
       query: (doctorId) => `/doctors/${doctorId}/availability`,
@@ -280,6 +335,9 @@ export const {
   useUpdateSpecializationsMutation,
   useUpdateExperiencesMutation,
   useUpdateProfileMutation,
+  useUploadCredentialDocumentMutation,
+  useUploadMyPhotoMutation,
+  useUpdateCredentialDocumentsMutation,
   useGetAvailabilityQuery,
   useSetAvailabilityMutation,
 } = doctorPortalApi;

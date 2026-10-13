@@ -4,49 +4,56 @@ import {
   View,
   Text,
   TouchableOpacity,
-  Image,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 
 import { useGetDoctorByIdQuery } from '@/store/doctorsApi';
+import { DoctorAvatar } from '@/components/doctor-avatar';
+import { useTranslation } from 'react-i18next';
+
+function visitTypeLabelKey(value: string): string {
+  if (value === 'Online') return 'confirmPay.visitTypes.online';
+  if (value === 'Physical') return 'confirmPay.visitTypes.physical';
+  return value;
+}
 
 export default function ConfirmPayScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const params = useLocalSearchParams();
   const doctorId = String(params.id || '');
 
-  const { data: doctorData } = useGetDoctorByIdQuery(doctorId, { skip: !doctorId });
+  const { data: doctorData, isLoading: doctorLoading } = useGetDoctorByIdQuery(doctorId, { skip: !doctorId });
 
   const doctor = doctorData
     ? {
       id: String(doctorData.id),
       name: doctorData.name,
       specialty: doctorData.specialty,
-      location: 'Uttar Badda, Dhaka',
+      location: doctorData.location || '',
       rating: doctorData.rating || 4.8,
       reviews: 124,
-      image: doctorData.avatar === 'jessica_doctor.png'
-        ? require('@/assets/images/jessica_doctor.png')
-        : require('@/assets/images/doctor.png'),
+      avatar: doctorData.avatar ?? '',
     }
     : {
       id: doctorId || '1',
-      name: 'Loading...',
+      name: t('confirmPay.doctorFallback'),
       specialty: '',
       location: '',
       rating: 0,
       reviews: 0,
-      image: require('@/assets/images/doctor.png'),
+      avatar: null,
     };
 
   // Format Date value nicely
   const selectedDay = params.day ? String(params.day) : '28';
-  const selectedMonthYear = 'December 2026';
+  const selectedMonthYear = t('confirmPay.monthYear');
   const selectedTime = params.timeSlot ? String(params.timeSlot) : '09.00 AM';
   const selectedVisitType = params.visitType ? String(params.visitType) : 'Online';
 
-  const fullDateDisplay = `Mon, ${selectedDay} ${selectedMonthYear}`;
+  const fullDateDisplay = t('confirmPay.fullDate', { day: selectedDay, monthYear: selectedMonthYear });
 
   return (
     <SafeAreaView style={styles.container}>
@@ -60,7 +67,7 @@ export default function ConfirmPayScreen() {
           <Text style={styles.buttonText}>←</Text>
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>Confirm and Pay</Text>
+        <Text style={styles.headerTitle}>{t('confirmPay.title')}</Text>
 
         <TouchableOpacity style={styles.circleButton} activeOpacity={0.8}>
           <Text style={styles.buttonText}>🔔</Text>
@@ -72,63 +79,83 @@ export default function ConfirmPayScreen() {
         <View style={styles.infoCard}>
           {/* Doctor Row */}
           <View style={styles.doctorRow}>
-            <Image source={doctor.image} style={styles.doctorPortrait} />
+            {doctorLoading ? (
+              <View style={[styles.doctorPortrait, styles.doctorPortraitPlaceholder]}>
+                <ActivityIndicator size="small" color="#BD632F" />
+              </View>
+            ) : (
+              <DoctorAvatar
+                name={doctor.name}
+                avatar={doctor.avatar}
+                size={72}
+                radius={16}
+                style={styles.doctorPortrait}
+              />
+            )}
             <View style={styles.doctorDetails}>
-              <Text style={styles.doctorName}>{doctor.name}</Text>
-              <Text style={styles.doctorSpecialty}>{doctor.specialty}</Text>
-              <View style={styles.ratingLocationRow}>
-                <Text style={styles.locationPin}>📍</Text>
-                <Text style={styles.locationTextMeta}>{doctor.location}</Text>
-              </View>
-              <View style={styles.ratingRow}>
-                <Text style={styles.starIcon}>⭐</Text>
-                <Text style={styles.ratingValue}>{doctor.rating}</Text>
-                <Text style={styles.reviewsText}>| {doctor.reviews} Reviews</Text>
-              </View>
+              <Text style={styles.doctorName}>
+                {doctorLoading ? t('confirmPay.loading') : doctor.name}
+              </Text>
+              {!!doctor.specialty && (
+                <Text style={styles.doctorSpecialty}>{doctor.specialty}</Text>
+              )}
+              {!!doctor.location && (
+                <View style={styles.ratingLocationRow}>
+                  <Text style={styles.locationPin}>📍</Text>
+                  <Text style={styles.locationTextMeta}>{doctor.location}</Text>
+                </View>
+              )}
+              {!!doctorData && (
+                <View style={styles.ratingRow}>
+                  <Text style={styles.starIcon}>⭐</Text>
+                  <Text style={styles.ratingValue}>{doctor.rating}</Text>
+                  <Text style={styles.reviewsText}>{t('confirmPay.reviews', { count: doctor.reviews })}</Text>
+                </View>
+              )}
             </View>
           </View>
 
           {/* Your Slot Section */}
-          <Text style={styles.sectionHeader}>Booking Reason</Text>
-          <Text style={styles.reasonText}>{params.reason || 'The symptom was extreme fever'}</Text>
+          <Text style={styles.sectionHeader}>{t('confirmPay.bookingReason')}</Text>
+          <Text style={styles.reasonText}>{params.reason || '—'}</Text>
 
           <View style={styles.dashedDivider} />
 
           {/* Your Slot Section */}
-          <Text style={styles.sectionHeader}>Your Slot</Text>
+          <Text style={styles.sectionHeader}>{t('confirmPay.yourSlot')}</Text>
 
           <View style={styles.slotDetailRow}>
-            <Text style={styles.slotLabel}>Hour</Text>
+            <Text style={styles.slotLabel}>{t('confirmPay.hour')}</Text>
             <Text style={styles.slotValue}>{selectedTime}</Text>
           </View>
 
           <View style={styles.slotDetailRow}>
-            <Text style={styles.slotLabel}>Dates</Text>
+            <Text style={styles.slotLabel}>{t('confirmPay.dates')}</Text>
             <Text style={styles.slotValue}>{fullDateDisplay}</Text>
           </View>
 
           <View style={styles.slotDetailRow}>
-            <Text style={styles.slotLabel}>Visit Type</Text>
-            <Text style={[styles.slotValue, styles.onlineText]}>{selectedVisitType}</Text>
+            <Text style={styles.slotLabel}>{t('confirmPay.visitType')}</Text>
+            <Text style={[styles.slotValue, styles.onlineText]}>{t(visitTypeLabelKey(selectedVisitType))}</Text>
           </View>
 
           <View style={styles.dashedDivider} />
 
           {/* Fees Details Section */}
-          <Text style={styles.sectionHeader}>Fees Details</Text>
+          <Text style={styles.sectionHeader}>{t('confirmPay.feesDetails')}</Text>
 
           <View style={styles.slotDetailRow}>
-            <Text style={styles.slotLabel}>Doctor&apos;s Fee</Text>
+            <Text style={styles.slotLabel}>{t('confirmPay.doctorsFee')}</Text>
             <Text style={styles.feeValue}>৳ 100</Text>
           </View>
 
           <View style={styles.slotDetailRow}>
-            <Text style={styles.slotLabel}>Apps fee</Text>
+            <Text style={styles.slotLabel}>{t('confirmPay.appsFee')}</Text>
             <Text style={styles.feeValue}>৳ 20</Text>
           </View>
 
           <View style={styles.slotDetailRow}>
-            <Text style={styles.totalLabel}>Total Fees</Text>
+            <Text style={styles.totalLabel}>{t('confirmPay.totalFees')}</Text>
             <Text style={styles.totalValue}>৳ 120</Text>
           </View>
         </View>
@@ -153,7 +180,7 @@ export default function ConfirmPayScreen() {
           activeOpacity={0.85}
         >
           <Text style={styles.confirmButtonIcon}>💵</Text>
-          <Text style={styles.confirmButtonText}>Confirm Booking</Text>
+          <Text style={styles.confirmButtonText}>{t('confirmPay.confirmBooking')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -216,6 +243,11 @@ const styles = StyleSheet.create({
     height: 72,
     borderRadius: 16,
     marginRight: 14,
+  },
+  doctorPortraitPlaceholder: {
+    backgroundColor: '#F3EFE9',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   doctorDetails: {
     flex: 1,

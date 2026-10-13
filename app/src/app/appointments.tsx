@@ -10,14 +10,61 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
+import { SvgXml } from 'react-native-svg';
 import {
   useGetDoctorBookingsQuery,
   type DoctorAppointment,
 } from '@/store/doctorPortalApi';
 import { useRequireDoctor } from '@/hooks/use-require-doctor';
+import {
+  backButtonSvg,
+  appointmentsFilterSvg,
+  appointmentsSearchSvg,
+  appointmentsConsultationCardChatSvg,
+  tintSvg,
+} from '@/components/icons/svg-icon-sources';
 
 type Tab = 'today' | 'previous';
+
+type FilterParamKey = 'filterDate' | 'filterStatus' | 'filterConsultationType';
+
+type Translate = ReturnType<typeof useTranslation>['t'];
+
+const FILTER_LABEL_KEYS: Record<FilterParamKey, Record<string, string>> = {
+  filterDate: {
+    today: 'appointments.filters.date.today',
+    tomorrow: 'appointments.filters.date.tomorrow',
+    this_week: 'appointments.filters.date.thisWeek',
+  },
+  filterStatus: {
+    CONFIRMED: 'appointments.filters.status.upcoming',
+    COMPLETED: 'appointments.filters.status.completed',
+    CANCELLED: 'appointments.filters.status.cancelled',
+  },
+  filterConsultationType: {
+    video: 'appointments.filters.type.video',
+    voice: 'appointments.filters.type.voice',
+    chat: 'appointments.filters.type.chat',
+    physical: 'appointments.filters.type.physical',
+  },
+};
+
+const STATUS_LABEL_KEYS: Record<string, string> = {
+  PENDING: 'appointments.status.pending',
+  CONFIRMED: 'appointments.status.confirmed',
+  RESCHEDULED: 'appointments.status.rescheduled',
+  CANCELLED: 'appointments.status.cancelled',
+  COMPLETED: 'appointments.status.completed',
+};
+
+const CONSULTATION_TYPE_MAP: Record<string, string> = {
+  video: 'online_video',
+  voice: 'online_voice',
+  chat: 'online_chat',
+  physical: 'physical',
+};
 
 function isSameDay(a: Date, b: Date): boolean {
   return (
@@ -45,9 +92,9 @@ function formatTimeRange(start: string, end: string): string {
   return `${fmt(s)} - ${fmt(e)}`;
 }
 
-function formatDateLabel(date: Date): string {
-  if (isToday(date)) return "Today's";
-  if (isYesterday(date)) return 'Yesterday';
+function formatDateLabel(date: Date, t: Translate): string {
+  if (isToday(date)) return t('appointments.dates.today');
+  if (isYesterday(date)) return t('appointments.dates.yesterday');
   return date.toLocaleDateString('en-US', {
     day: 'numeric',
     month: 'long',
@@ -59,12 +106,12 @@ function getDateKey(date: Date): string {
   return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
 }
 
-function formatMinutesRemaining(start: string): string {
+function formatMinutesRemaining(start: string, t: Translate): string {
   const now = new Date();
   const startMs = new Date(start).getTime();
   const diffMs = startMs - now.getTime();
   const mins = Math.max(0, Math.floor(diffMs / 60000));
-  return `${mins} mins left`;
+  return t('appointments.minsLeft', { mins });
 }
 
 interface AppointmentCardProps {
@@ -73,6 +120,7 @@ interface AppointmentCardProps {
 }
 
 function AppointmentCard({ appointment, onPress }: AppointmentCardProps) {
+  const { t } = useTranslation();
   const now = new Date();
   const startAt = new Date(appointment.startAt);
   const endAt = new Date(appointment.endAt);
@@ -82,7 +130,7 @@ function AppointmentCard({ appointment, onPress }: AppointmentCardProps) {
     endAt >= now;
 
   const displayName =
-    appointment.animalName || appointment.patientName || `Patient #${appointment.patientId}`;
+    appointment.animalName || appointment.patientName || t('appointments.fallback.patient');
 
   return (
     <TouchableOpacity style={styles.card} activeOpacity={0.7} onPress={onPress}>
@@ -95,15 +143,13 @@ function AppointmentCard({ appointment, onPress }: AppointmentCardProps) {
           </View>
         )}
         <View style={styles.cardImageOverlay}>
-          <View style={styles.liveChatBadge}>
-            <Ionicons name="chatbubble" size={10} color="#FFFFFF" />
-          </View>
+          <SvgXml width={22} height={22} xml={appointmentsConsultationCardChatSvg} />
         </View>
       </View>
 
       <View style={styles.cardContent}>
         <View style={styles.cardTopRow}>
-          <Text style={styles.cardType}>Live Chat</Text>
+          <Text style={styles.cardType}>{t('appointments.liveChat')}</Text>
           <Text style={styles.dot}> · </Text>
           <Text
             style={[
@@ -111,11 +157,15 @@ function AppointmentCard({ appointment, onPress }: AppointmentCardProps) {
               isOngoing ? styles.statusInProgress : styles.statusUpcoming,
             ]}
           >
-            {isOngoing ? 'Still in Progress' : appointment.status}
+            {isOngoing
+              ? t('appointments.stillInProgress')
+              : STATUS_LABEL_KEYS[appointment.status]
+                ? t(STATUS_LABEL_KEYS[appointment.status])
+                : appointment.status}
           </Text>
           {isOngoing && (
             <Text style={styles.timeRemaining}>
-              {formatMinutesRemaining(appointment.startAt)}
+              {formatMinutesRemaining(appointment.startAt, t)}
             </Text>
           )}
         </View>
@@ -131,7 +181,7 @@ function AppointmentCard({ appointment, onPress }: AppointmentCardProps) {
         )}
 
         {appointment.patientName && (
-          <Text style={styles.cardOwner}>Owner: {appointment.patientName}</Text>
+          <Text style={styles.cardOwner}>{t('appointments.owner', { name: appointment.patientName })}</Text>
         )}
 
         <Text style={styles.cardTime}>
@@ -144,43 +194,79 @@ function AppointmentCard({ appointment, onPress }: AppointmentCardProps) {
 
 export default function AppointmentsScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const params = useLocalSearchParams<{
     filterDate?: string;
     filterStatus?: string;
     filterConsultationType?: string;
   }>();
   const isDoctor = useRequireDoctor();
-  if (!isDoctor) return null;
 
   const [activeTab, setActiveTab] = useState<Tab>('today');
+  const [tabTouched, setTabTouched] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+
+  const selectTab = (tab: Tab) => {
+    setTabTouched(true);
+    setActiveTab(tab);
+  };
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300);
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  const consultationTypeMap: Record<string, string> = {
-    video: 'online_video',
-    voice: 'online_voice',
-    chat: 'online_chat',
-    physical: 'physical',
-  };
-
+  // Date ranges are always filtered client-side (see filteredBookings) so the
+  // result is consistent with what the tabs show, regardless of server timezone.
   const apiFilter = useMemo(() => {
-    if (params.filterDate === 'today') return 'today';
     if (params.filterStatus === 'COMPLETED') return 'completed';
     if (params.filterStatus === 'CANCELLED') return 'cancelled';
     return undefined;
-  }, [params.filterDate, params.filterStatus]);
+  }, [params.filterStatus]);
 
   const apiConsultationType = useMemo(() => {
     if (params.filterConsultationType && params.filterConsultationType !== 'all') {
-      return consultationTypeMap[params.filterConsultationType] ?? params.filterConsultationType;
+      return CONSULTATION_TYPE_MAP[params.filterConsultationType] ?? params.filterConsultationType;
     }
     return undefined;
   }, [params.filterConsultationType]);
+
+  const activeFilters: { key: FilterParamKey; label: string }[] = [];
+  if (params.filterDate) {
+    const labelKey = FILTER_LABEL_KEYS.filterDate[params.filterDate];
+    activeFilters.push({
+      key: 'filterDate',
+      label: labelKey ? t(labelKey) : params.filterDate,
+    });
+  }
+  if (params.filterStatus && params.filterStatus !== 'all') {
+    const labelKey = FILTER_LABEL_KEYS.filterStatus[params.filterStatus];
+    activeFilters.push({
+      key: 'filterStatus',
+      label: labelKey ? t(labelKey) : params.filterStatus,
+    });
+  }
+  if (params.filterConsultationType && params.filterConsultationType !== 'all') {
+    const labelKey = FILTER_LABEL_KEYS.filterConsultationType[params.filterConsultationType];
+    activeFilters.push({
+      key: 'filterConsultationType',
+      label: labelKey ? t(labelKey) : params.filterConsultationType,
+    });
+  }
+  const hasActiveFilters = activeFilters.length > 0;
+
+  const clearFilter = (key: FilterParamKey) => {
+    router.setParams({ [key]: '' });
+  };
+
+  const clearAllFilters = () => {
+    router.setParams({
+      filterDate: '',
+      filterStatus: '',
+      filterConsultationType: '',
+    });
+  };
 
   const { data: bookings = [] } = useGetDoctorBookingsQuery({
     filter: apiFilter,
@@ -191,7 +277,10 @@ export default function AppointmentsScreen() {
   const filteredBookings = useMemo(() => {
     let result = [...bookings];
 
-    if (params.filterDate === 'tomorrow') {
+    if (params.filterDate === 'today') {
+      const now = new Date();
+      result = result.filter((b) => isSameDay(new Date(b.startAt), now));
+    } else if (params.filterDate === 'tomorrow') {
       const tmr = new Date();
       tmr.setDate(tmr.getDate() + 1);
       result = result.filter((b) => isSameDay(new Date(b.startAt), tmr));
@@ -252,11 +341,22 @@ export default function AppointmentsScreen() {
     map.forEach((data, key) => {
       const [y, m, d] = key.split('-').map(Number);
       const date = new Date(y, m, d);
-      groups.push({ label: formatDateLabel(date), data });
+      groups.push({ label: formatDateLabel(date, t), data });
     });
 
     return groups;
-  }, [previousAppointments]);
+  }, [previousAppointments, t]);
+
+  // A freshly pushed (filtered) screen opens on "Today's". If that tab has no
+  // matches but "Previous" does, show "Previous" until the user picks a tab —
+  // pure derivation so a filtered result never looks empty.
+  const displayedTab: Tab =
+    !tabTouched &&
+    hasActiveFilters &&
+    todayAppointments.length === 0 &&
+    previousAppointments.length > 0
+      ? 'previous'
+      : activeTab;
 
   const inProgressCount = todayAppointments.filter(
     (b) =>
@@ -277,6 +377,8 @@ export default function AppointmentsScreen() {
     [router]
   );
 
+  if (!isDoctor) return null;
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -285,56 +387,72 @@ export default function AppointmentsScreen() {
           onPress={() => router.back()}
           activeOpacity={0.7}
         >
-          <Ionicons name="arrow-back" size={20} color="#BD632F" />
+          <SvgXml width={20} height={20} xml={tintSvg(backButtonSvg, 'white', '#BD632F')} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Appointments</Text>
+        <Text style={styles.headerTitle}>{t('appointments.title')}</Text>
         <TouchableOpacity
           style={styles.filterBtn}
           onPress={() => router.push('/appointment-filter')}
           activeOpacity={0.7}
         >
-          <Ionicons name="filter" size={20} color="#BD632F" />
+          <SvgXml width={20} height={20} xml={appointmentsFilterSvg} />
         </TouchableOpacity>
       </View>
 
       <View style={styles.searchContainer}>
-        <Ionicons name="search" size={18} color="#9C9690" />
+        <SvgXml width={18} height={18} xml={appointmentsSearchSvg} />
         <TextInput
           style={styles.searchInput}
-          placeholder="Search patient"
+          placeholder={t('appointments.searchPlaceholder')}
           placeholderTextColor="#9C9690"
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
       </View>
 
+      {activeFilters.length > 0 && (
+        <View style={styles.activeFilterRow}>
+          {activeFilters.map((f) => (
+            <TouchableOpacity
+              key={f.key}
+              style={styles.activeFilterChip}
+              onPress={() => clearFilter(f.key)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.activeFilterChipText}>{f.label}</Text>
+              <Ionicons name="close" size={14} color="#BD632F" />
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+
       <View style={styles.tabBar}>
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'today' && styles.tabActive]}
-          onPress={() => setActiveTab('today')}
+          style={[styles.tab, displayedTab === 'today' && styles.tabActive]}
+          onPress={() => selectTab('today')}
           activeOpacity={0.7}
         >
           <Text
             style={[
               styles.tabText,
-              activeTab === 'today' && styles.tabTextActive,
+              displayedTab === 'today' && styles.tabTextActive,
             ]}
           >
-            Today's
+            {t('appointments.tabs.today')}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'previous' && styles.tabActive]}
-          onPress={() => setActiveTab('previous')}
+          style={[styles.tab, displayedTab === 'previous' && styles.tabActive]}
+          onPress={() => selectTab('previous')}
           activeOpacity={0.7}
         >
           <Text
             style={[
               styles.tabText,
-              activeTab === 'previous' && styles.tabTextActive,
+              displayedTab === 'previous' && styles.tabTextActive,
             ]}
           >
-            Previous
+            {t('appointments.tabs.previous')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -343,11 +461,11 @@ export default function AppointmentsScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {activeTab === 'today' ? (
+        {displayedTab === 'today' ? (
           <>
             {inProgressCount > 0 && (
               <>
-                <Text style={styles.sectionTitle}>Still in Progress</Text>
+                <Text style={styles.sectionTitle}>{t('appointments.sections.inProgress')}</Text>
                 {todayAppointments
                   .filter(
                     (b) =>
@@ -368,7 +486,7 @@ export default function AppointmentsScreen() {
             {upcomingCount > 0 && (
               <>
                 <Text style={styles.sectionTitle}>
-                  Next Consults [{upcomingCount}]
+                  {t('appointments.sections.nextConsults', { upcomingCount })}
                 </Text>
                 {todayAppointments
                   .filter(
@@ -392,7 +510,20 @@ export default function AppointmentsScreen() {
             {todayAppointments.length === 0 && (
               <View style={styles.emptyContainer}>
                 <Ionicons name="calendar-outline" size={48} color="#E6E1DC" />
-                <Text style={styles.emptyText}>No appointments for today</Text>
+                <Text style={styles.emptyText}>
+                  {hasActiveFilters
+                    ? t('appointments.empty.noMatch')
+                    : t('appointments.empty.today')}
+                </Text>
+                {hasActiveFilters && (
+                  <TouchableOpacity
+                    style={styles.clearFiltersBtn}
+                    onPress={clearAllFilters}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.clearFiltersText}>{t('appointments.empty.clearFilters')}</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             )}
           </>
@@ -414,7 +545,20 @@ export default function AppointmentsScreen() {
             ) : (
               <View style={styles.emptyContainer}>
                 <Ionicons name="calendar-outline" size={48} color="#E6E1DC" />
-                <Text style={styles.emptyText}>No previous appointments</Text>
+                <Text style={styles.emptyText}>
+                  {hasActiveFilters
+                    ? t('appointments.empty.noMatch')
+                    : t('appointments.empty.previous')}
+                </Text>
+                {hasActiveFilters && (
+                  <TouchableOpacity
+                    style={styles.clearFiltersBtn}
+                    onPress={clearAllFilters}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.clearFiltersText}>{t('appointments.empty.clearFilters')}</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             )}
           </>
@@ -524,16 +668,6 @@ const styles = StyleSheet.create({
     bottom: -2,
     right: -2,
   },
-  liveChatBadge: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: '#4CAF50',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-  },
   cardContent: { flex: 1 },
   cardTopRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
   cardType: { fontSize: 13, fontWeight: '500', color: '#7C7672' },
@@ -553,4 +687,33 @@ const styles = StyleSheet.create({
   cardTime: { fontSize: 12, fontWeight: '500', color: '#9C9690' },
   emptyContainer: { alignItems: 'center', marginTop: 60, gap: 12 },
   emptyText: { fontSize: 15, fontWeight: '500', color: '#9C9690' },
+  activeFilterRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginHorizontal: 20,
+    marginBottom: 12,
+  },
+  activeFilterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#FFF2EB',
+    borderColor: '#BD632F',
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  activeFilterChipText: { fontSize: 13, fontWeight: '600', color: '#BD632F' },
+  clearFiltersBtn: {
+    marginTop: 4,
+    backgroundColor: '#FFF2EB',
+    borderColor: '#BD632F',
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  clearFiltersText: { fontSize: 14, fontWeight: '700', color: '#BD632F' },
 });

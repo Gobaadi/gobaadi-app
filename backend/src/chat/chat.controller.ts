@@ -24,6 +24,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { ChatService, ChatMessageClientView } from './chat.service';
+import { MessageStatus } from './chat-message.entity';
 import { ConversationService } from './conversation.service';
 import { ChatGateway } from './chat.gateway';
 import { SendMessageDto } from './dto/send-message.dto';
@@ -35,7 +36,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { UserRole } from '../users/user.entity';
 import type { JwtPayload } from '../auth/jwt-payload.interface';
 import { Conversation } from './conversation.entity';
-import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import { S3Service } from '../s3/s3.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Appointment } from '../appointments/appointment.entity';
@@ -50,7 +51,7 @@ export class ChatController {
     private readonly chatService: ChatService,
     private readonly conversationService: ConversationService,
     private readonly chatGateway: ChatGateway,
-    private readonly cloudinaryService: CloudinaryService,
+    private readonly s3Service: S3Service,
     @InjectRepository(Appointment)
     private readonly appointmentRepository: Repository<Appointment>,
     @InjectRepository(Doctor)
@@ -69,21 +70,68 @@ export class ChatController {
   }
 
   @Post('conversations')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.DOCTOR)
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Create or find a conversation with a patient' })
-  @ApiBody({ schema: { properties: { patientId: { type: 'number', example: 1 } } } })
+  @ApiOperation({
+    summary: 'Create or find a conversation with a patient or doctor',
+  })
+  @ApiBody({
+    schema: {
+      properties: {
+        patientId: { type: 'number', example: 1 },
+        doctorId: { type: 'number', example: 1 },
+        appointmentId: { type: 'number', example: 1 },
+      },
+    },
+  })
   @ApiResponse({ status: 201, description: 'Conversation created or found' })
   async createConversation(
     @CurrentUser() user: JwtPayload,
-    @Body('patientId') patientId: number,
+    @Body()
+    body: { patientId?: number; doctorId?: number; appointmentId?: number },
   ): Promise<Conversation> {
-    const doctor = await this.doctorRepository.findOne({ where: { userId: user.sub } });
+    if (body.appointmentId) {
+      const appointment = await this.appointmentRepository.findOneBy({
+        id: body.appointmentId,
+      });
+      if (!appointment) {
+        throw new NotFoundException('Appointment not found');
+      }
+      const doctor = await this.doctorRepository.findOneBy({
+        id: appointment.doctorId,
+      });
+      if (!doctor) {
+        throw new ForbiddenException(
+          'No doctor profile linked to this appointment',
+        );
+      }
+      const isPatient = appointment.patientId === user.sub;
+      const isDoctor = doctor.userId === user.sub;
+      if (!isPatient && !isDoctor) {
+        throw new ForbiddenException('You are not part of this appointment');
+      }
+      return this.conversationService.findOrCreate(
+        doctor.id,
+        appointment.patientId,
+      );
+    }
+
+    if (user.role === UserRole.USER) {
+      return this.conversationService.findOrCreateForPatient(
+        user.sub,
+        body.doctorId,
+      );
+    }
+    const doctor = await this.doctorRepository.findOne({
+      where: { userId: user.sub },
+    });
     if (!doctor) {
       throw new ForbiddenException('No doctor profile linked to this account');
     }
-    return this.conversationService.findOrCreate(doctor.id, patientId);
+    return this.conversationService.findOrCreate(
+      doctor.id,
+      body.patientId as number,
+    );
   }
 
   @Get('messages')
@@ -158,9 +206,9 @@ export class ChatController {
     );
 
     const isImage = file.mimetype.startsWith(IMAGE_MIME_PREFIX);
-    const uploadResult = await this.cloudinaryService.uploadFile(file.buffer, {
+    const uploadResult = await this.s3Service.uploadFile(file.buffer, {
       folder: 'gobadi/chat',
-      resourceType: isImage ? 'image' : 'raw',
+      contentType: file.mimetype,
     });
 
     const saved = await this.chatService.sendMessage(
@@ -206,6 +254,40 @@ export class ChatController {
       },
     );
     return updated;
+  }
+
+  @Patch('conversations/:id/read')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Mark all received messages in a conversation as read',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Updated message ids (empty if none)',
+  })
+  async markConversationRead(
+    @Param('id') id: string,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<{ updatedIds: number[] }> {
+    const conversationId = parseInt(id, 10);
+    const updatedIds = await this.chatService.markConversationRead(
+      conversationId,
+      user.sub,
+      user.role,
+    );
+    updatedIds.forEach((messageId) => {
+      this.chatGateway.notifyConversation(
+        conversationId,
+        'messageStatusUpdate',
+        {
+          id: messageId,
+          status: MessageStatus.READ,
+        },
+      );
+    });
+    await this.chatGateway.notifyConversationParticipants(conversationId, {});
+    return { updatedIds };
   }
 
   @Get('appointments')

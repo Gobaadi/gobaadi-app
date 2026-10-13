@@ -1,4 +1,5 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
+import { doctorPortalApi } from './doctorPortalApi';
 import { baseQueryWithReauth } from './base-query-with-reauth';
 
 export interface DoctorSummary {
@@ -9,6 +10,8 @@ export interface DoctorSummary {
   rating: number;
   avatar: string;
   bio: string;
+  specializations?: string[];
+  location?: string;
 }
 
 export const doctorsApi = createApi({
@@ -31,9 +34,23 @@ export const doctorsApi = createApi({
       query: ({ doctorId, date }) => `/doctors/${doctorId}/slots?date=${date}`,
       providesTags: (_result, _error, { doctorId, date }) => [{ type: 'Slot', id: `${doctorId}-${date}` }],
     }),
-    bookSlot: builder.mutation<void, { doctorId: string; date: string; time: string }>({
+    bookSlot: builder.mutation<
+      void,
+      {
+        doctorId: string;
+        date: string;
+        time: string;
+        consultationType?: string;
+        animalId?: number;
+        reasonForConsultation?: string;
+      }
+    >({
       query: (body) => ({ url: '/doctors/book', method: 'POST', body }),
       invalidatesTags: (_result, _error, { doctorId, date }) => [{ type: 'Slot', id: `${doctorId}-${date}` }],
+      async onQueryStarted(_args, { dispatch, queryFulfilled }) {
+        await queryFulfilled;
+        dispatch(doctorPortalApi.util.invalidateTags(['DoctorBookings']));
+      },
     }),
   }),
 });

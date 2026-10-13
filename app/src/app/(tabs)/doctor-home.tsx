@@ -9,43 +9,106 @@ import {
   ActivityIndicator,
   ImageBackground,
   StatusBar,
+  Alert,
 } from 'react-native';
-import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import Svg, { Circle, SvgXml } from 'react-native-svg';
 import { useSelector } from 'react-redux';
 import type { RootState } from '@/store/store';
-import { useGetDoctorBookingsQuery, useGetTodayStatsQuery } from '@/store/doctorPortalApi';
+import {
+  useGetDoctorBookingsQuery,
+  useGetTodayStatsQuery,
+  useGetMyDoctorProfileQuery,
+} from '@/store/doctorPortalApi';
+import { useGetConversationsQuery, useCreateConversationMutation } from '@/store/chatApi';
 import { useLanguage } from '@/hooks/use-language';
+import { PatientAvatar } from '@/components/patient-avatar';
+import { formatTime12h } from '@/utils/date';
+import {
+  languageGlobeSvg,
+  notificationBellSvg,
+  doctorHomeAppointmentsSvg,
+  doctorHomeScheduleSvg,
+  doctorHomePatientsSvg,
+  doctorHomeApplyDiscountSvg,
+  doctorHomeAppointmentMessageSquareSvg,
+} from '@/components/icons/svg-icon-sources';
+import { useTranslation } from '@/hooks/use-translation';
 
-function getGreeting(): string {
+type T = ReturnType<typeof useTranslation>['t'];
+
+function getGreeting(t: T): string {
   const h = new Date().getHours();
-  if (h < 12) return 'Good Morning';
-  if (h < 17) return 'Good Afternoon';
-  return 'Good Evening';
+  if (h < 12) return t('doctorHome.greeting.morning');
+  if (h < 17) return t('doctorHome.greeting.afternoon');
+  return t('doctorHome.greeting.evening');
 }
 
 function formatBookingTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+  return formatTime12h(iso);
 }
 
+const PENDING_RING_RADIUS = 31;
+const PENDING_RING_CIRCUMFERENCE = 2 * Math.PI * PENDING_RING_RADIUS;
+
 const QUICK_TILES = [
-  { id: 'appointments', label: 'Appointments', icon: 'document-text-outline' as const, route: '/appointments' },
-  { id: 'schedule', label: 'Schedule', icon: 'calendar-outline' as const, route: '/schedule' },
-  { id: 'patients', label: 'Patients', icon: 'clipboard-outline' as const, route: '/doctor-patients' },
-  { id: 'discount', label: 'Apply Discount', icon: 'ticket-outline' as const, route: '/apply-discount' },
+  { id: 'appointments', labelKey: 'doctorHome.tiles.appointments', icon: doctorHomeAppointmentsSvg, route: '/appointments' },
+  { id: 'schedule', labelKey: 'doctorHome.tiles.schedule', icon: doctorHomeScheduleSvg, route: '/schedule' },
+  { id: 'patients', labelKey: 'doctorHome.tiles.patients', icon: doctorHomePatientsSvg, route: '/doctor-patients' },
+  { id: 'discount', labelKey: 'doctorHome.tiles.discount', icon: doctorHomeApplyDiscountSvg, route: '/apply-discount' },
 ];
 
 export default function DoctorHomeScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const isDoctor = useRequireDoctor();
   const user = useSelector((state: RootState) => state.auth.user);
   const { languageCode } = useLanguage();
 
+  const { data: doctorProfile } = useGetMyDoctorProfileQuery(undefined, { skip: !isDoctor });
   const { data: bookings = [], isLoading } = useGetDoctorBookingsQuery();
-  const { data: todayStats } = useGetTodayStatsQuery();
+  const { data: todayStats } = useGetTodayStatsQuery(undefined, {
+    refetchOnMountOrArgChange: true,
+  });
+  const { data: conversations = [] } = useGetConversationsQuery();
+  const [createConversation] = useCreateConversationMutation();
+
+  const baseName = (doctorProfile?.name || user?.name || '').trim();
+  const doctorDisplayName = baseName
+    ? /^(?:dr|ডা)\.?(?:\s|$)/iu.test(baseName)
+      ? baseName
+      : `${t('doctorHome.doctorTitle')} ${baseName}`
+    : t('doctorHome.fallback.doctor');
+
+  const openPatientChat = async (booking: (typeof bookings)[number]) => {
+    try {
+      const existing = conversations.find((c) => c.patientId === booking.patientId);
+      let conversationId = existing?.id;
+      if (!conversationId) {
+        const created = await createConversation({
+          patientId: booking.patientId,
+        }).unwrap();
+        conversationId = created.id;
+      }
+      router.push({
+        pathname: '/chat',
+        params: {
+          conversationId: String(conversationId),
+          patientName: booking.patientName || t('doctorHome.patientWithId', { id: booking.patientId }),
+          theirAvatar: booking.patientAvatar,
+          appointmentId: String(booking.id),
+          animalId: booking.animalId != null ? String(booking.animalId) : undefined,
+          animalName: booking.animalName,
+          appointmentTime: booking.startAt,
+        },
+      });
+    } catch {
+      Alert.alert(t('doctorHome.alerts.openChatError.title'), t('doctorHome.alerts.openChatError.msg'));
+    }
+  };
 
   if (!isDoctor) return null;
 
@@ -57,8 +120,10 @@ export default function DoctorHomeScreen() {
 
   const totalConsults = todayStats?.totalToday ?? 0;
   const completedToday = todayStats?.completedToday ?? 0;
-  const pendingCount = totalConsults - completedToday;
+  const pendingCount = Math.max(totalConsults - completedToday, 0);
   const displayTotalConsults = totalConsults;
+  const pendingFraction =
+    totalConsults > 0 ? Math.min(Math.max(pendingCount / totalConsults, 0), 1) : 0;
 
   return (
     <View style={styles.container}>
@@ -73,14 +138,14 @@ export default function DoctorHomeScreen() {
         {/* Orange Header Banner - Inside ScrollView so it scrolls, or keep it fixed? Figma usually scrolls everything. Let's make it fixed at top and scroll below it for a cooler effect, or just scroll together. We'll scroll together. */}
         <View style={styles.headerBannerWrapper}>
           <ImageBackground
-            source={require('@/assets/Top BG.png')}
+            source={require('@/assets/Top BG.webp')}
             style={[styles.headerBanner, { paddingTop: insets.top + 20 }]}
             resizeMode="cover"
           >
             <View style={styles.headerTop}>
               <View>
-                <Text style={styles.greetingText}>{getGreeting()}</Text>
-                <Text style={styles.doctorName}>Dr. {user?.name || 'Nirmala Azalea'}</Text>
+                <Text style={styles.greetingText}>{getGreeting(t)}</Text>
+                <Text style={styles.doctorName}>{doctorDisplayName}</Text>
               </View>
 
               <View style={styles.headerActions}>
@@ -89,8 +154,8 @@ export default function DoctorHomeScreen() {
                   onPress={() => router.push('/select-language')}
                   activeOpacity={0.8}
                 >
-                  <Ionicons name="globe-outline" size={16} color="#FFFFFF" />
-                  <Text style={styles.langPillText}>EN</Text>
+                  <SvgXml width={16} height={16} xml={languageGlobeSvg} />
+                  <Text style={styles.langPillText}>{languageCode}</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -98,12 +163,12 @@ export default function DoctorHomeScreen() {
                   onPress={() => router.push('/doctor-notifications')}
                   activeOpacity={0.8}
                 >
-                  <Ionicons name="notifications-outline" size={20} color="#BD632F" />
+                  <SvgXml width={20} height={20} xml={notificationBellSvg} />
                 </TouchableOpacity>
               </View>
             </View>
 
-            <Text style={styles.ongoingLabel}>Ongoing Patients</Text>
+            <Text style={styles.ongoingLabel}>{t('doctorHome.ongoingPatients')}</Text>
           </ImageBackground>
         </View>
 
@@ -117,7 +182,7 @@ export default function DoctorHomeScreen() {
             ) : ongoingPatients.length === 0 ? (
               <View style={styles.emptyPatientCard}>
                 <Ionicons name="person-outline" size={32} color="#E6E1DC" />
-                <Text style={styles.emptyPatientText}>No ongoing patients right now</Text>
+                <Text style={styles.emptyPatientText}>{t('doctorHome.emptyPatients')}</Text>
               </View>
             ) : (
               ongoingPatients.slice(0, 3).map((b) => (
@@ -133,20 +198,24 @@ export default function DoctorHomeScreen() {
                   </View>
 
                   <View style={styles.patientAvatar}>
-                    <Image
-                      source={{ uri: 'https://i.pravatar.cc/150?img=44' }}
-                      style={styles.avatarImage}
-                      contentFit="cover"
+                    <PatientAvatar
+                      name={b.patientName}
+                      image={b.patientAvatar}
+                      size={50}
                     />
                   </View>
 
                   <View style={styles.patientInfo}>
-                    <Text style={styles.patientName}>{b.patientName || `Patient #${b.patientId}`}</Text>
-                    <Text style={styles.patientDetail}>{b.patientPhone || 'Backache'}</Text>
+                    <Text style={styles.patientName}>{b.patientName || b.animalName || t('doctorHome.fallback.patient')}</Text>
+                    {b.reasonForConsultation || b.patientPhone ? (
+                      <Text style={styles.patientDetail}>
+                        {b.reasonForConsultation || b.patientPhone}
+                      </Text>
+                    ) : null}
                   </View>
 
-                  <TouchableOpacity style={styles.chatBtn} activeOpacity={0.8} onPress={() => router.push({ pathname: '/chat', params: { conversationId: String(b.patientId) } })}>
-                    <Ionicons name="chatbubble" size={22} color="#3B82F6" />
+                  <TouchableOpacity style={styles.chatBtn} activeOpacity={0.8} onPress={() => openPatientChat(b)}>
+                    <SvgXml width={26} height={24} xml={doctorHomeAppointmentMessageSquareSvg} />
                   </TouchableOpacity>
                 </View>
               ))
@@ -157,19 +226,37 @@ export default function DoctorHomeScreen() {
           <View style={styles.consultsCard}>
             <View style={styles.consultsLeft}>
               <Text style={styles.consultsTitle}>
-                <Text style={styles.consultsTitleOrange}>Consults </Text>
-                for today
+                <Text style={styles.consultsTitleOrange}>{t('doctorHome.consultsOrange')}</Text>{' '}
+                {t('doctorHome.consultsForToday')}
               </Text>
               <Text style={styles.consultsSubtitle}>
-                <Text style={styles.consultsSubtitleDark}>{completedToday} of {displayTotalConsults}</Text> completed
+                <Text style={styles.consultsSubtitleDark}>
+                  {t('doctorHome.completedOf', { completed: completedToday, total: displayTotalConsults })}
+                </Text>{' '}
+                {t('doctorHome.completed')}
               </Text>
             </View>
 
             {/* Pending Circle */}
             <View style={styles.pendingCircle}>
+              <Svg width={68} height={68}>
+                <Circle cx={34} cy={34} r={PENDING_RING_RADIUS} stroke="#E6E1DC" strokeWidth={3} fill="none" />
+                <Circle
+                  cx={34}
+                  cy={34}
+                  r={PENDING_RING_RADIUS}
+                  stroke="#BD632F"
+                  strokeWidth={3}
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeDasharray={PENDING_RING_CIRCUMFERENCE}
+                  strokeDashoffset={PENDING_RING_CIRCUMFERENCE * (1 - pendingFraction)}
+                  transform="rotate(-90 34 34)"
+                />
+              </Svg>
               <View style={styles.pendingContent}>
                 <Text style={styles.pendingCount}>{pendingCount}</Text>
-                <Text style={styles.pendingLabel}>pending</Text>
+                <Text style={styles.pendingLabel}>{t('doctorHome.pending')}</Text>
               </View>
             </View>
           </View>
@@ -184,9 +271,9 @@ export default function DoctorHomeScreen() {
                 activeOpacity={0.85}
               >
                 <View style={styles.tileIconCircle}>
-                  <Ionicons name={tile.icon} size={28} color="#BD632F" />
+                  <SvgXml width={40} height={40} xml={tile.icon} />
                 </View>
-                <Text style={styles.tileLabel}>{tile.label}</Text>
+                <Text style={styles.tileLabel}>{t(tile.labelKey)}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -309,10 +396,6 @@ const styles = StyleSheet.create({
     marginRight: 14,
     overflow: 'hidden',
   },
-  avatarImage: {
-    width: '100%',
-    height: '100%',
-  },
   patientInfo: {
     flex: 1,
     justifyContent: 'center',
@@ -391,16 +474,16 @@ const styles = StyleSheet.create({
   pendingCircle: {
     width: 68,
     height: 68,
-    borderRadius: 34,
-    borderWidth: 3,
-    borderColor: '#BD632F',
-    borderBottomColor: '#E6E1DC',
     justifyContent: 'center',
     alignItems: 'center',
-    transform: [{ rotate: '-45deg' }],
   },
   pendingContent: {
-    transform: [{ rotate: '45deg' }],
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
     alignItems: 'center',
   },
   pendingCount: {
@@ -417,11 +500,11 @@ const styles = StyleSheet.create({
   tilesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     gap: 16,
   },
   tile: {
-    width: '47%',
+    width: '40%',
     backgroundColor: '#FFFFFF',
     borderRadius: 24,
     paddingVertical: 24,
@@ -433,8 +516,8 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   tileIconCircle: {
-    width: 60,
-    height: 60,
+    width: 70,
+    height: 70,
     borderRadius: 20,
     backgroundColor: '#FFF6F0',
     justifyContent: 'center',

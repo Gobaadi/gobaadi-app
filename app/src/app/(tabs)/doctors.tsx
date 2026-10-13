@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -7,74 +7,298 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
-  Dimensions,
   StatusBar,
+  PanResponder,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { SvgXml } from 'react-native-svg';
+import {
+  languageGlobeSvg,
+  doctorNotificationSvg,
+  locationPinSvg,
+  locationChevronSvg,
+  treatmentCalendarSvg,
+  searchSvg,
+  messageSvg,
+  videoCallSvg,
+  scanCameraSvg,
+  categoryGeneralSvg,
+  categoryMedicineSvg,
+  categorySurgerySvg,
+  categoryGynaecologySvg,
+  categoryAvianSvg,
+  doctorCardLocationSvg,
+  doctorCardStarSvg,
+  doctorCardBookSlotSvg,
+  doctorCardDetailsSvg,
+  tintNavSvg,
+  tintSvg,
+} from '@/components/icons/svg-icon-sources';
 import { useGetClinicsQuery } from '@/store/clinicsApi';
+import { useGetDoctorBookingsQuery } from '@/store/doctorPortalApi';
+import { useGetDoctorsQuery } from '@/store/doctorsApi';
+import { useGetConversationsQuery, useCreateConversationMutation } from '@/store/chatApi';
+import { useDebounce } from '@/hooks/use-debounce';
+import { useGetForAppointmentQuery } from '@/store/consultationsApi';
+import { useCallSignalingContext } from '@/components/IncomingCallProvider';
 import { useLanguage } from '@/hooks/use-language';
-
-const { width } = Dimensions.get('window');
+import { useLocation } from '@/hooks/use-location';
+import LocationBottomSheet from '@/components/LocationBottomSheet';
+import { DoctorAvatar } from '@/components/doctor-avatar';
+import { useTranslation } from '@/hooks/use-translation';
+import { matchesDoctorLocation } from '@/utils/location';
 
 interface Category {
   id: string;
   name: string;
-  icon: string;
+  labelKey: string;
+  svg: string;
 }
 
-interface Doctor {
-  id: string;
+function clinicImageSource(avatar?: string) {
+  return avatar && avatar.startsWith('http')
+    ? { uri: avatar }
+    : require('@/assets/images/clinic_lobby.webp');
+}
+
+interface DoctorView {
+  id: number;
   name: string;
   specialty: string;
   location: string;
   rating: number;
   reviews: number;
-  image: any;
+  avatar: string;
 }
 
 export default function DoctorsScreen() {
   const router = useRouter();
-  const [activeSlide, setActiveSlide] = useState(0); // 0: Upcoming, 1: AI Analyze
-  const [activeCategory, setActiveCategory] = useState('Medicine');
-  const { data: clinics = [] } = useGetClinicsQuery();
+  const { t } = useTranslation();
+  const [activeSlide, setActiveSlide] = useState(0);
+  const [activeCategory, setActiveCategory] = useState('General');
+  const { data: clinics = [], isLoading: clinicsLoading } = useGetClinicsQuery();
   const { languageCode } = useLanguage();
+  const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery, 300);
+  const { location, setLocation } = useLocation();
+  const [locationSheetOpen, setLocationSheetOpen] = useState(false);
+
+  const { data: appointments = [], isLoading: appointmentsLoading } = useGetDoctorBookingsQuery();
+  const { data: doctors = [] } = useGetDoctorsQuery();
+
+  const upcomingTreatments = useMemo(() => {
+    const now = new Date();
+    return appointments
+      .filter(
+        (a) =>
+          (a.status === 'PENDING' || a.status === 'CONFIRMED' || a.status === 'RESCHEDULED') &&
+          new Date(a.endAt) > now,
+      )
+      .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
+  }, [appointments]);
+
+  // Carousel layout: one slide per upcoming appointment, AI banner last.
+  const treatmentCount = upcomingTreatments.length;
+  const slideCount = treatmentCount + 1;
+  const effectiveSlide =
+    activeSlide >= 0 && activeSlide < slideCount ? activeSlide : 0;
+
+  // The appointment shown on the current treatment slide (slides 0..treatmentCount-1).
+  const activeTreatment = upcomingTreatments[effectiveSlide] ?? null;
+
+  const treatmentDoctor = useMemo(() => {
+    if (!activeTreatment) return null;
+    return doctors.find((d) => d.id === activeTreatment.doctorId) ?? null;
+  }, [activeTreatment, doctors]);
+
+  const { data: conversations = [] } = useGetConversationsQuery();
+  const [createConversation] = useCreateConversationMutation();
+
+  const handleOpenChat = useCallback(async () => {
+    if (!activeTreatment) return;
+    const appointment = activeTreatment;
+    const existing = conversations.find(
+      (c) =>
+        c.appointmentId === appointment.id ||
+        (c.doctorId === appointment.doctorId && c.patientId === appointment.patientId),
+    );
+    let conversationId = existing?.id;
+    if (!conversationId) {
+      try {
+        const created = await createConversation({
+          patientId: appointment.patientId,
+          doctorId: appointment.doctorId,
+        }).unwrap();
+        conversationId = created.id;
+      } catch {
+        Alert.alert(t('doctors.alerts.startChatError.title'), t('doctors.alerts.startChatError.msg'));
+        return;
+      }
+    }
+    router.push({
+      pathname: '/chat',
+      params: {
+        conversationId: String(conversationId),
+        appointmentId: String(appointment.id),
+        patientName: appointment.patientName || t('doctors.fallback.patient'),
+        peerName: appointment.doctorName || treatmentDoctor?.name || t('doctors.fallback.doctor'),
+        animalImage: appointment.animalImage || '',
+        theirAvatar: appointment.doctorAvatar || '',
+      },
+    });
+  }, [activeTreatment, conversations, treatmentDoctor, createConversation, router, t]);
+
+  const { ringCall } = useCallSignalingContext();
+
+  // Calls are gated on an active (ONGOING) consultation — same rule as chat.
+  const { data: treatmentConsultation } = useGetForAppointmentQuery(
+    activeTreatment ? String(activeTreatment.id) : '',
+    { skip: !activeTreatment },
+  );
+
+  /**
+   * Ring the doctor (socket callStarted), then join the call screen and
+   * wait in the Agora channel until the doctor accepts.
+   */
+  const handleStartCall = useCallback(() => {
+    if (!activeTreatment) return;
+    if (treatmentConsultation?.status !== 'ONGOING') {
+      Alert.alert(
+        t('doctors.alerts.consultationNotStarted.title'),
+        t('doctors.alerts.consultationNotStarted.msg'),
+      );
+      return;
+    }
+    ringCall(activeTreatment.id);
+    router.push({
+      pathname: '/video-call',
+      params: { appointmentId: String(activeTreatment.id) },
+    });
+  }, [activeTreatment, treatmentConsultation, ringCall, router, t]);
+
+  // Keep the slide index in range when the list shrinks (e.g. an appointment
+  // is completed/cancelled while the user is on a later treatment slide).
+  // Corrected during render — not in an effect — so the visible slide is never
+  // stale; React re-runs the render immediately with the fixed index.
+  if (activeSlide > slideCount - 1) {
+    setActiveSlide(0);
+  }
+
+  useEffect(() => {
+    if (slideCount <= 1) return;
+    const timer = setTimeout(
+      () => setActiveSlide((prev) => (prev + 1) % slideCount),
+      4000,
+    );
+    return () => clearTimeout(timer);
+  }, [slideCount, activeSlide]);
+
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: (_, gestureState) =>
+          Math.abs(gestureState.dx) > 20 && Math.abs(gestureState.dx) > Math.abs(gestureState.dy),
+        onPanResponderRelease: (_, gestureState) => {
+          if (slideCount <= 1) return;
+          if (gestureState.dx < -40 && activeSlide < slideCount - 1) {
+            setActiveSlide((prev) => prev + 1);
+          } else if (gestureState.dx > 40 && activeSlide > 0) {
+            setActiveSlide((prev) => prev - 1);
+          }
+        },
+      }),
+    [slideCount, activeSlide],
+  );
+
+  // One dot per slide (each upcoming appointment + the AI banner).
+  const renderDots = () => {
+    if (slideCount <= 1) return null;
+    return (
+      <View style={styles.slideDots}>
+        {Array.from({ length: slideCount }, (_, i) => (
+          <TouchableOpacity
+            key={i}
+            onPress={() => setActiveSlide(i)}
+            disabled={i === effectiveSlide}
+            hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
+            accessibilityLabel={`Go to slide ${i + 1}`}
+          >
+            <View
+              style={[
+                styles.slideDot,
+                i === effectiveSlide ? styles.slideDotActive : styles.slideDotInactive,
+              ]}
+            />
+          </TouchableOpacity>
+        ))}
+      </View>
+    );
+  };
+
+  function formatTreatmentDate(iso: string): string {
+    const d = new Date(iso);
+    return d.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+  }
+
+  function formatTreatmentTime(iso: string): string {
+    const d = new Date(iso);
+    return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+  }
 
   const categories: Category[] = [
-    { id: '1', name: 'General', icon: '🩺' },
-    { id: '2', name: 'Medicine', icon: '💊' },
-    { id: '3', name: 'Surgery', icon: '🔪' },
-    { id: '4', name: 'Gynaecology', icon: '🤰' },
-    { id: '5', name: 'Avian & Co.', icon: '🐦' },
+    { id: '1', name: 'General', labelKey: 'doctors.categories.general', svg: categoryGeneralSvg },
+    { id: '2', name: 'Medicine', labelKey: 'doctors.categories.medicine', svg: categoryMedicineSvg },
+    { id: '3', name: 'Surgery', labelKey: 'doctors.categories.surgery', svg: categorySurgerySvg },
+    { id: '4', name: 'Gynaecology', labelKey: 'doctors.categories.gynaecology', svg: categoryGynaecologySvg },
+    { id: '5', name: 'Avian & Co.', labelKey: 'doctors.categories.avian', svg: categoryAvianSvg },
   ];
 
-  const doctors: Doctor[] = [
-    {
-      id: '1',
-      name: 'Dr. David Patel',
-      specialty: 'Veterinary Surgery',
-      location: 'Cardiology Center, USA',
-      rating: 5,
-      reviews: 1872,
-      image: require('@/assets/images/doctor.png'),
-    },
-  ];
+  const nearbyDoctors: DoctorView[] = useMemo(() => {
+    const q = debouncedSearch.trim().toLowerCase();
+    const category = activeCategory.toLowerCase();
+    return doctors
+      .filter(
+        (d) =>
+          matchesDoctorLocation(d.location, location) &&
+          (!q ||
+            d.name.toLowerCase().includes(q) ||
+            d.specialty.toLowerCase().includes(q)) &&
+          d.specialty.toLowerCase().includes(category),
+      )
+      .map((d) => ({
+        id: d.id,
+        name: d.name,
+        specialty: d.specialty,
+        location: d.location || '',
+        rating: d.rating || 4.8,
+        reviews: 124,
+        avatar: d.avatar ?? '',
+      }));
+  }, [doctors, debouncedSearch, activeCategory, location]);
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FAF9F6" />
-      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+      <KeyboardAwareScrollView
+        contentContainerStyle={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Doctors</Text>
+          <Text style={styles.headerTitle}>{t('doctors.title')}</Text>
           <View style={styles.headerRightControls}>
             <TouchableOpacity
               style={styles.langBadge}
               activeOpacity={0.8}
               onPress={() => router.push('/select-language')}
             >
-              <Ionicons name="globe-outline" size={16} color="#BD632F" />
+              <SvgXml width={20} height={20} xml={tintSvg(languageGlobeSvg, 'white', '#BD632F')} />
               <Text style={styles.langText}>{languageCode}</Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -82,7 +306,7 @@ export default function DoctorsScreen() {
               activeOpacity={0.8}
               onPress={() => router.push('/notifications')}
             >
-              <Ionicons name="notifications-outline" size={20} color="#FFFFFF" />
+              <SvgXml width={20} height={20} xml={doctorNotificationSvg} />
             </TouchableOpacity>
           </View>
         </View>
@@ -90,113 +314,164 @@ export default function DoctorsScreen() {
         {/* Location selector and My Treatment button */}
         <View style={styles.locationContainer}>
           <View>
-            <Text style={styles.locationLabel}>Location</Text>
-            <TouchableOpacity style={styles.locationSelector} activeOpacity={0.7}>
-              <Text style={styles.pinIcon}>📍</Text>
-              <Text style={styles.locationText}>Uttar Badda, Dhaka</Text>
-              <Text style={styles.dropdownArrow}>∨</Text>
+            <Text style={styles.locationLabel}>{t('doctors.locationLabel')}</Text>
+            <TouchableOpacity
+              style={styles.locationSelector}
+              activeOpacity={0.7}
+              onPress={() => setLocationSheetOpen(true)}
+            >
+              <SvgXml width={15} height={17} xml={locationPinSvg} style={{ marginRight: 6 }} />
+              <Text style={styles.locationText}>{location}</Text>
+              <SvgXml width={12} height={12} xml={locationChevronSvg} />
             </TouchableOpacity>
           </View>
 
           <TouchableOpacity style={styles.myTreatmentButton} activeOpacity={0.8} onPress={() => router.push('/my-treatment')}>
-            <Text style={styles.treatmentIcon}>📅</Text>
-            <Text style={styles.treatmentText}>My Treatment</Text>
+            <SvgXml width={16} height={16} xml={treatmentCalendarSvg} style={{ marginRight: 6 }} />
+            <Text style={styles.treatmentText}>{t('doctors.myTreatment')}</Text>
           </TouchableOpacity>
         </View>
 
+        <LocationBottomSheet
+          visible={locationSheetOpen}
+          selectedLocation={location}
+          onClose={() => setLocationSheetOpen(false)}
+          onSave={setLocation}
+        />
+
         {/* Search Bar */}
         <View style={styles.searchContainer}>
-          <Text style={styles.searchIcon}>🔍</Text>
+          <SvgXml width={18} height={18} xml={searchSvg} style={{ marginRight: 10 }} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search doctors..."
+            placeholder={t('doctors.searchPlaceholder')}
             placeholderTextColor="#A39E99"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            autoCorrect={false}
+            returnKeyType="search"
           />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity
+              onPress={() => setSearchQuery('')}
+              activeOpacity={0.7}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons name="close-circle" size={18} color="#A39E99" />
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Sliding Banners Section */}
         <View style={styles.sliderContainer}>
-          {activeSlide === 0 ? (
-            /* Slide 1: Upcoming Treatment */
-            <TouchableOpacity
-              style={styles.upcomingCard}
-              activeOpacity={0.95}
-              onPress={() => setActiveSlide(1)}
-            >
-              <View style={styles.upcomingHeader}>
-                <Text style={styles.upcomingTitle}>Upcoming Treatment</Text>
-                <View style={styles.upcomingActions}>
-                  <TouchableOpacity style={styles.chatButton} onPress={() => router.push({ pathname: '/chat', params: { conversationId: '1' } })}>
-                    <Text style={styles.actionEmoji}>💬</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.callButton} activeOpacity={0.8} onPress={() => router.push('/video-call')}>
-                    <Text style={styles.callIcon}>📹</Text>
-                    <Text style={styles.callText}>Start Call</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              <View style={styles.cardDividerDashed} />
-
-              {/* <View style={styles.doctorQuickInfo}>
-                <Image source={require('@/assets/images/doctor.png')} style={styles.doctorThumb} />
-                <View style={styles.doctorMeta}>
-                  <Text style={styles.quickDocName}>Dr. David Patel</Text>
-                  <Text style={styles.quickDocSpecialty}>Veterinary Surgery</Text>
-                  <Text style={styles.quickDocTime}>09.00 AM • Dec 20, 2026</Text>
-                </View>
-              </View> */}
-
-              {/* Dots */}
-              <View style={styles.slideDots}>
-                <View style={[styles.slideDot, styles.slideDotActive]} />
-                <TouchableOpacity onPress={() => setActiveSlide(1)}>
-                  <View style={[styles.slideDot, styles.slideDotInactive]} />
-                </TouchableOpacity>
-              </View>
-            </TouchableOpacity>
+          {appointmentsLoading ? (
+            <View style={styles.sliderLoading}>
+              <ActivityIndicator size="small" color="#BD632F" />
+            </View>
           ) : (
-            /* Slide 2: Analyze with AI */
-            <TouchableOpacity
-              style={styles.aiCard}
-              activeOpacity={0.95}
-              onPress={() => setActiveSlide(0)}
-            >
-              <View style={styles.aiCardContent}>
-                <View style={styles.aiLeftColumn}>
-                  <Text style={styles.aiCardTitle}>Analyze with AI</Text>
-                  <Text style={styles.aiCardSubtitle}>
-                    Analyze your animals instantly with our latest AI Module
-                  </Text>
+            <View {...(slideCount > 1 ? panResponder.panHandlers : {})}>
+              {upcomingTreatments.map((appointment, index) =>
+                effectiveSlide === index ? (
+                  /* Slide: Upcoming Treatment (one per booked appointment) */
                   <TouchableOpacity
-                    style={styles.scanNowButton}
-                    activeOpacity={0.8}
-                    onPress={() => router.push('/ai-scan')}
+                    key={appointment.id}
+                    style={styles.upcomingCard}
+                    activeOpacity={0.95}
+                    onPress={handleOpenChat}
                   >
-                    <Text style={styles.scanNowIcon}>📷</Text>
-                    <Text style={styles.scanNowText}>Scan Now</Text>
+                    <View style={styles.upcomingHeader}>
+                      <Text style={styles.upcomingTitle}>{t('doctors.upcomingTreatment')}</Text>
+                      <View style={styles.upcomingActions}>
+                        <TouchableOpacity
+                          style={styles.chatButton}
+                          onPress={handleOpenChat}
+                        >
+                          <SvgXml width={16} height={16} xml={messageSvg} />
+                        </TouchableOpacity>
+                        {/* <TouchableOpacity
+                          style={styles.callButton}
+                          activeOpacity={0.8}
+                          onPress={handleStartCall}
+                        >
+                          <SvgXml width={14} height={14} xml={videoCallSvg} style={{ marginRight: 4 }} />
+                          <Text style={styles.callText}>{t('doctors.startCall')}</Text>
+                        </TouchableOpacity> */}
+                      </View>
+                    </View>
+
+                    <View style={styles.cardDividerDashed} />
+
+                    <View style={styles.doctorQuickInfo}>
+                      <DoctorAvatar
+                        name={treatmentDoctor?.name}
+                        avatar={treatmentDoctor?.avatar}
+                        size={48}
+                        radius={18}
+                        style={styles.doctorThumb}
+                      />
+                      <View style={styles.doctorMeta}>
+                        <Text style={styles.quickDocName}>
+                          {treatmentDoctor?.name ?? t('doctors.fallback.doctor')}
+                        </Text>
+                        <Text style={styles.quickDocSpecialty}>
+                          {treatmentDoctor?.specialty ?? ''}
+                        </Text>
+                        <Text style={styles.quickDocTime}>
+                          {formatTreatmentTime(appointment.startAt)} •{' '}
+                          {formatTreatmentDate(appointment.startAt)}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Dots */}
+                    {renderDots()}
                   </TouchableOpacity>
-                </View>
+                ) : null,
+              )}
 
-                <Image source={require('@/assets/images/ai_cow.png')} style={styles.aiCowImage} />
-              </View>
+              {effectiveSlide === treatmentCount && (
+                /* Slide: Analyze with AI */
+                <TouchableOpacity
+                  key="ai-banner"
+                  style={styles.aiCard}
+                  activeOpacity={0.95}
+                  disabled={slideCount <= 1}
+                  onPress={() => {
+                    if (slideCount > 1) setActiveSlide(0);
+                  }}
+                >
+                  <View style={styles.aiCardContent}>
+                    <View style={styles.aiLeftColumn}>
+                      <Text style={styles.aiCardTitle}>{t('doctors.ai.title')}</Text>
+                      <Text style={styles.aiCardSubtitle}>
+                        {t('doctors.ai.subtitle')}
+                      </Text>
+                      <TouchableOpacity
+                        style={styles.scanNowButton}
+                        activeOpacity={0.8}
+                        onPress={() => router.push('/ai-scan')}
+                      >
+                        <SvgXml width={16} height={16} xml={scanCameraSvg} style={{ marginRight: 6 }} />
+                        <Text style={styles.scanNowText}>{t('doctors.ai.scanNow')}</Text>
+                      </TouchableOpacity>
+                    </View>
 
-              {/* Dots */}
-              <View style={styles.slideDots}>
-                <TouchableOpacity onPress={() => setActiveSlide(0)}>
-                  <View style={[styles.slideDot, styles.slideDotInactive]} />
+                    <Image source={require('@/assets/images/analyzewithai.webp')} style={styles.aiCowImage} />
+                  </View>
+
+                  {/* Dots */}
+                  {renderDots()}
                 </TouchableOpacity>
-                <View style={[styles.slideDot, styles.slideDotActive]} />
-              </View>
-            </TouchableOpacity>
+              )}
+            </View>
           )}
         </View>
 
         {/* Categories Section */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Categories</Text>
+          <Text style={styles.sectionTitle}>{t('doctors.sections.categories')}</Text>
           <TouchableOpacity onPress={() => router.push('/all-doctors')}>
-            <Text style={styles.viewAllText}>View all</Text>
+            <Text style={styles.viewAllText}>{t('doctors.viewAll')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -215,10 +490,14 @@ export default function DoctorsScreen() {
                 activeOpacity={0.7}
               >
                 <View style={[styles.categoryIconCircle, isActive && styles.categoryIconCircleActive]}>
-                  <Text style={styles.categoryIconText}>{cat.icon}</Text>
+                  <SvgXml
+                    width={26}
+                    height={26}
+                    xml={isActive ? tintNavSvg(cat.svg, '#BD632F') : cat.svg}
+                  />
                 </View>
                 <Text style={[styles.categoryLabel, isActive && styles.categoryLabelActive]}>
-                  {cat.name}
+                  {t(cat.labelKey)}
                 </Text>
               </TouchableOpacity>
             );
@@ -227,105 +506,137 @@ export default function DoctorsScreen() {
 
         {/* Nearby Doctors Section */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Nearby Doctors</Text>
+          <Text style={styles.sectionTitle}>{t('doctors.sections.nearbyDoctors')}</Text>
           <TouchableOpacity onPress={() => router.push('/all-doctors')}>
-            <Text style={styles.viewAllText}>View all</Text>
+            <Text style={styles.viewAllText}>{t('doctors.viewAll')}</Text>
           </TouchableOpacity>
         </View>
 
-        {doctors.map((doc) => (
-          <View key={doc.id} style={styles.doctorCard}>
-            <Image source={doc.image} style={styles.doctorPortrait} />
-            <View style={styles.doctorDetails}>
-              {/* <Text style={styles.doctorName}>{doc.name}</Text>
-
-              <View style={styles.doctorCardDivider} />
-
-              <Text style={styles.doctorSpecialty}>{doc.specialty}</Text>
-
-              <View style={styles.ratingLocationRow}>
-                <Text style={styles.locationPin}>📍</Text>
-                <Text style={styles.locationTextMeta}>{doc.location}</Text>
-              </View>
-
-              <View style={styles.ratingRow}>
-                <Text style={styles.starIcon}>⭐</Text>
-                <Text style={styles.ratingValue}>{doc.rating}</Text>
-                <Text style={styles.reviewsText}>| {doc.reviews.toLocaleString()} Reviews</Text>
-              </View> */}
-
-              {/* Action Buttons inside Details Column */}
-              {/* <View style={styles.doctorCardButtons}>
-                <TouchableOpacity
-                  style={styles.bookButton}
-                  onPress={() => router.push({ pathname: '/book-slot', params: { id: doc.id } })}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.bookButtonText}>📅 Book Slot</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.detailsButton}
-                  onPress={() => router.push({ pathname: '/doctor-detail', params: { id: doc.id } })}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.detailsButtonText}>📄 Details</Text>
-                </TouchableOpacity>
-              </View> */}
-            </View>
+        {nearbyDoctors.length === 0 ? (
+          <View style={styles.emptyDoctorsContainer}>
+            <Text style={styles.emptyDoctorsIcon}>👨‍⚕️</Text>
+            <Text style={styles.emptyDoctorsText}>{t('doctors.empty.noDoctors')}</Text>
+            <Text style={styles.emptyDoctorsSubtext}>
+              {debouncedSearch.trim()
+                ? t('doctors.empty.searchSubtext')
+                : doctors.length > 0
+                  ? t('doctors.empty.categorySubtext')
+                  : t('doctors.empty.checkBack')}
+            </Text>
           </View>
-        ))}
+        ) : (
+          nearbyDoctors.map((doc) => (
+            <View key={doc.id} style={styles.doctorCard}>
+              <DoctorAvatar
+                name={doc.name}
+                avatar={doc.avatar}
+                size={100}
+                radius={18}
+                style={styles.doctorPortrait}
+              />
+              <View style={styles.doctorDetails}>
+                <Text style={styles.doctorName}>{doc.name}</Text>
+
+                <View style={styles.doctorCardDivider} />
+
+                <Text style={styles.doctorSpecialty}>{doc.specialty}</Text>
+
+                {doc.location ? (
+                  <View style={styles.ratingLocationRow}>
+                    <SvgXml width={12} height={12} xml={doctorCardLocationSvg} style={{ marginRight: 4 }} />
+                    <Text style={styles.locationTextMeta}>{doc.location}</Text>
+                  </View>
+                ) : null}
+
+                <View style={styles.ratingRow}>
+                  <SvgXml width={12} height={12} xml={doctorCardStarSvg} style={{ marginRight: 4 }} />
+                  <Text style={styles.ratingValue}>{doc.rating}</Text>
+                  <Text style={styles.reviewsText}>| {t('doctors.reviews', { count: doc.reviews })}</Text>
+                </View>
+
+                <View style={styles.doctorCardButtons}>
+                  <TouchableOpacity
+                    style={styles.bookButton}
+                    onPress={() => router.push({ pathname: '/book-slot', params: { id: doc.id } })}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.bookButtonContent}>
+                      <SvgXml width={14} height={14} xml={doctorCardBookSlotSvg} style={{ marginRight: 6 }} />
+                      <Text style={styles.bookButtonText}>{t('doctors.bookSlot')}</Text>
+                    </View>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.detailsButton}
+                    onPress={() => router.push({ pathname: '/doctor-detail', params: { id: doc.id } })}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.bookButtonContent}>
+                      <SvgXml width={14} height={14} xml={doctorCardDetailsSvg} style={{ marginRight: 6 }} />
+                      <Text style={styles.detailsButtonText}>{t('doctors.details')}</Text>
+                    </View>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          ))
+        )}
 
         {/* Nearby Medical Centers Section */}
-        {clinics.length > 0 && (
-          <>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Nearby Medical Centers</Text>
-            </View>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>{t('doctors.sections.nearbyCenters')}</Text>
+          <TouchableOpacity onPress={() => router.push('/all-clinics')}>
+            <Text style={styles.viewAllText}>{t('doctors.viewAll')}</Text>
+          </TouchableOpacity>
+        </View>
 
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.clinicsRow}
-            >
-              {clinics.map((clinic) => (
-                <TouchableOpacity
-                  key={clinic.id}
-                  style={styles.clinicCard}
-                  activeOpacity={0.8}
-                  onPress={() => router.push({ pathname: '/doctor-detail', params: { id: String(clinic.doctors?.[0]?.id || clinic.id) } })}
-                >
-                  <View style={styles.clinicAvatarContainer}>
-                    {clinic.avatar ? (
-                      <Image source={{ uri: clinic.avatar }} style={styles.clinicAvatar} />
-                    ) : (
-                      <View style={styles.clinicAvatarPlaceholder}>
-                        <Text style={styles.clinicAvatarEmoji}>🏥</Text>
-                      </View>
+        {clinicsLoading ? (
+          <View style={styles.emptyDoctorsContainer}>
+            <ActivityIndicator size="small" color="#BD632F" />
+          </View>
+        ) : clinics.length === 0 ? (
+          <View style={styles.emptyDoctorsContainer}>
+            <Text style={styles.emptyDoctorsIcon}>🏥</Text>
+            <Text style={styles.emptyDoctorsText}>{t('doctors.empty.noCenters')}</Text>
+            <Text style={styles.emptyDoctorsSubtext}>
+              {t('doctors.empty.centersCheckBack')}
+            </Text>
+          </View>
+        ) : (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.clinicsRow}
+          >
+            {clinics.map((clinic) => (
+              <TouchableOpacity
+                key={clinic.id}
+                style={styles.clinicCard}
+                activeOpacity={0.8}
+                onPress={() => router.push({ pathname: '/doctor-detail', params: { id: String(clinic.doctors?.[0]?.id || clinic.id) } })}
+              >
+                <Image source={clinicImageSource(clinic.avatar)} style={styles.clinicCoverImage} />
+                <View style={styles.clinicInfo}>
+                  <View style={styles.clinicNameRow}>
+                    <Text style={styles.clinicName} numberOfLines={1}>{clinic.name}</Text>
+                    {clinic.isVerified && (
+                      <Ionicons name="checkmark-circle" size={14} color="#4CAF50" />
                     )}
                   </View>
-                  <View style={styles.clinicInfo}>
-                    <View style={styles.clinicNameRow}>
-                      <Text style={styles.clinicName} numberOfLines={1}>{clinic.name}</Text>
-                      {clinic.isVerified && (
-                        <Ionicons name="checkmark-circle" size={14} color="#4CAF50" />
-                      )}
-                    </View>
-                    <View style={styles.clinicLocationRow}>
-                      <Text style={styles.clinicLocationPin}>📍</Text>
-                      <Text style={styles.clinicLocation} numberOfLines={1}>{clinic.location}</Text>
-                    </View>
-                    <View style={styles.clinicRatingRow}>
-                      <Text style={styles.clinicStarIcon}>⭐</Text>
-                      <Text style={styles.clinicRatingValue}>{clinic.rating}</Text>
-                      <Text style={styles.clinicDoctorCount}>| {clinic.doctors?.length || 0} Doctors</Text>
-                    </View>
+                  <View style={styles.clinicLocationRow}>
+                    <SvgXml width={11} height={11} xml={doctorCardLocationSvg} style={{ marginRight: 3 }} />
+                    <Text style={styles.clinicLocation} numberOfLines={1}>{clinic.location}</Text>
                   </View>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </>
+                  <View style={styles.clinicRatingRow}>
+                    <SvgXml width={11} height={11} xml={doctorCardStarSvg} style={{ marginRight: 3 }} />
+                    <Text style={styles.clinicRatingValue}>{clinic.rating}</Text>
+                    <Text style={styles.clinicDoctorCount}>| {t('doctors.clinicDoctors', { count: clinic.doctors?.length || 0 })}</Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
         )}
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }
@@ -359,10 +670,6 @@ const styles = StyleSheet.create({
   langBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E6E1DC',
-    borderRadius: 18,
     paddingHorizontal: 12,
     height: 40,
     gap: 6,
@@ -371,7 +678,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   langText: {
-    fontSize: 13,
+    fontSize: 18,
     fontWeight: '700',
     color: '#BD632F',
   },
@@ -408,26 +715,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  pinIcon: {
-    fontSize: 16,
-    marginRight: 6,
-    color: '#BD632F',
-  },
   locationText: {
     fontSize: 14,
     fontWeight: '700',
     color: '#1A1817',
     marginRight: 4,
   },
-  dropdownArrow: {
-    fontSize: 10,
-    color: '#BD632F',
-  },
   myTreatmentButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#BD632F',
-    borderRadius: 14,
+    borderRadius: 8,
     paddingHorizontal: 14,
     height: 38,
     shadowColor: '#BD632F',
@@ -435,11 +733,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
-  },
-  treatmentIcon: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    marginRight: 6,
   },
   treatmentText: {
     color: '#FFFFFF',
@@ -458,11 +751,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginBottom: 20,
   },
-  searchIcon: {
-    fontSize: 16,
-    marginRight: 10,
-    color: '#7C7672',
-  },
   searchInput: {
     flex: 1,
     height: '100%',
@@ -472,6 +760,15 @@ const styles = StyleSheet.create({
   sliderContainer: {
     marginHorizontal: 24,
     marginBottom: 24,
+  },
+  sliderLoading: {
+    height: 165,
+    borderRadius: 24,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E6E1DC',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   upcomingCard: {
     backgroundColor: '#BD632F',
@@ -503,9 +800,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  actionEmoji: {
-    fontSize: 15,
-  },
   callButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -513,11 +807,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingHorizontal: 12,
     height: 34,
-  },
-  callIcon: {
-    fontSize: 12,
-    marginRight: 4,
-    color: '#BD632F',
   },
   callText: {
     color: '#BD632F',
@@ -598,6 +887,7 @@ const styles = StyleSheet.create({
     padding: 18,
     position: 'relative',
     height: 165,
+    overflow: 'hidden',
   },
   aiCardContent: {
     flexDirection: 'row',
@@ -608,32 +898,28 @@ const styles = StyleSheet.create({
   aiLeftColumn: {
     flex: 1.2,
     justifyContent: 'center',
+    paddingRight: 130,
   },
   aiCardTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '800',
     color: '#BD632F',
-    marginBottom: 4,
+    marginBottom: 10,
   },
   aiCardSubtitle: {
-    fontSize: 11,
+    fontSize: 14,
     color: '#7C7672',
-    lineHeight: 15,
+    lineHeight: 20,
     marginBottom: 10,
   },
   scanNowButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#BD632F',
-    borderRadius: 12,
+    borderRadius: 8,
     paddingHorizontal: 14,
     height: 36,
     alignSelf: 'flex-start',
-  },
-  scanNowIcon: {
-    fontSize: 12,
-    color: '#FFFFFF',
-    marginRight: 6,
   },
   scanNowText: {
     color: '#FFFFFF',
@@ -641,9 +927,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   aiCowImage: {
-    width: 110,
-    height: 110,
-    borderRadius: 14,
+    position: 'absolute',
+    right: 0,
+    top: 7,
+    width: 241,
+    height: 149,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -694,9 +982,6 @@ const styles = StyleSheet.create({
   categoryIconCircleActive: {
     backgroundColor: '#FFFFFF',
   },
-  categoryIconText: {
-    fontSize: 18,
-  },
   categoryLabel: {
     fontSize: 11,
     color: '#9C9690',
@@ -705,6 +990,30 @@ const styles = StyleSheet.create({
   categoryLabelActive: {
     color: '#BD632F',
     fontWeight: '700',
+  },
+  emptyDoctorsContainer: {
+    alignItems: 'center',
+    paddingVertical: 32,
+    marginHorizontal: 24,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: '#E6E1DC',
+    marginBottom: 16,
+  },
+  emptyDoctorsIcon: {
+    fontSize: 40,
+    marginBottom: 10,
+  },
+  emptyDoctorsText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1A1817',
+    marginBottom: 4,
+  },
+  emptyDoctorsSubtext: {
+    fontSize: 13,
+    color: '#9C9690',
   },
   doctorCard: {
     flexDirection: 'row',
@@ -746,11 +1055,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 4,
   },
-  locationPin: {
-    fontSize: 11,
-    color: '#9C9690',
-    marginRight: 4,
-  },
   locationTextMeta: {
     fontSize: 11,
     color: '#9C9690',
@@ -760,10 +1064,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 4,
     marginBottom: 8,
-  },
-  starIcon: {
-    fontSize: 12,
-    marginRight: 4,
   },
   ratingValue: {
     fontSize: 12,
@@ -786,6 +1086,10 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 12,
     justifyContent: 'center',
+    alignItems: 'center',
+  },
+  bookButtonContent: {
+    flexDirection: 'row',
     alignItems: 'center',
   },
   bookButtonText: {
@@ -814,41 +1118,24 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   clinicCard: {
-    flexDirection: 'row',
-    width: 280,
+    width: 260,
     backgroundColor: '#FFFFFF',
     borderRadius: 18,
     borderWidth: 1,
     borderColor: '#E6E1DC',
-    padding: 14,
+    overflow: 'hidden',
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.03,
     shadowRadius: 6,
     elevation: 1,
   },
-  clinicAvatarContainer: {
-    marginRight: 12,
-  },
-  clinicAvatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 14,
-  },
-  clinicAvatarPlaceholder: {
-    width: 56,
-    height: 56,
-    borderRadius: 14,
-    backgroundColor: '#FFF2EB',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  clinicAvatarEmoji: {
-    fontSize: 24,
+  clinicCoverImage: {
+    width: '100%',
+    height: 130,
   },
   clinicInfo: {
-    flex: 1,
-    justifyContent: 'center',
+    padding: 14,
   },
   clinicNameRow: {
     flexDirection: 'row',
@@ -867,11 +1154,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 4,
   },
-  clinicLocationPin: {
-    fontSize: 10,
-    color: '#9C9690',
-    marginRight: 3,
-  },
   clinicLocation: {
     fontSize: 11,
     color: '#9C9690',
@@ -880,10 +1162,6 @@ const styles = StyleSheet.create({
   clinicRatingRow: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  clinicStarIcon: {
-    fontSize: 11,
-    marginRight: 3,
   },
   clinicRatingValue: {
     fontSize: 11,

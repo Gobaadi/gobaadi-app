@@ -1,0 +1,2801 @@
+{
+  "aboutApp": {
+    "appVersion": "App Version",
+    "canDo": "With Gobaadi, you can:",
+    "docTitle": "About Gobaadi",
+    "features": {
+      "ai": {
+        "description": "Receive helpful livestock health and management insights powered by AI.",
+        "title": "Get AI-Assisted Insights"
+      },
+      "livestock": {
+        "description": "Keep your animals, health records, vaccinations, and important information organized.",
+        "title": "Manage Livestock"
+      },
+      "market": {
+        "description": "Discover livestock, feed, medicines, equipment, and other agricultural products through the marketplace.",
+        "title": "Buy & Sell"
+      },
+      "reminders": {
+        "description": "Get reminders for vaccinations, treatments, feeding, and other important livestock activities.",
+        "title": "Stay on Track"
+      },
+      "vets": {
+        "description": "Access veterinary guidance and digital consultation when you need support.",
+        "title": "Connect with Vets"
+      }
+    },
+    "intro": "Gobaadi is a smart livestock platform built to help farmers and livestock owners manage their animals, access trusted support, and make better-informed decisions.",
+    "lastUpdated": "Last Updated: {{date}}",
+    "links": {
+      "help": "Help & Support",
+      "privacy": "Privacy Policy",
+      "terms": "Terms & Conditions"
+    },
+    "mission": {
+      "body": "We believe technology should support farmers, not replace their experience. Gobaadi brings technology, veterinary expertise, and practical farming knowledge together to create a more connected livestock ecosystem.",
+      "title": "Our Mission"
+    },
+    "tagline": "Where livestock meets intelligence.",
+    "title": "About App"
+  },
+  "accountDetails": {
+    "bvcLabel": "BVC Registration Number : ",
+    "close": "Close",
+    "defaults": {
+      "doctor": "Doctor"
+    },
+    "doctorName": "Dr. {{name}}",
+    "phoneLabel": "Phone Number : ",
+    "statusTitle": "Application Status",
+    "steps": {
+      "created": "Account Created",
+      "submitApplication": "Submit Application",
+      "verification": "Account Verification"
+    },
+    "title": "Account Details"
+  },
+  "addAnimal": {
+    "actions": {
+      "addAnimal": "Add Animal",
+      "addMore": "Add More",
+      "back": "Back",
+      "next": "Next",
+      "uploading": "Uploading..."
+    },
+    "alerts": {
+      "errorTitle": "Error",
+      "invalidFileTypeMsg": "Only JPEG and PNG images are allowed.",
+      "invalidFileTypeTitle": "Invalid file type",
+      "invalidInputTitle": "Invalid input",
+      "permissionMsg": "Access to photo gallery is required to upload animal photos.",
+      "permissionTitle": "Permission required",
+      "requiredTitle": "Required field",
+      "saveFailedMsg": "Failed to save animal. Please try again.",
+      "selectFailedOpenMsg": "Could not open the photo gallery. Please try again.",
+      "selectFailedReadMsg": "Could not read the selected photo. Please try again.",
+      "selectFailedTitle": "Photo selection failed",
+      "uploadFailedMsg": "Failed to upload photos. Please try again.",
+      "uploadFailedTitle": "Upload failed",
+      "uploadTooLarge": "Photo is too large — please pick a smaller image."
+    },
+    "calendar": {
+      "dobTitle": "Select Date of Birth",
+      "farmJoinedTitle": "Select Farm Joined Date",
+      "months": {
+        "april": "April",
+        "august": "August",
+        "december": "December",
+        "february": "February",
+        "january": "January",
+        "july": "July",
+        "june": "June",
+        "march": "March",
+        "may": "May",
+        "november": "November",
+        "october": "October",
+        "september": "September"
+      },
+      "selectDate": "Select Date",
+      "weekdays": {
+        "fri": "Fri",
+        "mon": "Mon",
+        "sat": "Sat",
+        "sun": "Sun",
+        "thu": "Thu",
+        "tue": "Tue",
+        "wed": "Wed"
+      }
+    },
+    "dropdowns": {
+      "breed": "Breed",
+      "gender": "Gender",
+      "reproStatus": "Reproductive Status",
+      "source": "Source"
+    },
+    "fields": {
+      "age": "Age",
+      "breed": "Breed",
+      "colorRequired": "Color*",
+      "descriptionRequired": "Description*",
+      "dobRequired": "Date of Birth*",
+      "genderRequired": "Gender*",
+      "joinedFarm": "Joined Farm",
+      "liveWeight": "Live Weight",
+      "liveWeightPrice": "Live Weight Price",
+      "nameRequired": "Name*",
+      "photoRequired": "Photo*",
+      "purchaseCostRequired": "Purchase Cost*",
+      "reproStatus": "Reproductive Status",
+      "sellingPrice": "Selling Price",
+      "source": "Source",
+      "weightRequired": "Weight*"
+    },
+    "header": {
+      "add": "Add New Animal",
+      "edit": "Edit Animal"
+    },
+    "optional": "(optional)",
+    "options": {
+      "breed": {
+        "Albino Buffalo": "Albino Buffalo",
+        "Bangladeshi Cow": "Bangladeshi Cow",
+        "Crossbreed": "Crossbreed",
+        "Gir": "Gir",
+        "Holstein": "Holstein",
+        "Sahiwal": "Sahiwal"
+      },
+      "gender": {
+        "Female": "Female",
+        "Male": "Male"
+      },
+      "reproStatus": {
+        "Dry": "Dry",
+        "Lactating": "Lactating",
+        "N/A": "N/A",
+        "Open": "Open",
+        "Pregnant": "Pregnant"
+      },
+      "source": {
+        "Born in Farm": "Born in Farm",
+        "Imported": "Imported",
+        "Leased": "Leased",
+        "Purchased": "Purchased"
+      }
+    },
+    "photo": {
+      "tapToUpload": "Tap to upload photo"
+    },
+    "placeholders": {
+      "age": "Enter age in months",
+      "breed": "Select breed",
+      "color": "Add animal color",
+      "description": "Add descriptions of the animal",
+      "dob": "Add date of birth",
+      "farmJoined": "Select farm joined date",
+      "gender": "Select gender",
+      "liveWeight": "Add live weight",
+      "name": "Enter animal name",
+      "purchaseCost": "Add purchase cost",
+      "reproStatus": "Add reproductive status",
+      "sellingPrice": "Add selling price",
+      "source": "Select source",
+      "weight": "Add weight when joined farm"
+    },
+    "steps": {
+      "details": "Details",
+      "info": "Info",
+      "pricing": "Pricing",
+      "visual": "Visual"
+    },
+    "validation": {
+      "colorRequired": "Please add animal color.",
+      "costRequired": "Please add purchase cost.",
+      "descriptionInvalid": "Description can only contain letters, numbers, spaces, and basic punctuation.",
+      "descriptionRequired": "Please enter description.",
+      "dobRequired": "Please enter date of birth.",
+      "genderRequired": "Please select gender.",
+      "nameInvalid": "Name can only contain letters, numbers, spaces, and basic punctuation.",
+      "nameRequired": "Please enter animal name.",
+      "photoRequired": "Please add at least one photo.",
+      "weightRequired": "Please add weight when joined farm."
+    }
+  },
+  "addListing": {
+    "alerts": {
+      "createFailed": "Could not create listing",
+      "missingInfo": "Missing info",
+      "missingMsg": "Please enter a name and a valid price.",
+      "tryAgain": "Please try again."
+    },
+    "categories": {
+      "animals": "Animals",
+      "dairy": "Dairy",
+      "equipments": "Equipments",
+      "food": "Food",
+      "proteins": "Proteins",
+      "vaccines": "Vaccines"
+    },
+    "createListing": "Create Listing",
+    "creating": "Creating...",
+    "fields": {
+      "category": "Category*",
+      "name": "Name*",
+      "price": "Price (৳)*"
+    },
+    "namePlaceholder": "e.g. Kota Goat",
+    "pricePlaceholder": "e.g. 16000",
+    "title": "New Listing"
+  },
+  "addPayment": {
+    "accountNumberLabel": "Account Number",
+    "accountNumberPlaceholder": "Enter account number",
+    "addBankAccount": "Add Bank Account",
+    "addCard": "Add Card",
+    "addCreditCard": "Add Credit Card",
+    "addDebitCard": "Add Debit Card",
+    "alerts": {
+      "bankAdded": "Bank account added successfully",
+      "bankFailed": "Failed to add bank account",
+      "cardAddedCredit": "Credit card added successfully",
+      "cardAddedDebit": "Debit card added successfully",
+      "cardFailed": "Failed to add card",
+      "enterPhone": "Please enter a phone number",
+      "error": "Error",
+      "fillBank": "Please fill in all bank account details",
+      "fillCard": "Please fill in all card details",
+      "methodFailed": "Failed to add payment method",
+      "ok": "OK",
+      "success": "Success"
+    },
+    "bankNameLabel": "Bank Name",
+    "bankNamePlaceholder": "e.g. Dutch-Bangla Bank",
+    "cardHolderLabel": "Card Holder Name",
+    "cardHolderPlaceholder": "John Doe",
+    "cardNumberLabel": "Card Number",
+    "continue": "Continue",
+    "cvvLabel": "CVV",
+    "expiryLabel": "Expiry Date",
+    "header": "Add Payment Method",
+    "options": {
+      "bank": {
+        "subtitle": "Direct debit from your account",
+        "title": "Bank Account"
+      },
+      "credit": {
+        "subtitle": "Pay with any credit card",
+        "title": "Credit Card"
+      },
+      "debit": {
+        "subtitle": "Visa, Mastercard linked to your bank account",
+        "title": "Debit Card"
+      },
+      "mobile": {
+        "subtitle": "Bkash, Nagad, Rocket & more",
+        "title": "Mobile Banking"
+      }
+    },
+    "phoneLabel": "Phone Number",
+    "phonePlaceholder": "Phone number",
+    "pinLabel": "Pin Number",
+    "pinPlaceholder": "Enter PIN",
+    "providers": {
+      "more": "More"
+    },
+    "routingLabel": "Routing Number",
+    "routingPlaceholder": "Enter routing number",
+    "security": {
+      "bank": "Your bank account information is encrypted and secure. We use industry-standard security protocols.",
+      "card": "Your card information is encrypted and secure. We never store your full card number.",
+      "payment": "Your payment information is protected with 256-bit SSL encryption and PCI DSS compliance.",
+      "pin": "We only link your account — we never store your PIN or password."
+    }
+  },
+  "addTask": {
+    "alerts": {
+      "addFailed": "Could not add task",
+      "enterDescription": "Please enter your task description.",
+      "enterTimes": "Please enter start and end time.",
+      "futureDate": "Please select a future date and time.",
+      "invalidDate": "Invalid date",
+      "requiredField": "Required field",
+      "tryAgain": "Please try again.",
+      "voiceInput": "Voice input",
+      "voiceInputSoon": "Voice input is coming soon."
+    },
+    "banner": "Hygiene Task Recommended Cow Shed",
+    "header": "Add Task",
+    "instructionLabel": "Add Instruction",
+    "instructionPlaceholder": "Write task instructions...",
+    "repeat": "Repeat",
+    "repeatOptions": {
+      "daily": "Daily",
+      "weekly": "Weekly"
+    },
+    "selectFarm": "Select Farm",
+    "selectType": "Select Task Type",
+    "setTime": "Set Time",
+    "sheds": {
+      "cow": "Cow Shed",
+      "goat": "Goat Shed",
+      "poultry": "Poultry Shed"
+    },
+    "submit": "Add Task",
+    "taskHeadingPlaceholder": "Enter Your Task Heading",
+    "types": {
+      "cleaning": "Cleaning",
+      "feeding": "Feeding",
+      "health": "Health Check",
+      "hygiene": "Hygiene",
+      "vaccination": "Vaccination",
+      "water": "Water Supply"
+    },
+    "workEnd": "Work End",
+    "workStart": "Work Start"
+  },
+  "aiHold": {
+    "actionPlan": "Immediate Action Plan",
+    "analyzing": "Analyzing…",
+    "cow": "Cow",
+    "detailsSummary": "Details Summary",
+    "detected": "Detected : {{time}}",
+    "errors": {
+      "analysisIncomplete": "The analysis could not be completed. Please try again.",
+      "captureFailed": "Could not capture the photo. Please try again.",
+      "photoTooLarge": "Photo is too large — please take a smaller photo.",
+      "startFailed": "Could not start the analysis. Please try again.",
+      "timeout": "The analysis is taking longer than expected. Please try again.",
+      "title": "Analysis could not be completed",
+      "uploadFailed": "Upload failed. Please check your connection and try again."
+    },
+    "holdStill": "Please hold still…",
+    "permission": {
+      "allow": "Allow Camera",
+      "goBack": "Go back",
+      "message": "Allow camera access so you can scan your animal for diseases and nutrient deficiencies.",
+      "title": "Camera access needed"
+    },
+    "tryAgain": "Try Again",
+    "uploadingScan": "Uploading scan…"
+  },
+  "aiScan": {
+    "alerts": {
+      "moreInfoMsg": "Add a photo or describe the symptoms before analyzing.",
+      "moreInfoTitle": "More info needed",
+      "permissionMsg": "Please allow photo library access to upload a photo.",
+      "permissionTitle": "Permission needed",
+      "photoTooLarge": "Photo is too large — please pick a smaller image.",
+      "tryAgain": "Please try again.",
+      "uploadFailed": "Upload failed",
+      "symptomsRequiredMsg": "Please describe the symptoms before analyzing.",
+      "symptomsRequiredTitle": "Symptoms required"
+    },
+    "analyzeNow": "Analyze Now",
+    "retake": "Retake",
+    "startScan": "Scan Now",
+    "subtitle": "Take a photo or upload an image to detect animal's diseases, fungal attack and nutrient deficiencies",
+    "symptomsPlaceholder": "Describe what you're seeing — fever, skin lesions, coughing, etc. (comma separated)",
+    "title": "AI-Powered animals Diagnostics",
+    "uploadFromGallery": "Upload From Gallery",
+    "uploading": "Uploading…"
+  },
+  "aiSummary": {
+    "actionPlan": "Immediate Action Plan",
+    "clinicalSigns": "Key Clinical Signs in Cattle",
+    "cow": "Cow",
+    "detected": "Detected : {{time}}",
+    "empty": {
+      "noDiagnosis": "No diagnosis selected",
+      "startScan": "Start a new scan"
+    },
+    "error": {
+      "loadFailed": "Could not load this diagnosis. Please try again.",
+      "retry": "Retry"
+    },
+    "failureFallback": "The automated analysis failed for this scan.",
+    "headerTitle": "Summary",
+    "loading": "Loading diagnosis…",
+    "noActions": "No specific actions were recommended for this diagnosis. Keep monitoring the animal and consult a veterinarian if symptoms continue.",
+    "noDiagnosisAvailable": "No diagnosis available",
+    "viewDoctor": "View Recommended Doctor"
+  },
+  "allClinics": {
+    "doctors": "| {{count}} Doctors",
+    "emptyNoSearch": "Check back soon — new medical centers are added regularly.",
+    "emptySearch": "Try a different name or location.",
+    "emptyTitle": "No medical centers available",
+    "searchPlaceholder": "Search medical center",
+    "title": "All Medical Centers"
+  },
+  "allDoctors": {
+    "bookSlot": "Book Slot",
+    "details": "Details",
+    "empty": {
+      "description": "Check back soon — new vets are added regularly.",
+      "title": "No doctors available"
+    },
+    "filters": {
+      "all_one": "All ({{count}})",
+      "all_other": "All ({{count}})",
+      "gynaecology_one": "Gynaecology({{count}})",
+      "gynaecology_other": "Gynaecology({{count}})",
+      "medicine_one": "Medicine({{count}})",
+      "medicine_other": "Medicine({{count}})",
+      "settings": "Filter"
+    },
+    "modal": {
+      "apply": "Apply Filter",
+      "reset": "Reset",
+      "specialty": "Specialty",
+      "title": "Filter Doctors"
+    },
+    "reviews_one": "| {{count}} Review",
+    "reviews_other": "| {{count}} Reviews",
+    "searchPlaceholder": "Search doctor",
+    "specialties": {
+      "all": "All",
+      "dermatology": "Dermatology",
+      "gynaecology": "Gynaecology",
+      "medicine": "Medicine",
+      "surgery": "Surgery"
+    },
+    "title": "All Doctors"
+  },
+  "allReviews": {
+    "anonymous": "Anonymous",
+    "count_one": "{{count}} review",
+    "count_other": "{{count}} reviews",
+    "empty": "No reviews yet",
+    "title": "Patient Reviews"
+  },
+  "animalBillingDetails": {
+    "backToHome": "← Back to home",
+    "deliveryAddress": "Delivery Address",
+    "deliveryCharge": "Delivery Charge",
+    "discount": "Discount",
+    "item": "Item:",
+    "loading": "Loading...",
+    "orderId": "Order ID:",
+    "quantity": "Quantity:",
+    "status": "Status:",
+    "subtotal": "Subtotal",
+    "tax": "Tax",
+    "title": "Billing Details",
+    "totalPayment": "Total Payment"
+  },
+  "animalDetails": {
+    "anonymous": "Anonymous",
+    "bookAnimal": "Book Animal",
+    "buyAnimal": "Buy Animal",
+    "category": "Category",
+    "details": "Details",
+    "helpful": "Helpful ({{count}})",
+    "livestock": "Livestock",
+    "loading": "Loading...",
+    "message": "Message",
+    "noReviews": "No reviews yet.",
+    "question": "Have a question about this listing?",
+    "reviews": "Reviews",
+    "reviewsWithStats": "Reviews ({{rating}} ★, {{count}})",
+    "shareMessage": "Check out this animal listing: {{name}} - ৳{{price}}"
+  },
+  "animalsTab": {
+    "addAnimal": "Add Animal",
+    "age": "Age",
+    "ageMonths_one": "{{count}} month",
+    "ageMonths_other": "{{count}} months",
+    "chips": {
+      "all_one": "All ({{count}})",
+      "all_other": "All ({{count}})",
+      "bull_one": "Bull ({{count}})",
+      "bull_other": "Bull ({{count}})",
+      "calf_one": "Calf ({{count}})",
+      "calf_other": "Calf ({{count}})"
+    },
+    "clearFilters": "Clear filters",
+    "coloredCoat": "{{color}} colored coat and characteristics",
+    "defaultCoat": "cream-colored coat and tuft of blond hair",
+    "empty": {
+      "noAnimalsDesc": "Add your livestock to start tracking health, tasks, and records.",
+      "noAnimalsTitle": "No animals yet",
+      "noResultsDesc": "Try a different search or clear your filters.",
+      "noResultsTitle": "No animals found"
+    },
+    "filter": "Filter",
+    "gender": {
+      "all": "All",
+      "female": "Female",
+      "male": "Male"
+    },
+    "modal": {
+      "gender": "Gender",
+      "reset": "Reset",
+      "show_one": "Show {{count}} animal",
+      "show_other": "Show {{count}} animals",
+      "title": "Filters"
+    },
+    "notAvailable": "N/A",
+    "searchPlaceholder": "Search animals...",
+    "species": "Species",
+    "title": "My Animals",
+    "unnamed": "Unnamed Animal",
+    "weight": "Weight",
+    "weightKg": "{{weight}} Kg"
+  },
+  "applyDiscount": {
+    "allTab": "All ({{count}})",
+    "discountGivenTab": "Discount Given({{count}})",
+    "info": "Discounts apply to the patient’s next appointment fee only. They pay the discounted amount when booking.",
+    "lastAppointment": "Last appointment: {{date}}",
+    "owner": "Owner: {{name}}",
+    "recentPatients": "Recent Patients",
+    "searchPlaceholder": "Search by patient or owner",
+    "title": "Apply Discount"
+  },
+  "appointmentCancel": {
+    "alerts": {
+      "cancelFailed": "Failed to cancel appointment. Please try again.",
+      "error": "Error",
+      "required": "Required",
+      "selectReason": "Please select a cancellation reason."
+    },
+    "cancelBtn": "Cancel",
+    "cancellationReason": "Cancellation Reason",
+    "cancelling": "Cancelling...",
+    "notFound": "Appointment not found",
+    "noteOptional": "Note (Optional)",
+    "owner": "Owner: {{name}}",
+    "patient": "Patient",
+    "reasons": {
+      "emergency": "Emergency",
+      "other": "Other",
+      "scheduleConflict": "Schedule conflict"
+    },
+    "title": "Cancel Appointment"
+  },
+  "appointmentCancelled": {
+    "cancelledLabel": "Cancelled Appointment",
+    "goHome": "Go Home",
+    "headerTitle": "Appointment cancelled",
+    "owner": "Owner: {{name}}",
+    "patient": "Patient",
+    "subtitle": "This appointment has been cancelled.\nThe owner has been notified.",
+    "title": "Appointment Cancelled",
+    "unknown": "Unknown"
+  },
+  "appointmentDetails": {
+    "cancel": "Cancel",
+    "consultation": {
+      "chat": "Online - Chat",
+      "inPerson": "In Person",
+      "video": "Online - Video",
+      "voice": "Online - Voice"
+    },
+    "consultationType": "Consultation Type",
+    "doctor": "Doctor",
+    "doctorLabel": "DOCTOR",
+    "fee": "Fee",
+    "notFound": "Appointment not found",
+    "owner": "Owner: {{name}}",
+    "patient": "Patient",
+    "payment": {
+      "failed": "Failed",
+      "paid": "Paid",
+      "pending": "Pending",
+      "refunded": "Refunded"
+    },
+    "paymentLabel": "Payment",
+    "reason": "Reason for Consultation",
+    "reschedule": "Reschedule",
+    "status": {
+      "cancelled": "Cancelled",
+      "completed": "Completed",
+      "rescheduled": "Rescheduled",
+      "upcoming": "Upcoming"
+    },
+    "symptoms": "Symptoms",
+    "title": "Appointment Details"
+  },
+  "appointmentFilter": {
+    "apply": "Apply",
+    "clear": "Clear",
+    "consultation": {
+      "all": "All",
+      "chat": "Online - Chat",
+      "physical": "Physical",
+      "video": "Online - Video",
+      "voice": "Online - Voice"
+    },
+    "consultationSection": "Consultation Type",
+    "dateSection": "Date",
+    "dates": {
+      "thisWeek": "This week",
+      "today": "Today",
+      "tomorrow": "Tomorrow"
+    },
+    "status": {
+      "all": "All",
+      "cancelled": "Cancelled",
+      "completed": "Completed",
+      "upcoming": "Upcoming"
+    },
+    "statusSection": "Booked Appointments",
+    "title": "Filter Appointments"
+  },
+  "appointmentReschedule": {
+    "alerts": {
+      "errorTitle": "Error",
+      "required": "Required",
+      "rescheduleFailed": "Failed to reschedule appointment. Please try again.",
+      "rescheduled": "Appointment rescheduled successfully.",
+      "selectDateTime": "Please select a date and time.",
+      "successTitle": "Success"
+    },
+    "dayShort": {
+      "fri": "Fri",
+      "mon": "Mon",
+      "sat": "Sat",
+      "sun": "Sun",
+      "thu": "Thu",
+      "tue": "Tue",
+      "wed": "Wed"
+    },
+    "months": {
+      "april": "April",
+      "august": "August",
+      "december": "December",
+      "february": "February",
+      "january": "January",
+      "july": "July",
+      "june": "June",
+      "march": "March",
+      "may": "May",
+      "november": "November",
+      "october": "October",
+      "september": "September"
+    },
+    "noSlots": "No available slots for this date",
+    "notFound": "Appointment not found",
+    "owner": "Owner: {{name}}",
+    "patient": "Patient",
+    "reschedule": "Reschedule",
+    "rescheduling": "Rescheduling...",
+    "selectDate": "Select date",
+    "selectTime": "Select time",
+    "title": "Reschedule Appointment"
+  },
+  "appointments": {
+    "dates": {
+      "today": "Today's",
+      "yesterday": "Yesterday"
+    },
+    "empty": {
+      "clearFilters": "Clear filters",
+      "noMatch": "No appointments match your filters",
+      "previous": "No previous appointments",
+      "today": "No appointments for today"
+    },
+    "fallback": {
+      "patient": "Patient"
+    },
+    "filters": {
+      "date": {
+        "thisWeek": "This week",
+        "today": "Today",
+        "tomorrow": "Tomorrow"
+      },
+      "status": {
+        "cancelled": "Cancelled",
+        "completed": "Completed",
+        "upcoming": "Upcoming"
+      },
+      "type": {
+        "chat": "Online - Chat",
+        "physical": "Physical",
+        "video": "Online - Video",
+        "voice": "Online - Voice"
+      }
+    },
+    "liveChat": "Live Chat",
+    "minsLeft": "{{mins}} mins left",
+    "owner": "Owner: {{name}}",
+    "searchPlaceholder": "Search patient",
+    "sections": {
+      "inProgress": "Still in Progress",
+      "nextConsults": "Next Consults [{{upcomingCount}}]"
+    },
+    "status": {
+      "cancelled": "CANCELLED",
+      "completed": "COMPLETED",
+      "confirmed": "CONFIRMED",
+      "pending": "PENDING",
+      "rescheduled": "RESCHEDULED"
+    },
+    "stillInProgress": "Still in Progress",
+    "tabs": {
+      "previous": "Previous",
+      "today": "Today's"
+    },
+    "title": "Appointments"
+  },
+  "billingDetails": {
+    "appsFee": "Apps fee",
+    "backToHome": "← Back to home",
+    "bookingReason": "Booking Reason",
+    "dates": "Dates",
+    "doctorsFee": "Doctor's Fee",
+    "feesDetails": "Fees Details",
+    "fullDate": "Mon, {{day}} {{monthYear}}",
+    "hour": "Hour",
+    "monthYear": "December 2026",
+    "paid": "Paid",
+    "reviews": "| {{count}} Reviews",
+    "status": "Status",
+    "title": "Billing Details",
+    "totalFees": "Total Fees",
+    "visitType": "Visit Type",
+    "visitTypes": {
+      "online": "Online",
+      "physical": "Physical"
+    },
+    "yourSlot": "Your Slot"
+  },
+  "bkashNumber": {
+    "payNow": "Pay Now",
+    "placeholder": "bKash phone number",
+    "sectionTitle": "bKash No.",
+    "title": "Payment"
+  },
+  "blockTime": {
+    "actions": {
+      "back": "Back",
+      "cancel": "Cancel",
+      "confirm": "Confirm",
+      "continue": "Continue",
+      "done": "Done",
+      "remove": "Remove",
+      "viewCalendar": "View Calendar"
+    },
+    "alerts": {
+      "conflictMsg": "Blocking this range will cancel existing appointments, but their details could not be loaded. Please try again.",
+      "conflictTitle": "Conflicting appointments"
+    },
+    "billing": {
+      "appointmentsFee": "Appointments fee",
+      "bookingTimeOff": "Booking time off",
+      "cancellationFee": "Cancellation fee",
+      "feesTitle": "Fees Details",
+      "reason": "Reason",
+      "status": "Status",
+      "title": "Billing Details",
+      "totalFees": "Total Fees",
+      "walletDeduction": "Estimated Wallet Deduction"
+    },
+    "blockedPeriods": "Blocked Periods",
+    "cancelled": {
+      "appointmentFallback": "Appointment #{{id}}",
+      "badge": "Cancelled",
+      "owner": "Owner: {{name}}",
+      "title": "Cancelled Appointments"
+    },
+    "confirmation": {
+      "info": "By confirming, you agree that this amount will be deducted from your Gobadi wallet and the appointments will be cancelled."
+    },
+    "confirmed": {
+      "header": "Block Confirmed",
+      "subtitle": "You will not receive any bookings during this time.",
+      "title": "Your time has been blocked"
+    },
+    "dateRange": "Blocking from {{start}} to {{end}}",
+    "errors": {
+      "generic": "Something went wrong. Please try again."
+    },
+    "fields": {
+      "endDate": "End date",
+      "note": "Note",
+      "reason": "Reason",
+      "startDate": "Start date"
+    },
+    "formInfo": "Blocking time with existing appointments will require refunds and cancellation fees, which will be deducted from your wallet.",
+    "months": {
+      "april": "April",
+      "august": "August",
+      "december": "December",
+      "february": "February",
+      "january": "January",
+      "july": "July",
+      "june": "June",
+      "march": "March",
+      "may": "May",
+      "november": "November",
+      "october": "October",
+      "september": "September"
+    },
+    "optional": "(Optional)",
+    "reasons": {
+      "conference_training": "Conference/Training",
+      "emergency": "Emergency",
+      "other": "Other",
+      "sick_leave": "Sick Leave",
+      "vacation": "Vacation"
+    },
+    "remove": {
+      "msg": "Are you sure you want to remove this blocked period?",
+      "title": "Remove Block"
+    },
+    "required": "(Required)",
+    "selectDate": "Select date",
+    "title": "Block time off",
+    "warning": {
+      "description_one": "Blocking this time will cancel {{count}} appointment. Their booking amounts will be refunded, and applicable cancellation fees will be deducted from your wallet.",
+      "description_other": "Blocking this time will cancel {{count}} appointments. Their booking amounts will be refunded, and applicable cancellation fees will be deducted from your wallet.",
+      "title": "You have existing appointments"
+    },
+    "weekdays": {
+      "fri": "Fri",
+      "mon": "Mon",
+      "sat": "Sat",
+      "sun": "Sun",
+      "thu": "Thu",
+      "tue": "Tue",
+      "wed": "Wed"
+    }
+  },
+  "bookAnimal": {
+    "age": "Age:",
+    "alerts": {
+      "failedMessage": "Could not book this animal. Please try again.",
+      "failedTitle": "Booking Failed"
+    },
+    "animalDetails": "Animal Details",
+    "bookingOptions": "Booking Options",
+    "breed": "Breed:",
+    "costPrefix": "It will cost only",
+    "costSuffix": "to confirm.",
+    "kg": "Kg",
+    "liveWeight": "Live Weight:",
+    "loading": "Loading...",
+    "options": {
+      "description10": "By selecting this option the animal will be locked for 10 days from your booking with the same price.",
+      "description20": "By selecting this option the animal will be locked for 20 days from your booking with the same price.",
+      "description3": "By selecting this option the animal will be locked for 3 days from your booking with the same price.",
+      "description5": "By selecting this option the animal will be locked for 5 days from your booking with the same price.",
+      "saveFor10Days": "Save For 10 Days",
+      "saveFor20Days": "Save For 20 Days",
+      "saveFor3Days": "Save For 3 Days",
+      "saveFor5Days": "Save For 5 Days"
+    },
+    "proceedBooking": "Proceed Booking",
+    "species": "Species:",
+    "termsNote": "Terms & Conditions applicable",
+    "title": "Book Animal"
+  },
+  "bookSlot": {
+    "alerts": {
+      "enterReason": "Please enter a booking reason before proceeding.",
+      "required": "Required",
+      "selectPet": "Please select the pet for this appointment."
+    },
+    "bookingReason": "Booking Reason",
+    "calendarMonth": "December 2026",
+    "choosePet": "Choose your pet",
+    "confirmReschedule": "Confirm Reschedule",
+    "confirmSlot": "Confirm Slot",
+    "doctorNotFound": "Doctor not found",
+    "goBack": "Go Back",
+    "loading": "Loading doctor info...",
+    "noSlots": "No open slots for this date.",
+    "petFallback": "Pet",
+    "reasonPlaceholder": "Description of symptoms",
+    "required": "(Required)",
+    "reschedule": "Reschedule",
+    "reviews": "| {{count}} Reviews",
+    "selectAnimal": "Select Animal",
+    "selectDate": "Select Date",
+    "selectPet": "Select Pet",
+    "selectTimeSlot": "Select Time Slot",
+    "title": "Book Slot",
+    "visitType": "Visit Type",
+    "visitTypes": {
+      "online": "Online",
+      "physical": "Physical"
+    },
+    "weekdays": {
+      "fri": "FRI",
+      "mon": "MON",
+      "sat": "SAT",
+      "sun": "SUM",
+      "thu": "THU",
+      "tue": "TUE",
+      "wed": "WED"
+    }
+  },
+  "bookingBkashNumber": {
+    "payNow": "Pay Now",
+    "placeholder": "bKash phone number",
+    "sectionTitle": "bKash No.",
+    "title": "Booking Payment"
+  },
+  "bookingDetails": {
+    "backToHome": "Back to home",
+    "bookingReason": "Booking Reason",
+    "dates": "Dates",
+    "days": {
+      "fri": "Fri",
+      "mon": "Mon",
+      "sat": "Sat",
+      "sun": "Sun",
+      "thu": "Thu",
+      "tue": "Tue",
+      "wed": "Wed"
+    },
+    "defaults": {
+      "city": "Uttar Badda, Dhaka",
+      "location": "Cardiology Center, USA",
+      "name": "Dr. David Patel",
+      "specialty": "Veterinary Surgery"
+    },
+    "hour": "Hour",
+    "months": {
+      "april": "April",
+      "august": "August",
+      "december": "December",
+      "february": "February",
+      "january": "January",
+      "july": "July",
+      "june": "June",
+      "march": "March",
+      "may": "May",
+      "november": "November",
+      "october": "October",
+      "september": "September"
+    },
+    "reviews": "| {{count}} Reviews",
+    "title": "Booking Details",
+    "visitType": "Visit Type",
+    "yourSlot": "Your Slot"
+  },
+  "bookingPayment": {
+    "bkash": "bKash",
+    "payNow": "Pay Now",
+    "sectionTitle": "Payment Method",
+    "title": "Booking Payment"
+  },
+  "calendarSettings": {
+    "blockTime": "Block time off",
+    "title": "Calendar Settings",
+    "workingHours": "Working hours"
+  },
+  "callControls": {
+    "camera": "Camera",
+    "cameraOff": "Camera off",
+    "earpiece": "Earpiece",
+    "end": "End",
+    "endCall": "End call",
+    "flip": "Flip",
+    "mic": "Mic",
+    "muted": "Muted",
+    "speaker": "Speaker"
+  },
+  "cart": {
+    "browseMarketplace": "Browse Marketplace",
+    "empty": "Your cart is empty.",
+    "proceedToCheckout": "Proceed to Checkout",
+    "remove": "Remove",
+    "shipping": "Shipping",
+    "subtotal": "Subtotal",
+    "tax": "Tax",
+    "title": "My Cart",
+    "total": "Total",
+    "unavailable": "Unavailable"
+  },
+  "chat": {
+    "actions": {
+      "endConsultation": "End Consultation",
+      "sendNote": "Send Note",
+      "sendPrescription": "Send Prescription",
+      "sendPrescriptionLower": "Send prescription",
+      "sendRecommendation": "Send Recommendation",
+      "sendRecommendationLower": "Send recommendation",
+      "startConsultation": "Start Consultation"
+    },
+    "alerts": {
+      "attachmentFailed": "Failed to send attachment. Please try again.",
+      "attachmentTooLarge": "Photo is too large — please pick a smaller image.",
+      "audioMsg": "Audio recording feature coming soon.",
+      "audioTitle": "Audio Recording",
+      "callEndedOnlyMsg": "Consultation has ended — only messaging is available.",
+      "callNotAvailableMsg": "Calling is not available for this appointment right now.",
+      "callsUnavailableTitle": "Calls unavailable",
+      "congratsMsg": "The consultation has ended.",
+      "congratsTitle": "Congratulations!",
+      "endFailed": "Failed to end consultation. Please try again.",
+      "error": "Error",
+      "goToHome": "Go to Home",
+      "messageFailed": "Failed to send message. Please try again.",
+      "missingAppointment": "Missing appointment information. Please open this chat from the appointment.",
+      "openFromAppointment": "Open this chat from an appointment to send images.",
+      "permissionRequiredTitle": "Permission Required",
+      "permissionTitle": "Permission required",
+      "saveImageFailed": "Could not save this image. Please try again.",
+      "savePermissionMsg": "Allow photo access so the image can be saved to your gallery.",
+      "sendNoteMsg": "Enter a note for the patient",
+      "sendPermissionMsg": "Please allow access to your photo library to send images.",
+      "shareFailed": "Could not share this image. Please try again.",
+      "startFailed": "Failed to start consultation. Please try again."
+    },
+    "consultation": {
+      "endedDesc": "Your consultation with {{name}} has ended.",
+      "endedTitle": "Consultation ended!",
+      "maxDuration": "•  Max Duration: 30 min",
+      "remainingTime": "•  Remaining time: {{time}}",
+      "startTime": "•  Start time: {{time}}",
+      "startedDesc": "You are now in consultation with {{name}}",
+      "startedTitle": "Consultation started"
+    },
+    "date": {
+      "today": "Today",
+      "yesterday": "Yesterday"
+    },
+    "fallbacks": {
+      "doctor": "Doctor",
+      "patient": "Patient"
+    },
+    "input": {
+      "placeholder": "Type a message..."
+    },
+    "nextStep": {
+      "option": "Send prescription, recommendation, note",
+      "title": "Next Step"
+    },
+    "prescription": {
+      "file": "File",
+      "title": "Prescription - {{date}}"
+    },
+    "upcoming": {
+      "join": "Join",
+      "owner": "Owner   {{name}}"
+    },
+    "viewer": {
+      "closeImage": "Close image",
+      "downloadImage": "Download image",
+      "loadFailed": "Could not load image",
+      "shareDialogTitle": "Share image",
+      "shareImage": "Share image",
+      "tapToOpen": "Tap to open image",
+      "you": "You"
+    }
+  },
+  "checkout": {
+    "address": "Road# 9, house# 5, Lane#3, Mirpur 11/a, Dhaka-1216.",
+    "alerts": {
+      "changeAddress": "Change Address",
+      "comingSoon": "Address selection feature coming soon.",
+      "orderFailed": "Order Failed",
+      "orderFailedMessage": "Could not place your order. Please try again."
+    },
+    "cartCheckout": "Cart Checkout ({{count}} items)",
+    "category": "Category:",
+    "changeAddress": "Change Address",
+    "deliveryCharge": "Delivery Charge",
+    "deliveryDetails": "Delivery Details",
+    "homeDelivery": "Home Delivery",
+    "item": "Item:",
+    "itemPrice": "Item Price",
+    "livestock": "Livestock",
+    "loading": "Loading...",
+    "orderSummary": "Order Summary",
+    "placeOrder": "Place Order",
+    "pricingDetails": "Pricing Details",
+    "title": "Checkout",
+    "totalPayment": "Total Payment",
+    "various": "Various",
+    "vat": "VAT (5%)"
+  },
+  "common": {
+    "identifierTabs": {
+      "email": "Email",
+      "phone": "Phone Number"
+    }
+  },
+  "confirmBooking": {
+    "bookingReason": "Booking Reason",
+    "confirmPayment": "Confirm Payment",
+    "dates": "Dates",
+    "daysShort": {
+      "fri": "Fri",
+      "mon": "Mon",
+      "sat": "Sat",
+      "sun": "Sun",
+      "thu": "Thu",
+      "tue": "Tue",
+      "wed": "Wed"
+    },
+    "defaultDoctor": "Doctor",
+    "fullDate": "{{day}}, {{dayNum}} {{month}} {{year}}",
+    "hour": "Hour",
+    "loading": "Loading…",
+    "months": {
+      "april": "April",
+      "august": "August",
+      "december": "December",
+      "february": "February",
+      "january": "January",
+      "july": "July",
+      "june": "June",
+      "march": "March",
+      "may": "May",
+      "november": "November",
+      "october": "October",
+      "september": "September"
+    },
+    "reviews": "| {{reviews}} Reviews",
+    "title": "Confirm Booking",
+    "visitType": "Visit Type",
+    "yourSlot": "Your Slot"
+  },
+  "confirmPay": {
+    "appsFee": "Apps fee",
+    "bookingReason": "Booking Reason",
+    "confirmBooking": "Confirm Booking",
+    "dates": "Dates",
+    "doctorFallback": "Doctor",
+    "doctorsFee": "Doctor's Fee",
+    "feesDetails": "Fees Details",
+    "fullDate": "Mon, {{day}} {{monthYear}}",
+    "hour": "Hour",
+    "loading": "Loading…",
+    "monthYear": "December 2026",
+    "reviews": "| {{count}} Reviews",
+    "title": "Confirm and Pay",
+    "totalFees": "Total Fees",
+    "visitType": "Visit Type",
+    "visitTypes": {
+      "online": "Online",
+      "physical": "Physical"
+    },
+    "yourSlot": "Your Slot"
+  },
+  "congo": {
+    "body": "We have sent you a verification email, please check your inbox and follow the instructions to verify your account.",
+    "signIn": "Sign In",
+    "thankYou": "Thank you for signing up with us!",
+    "title": "Congratulations!"
+  },
+  "consultationEnded": {
+    "backToChat": "Back to Chat",
+    "heading": "Consultation ended!",
+    "maxDuration": "•  Max Duration: 30 min",
+    "nextStep": "Next Step",
+    "nextStepOption": "Send prescription, recommendation, note",
+    "patient": "Patient",
+    "remainingTime": "•  Remaining time: {{time}}",
+    "sendPrescription": "Send Prescription",
+    "startTime": "•  Start time: {{time}}",
+    "subtitle": "Your consultation with {{name}} has ended.",
+    "summaryDesc": "You were in consultation with {{name}}",
+    "title": "Consultation Ended"
+  },
+  "contactSupport": {
+    "customerService": "Customer Service",
+    "email": "Email",
+    "title": "Contact Support"
+  },
+  "discount": {
+    "alerts": {
+      "createFailed": "Failed to create discount",
+      "created": "Discount created successfully",
+      "errorTitle": "Error",
+      "ok": "OK",
+      "successTitle": "Success",
+      "updateFailed": "Failed to update discount",
+      "updated": "Discount updated successfully"
+    },
+    "appointmentFee": "Appointment fee",
+    "continue": "Continue",
+    "customDiscount": "Custom Discount",
+    "discountLabel": "Discount ({{percent}}%)",
+    "editDiscount": "Edit discount",
+    "infoBanner": "Discounts apply to the patient’s next appointment fee only. They pay the discounted amount when booking.",
+    "lastAppointment": "Last appointment: {{time}}",
+    "owner": "Owner",
+    "ownerLabel": "Owner: {{name}}",
+    "patient": "Patient",
+    "patientWillPay": "Patient will pay",
+    "placeholder": "Discount %",
+    "quickDiscount": "Quick Discount",
+    "removeDiscount": "Remove discount",
+    "saveChanges": "Save Changes",
+    "title": "Discount details"
+  },
+  "doctorAvailability": {
+    "alerts": {
+      "saveError": {
+        "msg": "Please check your time formats (HH:mm) and try again.",
+        "title": "Could not save"
+      },
+      "saved": {
+        "msg": "Your availability has been updated.",
+        "title": "Saved"
+      }
+    },
+    "days": {
+      "friday": "Friday",
+      "monday": "Monday",
+      "saturday": "Saturday",
+      "sunday": "Sunday",
+      "thursday": "Thursday",
+      "tuesday": "Tuesday",
+      "wednesday": "Wednesday"
+    },
+    "save": "Save Availability",
+    "title": "My Availability",
+    "to": "to"
+  },
+  "doctorBookings": {
+    "appointmentsCount_one": "{{count}} Appointment",
+    "appointmentsCount_other": "{{count}} Appointments",
+    "blockedDays": "Blocked days",
+    "dayShort": {
+      "fri": "Fri",
+      "mon": "Mon",
+      "sat": "Sat",
+      "sun": "Sun",
+      "thu": "Thu",
+      "tue": "Tue",
+      "wed": "Wed"
+    },
+    "emptyDay": "No appointments for this day",
+    "fallback": {
+      "generalCheckup": "General Checkup",
+      "patient": "Patient"
+    },
+    "monthly": "Monthly",
+    "months": {
+      "april": "April",
+      "august": "August",
+      "december": "December",
+      "february": "February",
+      "january": "January",
+      "july": "July",
+      "june": "June",
+      "march": "March",
+      "may": "May",
+      "november": "November",
+      "october": "October",
+      "september": "September"
+    },
+    "openDays": "Open days",
+    "physicalConsultation": "Physical Consultation",
+    "showLess": "Show less",
+    "status": {
+      "confirmed": "Confirmed"
+    },
+    "title": "Calendar",
+    "totalAppointments": "Total appointments",
+    "upcoming": "Upcoming appointments",
+    "viewAll": "View all",
+    "viewAllCount_one": "View all ({{count}})",
+    "viewAllCount_other": "View all ({{count}})",
+    "weekly": "Weekly"
+  },
+  "doctorDetail": {
+    "availability": "Availability",
+    "bookSlot": "Book Slot",
+    "defaults": {
+      "specialty": "Veterinary Surgery"
+    },
+    "reviews": "| {{count}} Reviews",
+    "serviceMeta": "৳ {{price}} · {{minutes}} min",
+    "servicesTitle": "Services",
+    "specializations": {
+      "canineBehaviour": "Trained in Canine Behaviour Management",
+      "clinicalMedicine": "Veterinary clinical medicine",
+      "contrastRadiography": "Trained in Contrast Radiography by TANUVAS",
+      "dermatology": "Trained in Advance medical management of a major Dermatological Challenges in Dogs",
+      "emergency": "Emergency and TRUMA CURE",
+      "felineManagement": "Trained in Advance Feline Management by FCI",
+      "geriatrics": "Veterinary geriatrics",
+      "pediatrics": "Trained in Pediatrics Health Management of Dogs and Cats by Dept of Vet Medicine, PGIVER, Jaipur Rajasthan",
+      "renalMedicine": "Trained in Advance in Small Animal Renal Medicine and Renal Critical Care by TANUVAS"
+    },
+    "specializationsTitle": "Specializations",
+    "title": "Doctor Detail"
+  },
+  "doctorHome": {
+    "alerts": {
+      "openChatError": {
+        "msg": "Could not open the conversation. Please try again.",
+        "title": "Error"
+      }
+    },
+    "completed": "completed",
+    "completedOf": "{{completed}} of {{total}}",
+    "consultsForToday": "for today",
+    "consultsOrange": "Consults",
+    "doctorTitle": "Dr.",
+    "emptyPatients": "No ongoing patients right now",
+    "fallback": {
+      "doctor": "Doctor",
+      "patient": "Patient"
+    },
+    "greeting": {
+      "afternoon": "Good Afternoon",
+      "evening": "Good Evening",
+      "morning": "Good Morning"
+    },
+    "ongoingPatients": "Ongoing Patients",
+    "patientWithId": "Patient #{{id}}",
+    "pending": "pending",
+    "tiles": {
+      "appointments": "Appointments",
+      "discount": "Apply Discount",
+      "patients": "Patients",
+      "schedule": "Schedule"
+    }
+  },
+  "doctorMessages": {
+    "empty": {
+      "desc": "Try a different name or message.",
+      "title": "No chats found"
+    },
+    "fallback": {
+      "patient": "Patient",
+      "pet": "Pet"
+    },
+    "join": "Join",
+    "owner": "Owner",
+    "recentChats": "Recent chats",
+    "searchPlaceholder": "Search chats...",
+    "startConversation": "Start a conversation",
+    "tapToChat": "Tap to start chatting",
+    "title": "Chat",
+    "today": "Today",
+    "upcomingAppointment": "Upcoming appointment"
+  },
+  "doctorNotificationPreferences": {
+    "alerts": {
+      "error": "Error",
+      "updateFailed": "Failed to update preference"
+    },
+    "items": {
+      "appointmentReminders": {
+        "description": "Get notified about upcoming appointments",
+        "title": "Appointments Reminders"
+      },
+      "chatMessages": {
+        "description": "Get notified when patients send messages",
+        "title": "Patient Messages"
+      },
+      "systemUpdates": {
+        "description": "Important updates from the platform",
+        "title": "System Updates"
+      },
+      "taskReminders": {
+        "description": "Reminders for scheduled follow-ups",
+        "title": "Follow-up Reminders"
+      },
+      "weatherAlerts": {
+        "description": "Get notified about hygiene updates",
+        "title": "Hygiene Reminder"
+      }
+    },
+    "loadError": "Failed to load preferences",
+    "tabs": {
+      "all": "All",
+      "appointments": "Appointments",
+      "messages": "Messages",
+      "patients": "Patients"
+    },
+    "title": "Notifications Settings",
+    "tryAgain": "Try Again"
+  },
+  "doctorNotifications": {
+    "earlier": "Earlier",
+    "empty": "No notifications yet",
+    "loadFailed": "Failed to load notifications",
+    "tabs": {
+      "all": "All",
+      "appointments": "Appointments",
+      "messages": "Messages",
+      "patients": "Patients"
+    },
+    "thisWeek": "This Week",
+    "title": "Notifications",
+    "today": "Today"
+  },
+  "doctorPatients": {
+    "empty": {
+      "description": "Patients will appear here after their first appointment.",
+      "searchDescription": "Try a different search term.",
+      "searchTitle": "No patients found",
+      "title": "No patients yet"
+    },
+    "meta": {
+      "age": "Age",
+      "owner": "Owner",
+      "weight": "Weight"
+    },
+    "searchPlaceholder": "Search patients...",
+    "title": "Patients"
+  },
+  "doctorRegistrationSuccess": {
+    "checkStatus": "Check Status",
+    "successSubtitle": "Your registration has been completed successfully. You can now access all features of the app.",
+    "successTitle": "Successful"
+  },
+  "doctors": {
+    "ai": {
+      "scanNow": "Scan Now",
+      "subtitle": "Analyze your animals instantly with our latest AI Module",
+      "title": "Analyze with AI"
+    },
+    "alerts": {
+      "consultationNotStarted": {
+        "msg": "Start the consultation in the chat before placing a call.",
+        "title": "Consultation not started"
+      },
+      "startChatError": {
+        "msg": "Could not start the conversation. Please try again.",
+        "title": "Error"
+      }
+    },
+    "bookSlot": "Book Slot",
+    "categories": {
+      "avian": "Avian & Co.",
+      "general": "General",
+      "gynaecology": "Gynaecology",
+      "medicine": "Medicine",
+      "surgery": "Surgery"
+    },
+    "clinicDoctors_one": "{{count}} Doctor",
+    "clinicDoctors_other": "{{count}} Doctors",
+    "details": "Details",
+    "empty": {
+      "categorySubtext": "No doctors found in this category.",
+      "centersCheckBack": "Check back soon — new medical centers are added regularly.",
+      "checkBack": "Check back soon — new vets are added regularly.",
+      "noCenters": "No medical centers found",
+      "noDoctors": "No doctors found",
+      "searchSubtext": "Try a different name or specialty."
+    },
+    "fallback": {
+      "doctor": "Doctor",
+      "patient": "Patient"
+    },
+    "locationLabel": "Location",
+    "myTreatment": "My Treatment",
+    "reviews_one": "{{count}} Review",
+    "reviews_other": "{{count}} Reviews",
+    "searchPlaceholder": "Search doctors...",
+    "sections": {
+      "categories": "Categories",
+      "nearbyCenters": "Nearby Medical Centers",
+      "nearbyDoctors": "Nearby Doctors"
+    },
+    "startCall": "Start Call",
+    "title": "Doctors",
+    "upcomingTreatment": "Upcoming Treatment",
+    "viewAll": "View all"
+  },
+  "editProfile": {
+    "alerts": {
+      "cameraPermission": "Camera access is required to take a profile photo.",
+      "cancel": "Cancel",
+      "changePhoto": "Change Profile Photo",
+      "chooseLibrary": "Choose from Library",
+      "chooseOption": "Choose an option",
+      "enterName": "Please enter your name.",
+      "error": "Error",
+      "libraryPermission": "Photo library access is required to choose a profile photo.",
+      "ok": "OK",
+      "permissionRequired": "Permission required",
+      "photoSelectionFailed": "Photo selection failed",
+      "photoSelectionFailedMsg": "Could not open the camera or photo gallery. Please try again.",
+      "photoTooLarge": "The photo is too large. Please try a smaller image.",
+      "profileUpdated": "Profile updated successfully.",
+      "requiredField": "Required field",
+      "success": "Success",
+      "takePhoto": "Take Photo",
+      "updateProfileFailed": "Failed to update profile. Please try again.",
+      "uploadFailed": "Upload failed",
+      "uploadPhotoFailed": "Failed to upload photo. Please try again."
+    },
+    "header": "Edit Profile",
+    "locationLabel": "Location",
+    "locationPlaceholder": "Enter location",
+    "nameLabel": "Your name",
+    "namePlaceholder": "Enter name",
+    "phoneLabel": "Mobile Number",
+    "phonePlaceholder": "Enter Phone",
+    "saveChanges": "Save Changes"
+  },
+  "editTask": {
+    "alerts": {
+      "invalidId": "Invalid task ID. Go back to the task list and try again.",
+      "missingId": "Missing task ID. Go back to the task list and try again.",
+      "tryAgain": "Please try again.",
+      "updateFailed": "Could not update task",
+      "voiceInput": "Voice input",
+      "voiceInputSoon": "Voice input is coming soon."
+    },
+    "customTaskPlaceholder": "Custom Task",
+    "header": "Edit Task",
+    "instructionLabel": "Add Instruction",
+    "instructionPlaceholder": "Write task instructions...",
+    "repeat": "Repeat",
+    "repeatOptions": {
+      "daily": "Daily",
+      "weekly": "Weekly"
+    },
+    "selectFarm": "Select Farm",
+    "selectType": "Select Task Type",
+    "setTime": "Set Time",
+    "sheds": {
+      "cow": "Cow Shed",
+      "goat": "Goat Shed",
+      "poultry": "Poultry Shed"
+    },
+    "submit": "Update Task",
+    "types": {
+      "cleaning": "Cleaning",
+      "feeding": "Feeding",
+      "health": "Health Check",
+      "hygiene": "Hygiene",
+      "vaccination": "Vaccination",
+      "water": "Water Supply"
+    },
+    "workEnd": "Work End",
+    "workStart": "Work Start"
+  },
+  "errorBoundary": {
+    "description": "Don't worry, your data is safe.",
+    "title": "Something went wrong",
+    "tryAgain": "Try Again"
+  },
+  "faqs": {
+    "empty": "No FAQs in this category",
+    "loadError": "Failed to load FAQs",
+    "tabs": {
+      "doctor": "Doctor Connection",
+      "general": "General",
+      "photo": "Photo Diagnosis"
+    },
+    "title": "FAQs"
+  },
+  "forgot": {
+    "emailLabel": "Email",
+    "errors": {
+      "failed": "Could not send OTP. Please try again.",
+      "emailNotAllowed": "Please use an email from a supported provider (Gmail, Yahoo, Hotmail, Outlook, etc.).",
+      "invalidEmail": "Please enter a valid email address.",
+      "required": "Email is required."
+    },
+    "submit": "Reset Password",
+    "subtitle": "Enter your email address to get the password reset code.",
+    "title": "Forgot Password?"
+  },
+  "helpSupport": {
+    "contact": {
+      "subtitle": "Get Help From Our Team",
+      "title": "Contact Support"
+    },
+    "faqs": {
+      "subtitle": "Common Question and Answer",
+      "title": "FAQs"
+    },
+    "myReports": {
+      "subtitle": "View Your Submitted Reports",
+      "title": "My Reports"
+    },
+    "report": {
+      "subtitle": "Report Issues or Abuse",
+      "title": "Report Issues"
+    },
+    "title": "Help & Support"
+  },
+  "hintRow": {
+    "title": "Try editing"
+  },
+  "home": {
+    "animals": {
+      "addFirst": "Add your first animal",
+      "empty": "No animals added yet"
+    },
+    "appointments": {
+      "bookConsult": "Book a consultation",
+      "consultation": "Consultation",
+      "doctor": "Doctor",
+      "empty": "No upcoming appointments"
+    },
+    "greeting": "Good Morning",
+    "referral": {
+      "alerts": {
+        "claimFailMsg": "That code may be invalid or already used.",
+        "claimFailTitle": "Could not claim",
+        "enterCodeMsg": "Please enter a referral code to claim.",
+        "enterCodeTitle": "Enter a code",
+        "invalidCodeMsg": "Referral codes are 4-12 letters and numbers.",
+        "invalidCodeTitle": "Invalid code",
+        "successMsg": "Referral code claimed!",
+        "successTitle": "Success"
+      },
+      "claim": "Claim",
+      "earned": "You've earned Tk {{amount}} from {{count}} referrals",
+      "enterCode": "Enter code",
+      "haveCode": "Have a code?",
+      "perReferral": "Earn Tk 100 For Every Referral",
+      "referNow": "Refer Now",
+      "shareMsg": "Join me on Gobadi! Use my referral code {{code}} to sign up: {{link}}",
+      "title": "Refer to Your Friend and Earn"
+    },
+    "sections": {
+      "myAnimals": "My Animals",
+      "myAppointments": "My Appointments",
+      "todaysTask": "Today's Task",
+      "viewAll": "View all"
+    },
+    "tasks": {
+      "add": "Add Task",
+      "empty": "No tasks scheduled for today",
+      "markFailedMsg": "Please try again.",
+      "markFailedTitle": "Could not mark task",
+      "markedMsg": "Your task has been marked.",
+      "markedTitle": "Task marked",
+      "viewAll": "View All"
+    },
+    "weather": {
+      "high": "H:",
+      "humidity": "Humidity",
+      "low": "L:",
+      "precipitation": "Precipitation",
+      "pressure": "Pressure",
+      "sunrise": "Sunrise",
+      "sunset": "Sunset",
+      "title": "Farm Weather - {{place}}",
+      "titleOnly": "Farm Weather",
+      "wind": "Wind"
+    }
+  },
+  "legalAbout": {
+    "about": {
+      "subtitle": "Our Vision & Mission",
+      "title": "About App"
+    },
+    "terms": {
+      "subtitle": "Terms and Conditions",
+      "title": "Terms of Service"
+    },
+    "title": "Legal & About"
+  },
+  "locationSheet": {
+    "helper": "Choose your area to see relevant doctors and services nearby.",
+    "save": "Save Changes",
+    "title": "Select Location",
+    "typePlaceholder": "Or type your area"
+  },
+  "login": {
+    "divider": "or sign in with",
+    "emailLabel": "Email",
+    "emailNotAllowed": "Please use an email from a supported provider (Gmail, Yahoo, Hotmail, Outlook, etc.).",
+    "forgotPassword": "Forgot Password?",
+    "invalidCreds": "Invalid credentials. Please try again.",
+    "invalidEmail": "Please enter a valid email address.",
+    "invalidPhone": "Please enter a valid 11-digit Bangladeshi phone number (e.g., 01712345678).",
+    "noAccount": "Don't have any account?",
+    "passwordLabel": "Password*",
+    "phoneLabel": "Phone Number*",
+    "phonePlaceholder": "Phone number",
+    "rememberMe": "Keep me signed in",
+    "signIn": "Sign in",
+    "signUp": "Sign Up",
+    "submit": "Sign In",
+    "welcome": "Welcome Back!"
+  },
+  "market": {
+    "active": "Active",
+    "addListing": "Add Listing",
+    "age": "Age",
+    "bookAnimal": "Book Animal",
+    "buy": "Buy",
+    "buyAnimal": "Buy Animal",
+    "categories": {
+      "animals": "Animals",
+      "dairy": "Dairy",
+      "equipments": "Equipments",
+      "food": "Food",
+      "proteins": "Proteins",
+      "vaccines": "Vaccines"
+    },
+    "chips": {
+      "all_one": "All ({{count}})",
+      "all_other": "All ({{count}})",
+      "bull_one": "Bull ({{count}})",
+      "bull_other": "Bull ({{count}})",
+      "calf_one": "Calf ({{count}})",
+      "calf_other": "Calf ({{count}})"
+    },
+    "clearAll": "Clear all",
+    "empty": {
+      "noListingsDesc": "You haven't listed anything for sale yet.",
+      "noListingsTitle": "No listings yet",
+      "nothingDesc": "No items match this category right now.",
+      "nothingTitle": "Nothing here yet"
+    },
+    "fallback": {
+      "cattle": "Cattle",
+      "feedMed": "Feed/Med",
+      "seller": "Seller"
+    },
+    "filter": "Filter",
+    "filters": "Filters",
+    "filtersActive": "Filters active",
+    "filtersActiveResults_one": "Filters active — {{count}} result",
+    "filtersActiveResults_other": "Filters active — {{count}} results",
+    "justNow": "Just now",
+    "liveWeight": "Live Weight",
+    "max": "Max",
+    "me": "Me",
+    "message": "Message",
+    "min": "Min",
+    "myCart": "My Cart",
+    "myFarm": "My Farm",
+    "myListings": "My Listings",
+    "notAvailable": "N/A",
+    "priceRange": "Price Range (৳)",
+    "reset": "Reset",
+    "searchPlaceholder": "Search anything....",
+    "sell": "Sell",
+    "showResults_one": "Show {{count}} result",
+    "showResults_other": "Show {{count}} results",
+    "species": "Species",
+    "title": "Marketplace",
+    "trending": "Most Trending Animals",
+    "weightKg": "{{weight}} Kg"
+  },
+  "medicalRecords": {
+    "empty": "No medical records uploaded yet.",
+    "permissionBody": "Please allow photo library access to upload a document.",
+    "permissionTitle": "Permission needed",
+    "title": "Medical Records",
+    "tooLarge": "Photo is too large — please pick a smaller image.",
+    "tryAgain": "Please try again.",
+    "upload": "＋ Upload Document",
+    "uploadFailedTitle": "Upload failed"
+  },
+  "monthPicker": {
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "month": "Month",
+    "year": "Year"
+  },
+  "myAnimalDetail": {
+    "addToMarket": "Add To Marketplace",
+    "addedMessage": "{{name}} has been listed in the Gobadi marketplace.",
+    "addedTitle": "Added to Marketplace",
+    "age": "Age",
+    "animal": "Animal",
+    "basicInfo": "Basic Informations",
+    "breed": "Breed",
+    "cancel": "Cancel",
+    "color": "Color",
+    "delete": "Delete",
+    "deleteMessage": "Remove {{name}} from your farm?",
+    "deleteTitle": "Delete Animal",
+    "dob": "Date Of Birth",
+    "editDetails": "Edit Animal Details",
+    "gender": "Gender",
+    "healthy": "Healthy",
+    "joinedFarm": "Joined Farm",
+    "liveWeight": "Live Weight",
+    "livestock": "Livestock",
+    "negotiable": "(Negotiable/Live wight)",
+    "pricePerKg": "Price per kg",
+    "shareDetails": "Share Details",
+    "shareMessage": "Check out {{name}} ({{breed}}) on Gobadi! Live Weight: {{weight}}.",
+    "source": "Source",
+    "stage": "Stage",
+    "thisAnimal": "this animal"
+  },
+  "myAppointments": {
+    "dates": {
+      "today": "Today",
+      "yesterday": "Yesterday"
+    },
+    "defaults": {
+      "animal": "Animal",
+      "doctor": "Doctor"
+    },
+    "empty": {
+      "past": "No past appointments",
+      "upcoming": "No upcoming appointments"
+    },
+    "status": {
+      "cancelled": "Cancelled",
+      "completed": "Completed",
+      "rescheduled": "Rescheduled",
+      "upcoming": "Upcoming"
+    },
+    "tabs": {
+      "past": "Past",
+      "upcoming": "Upcoming"
+    },
+    "title": "My Appointments"
+  },
+  "myOrders": {
+    "browse": "Browse Marketplace",
+    "emptyDescription": "You haven't placed any orders yet.",
+    "emptyTitle": "No orders yet",
+    "title": "My Orders",
+    "total": "Total"
+  },
+  "myReports": {
+    "count_one": "{{count}} Report",
+    "count_other": "{{count}} Reports",
+    "empty": {
+      "description": "Reports you submit will appear here with their status.",
+      "title": "No reports yet"
+    },
+    "loadError": "Could not load your reports.",
+    "months": {
+      "apr": "Apr",
+      "aug": "Aug",
+      "dec": "Dec",
+      "feb": "Feb",
+      "jan": "Jan",
+      "jul": "Jul",
+      "jun": "Jun",
+      "mar": "Mar",
+      "may": "May",
+      "nov": "Nov",
+      "oct": "Oct",
+      "sep": "Sep"
+    },
+    "reportIssue": "Report an Issue",
+    "retry": "Retry",
+    "status": {
+      "closed": "Closed",
+      "inProgress": "In Progress",
+      "open": "Open"
+    },
+    "title": "My Reports",
+    "updating": "· updating…"
+  },
+  "myTask": {
+    "addTask": "Add Task",
+    "alerts": {
+      "deleteFailed": "Could not delete task",
+      "tryAgain": "Please try again.",
+      "updateFailed": "Could not update task"
+    },
+    "cowShed": "Cow Shed",
+    "deleteModal": {
+      "cancel": "Cancel",
+      "confirm": "Yes, Delete",
+      "deleting": "Deleting…",
+      "message": "Are you really sure you want to delete \"{{title}}\"? This action cannot be undone.",
+      "title": "Delete Task?"
+    },
+    "editTask": "Edit Task",
+    "empty": {
+      "subtitle": "You have no Task for {{date}}",
+      "title": "Schedule New Task"
+    },
+    "filters": {
+      "all_one": "All Tasks ({{count}})",
+      "all_other": "All Tasks ({{count}})",
+      "completed_one": "Completed ({{count}})",
+      "completed_other": "Completed ({{count}})",
+      "pending_one": "Pending ({{count}})",
+      "pending_other": "Pending ({{count}})"
+    },
+    "markDone": "Mark Done",
+    "sections": {
+      "all": "All Tasks",
+      "completed": "Completed Tasks",
+      "pending": "Pending Tasks"
+    },
+    "title": "My Task",
+    "today": "Today",
+    "workEnd": "Work End",
+    "workStart": "Work Start"
+  },
+  "myTreatment": {
+    "alerts": {
+      "cancelFailedMessage": "Failed to cancel appointment. Please try again.",
+      "cancelFailedTitle": "Could not cancel"
+    },
+    "appointment": "Appointment",
+    "bookedOn": "Booked on",
+    "defaultDoctor": "Doctor",
+    "empty": {
+      "noMatch": "No appointments match your search.",
+      "none": "No appointments yet.",
+      "notFound": "No appointments found."
+    },
+    "filters": {
+      "all": "All",
+      "medicine": "Medicine",
+      "upcoming": "Upcoming"
+    },
+    "location": "Location",
+    "onlineVisit": "Online Visit",
+    "paid": "(Paid)",
+    "physicalVisit": "Physical Visit",
+    "searchPlaceholder": "Search doctor",
+    "status": {
+      "completed": "Completed",
+      "upcoming": "Upcoming"
+    },
+    "title": "My Treatment"
+  },
+  "notificationPreferences": {
+    "alerts": {
+      "error": "Error",
+      "updateFailed": "Failed to update preference"
+    },
+    "items": {
+      "hygieneReminders": {
+        "description": "Reminder For Schedule Task",
+        "title": "Hygiene Reminder"
+      },
+      "systemUpdates": {
+        "description": "Update About Request & Responce",
+        "title": "Help"
+      },
+      "taskReminders": {
+        "description": "Reminder For Schedule Task",
+        "title": "Task Reminder"
+      },
+      "vaccinationReminders": {
+        "description": "Rain, Heat, Wind Updates",
+        "title": "Animal Health"
+      },
+      "weatherAlerts": {
+        "description": "Rain, Heat, Wind Updates",
+        "title": "Weather"
+      }
+    },
+    "loadError": "Failed to load preferences",
+    "tabs": {
+      "all": "All",
+      "health": "Health",
+      "help": "Help",
+      "hygiene": "Hygiene",
+      "tasks": "Tasks"
+    },
+    "title": "Notifications Settings",
+    "tryAgain": "Try Again"
+  },
+  "notifications": {
+    "earlier": "Earlier",
+    "empty": "No notifications yet",
+    "loadFailed": "Failed to load notifications",
+    "tabs": {
+      "all": "All",
+      "health": "Health",
+      "help": "Help",
+      "hygiene": "Hygiene",
+      "tasks": "Tasks"
+    },
+    "thisWeek": "This Week",
+    "title": "Notifications",
+    "today": "Today"
+  },
+  "onboarding": {
+    "features": {
+      "healthCheckup": {
+        "subtitle": "Regular health monitoring",
+        "title": "Health Checkup"
+      },
+      "productivity": {
+        "subtitle": "Happy animals, better yield",
+        "title": "Better Productivity"
+      },
+      "timelyTreatment": {
+        "subtitle": "Reminders & records",
+        "title": "Timely Treatment"
+      }
+    },
+    "getStarted": "Get Started",
+    "next": "Next",
+    "skip": "Skip",
+    "slides": {
+      "slide1": {
+        "subtitle": "Get expert guidance, reminders, and treatments to keep your animals healthy and productive",
+        "titlePart1": "Timely Treatment,",
+        "titlePart2": "Stronger Tomorrow"
+      },
+      "slide2": {
+        "subtitle": "Keep your herd healthy and organised with simple foods that save time and help you stay in control.",
+        "titleFull": "Everything Your Farm\nNeeds in One App"
+      }
+    }
+  },
+  "orderSuccess": {
+    "back": "← Back",
+    "detailBill": "Detail Bill",
+    "successSubtitle": "Congratulations! Your order has been placed successfully. One of our agent will contact you within next hour.",
+    "successTitle": "Order Successfully"
+  },
+  "otp": {
+    "didNotReceive": "Didn't receive an OTP?",
+    "email": "email",
+    "phoneNumber": "phone number",
+    "resend": "Resend OTP",
+    "resendFailed": "Could not resend OTP. Please try again.",
+    "resendIn": "Resend OTP in {{seconds}}s",
+    "resending": "Resending...",
+    "subtitle": "Enter the verification code we just sent to your {{target}}",
+    "title": "OTP Verification",
+    "verify": "Verify",
+    "verifyFailed": "Could not verify OTP. Please try again."
+  },
+  "otpVerification": {
+    "accountLinked": "Account Linked!",
+    "addAnotherMethod": "Add another method",
+    "alerts": {
+      "error": "Error",
+      "idNotFound": "Payment method ID not found",
+      "invalidOtp": "Invalid OTP. Please try again."
+    },
+    "defaultProvider": "Payment Method",
+    "illustrationSubtitle": "Your code is",
+    "illustrationTitle": "Verification",
+    "instruction": "Enter the verification code we just sent on your phone number",
+    "linkedBadge": "{{provider}} Linked Successfully",
+    "resendIn": "Resend OTP in {{seconds}}s",
+    "resendOtp": "Resend OTP",
+    "resendQuestion": "Didn't receive an OTP?",
+    "successDesc": "Your {{provider}} account ending in {{lastDigits}} has been successfully linked. You can now use it for rides and payments.",
+    "title": "OTP Verifications",
+    "verifiedDetail": "{{phone}} · Verified",
+    "verify": "Verify"
+  },
+  "passwordSetup": {
+    "confirmLabel": "Confirm Password*",
+    "continue": "Continue",
+    "createAccountError": "Could not create account. Please try again.",
+    "doctorFallback": "Doctor",
+    "passwordLabel": "Password*",
+    "passwordLength": "Password must be at least 8 characters.",
+    "passwordMismatch": "Passwords do not match.",
+    "passwordRequired": "Password is required.",
+    "welcome": "Welcome"
+  },
+  "patientDetails": {
+    "age": "Age",
+    "alerts": {
+      "consultFailed": "Could not open the consultation. Please try again.",
+      "error": "Error",
+      "noOwner": "No owner found for this animal."
+    },
+    "allTab": {
+      "empty": "No activities recorded yet.",
+      "title": "Recent activities"
+    },
+    "color": "Color",
+    "doctorId": "Doctor #{{id}}",
+    "emptyConsultations": "No consultations recorded yet.",
+    "emptyFiles": "No files uploaded yet.",
+    "emptyLabTests": "No lab tests recorded yet.",
+    "emptyTreatments": "No treatments recorded yet.",
+    "emptyVaccinations": "No vaccinations recorded yet.",
+    "fileTypeFallback": "file",
+    "medicalEvent": "Medical Event",
+    "medicines": "Medicines:",
+    "nextFollowUp": "Next Follow-up:",
+    "notFound": "Patient not found",
+    "patientFallback": "Patient",
+    "prescriptionTitle": "Prescription ({{count}} medicines)",
+    "species": "Species",
+    "startConsultation": "Start Consultation",
+    "status": {
+      "completed": "Completed",
+      "ongoing": "Ongoing"
+    },
+    "statusLine": "Status: {{status}}",
+    "tabs": {
+      "all": "All",
+      "consults": "Consults",
+      "files": "Files",
+      "labTests": "Lab Tests",
+      "treatments": "Treatments",
+      "vaccination": "Vaccination"
+    },
+    "title": "Patient Details",
+    "titles": {
+      "consultations": "Consultations",
+      "labTests": "Lab Tests",
+      "treatments": "Treatments",
+      "vaccinations": "Vaccinations"
+    },
+    "weight": "Weight"
+  },
+  "paymentMethod": {
+    "bkash": "bKash",
+    "payNow": "Pay Now",
+    "sectionTitle": "Payment Method",
+    "title": "Payment"
+  },
+  "paymentMethods": {
+    "addAccount": "Add account",
+    "alerts": {
+      "cancel": "Cancel",
+      "error": "Error",
+      "remove": "Remove",
+      "removeConfirm": "Are you sure you want to remove this payment method?",
+      "removeFailed": "Failed to remove payment method",
+      "removeTitle": "Remove Payment Method",
+      "setDefaultFailed": "Failed to set as default"
+    },
+    "defaultBadge": "Default",
+    "empty": "No payment methods added yet",
+    "loadFailed": "Failed to load payment methods",
+    "setAsDefault": "Set as Default",
+    "title": "Payment Method"
+  },
+  "paymentSuccess": {
+    "back": "← Back",
+    "detailBill": "Detail Bill",
+    "successSubtitle": "Your payment of ৳ 120 has been processed successfully. Your slot is confirmed.",
+    "successTitle": "Payment Successfully"
+  },
+  "prescription": {
+    "addMedication": "Add medication",
+    "dosage": "Dosage",
+    "duration": "Duration",
+    "frequency": "Frequency",
+    "instructions": "Instructions",
+    "instructionsPlaceholder": "Add instructions for the farmer...",
+    "medicationName": "Medication Name*",
+    "namePlaceholder": "Type medication name",
+    "noSummary": "No Summary yet",
+    "noteLabel": "Medication note (optional)",
+    "quantity": "Quantity",
+    "send": "Send Prescription",
+    "summary": "Summary: {{summary}}",
+    "title": "Prescription",
+    "units": {
+      "days": "days",
+      "ml": "ml",
+      "vial": "vial"
+    }
+  },
+  "privacyPolicy": {
+    "lastUpdated": "Last Updated: {{date}}",
+    "s1": {
+      "body": "Gobaadi may collect information you provide when creating an account or using our services, including your name, phone number, email address, farm details, livestock information, location, photos, videos, and other information related to your farming activities. We may also collect information about livestock health, vaccination, feeding, treatment, marketplace listings, purchases, sales, and interactions with veterinarians or service providers. Technical information such as device type, operating system, app usage, and diagnostic data may also be collected to maintain and improve the app.",
+      "heading": "1. Types of Data We Collect"
+    },
+    "s2": {
+      "body": "We use your information to provide, operate, maintain, and improve Gobaadi and its features. This may include managing your account, maintaining livestock records, providing reminders and personalized livestock management information, facilitating communication with veterinarians and service providers, supporting marketplace activities, processing transactions, improving our AI-powered features, and providing customer support. We may also use information to understand how users interact with the app, improve our services, prevent misuse, and maintain the security and reliability of Gobaadi.",
+      "heading": "2. Use of Your Personal Data"
+    },
+    "s3": {
+      "body": "Gobaadi may share relevant information with veterinarians, marketplace sellers or buyers, delivery and payment service providers, technology and cloud service providers, analytics providers, and other trusted service partners when necessary to provide our services. We only share information where it is reasonably necessary for the relevant service or business purpose. We may also disclose information when required by law, legal process, or to protect the rights, safety, and security of Gobaadi, our users, livestock, or other parties. We do not sell your personal information to third parties for their independent marketing purposes.",
+      "heading": "3. Disclosure of Your Personal Data"
+    },
+    "title": "Privacy Policy"
+  },
+  "profile": {
+    "counts": {
+      "buffalo": "Buffalo",
+      "cow": "Cow",
+      "goat": "Goat"
+    },
+    "doctor": {
+      "nameFallback": "Dr. David Patel",
+      "reviews": "({{count}} reviews)",
+      "specialtyFallback": "Veterinary Surgery"
+    },
+    "farmer": {
+      "locationFallback": "Location not added",
+      "nameFallback": "Michal Wilson"
+    },
+    "header": "Profile",
+    "logout": {
+      "cancel": "Cancel",
+      "confirm": "Log Out",
+      "msg": "Are you sure you want to log out?",
+      "title": "Log Out"
+    },
+    "menu": {
+      "edit": "Edit",
+      "helpSupport": "Help & Support",
+      "language": "Language",
+      "legalAbout": "Legal & About",
+      "logout": "Log Out",
+      "myTask": "My Task",
+      "notification": "Notification",
+      "personalInformation": "Personal Information",
+      "privacyPolicy": "Privacy Policy",
+      "referEarn": "Refer & Earn"
+    },
+    "stats": {
+      "consultations": "Consultations",
+      "patients": "Patients",
+      "yearsExperience": "Years Experience"
+    },
+    "subscription": {
+      "currentPlan": "Current Plan",
+      "nextBilling": "Next Billing : ",
+      "section": "Subscription"
+    },
+    "wallet": {
+      "section": "Wallet",
+      "totalEarnings": "Total Earnings"
+    }
+  },
+  "profileDetails": {
+    "actions": {
+      "addMore": "Add More",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "savePhoto": "Save Photo",
+      "seeAll": "See All",
+      "tapToUpload": "Tap to upload photo"
+    },
+    "alerts": {
+      "credentialSavedMsg": "Credential photo saved successfully",
+      "credentialsDeletedMsg": "Credentials deleted successfully",
+      "datesFailedMsg": "Failed to save your dates. Please try again.",
+      "deleteCredentialsFailedMsg": "Failed to delete credentials. Please try again.",
+      "deleteCredentialsMsg": "Are you sure you want to delete all professional credentials?",
+      "deleteCredentialsTitle": "Delete Credentials",
+      "errorTitle": "Error",
+      "permissionMsg": "Please allow access to your photo library to upload documents.",
+      "permissionTitle": "Permission Required",
+      "photoTooLarge": "The photo is too large. Please try a smaller image.",
+      "saveFailedTitle": "Save failed",
+      "savePhotoFailedMsg": "Failed to save photo. Please try again.",
+      "successTitle": "Success"
+    },
+    "currentlyStudying": "I'm currently studying here",
+    "doctorFallback": "Doctor",
+    "empty": {
+      "experiences": "No experiences added",
+      "qualifications": "No qualifications added",
+      "reviews": "No reviews yet",
+      "specializations": "No specializations added"
+    },
+    "fields": {
+      "academicCredentialsRequired": "Academic Credentials*",
+      "certifications": "Certifications",
+      "endDate": "End date",
+      "instituteName": "Institute Name",
+      "location": "Location (Village/District)",
+      "mobileNumber": "Mobile Number",
+      "name": "Your Name",
+      "startDate": "Start date"
+    },
+    "months": {
+      "April": "April",
+      "August": "August",
+      "December": "December",
+      "February": "February",
+      "January": "January",
+      "July": "July",
+      "June": "June",
+      "March": "March",
+      "May": "May",
+      "November": "November",
+      "October": "October",
+      "September": "September"
+    },
+    "noData": "No data",
+    "noLocationAdded": "No location added",
+    "notProvided": "Not provided",
+    "present": "Present",
+    "reviewer": {
+      "anonymous": "Anonymous"
+    },
+    "reviewsCount_one": "{{count}} Review",
+    "reviewsCount_other": "{{count}} Reviews",
+    "reviews_one": "{{count}} review",
+    "reviews_other": "{{count}} reviews",
+    "sections": {
+      "about": "About",
+      "credentials": "Professional Credentials",
+      "experiences": "Experiences",
+      "patientReviews": "Patient Reviews",
+      "personalInfo": "Personal information",
+      "qualifications": "Qualifications",
+      "specialization": "Specialization"
+    },
+    "stats": {
+      "consultations": "Consultations",
+      "patients": "Patients",
+      "yearsExperience": "Years Experience"
+    },
+    "tabs": {
+      "about": "About",
+      "credentials": "Professional Credentials",
+      "experience": "Experience"
+    },
+    "title": "Profile"
+  },
+  "profileEdit": {
+    "a11y": {
+      "addQualification": "Add qualification",
+      "addSpecialization": "Add specialization",
+      "deleteExperience": "Delete experience",
+      "editExperience": "Edit experience"
+    },
+    "actions": {
+      "addExperience": "Add Experience",
+      "cancel": "Cancel",
+      "updateExperience": "Update Experience"
+    },
+    "doctorFallback": "Doctor",
+    "empty": {
+      "experiences": "No experiences added yet",
+      "qualifications": "No other qualifications added yet",
+      "specializations": "No specializations added yet"
+    },
+    "errors": {
+      "expRequired": "Enter a position title or institute name first",
+      "qualificationRequired": "Enter a qualification first",
+      "saveFailed": "Failed to save changes. Please try again.",
+      "specializationRequired": "Enter a specialization first",
+      "title": "Error"
+    },
+    "fields": {
+      "bio": "About / Bio",
+      "description": "Description",
+      "district": "District",
+      "duration": "Duration",
+      "instituteName": "Institute Name",
+      "location": "Practice Location",
+      "name": "Your Name",
+      "positionTitle": "Position Title",
+      "specialty": "Specialty",
+      "upazilaVillage": "Upazila / Village",
+      "yearsExperience": "Years of Experience"
+    },
+    "noSpecialty": "No specialty",
+    "photo": {
+      "cameraPermission": "Camera access is required to take a profile photo.",
+      "cancel": "Cancel",
+      "chooseOption": "Choose an option",
+      "fromLibrary": "Choose from Library",
+      "libraryPermission": "Photo library access is required to choose a profile photo.",
+      "permissionTitle": "Permission required",
+      "selectFailedMsg": "Could not open the camera or photo gallery. Please try again.",
+      "selectFailedTitle": "Photo selection failed",
+      "takePhoto": "Take Photo",
+      "title": "Change Profile Photo",
+      "uploadFailedMsg": "Failed to upload photo. Please try again.",
+      "uploadFailedTitle": "Upload failed",
+      "uploadTooLarge": "The photo is too large. Please try a smaller image."
+    },
+    "placeholders": {
+      "addQualification": "Add qualification...",
+      "addSpecialization": "Add specialization...",
+      "bio": "Tell patients about yourself...",
+      "certifications": "e.g. DVM, BAU",
+      "description": "Describe your role and achievements...",
+      "district": "e.g. Narayanganj",
+      "duration": "e.g. Jan 2020 - Present",
+      "experience": "e.g. 5 Years",
+      "instituteName": "e.g. City Vet Clinic",
+      "licenseNumber": "Enter license number...",
+      "location": "Select your practice location",
+      "name": "Enter your name",
+      "otherInstitute": "e.g. Bangladesh Agricultural University",
+      "positionTitle": "e.g. Senior Veterinarian",
+      "specialty": "e.g. Veterinary Surgery",
+      "upazila": "e.g. Bandar"
+    },
+    "reviews_one": "{{count}} review",
+    "reviews_other": "{{count}} reviews",
+    "saveChanges": "Save Changes",
+    "sections": {
+      "certifications": "Certifications",
+      "experiences": "Experiences",
+      "licenseNumber": "License Number",
+      "otherQualifications": "Other Qualifications",
+      "personalInfo": "Personal information",
+      "specializations": "Specializations"
+    },
+    "stats": {
+      "consultations": "Consultations",
+      "patients": "Patients",
+      "yearsExperience": "Years Experience"
+    },
+    "success": {
+      "saved": "Changes saved successfully",
+      "title": "Success"
+    },
+    "tabs": {
+      "about": "About",
+      "credentials": "Credentials",
+      "experience": "Experience"
+    },
+    "title": "Profile"
+  },
+  "referEarn": {
+    "action": "Refer & Earn Now",
+    "codeFallback": "N/A",
+    "codeLabel": "Your Referral Code",
+    "heading": "Refer Friend and Earn",
+    "loadError": "Failed to load referral info",
+    "pending": "Pending",
+    "referrals": "Referrals",
+    "shareWithCode": "Join me on Gobaadi Farm Management App! Use my referral code {{code}} to get a bonus reward.",
+    "shareWithLink": "Join me on Gobaadi Farm Management App! Use my referral link: {{link}}",
+    "step1": "Share your code or invite link with farmer friends.",
+    "step2": "They sign up and complete their profile setup.",
+    "step3": "They sign up and complete their first animal setup.",
+    "subtitle": "Share your code and earn rewards",
+    "title": "Refer & Earn",
+    "totalEarned": "Total Earned"
+  },
+  "removeDiscount": {
+    "alerts": {
+      "error": "Error",
+      "removeFailed": "Failed to remove discount"
+    },
+    "bodyText": "{{percent}}% Discount for {{name}} will be removed and will not be applicable for the next appointment",
+    "bodyTitle": "Remove this discount?",
+    "cancel": "Cancel",
+    "defaults": {
+      "owner": "Owner",
+      "patient": "Patient"
+    },
+    "owner": "Owner: {{name}}",
+    "removeBtn": "Remove discount",
+    "title": "Remove Discount"
+  },
+  "reportIssues": {
+    "alerts": {
+      "attachmentTooLarge": "Attachment Too Large",
+      "attachmentTooLargeMsg": "This attachment is still too large after compression. Please choose a smaller file.",
+      "describeIssue": "Please describe the issue in detail.",
+      "error": "Error",
+      "fileTooLarge": "File Too Large",
+      "fileUnder900": "Files must be under 900 KB. Images are compressed automatically.",
+      "imageTooLarge": "Images must be under 15 MB.",
+      "missingInfo": "Missing Info",
+      "ok": "OK",
+      "selectFileFailed": "Could not select the file. Please try again.",
+      "selectIssueType": "Please select an issue type.",
+      "submitFailed": "Failed to submit report. Please try again.",
+      "submitted": "Report Submitted",
+      "submittedMsg": "Thank you for reporting. Our team will inspect it promptly.",
+      "tooLarge413": "Attachment is too large — files must be under 1 MB. Please choose a smaller file."
+    },
+    "browseFile": "Browse File",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "Please Describe in Detail What happened",
+    "dragDrop": "Drag & Drop",
+    "dropdownPlaceholder": "E.g App Not Working",
+    "header": "Report Issues",
+    "submit": "Submit Report",
+    "types": {
+      "animalSyncError": "Animal Record Sync Error",
+      "appNotWorking": "App Not Working",
+      "doctorConsultation": "Doctor Consultation Problem",
+      "otherBug": "Other Technical Bug",
+      "paymentIssue": "Payment Issue"
+    },
+    "uploadHint": "Select File and Upload Here",
+    "whatHappened": "What Happened ?"
+  },
+  "resetPassword": {
+    "errors": {
+      "failed": "Could not reset password. Please try again.",
+      "mismatch": "Passwords do not match.",
+      "tooShort": "Password must be at least 8 characters."
+    },
+    "labels": {
+      "confirmPassword": "Confirm Password*",
+      "password": "Password*"
+    },
+    "submit": "Reset Password",
+    "subtitle": "Enter your new password twice below to reset a new password",
+    "title": "Reset Password"
+  },
+  "schedule": {
+    "appointmentCount_one": "{{count}} Appointment",
+    "appointmentCount_other": "{{count}} Appointments",
+    "clear": "Clear",
+    "consultationTypeLabel": "Consultation type",
+    "dayFull": {
+      "friday": "Friday",
+      "monday": "Monday",
+      "saturday": "Saturday",
+      "sunday": "Sunday",
+      "thursday": "Thursday",
+      "tuesday": "Tuesday",
+      "wednesday": "Wednesday"
+    },
+    "dayLetters": {
+      "fri": "F",
+      "mon": "M",
+      "sat": "S",
+      "sun": "S",
+      "thu": "T",
+      "tue": "T",
+      "wed": "W"
+    },
+    "dayShort": {
+      "fri": "Fri",
+      "mon": "Mon",
+      "sat": "Sat",
+      "sun": "Sun",
+      "thu": "Thu",
+      "tue": "Tue",
+      "wed": "Wed"
+    },
+    "empty": {
+      "day": "No appointments for this day",
+      "list": "No appointments scheduled"
+    },
+    "filter": "Filter",
+    "filterPanelTitle": "Filter schedule",
+    "filters": {
+      "consultation": {
+        "all": "All",
+        "chat": "Chat",
+        "physical": "Physical",
+        "video": "Video",
+        "voice": "Voice"
+      },
+      "status": {
+        "all": "All",
+        "cancelled": "Cancelled",
+        "completed": "Completed",
+        "upcoming": "Upcoming"
+      }
+    },
+    "fullCalendar": "Full Calendar",
+    "listView": "List View",
+    "monthly": "Monthly",
+    "months": {
+      "april": "April",
+      "august": "August",
+      "december": "December",
+      "february": "February",
+      "january": "January",
+      "july": "July",
+      "june": "June",
+      "march": "March",
+      "may": "May",
+      "november": "November",
+      "october": "October",
+      "september": "September"
+    },
+    "patient": "Patient",
+    "statusLabel": "Status",
+    "title": "Schedule",
+    "upcoming": "Upcoming",
+    "yearly": "Yearly"
+  },
+  "search": {
+    "hintMinChars": "Type at least 2 characters to search.",
+    "noResults": "No \"{{query}}\" found. Try searching for another pet or browse the marketplace.",
+    "placeholder": "Search animals, marketplace, doctors, alerts...",
+    "sections": {
+      "alerts": "Alerts",
+      "animals": "Animals",
+      "doctors": "Doctors",
+      "marketplace": "Marketplace"
+    },
+    "title": "Search"
+  },
+  "selectLanguage": {
+    "helper": "Choose your preferred language for the interface and notifications.",
+    "save": "Save Changes",
+    "title": "Select Language",
+    "voiceMode": "Voice Selection Mode"
+  },
+  "sendPrescription": {
+    "errorTitle": "Error",
+    "missingAppointment": "Missing appointment information. Please open this from the appointment chat.",
+    "patient": "Patient",
+    "sendFailed": "Failed to send prescription. Please try again."
+  },
+  "signup": {
+    "bvcLabel": "BVC Registration Number*",
+    "bvcPlaceholder": "Enter BVC registration number",
+    "confirmLabel": "Confirm Password*",
+    "divider": "or",
+    "emailLabel": "Email Address*",
+    "emailPlaceholder": "Enter your email",
+    "errors": {
+      "bvcRequired": "BVC Registration Number is required for doctors.",
+    "createFailed": "Could not create account. Please try again.",
+    "emailNotAllowed": "Please use an email from a supported provider (Gmail, Yahoo, Hotmail, Outlook, etc.).",
+    "emailRequired": "Email is required.",
+      "invalidEmail": "Please enter a valid email address.",
+      "invalidPhone": "Please enter a valid 11-digit Bangladeshi phone number (e.g., 01712345678).",
+      "nameRequired": "Name is required.",
+      "passwordMismatch": "Passwords do not match.",
+      "passwordRequired": "Password is required.",
+      "passwordTooShort": "Password must be at least 8 characters.",
+      "phoneRequired": "Phone number is required.",
+      "roleRequired": "Please select a role.",
+      "termsRequired": "You must agree to the Terms of Service."
+    },
+    "footerPrefix": "Already have an account?",
+    "nameLabel": "Name",
+    "namePlaceholder": "Enter your name",
+    "passwordLabel": "Password*",
+    "phoneLabel": "Phone Number*",
+    "phonePlaceholder": "Phone number",
+    "roleDoctor": "Doctor",
+    "roleLabel": "Role*",
+    "roleSelect": "Select your role",
+    "roleUser": "User",
+    "signIn": "Sign In",
+    "submitDoctor": "Continue",
+    "submitUser": "Sign Up",
+    "termsLink": "terms of services",
+    "termsPrefix": "By continuing, you agree to our",
+    "title": "Create Your Account"
+  },
+  "subscription": {
+    "alerts": {
+      "comingSoonMsg": "Subscription plans will be available in the future. Connect with us!",
+      "comingSoonTitle": "Coming Soon",
+      "contactUs": "Contact Us",
+      "manageMsg": "Redirecting to payment billing management portal...",
+      "manageTitle": "Manage Billings",
+      "ok": "OK"
+    },
+    "cancelSubscription": "Cancel Subscriptions",
+    "currentPlan": "Current Plan",
+    "manageBillings": "Manage Billings",
+    "nextBilling": "Next Billing : {{date}}",
+    "title": "Subscription"
+  },
+  "tabBar": {
+    "animals": "Animals",
+    "calendar": "Calendar",
+    "chat": "Chat",
+    "doctors": "Doctors",
+    "home": "Home",
+    "market": "Market",
+    "profile": "Profile",
+    "schedule": "Schedule"
+  },
+  "tabBarWeb": {
+    "animals": "Animals",
+    "brand": "Gobadi Web Portal",
+    "doctors": "Doctors",
+    "home": "Home",
+    "market": "Market",
+    "profile": "Profile"
+  },
+  "termsOfService": {
+    "closing": "By continuing to use Gobaadi, you acknowledge that you have read and agreed to these Terms & Conditions.",
+    "contactLabel": "Email:",
+    "intro": "By using the Gobaadi app, you agree to these Terms & Conditions.",
+    "lastUpdated": "Last Updated: {{date}}",
+    "s1": {
+      "body": "Gobaadi provides agricultural technology services, including AI-powered tools, animal health information, professional consultations, marketplace services, tracking, and task management.\n\nYou agree to provide accurate information and use the app only for lawful purposes.",
+      "heading": "1. Use of Gobaadi"
+    },
+    "s10": {
+      "body": "We may update these Terms or modify, suspend, or discontinue features when necessary. We may also suspend or terminate accounts that violate these Terms.",
+      "heading": "10. Changes and Termination"
+    },
+    "s11": {
+      "body": "For questions or support:",
+      "heading": "11. Contact"
+    },
+    "s2": {
+      "body": "Gobaadi may provide AI-generated animal health or agricultural information. AI results are for informational purposes only and are not a substitute for a qualified veterinarian or agricultural professional.\n\nGobaadi does not guarantee that AI results will always be accurate.",
+      "heading": "2. AI Information"
+    },
+    "s3": {
+      "body": "Information or advice provided by veterinarians or other professionals is the responsibility of the respective professional. For emergencies, contact an appropriate local professional or service directly.",
+      "heading": "3. Professional Consultation"
+    },
+    "s4": {
+      "body": "Products and services may be provided by third-party sellers. Gobaadi does not guarantee the quality, safety, availability, or suitability of third-party products or services.\n\nUsers are responsible for reviewing product and seller information before making a purchase.",
+      "heading": "4. Marketplace"
+    },
+    "s5": {
+      "bullet1": "Payments, cancellations, refunds, and returns are subject to the applicable transaction, seller, or Gobaadi policy.",
+      "bullet2": "Additional charges will be shown before applicable transactions.",
+      "heading": "5. Payments and Refunds"
+    },
+    "s6": {
+      "body": "You are responsible for information, images, videos, and other content you submit to Gobaadi. You must have the necessary rights or permission to submit such content.",
+      "heading": "6. User Content"
+    },
+    "s7": {
+      "body": "You must not use Gobaadi for illegal activities, fraud, harassment, unauthorized access, spreading malicious software, or activities that may harm other users or the Platform.",
+      "heading": "7. Prohibited Use"
+    },
+    "s8": {
+      "body": "Your personal information is handled according to the Gobaadi Privacy Policy and applicable law.",
+      "heading": "8. Privacy"
+    },
+    "s9": {
+      "body": "We aim to keep Gobaadi available and reliable, but we do not guarantee uninterrupted or error-free service.",
+      "heading": "9. Availability"
+    },
+    "title": "Terms of Service"
+  },
+  "videoCall": {
+    "alerts": {
+      "callDeclined": "Call Declined",
+      "callDeclinedMsg": "The other party declined the call.",
+      "error": "Error",
+      "missingAppointment": "Missing appointment information. Please try again.",
+      "ok": "OK",
+      "permissionsAudio": "Microphone permission is needed for audio calls. Please enable it in your device settings.",
+      "permissionsTitle": "Permissions Required",
+      "permissionsVideo": "Camera and microphone permissions are needed for video calls. Please enable them in your device settings."
+    },
+    "audioCall": "Audio call",
+    "backToHome": "Back to Home",
+    "cameraOff": "Camera off",
+    "connecting": "Connecting...",
+    "consultationEnded": "Consultation ended!",
+    "consultationEndedMsg": "Your consultation has ended successfully.",
+    "doctorFallback": "Doctor",
+    "failedToJoin": "Failed to join call",
+    "goBack": "Go Back",
+    "missingAppointment": "Missing appointment information",
+    "patientFallback": "Patient",
+    "permissionsDenied": "Permissions denied",
+    "retry": "Retry",
+    "sendPrescription": "Send prescription",
+    "sendRecommendation": "Send recommendation",
+    "waitingParticipant": "Waiting for participant..."
+  },
+  "wallet": {
+    "days": {
+      "fri": "FRI",
+      "mon": "MON",
+      "sat": "SAT",
+      "sun": "SUN",
+      "thu": "THU",
+      "tue": "TUE",
+      "wed": "WED"
+    },
+    "empty": "No transactions yet",
+    "lastTransactions": "Last Transactions",
+    "loadError": "Failed to load wallet",
+    "paymentMethod": "Payment Method",
+    "performance": "7 Days Performance",
+    "recentTransactions": "Recent Transactions",
+    "retry": "Try Again",
+    "thisMonth": "This Month",
+    "title": "Wallet",
+    "totalEarnings": "Total Earnings",
+    "weekly": "WEEKLY"
+  },
+  "wishlist": {
+    "browse": "Browse Marketplace",
+    "empty": "Your wishlist is empty.",
+    "item": "Item",
+    "remove": "Remove",
+    "title": "Wishlist"
+  },
+  "workingHours": {
+    "alerts": {
+      "errorTitle": "Error",
+      "saveFailedMsg": "Failed to save working hours.",
+      "savedMsg": "Working hours updated successfully.",
+      "savedTitle": "Saved"
+    },
+    "days": {
+      "friday": "Friday",
+      "monday": "Monday",
+      "saturday": "Saturday",
+      "sunday": "Sunday",
+      "thursday": "Thursday",
+      "tuesday": "Tuesday",
+      "wednesday": "Wednesday"
+    },
+    "end": "End",
+    "save": "Save",
+    "start": "Start",
+    "title": "Working hours"
+  }
+}

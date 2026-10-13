@@ -6,14 +6,17 @@ import {
   TouchableOpacity,
   ScrollView,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import {
+  useGetBookingByIdQuery,
   useGetDoctorBookingsQuery,
-  type DoctorAppointment,
 } from '@/store/doctorPortalApi';
+import { DoctorAvatar } from '@/components/doctor-avatar';
 
 function formatTimeRange(start: string, end: string): string {
   const s = new Date(start);
@@ -34,24 +37,90 @@ function formatDate(dateStr: string): string {
 function getStatusStyle(status: string) {
   switch (status) {
     case 'CONFIRMED':
-      return { bg: '#E8F5E9', text: '#2E7D32', label: 'Upcoming' };
+      return { bg: '#E8F5E9', text: '#2E7D32', labelKey: 'appointmentDetails.status.upcoming' };
     case 'COMPLETED':
-      return { bg: '#E3F2FD', text: '#1565C0', label: 'Completed' };
+      return { bg: '#E3F2FD', text: '#1565C0', labelKey: 'appointmentDetails.status.completed' };
     case 'CANCELLED':
-      return { bg: '#FFEBEE', text: '#C62828', label: 'Cancelled' };
+      return { bg: '#FFEBEE', text: '#C62828', labelKey: 'appointmentDetails.status.cancelled' };
     case 'RESCHEDULED':
-      return { bg: '#FFF3E0', text: '#E65100', label: 'Rescheduled' };
+      return { bg: '#FFF3E0', text: '#E65100', labelKey: 'appointmentDetails.status.rescheduled' };
     default:
-      return { bg: '#FFF3E0', text: '#E65100', label: status };
+      return { bg: '#FFF3E0', text: '#E65100', labelKey: status };
+  }
+}
+
+function consultationTypeLabel(value?: string): string | null {
+  switch (value) {
+    case 'online_video':
+      return 'appointmentDetails.consultation.video';
+    case 'online_voice':
+      return 'appointmentDetails.consultation.voice';
+    case 'online_chat':
+      return 'appointmentDetails.consultation.chat';
+    case 'physical':
+      return 'appointmentDetails.consultation.inPerson';
+    case undefined:
+    case null:
+    case '':
+      return null;
+    default:
+      return value;
+  }
+}
+
+function formatSymptoms(symptoms?: string | string[]): string | null {
+  if (!symptoms) return null;
+  const text = Array.isArray(symptoms) ? symptoms.filter(Boolean).join(', ') : symptoms;
+  return text.trim() ? text.trim() : null;
+}
+
+function paymentStatusStyle(status?: string): { labelKey: string; color: string } {
+  switch (status) {
+    case 'paid':
+      return { labelKey: 'appointmentDetails.payment.paid', color: '#4CAF50' };
+    case 'pending':
+      return { labelKey: 'appointmentDetails.payment.pending', color: '#E65100' };
+    case 'failed':
+      return { labelKey: 'appointmentDetails.payment.failed', color: '#C62828' };
+    case 'refunded':
+      return { labelKey: 'appointmentDetails.payment.refunded', color: '#1565C0' };
+    default:
+      return { labelKey: '—', color: '#9C9690' };
   }
 }
 
 export default function AppointmentDetailsScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { data: bookings = [] } = useGetDoctorBookingsQuery();
+  const {
+    data: fetchedAppointment,
+    isLoading: idLoading,
+  } = useGetBookingByIdQuery(String(id ?? ''), { skip: !id });
+  const { data: bookings = [], isLoading: listLoading } = useGetDoctorBookingsQuery();
 
-  const appointment = bookings.find((b) => String(b.id) === id);
+  const appointment = fetchedAppointment ?? bookings.find((b) => String(b.id) === id);
+
+  if (!appointment && (idLoading || listLoading)) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backBtn}
+            onPress={() => router.back()}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="arrow-back" size={20} color="#BD632F" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>{t('appointmentDetails.title')}</Text>
+          <View style={{ width: 40 }} />
+        </View>
+        <View style={styles.emptyContainer}>
+          <ActivityIndicator size="small" color="#BD632F" />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (!appointment) {
     return (
@@ -64,12 +133,12 @@ export default function AppointmentDetailsScreen() {
           >
             <Ionicons name="arrow-back" size={20} color="#BD632F" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Appointment Details</Text>
+          <Text style={styles.headerTitle}>{t('appointmentDetails.title')}</Text>
           <View style={{ width: 40 }} />
         </View>
         <View style={styles.emptyContainer}>
           <Ionicons name="calendar-outline" size={48} color="#E6E1DC" />
-          <Text style={styles.emptyText}>Appointment not found</Text>
+          <Text style={styles.emptyText}>{t('appointmentDetails.notFound')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -77,7 +146,11 @@ export default function AppointmentDetailsScreen() {
 
   const statusStyle = getStatusStyle(appointment.status);
   const displayName =
-    appointment.animalName || appointment.patientName || `Patient #${appointment.patientId}`;
+    appointment.animalName || appointment.patientName || t('appointmentDetails.patient');
+  const consultationType = consultationTypeLabel(appointment.consultationType);
+  const reason = (appointment.reasonForConsultation ?? '').trim();
+  const symptoms = formatSymptoms(appointment.symptoms);
+  const payment = paymentStatusStyle(appointment.paymentStatus);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -89,7 +162,7 @@ export default function AppointmentDetailsScreen() {
         >
           <Ionicons name="arrow-back" size={20} color="#BD632F" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Appointments Details</Text>
+        <Text style={styles.headerTitle}>{t('appointmentDetails.title')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -104,7 +177,7 @@ export default function AppointmentDetailsScreen() {
           </Text>
           <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
             <Text style={[styles.statusText, { color: statusStyle.text }]}>
-              {statusStyle.label}
+              {t(statusStyle.labelKey)}
             </Text>
           </View>
         </View>
@@ -120,51 +193,92 @@ export default function AppointmentDetailsScreen() {
             )}
             <View style={styles.cardInfo}>
               <Text style={styles.cardName}>{displayName}</Text>
-              {appointment.animalSpecies && (
+              {(appointment.animalSpecies || appointment.animalBreed || appointment.animalAge) && (
                 <Text style={styles.cardDetail}>
-                  {appointment.animalSpecies}
-                  {appointment.animalAge ? ` · ${appointment.animalAge}` : ''}
-                  {appointment.animalBreed ? ` · ${appointment.animalBreed}` : ''}
+                  {[
+                    appointment.animalSpecies,
+                    appointment.animalAge,
+                    appointment.animalBreed,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
                 </Text>
               )}
-              {appointment.patientName && (
-                <Text style={styles.cardOwner}>Owner: {appointment.patientName}</Text>
+              {appointment.animalName && appointment.patientName && (
+                <Text style={styles.cardOwner}>{t('appointmentDetails.owner', { name: appointment.patientName })}</Text>
               )}
             </View>
           </View>
 
           <View style={styles.divider} />
 
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Consultation Type</Text>
-            <Text style={styles.detailValue}>Online - Video</Text>
+          <View style={styles.cardRow}>
+            <DoctorAvatar
+              name={appointment.doctorName || t('appointmentDetails.doctor')}
+              avatar={appointment.doctorAvatar}
+              size={56}
+              radius={28}
+              style={styles.doctorAvatar}
+            />
+            <View style={styles.cardInfo}>
+              <Text style={styles.cardLabel}>{t('appointmentDetails.doctorLabel')}</Text>
+              <Text style={styles.cardName}>
+                {appointment.doctorName || t('appointmentDetails.doctor')}
+              </Text>
+              {appointment.doctorSpecialty && (
+                <Text style={styles.cardDetail}>{appointment.doctorSpecialty}</Text>
+              )}
+            </View>
           </View>
 
-          {appointment.symptoms && (
+          <View style={styles.divider} />
+
+          {consultationType && (
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>{t('appointmentDetails.consultationType')}</Text>
+              <Text style={styles.detailValue}>{t(consultationType)}</Text>
+            </View>
+          )}
+
+          {reason && (
             <>
               <View style={styles.divider} />
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Reason for Consultation</Text>
-                <Text style={styles.detailValue}>{appointment.symptoms}</Text>
+                <Text style={styles.detailLabel}>{t('appointmentDetails.reason')}</Text>
+                <Text style={styles.detailValue}>{reason}</Text>
               </View>
             </>
           )}
 
-          {appointment.symptoms && (
+          {symptoms && (
             <>
               <View style={styles.divider} />
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Symptoms</Text>
-                <Text style={styles.detailValue}>{appointment.symptoms}</Text>
+                <Text style={styles.detailLabel}>{t('appointmentDetails.symptoms')}</Text>
+                <Text style={styles.detailValue}>{symptoms}</Text>
               </View>
             </>
           )}
 
           <View style={styles.divider} />
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Payment</Text>
-            <Text style={[styles.detailValue, styles.paidText]}>Paid</Text>
+            <Text style={styles.detailLabel}>{t('appointmentDetails.paymentLabel')}</Text>
+            <Text style={[styles.detailValue, { color: payment.color }]}>
+              {t(payment.labelKey)}
+            </Text>
           </View>
+
+          {appointment.price != null && (
+            <>
+              <View style={styles.divider} />
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>{t('appointmentDetails.fee')}</Text>
+                <Text style={styles.detailValue}>
+                  ৳ {appointment.price.toLocaleString()}
+                </Text>
+              </View>
+            </>
+          )}
         </View>
       </ScrollView>
 
@@ -180,7 +294,7 @@ export default function AppointmentDetailsScreen() {
             }
             activeOpacity={0.8}
           >
-            <Text style={styles.cancelBtnText}>Cancel</Text>
+            <Text style={styles.cancelBtnText}>{t('appointmentDetails.cancel')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.rescheduleBtn}
@@ -192,7 +306,7 @@ export default function AppointmentDetailsScreen() {
             }
             activeOpacity={0.8}
           >
-            <Text style={styles.rescheduleBtnText}>Reschedule</Text>
+            <Text style={styles.rescheduleBtnText}>{t('appointmentDetails.reschedule')}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -246,13 +360,19 @@ const styles = StyleSheet.create({
   },
   cardInfo: { flex: 1, justifyContent: 'center' },
   cardName: { fontSize: 16, fontWeight: '700', color: '#1A1817', marginBottom: 2 },
+  doctorAvatar: { width: 56, height: 56, borderRadius: 28 },
+  cardLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#9C9690',
+    marginBottom: 2,
+  },
   cardDetail: { fontSize: 13, fontWeight: '500', color: '#7C7672', marginBottom: 2 },
   cardOwner: { fontSize: 13, fontWeight: '500', color: '#7C7672' },
   divider: { height: 1, backgroundColor: '#F0EAE1', marginVertical: 12 },
   detailRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingVertical: 2 },
   detailLabel: { fontSize: 14, fontWeight: '500', color: '#9C9690', flex: 1 },
   detailValue: { fontSize: 14, fontWeight: '600', color: '#1A1817', flex: 1, textAlign: 'right' },
-  paidText: { color: '#4CAF50' },
   emptyContainer: { alignItems: 'center', marginTop: 60, gap: 12 },
   emptyText: { fontSize: 15, fontWeight: '500', color: '#9C9690' },
   bottomContainer: {

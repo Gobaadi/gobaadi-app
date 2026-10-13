@@ -1,13 +1,15 @@
 import {
   Injectable,
   BadRequestException,
+  BadGatewayException,
   ConflictException,
   UnauthorizedException,
   ForbiddenException,
   NotFoundException,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, IsNull } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
@@ -36,6 +38,8 @@ interface OtpRecord {
 
 @Injectable()
 export class AdminAuthService {
+  private readonly logger = new Logger(AdminAuthService.name);
+
   private otpMemoryFallback = new Map<
     string,
     { record: OtpRecord; expiresAt: number }
@@ -60,10 +64,12 @@ export class AdminAuthService {
       id: admin.id,
       name: admin.name,
       email: admin.email,
+      phone: admin.phone,
       avatar: admin.avatar,
       role: admin.role,
       designation: admin.designation,
       status: admin.status,
+      verified: admin.verified,
       createdAt: admin.createdAt,
       updatedAt: admin.updatedAt,
     };
@@ -103,10 +109,11 @@ export class AdminAuthService {
     email: string,
     password: string,
   ): Promise<AdminTokenPair & { admin: Partial<Admin> }> {
+    const normalizedEmail = email.trim().toLowerCase();
     const admin = await this.adminRepository
       .createQueryBuilder('admin')
       .addSelect('admin.password')
-      .where('admin.email = :email', { email })
+      .where('admin.email = :email', { email: normalizedEmail })
       .getOne();
 
     if (!admin || !admin.password) {
@@ -116,6 +123,12 @@ export class AdminAuthService {
     const matches = await bcrypt.compare(password, admin.password);
     if (!matches) {
       throw new UnauthorizedException('Invalid credentials.');
+    }
+
+    if (!admin.verified) {
+      throw new ForbiddenException(
+        'Please verify your account before signing in.',
+      );
     }
 
     if (admin.status === AdminStatus.DEACTIVE) {
@@ -196,12 +209,15 @@ export class AdminAuthService {
     const record: OtpRecord = { code: otp, purpose };
 
     try {
-      await this.redisService.set(
+      await this.redisService.setOrThrow(
         `admin_otp:${email}`,
         JSON.stringify(record),
         expirySeconds,
       );
-    } catch {
+    } catch (err) {
+      this.logger.warn(
+        `Redis unavailable, storing admin OTP in memory for this instance: ${(err as Error).message}`,
+      );
       this.otpMemoryFallback.set(email, {
         record,
         expiresAt: Date.now() + expirySeconds * 1000,
@@ -217,7 +233,13 @@ export class AdminAuthService {
         meta: { type: 'otp', purpose },
       });
     } catch (err) {
-      console.warn('Failed to send admin OTP email', err);
+      const error = err as { code?: string; message?: string };
+      this.logger.error(
+        `Failed to send admin OTP email to ${email}: ${error.code || 'UNKNOWN'} — ${error.message}`,
+      );
+      throw new BadGatewayException(
+        'Failed to send verification email. Please try again.',
+      );
     }
 
     return {
@@ -246,11 +268,15 @@ export class AdminAuthService {
     let savedRecord: OtpRecord | null = null;
 
     try {
-      const raw = await this.redisService.get(`admin_otp:${email}`);
+      const raw = await this.redisService.getOrThrow(`admin_otp:${email}`);
       if (raw) {
         savedRecord = JSON.parse(raw) as OtpRecord;
       }
     } catch {
+      // Redis unreachable — consult the in-memory fallback below.
+    }
+
+    if (!savedRecord) {
       const entry = this.otpMemoryFallback.get(email);
       if (entry && entry.expiresAt > Date.now()) {
         savedRecord = entry.record;
@@ -272,9 +298,9 @@ export class AdminAuthService {
     }
 
     try {
-      await this.redisService.del(`admin_otp:${email}`);
+      await this.redisService.delOrThrow(`admin_otp:${email}`);
     } catch {
-      this.otpMemoryFallback.delete(email);
+      // ignore; memory fallback cleared below
     }
     this.otpMemoryFallback.delete(email);
 
@@ -350,9 +376,7 @@ export class AdminAuthService {
     return { success: true, message: 'Password reset successfully.' };
   }
 
-  async refreshTokens(
-    rawRefreshToken: string,
-  ): Promise<AdminTokenPair> {
+  async refreshTokens(rawRefreshToken: string): Promise<AdminTokenPair> {
     if (!rawRefreshToken) {
       throw new UnauthorizedException('Refresh token is required');
     }
@@ -381,9 +405,7 @@ export class AdminAuthService {
     return this.issueTokenPair(admin);
   }
 
-  async logout(
-    rawRefreshToken: string,
-  ): Promise<{ success: boolean }> {
+  async logout(rawRefreshToken: string): Promise<{ success: boolean }> {
     if (!rawRefreshToken) {
       return { success: true };
     }
@@ -414,7 +436,13 @@ export class AdminAuthService {
 
   async updateProfile(
     adminId: number,
-    dto: { name?: string; designation?: AdminDesignation; password?: string },
+    dto: {
+      name?: string;
+      designation?: AdminDesignation;
+      password?: string;
+      avatar?: string;
+      phone?: string;
+    },
   ): Promise<Partial<Admin>> {
     const admin = await this.adminRepository.findOneBy({ id: adminId });
     if (!admin) {
@@ -423,11 +451,30 @@ export class AdminAuthService {
 
     if (dto.name) admin.name = dto.name;
     if (dto.designation) admin.designation = dto.designation;
+    if (dto.avatar !== undefined) admin.avatar = dto.avatar;
+    if (dto.phone !== undefined) admin.phone = dto.phone;
     if (dto.password) {
       admin.password = await bcrypt.hash(dto.password, 10);
     }
 
     await this.adminRepository.save(admin);
     return this.toPublicAdmin(admin);
+  }
+
+  async deleteOwnAccount(
+    adminId: number,
+  ): Promise<{ success: boolean; message: string }> {
+    const admin = await this.adminRepository.findOneBy({ id: adminId });
+    if (!admin) {
+      throw new NotFoundException('Admin not found.');
+    }
+
+    await this.refreshTokenRepository.update(
+      { adminId, revokedAt: IsNull() },
+      { revokedAt: new Date() },
+    );
+    await this.adminRepository.remove(admin);
+
+    return { success: true, message: 'Account deleted successfully.' };
   }
 }

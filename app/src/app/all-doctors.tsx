@@ -8,13 +8,40 @@ import {
   TouchableOpacity,
   Modal,
 } from 'react-native';
-import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { SvgXml } from 'react-native-svg';
+
+import {
+  backButtonSvg,
+  doctorNotificationSvg,
+  doctorsFilterSvg,
+  doctorCardBookSlotSvg,
+  doctorCardDetailsSvg,
+  doctorCardLocationSvg,
+  doctorCardStarSvg,
+  locationChevronSvg,
+  locationPinSvg,
+  searchSvg,
+  tintSvg,
+} from '@/components/icons/svg-icon-sources';
 import { useGetDoctorsQuery } from '@/store/doctorsApi';
 import { EmptyState } from '@/components/ui/empty-state';
 import { MediaCardSkeleton } from '@/components/ui/skeleton';
+import { useLocation } from '@/hooks/use-location';
+import LocationBottomSheet from '@/components/LocationBottomSheet';
+import { DoctorAvatar } from '@/components/doctor-avatar';
+import { useTranslation } from 'react-i18next';
+import { matchesDoctorLocation } from '@/utils/location';
+
+const SPECIALTY_OPTIONS: { value: string; labelKey: string }[] = [
+  { value: 'All', labelKey: 'allDoctors.specialties.all' },
+  { value: 'Medicine', labelKey: 'allDoctors.specialties.medicine' },
+  { value: 'Gynaecology', labelKey: 'allDoctors.specialties.gynaecology' },
+  { value: 'Surgery', labelKey: 'allDoctors.specialties.surgery' },
+  { value: 'Dermatology', labelKey: 'allDoctors.specialties.dermatology' },
+];
 
 interface DoctorView {
   id: number;
@@ -23,29 +50,32 @@ interface DoctorView {
   location: string;
   rating: number;
   reviews: number;
-  image: any;
+  avatar: string;
 }
 
 export default function AllDoctorsScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [activeFilter, setActiveFilter] = useState('All');
   const [searchText, setSearchText] = useState('');
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [selectedSpecialties, setSelectedSpecialties] = useState<string[]>([]);
+  const { location, setLocation } = useLocation();
+  const [locationSheetOpen, setLocationSheetOpen] = useState(false);
   const { data: doctorList = [], isLoading } = useGetDoctorsQuery();
 
   const doctors: DoctorView[] = useMemo(() => {
-    let filtered = doctorList.map((d) => ({
-      id: d.id,
-      name: d.name,
-      specialty: d.specialty,
-      location: 'Uttar Badda, Dhaka',
-      rating: d.rating || 4.8,
-      reviews: 124,
-      image: d.avatar === 'jessica_doctor.png'
-        ? require('@/assets/images/jessica_doctor.png')
-        : require('@/assets/images/michael_doctor.png'),
-    }));
+    let filtered = doctorList
+      .filter((d) => matchesDoctorLocation(d.location, location))
+      .map((d) => ({
+        id: d.id,
+        name: d.name,
+        specialty: d.specialty,
+        location: d.location || '',
+        rating: d.rating || 4.8,
+        reviews: 124,
+        avatar: d.avatar ?? '',
+      }));
 
     if (activeFilter !== 'All') {
       filtered = filtered.filter((d) =>
@@ -63,7 +93,7 @@ export default function AllDoctorsScreen() {
     }
 
     return filtered;
-  }, [doctorList, activeFilter, searchText]);
+  }, [doctorList, activeFilter, searchText, location]);
 
   const totalCount = doctorList.length;
   const medicineCount = doctorList.filter((d) =>
@@ -73,11 +103,11 @@ export default function AllDoctorsScreen() {
     d.specialty?.toLowerCase().includes('gynaecol') || d.specialty?.toLowerCase().includes('gynecol')
   ).length;
 
-  const filterOptions = [
-    { label: 'Filter', value: 'filter', icon: 'options-outline' as const },
-    { label: `All (${totalCount})`, value: 'All', icon: null },
-    { label: `Medicine(${medicineCount})`, value: 'Medicine', icon: null },
-    { label: `Gynaecology(${gynaeCount})`, value: 'Gynaecology', icon: null },
+  const filterOptions: { labelKey: string; value: string; icon: 'options-outline' | null; count?: number }[] = [
+    { labelKey: 'allDoctors.filters.settings', value: 'filter', icon: 'options-outline' },
+    { labelKey: 'allDoctors.filters.all', value: 'All', icon: null, count: totalCount },
+    { labelKey: 'allDoctors.filters.medicine', value: 'Medicine', icon: null, count: medicineCount },
+    { labelKey: 'allDoctors.filters.gynaecology', value: 'Gynaecology', icon: null, count: gynaeCount },
   ];
 
   return (
@@ -89,31 +119,46 @@ export default function AllDoctorsScreen() {
           onPress={() => router.back()}
           activeOpacity={0.8}
         >
-          <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+          <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>All Doctors</Text>
+        <Text style={styles.headerTitle}>{t('allDoctors.title')}</Text>
 
         <TouchableOpacity style={styles.circleButton} activeOpacity={0.8}>
-          <Ionicons name="notifications-outline" size={20} color="#FFFFFF" />
+          <SvgXml width={20} height={20} xml={doctorNotificationSvg} />
         </TouchableOpacity>
       </View>
 
       {/* Location bar */}
       <View style={styles.locationContainer}>
-        <TouchableOpacity style={styles.locationSelector} activeOpacity={0.7}>
-          <Ionicons name="location" size={16} color="#BD632F" style={styles.pinIcon} />
-          <Text style={styles.locationText}>Uttar Badda, Dhaka</Text>
-          <Ionicons name="chevron-down" size={14} color="#7C7672" />
+        <TouchableOpacity
+          style={styles.locationSelector}
+          activeOpacity={0.7}
+          onPress={() => setLocationSheetOpen(true)}
+        >
+          <SvgXml width={14} height={16} xml={locationPinSvg} style={styles.pinIcon} />
+          <Text style={styles.locationText}>{location}</Text>
+          <SvgXml
+            width={14}
+            height={14}
+            xml={tintSvg(locationChevronSvg, '#C0612B', '#7C7672')}
+          />
         </TouchableOpacity>
       </View>
 
+      <LocationBottomSheet
+        visible={locationSheetOpen}
+        selectedLocation={location}
+        onClose={() => setLocationSheetOpen(false)}
+        onSave={setLocation}
+      />
+
       {/* Search Input */}
       <View style={styles.searchContainer}>
-        <Ionicons name="search" size={18} color="#7C7672" style={styles.searchIcon} />
+        <SvgXml width={18} height={18} xml={searchSvg} style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
-          placeholder="Search doctor"
+          placeholder={t('allDoctors.searchPlaceholder')}
           placeholderTextColor="#A39E99"
           value={searchText}
           onChangeText={setSearchText}
@@ -147,15 +192,15 @@ export default function AllDoctorsScreen() {
                 activeOpacity={0.7}
               >
                 {opt.icon && (
-                  <Ionicons
-                    name={opt.icon}
-                    size={14}
-                    color={isActive ? '#FFFFFF' : '#7C7672'}
+                  <SvgXml
+                    width={14}
+                    height={14}
+                    xml={tintSvg(doctorsFilterSvg, '#525252', isActive ? '#FFFFFF' : '#7C7672')}
                     style={styles.filterChipIcon}
                   />
                 )}
                 <Text style={[styles.filterChipText, isActive && styles.filterChipTextActive]}>
-                  {opt.label}
+                  {opt.count != null ? t(opt.labelKey, { count: opt.count }) : t(opt.labelKey)}
                 </Text>
               </TouchableOpacity>
             );
@@ -173,25 +218,33 @@ export default function AllDoctorsScreen() {
           </>
         ) : doctors.length === 0 ? (
           <EmptyState
-            title="No doctors available"
-            description="Check back soon — new vets are added regularly."
+            title={t('allDoctors.empty.title')}
+            description={t('allDoctors.empty.description')}
           />
         ) : (
         doctors.map((doc) => (
           <View key={doc.id} style={styles.doctorCard}>
             <View style={styles.doctorCardMain}>
-              <Image source={doc.image} style={styles.doctorPortrait} />
+              <DoctorAvatar
+                name={doc.name}
+                avatar={doc.avatar}
+                size={80}
+                radius={16}
+                style={styles.doctorPortrait}
+              />
               <View style={styles.doctorDetails}>
                 <Text style={styles.doctorName}>{doc.name}</Text>
                 <Text style={styles.doctorSpecialty}>{doc.specialty}</Text>
-                <View style={styles.ratingLocationRow}>
-                  <Ionicons name="location" size={12} color="#9C9690" style={styles.locationPin} />
-                  <Text style={styles.locationTextMeta}>{doc.location}</Text>
-                </View>
+                {doc.location ? (
+                  <View style={styles.ratingLocationRow}>
+                    <SvgXml width={12} height={12} xml={doctorCardLocationSvg} style={styles.locationPin} />
+                    <Text style={styles.locationTextMeta}>{doc.location}</Text>
+                  </View>
+                ) : null}
                 <View style={styles.ratingRow}>
-                  <Ionicons name="star" size={12} color="#F5A623" style={styles.starIcon} />
+                  <SvgXml width={12} height={12} xml={doctorCardStarSvg} style={styles.starIcon} />
                   <Text style={styles.ratingValue}>{doc.rating}</Text>
-                  <Text style={styles.reviewsText}>| {doc.reviews} Reviews</Text>
+                  <Text style={styles.reviewsText}>{t('allDoctors.reviews', { count: doc.reviews })}</Text>
                 </View>
               </View>
             </View>
@@ -202,16 +255,21 @@ export default function AllDoctorsScreen() {
                 onPress={() => router.push({ pathname: '/book-slot', params: { id: doc.id } })}
                 activeOpacity={0.8}
               >
-                <Ionicons name="calendar-outline" size={14} color="#BD632F" style={styles.buttonIcon} />
-                <Text style={styles.bookButtonText}>Book Slot</Text>
+                <SvgXml
+                  width={14}
+                  height={14}
+                  xml={tintSvg(doctorCardBookSlotSvg, 'white', '#BD632F')}
+                  style={styles.buttonIcon}
+                />
+                <Text style={styles.bookButtonText}>{t('allDoctors.bookSlot')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.detailsButton}
                 onPress={() => router.push({ pathname: '/doctor-detail', params: { id: doc.id } })}
                 activeOpacity={0.8}
               >
-                <Ionicons name="document-text-outline" size={14} color="#BD632F" style={styles.buttonIcon} />
-                <Text style={styles.detailsButtonText}>Details</Text>
+                <SvgXml width={14} height={14} xml={doctorCardDetailsSvg} style={styles.buttonIcon} />
+                <Text style={styles.detailsButtonText}>{t('allDoctors.details')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -230,7 +288,7 @@ export default function AllDoctorsScreen() {
             <TouchableOpacity onPress={() => setFilterModalVisible(false)} activeOpacity={0.7}>
               <Ionicons name="close" size={24} color="#1A1817" />
             </TouchableOpacity>
-            <Text style={styles.modalTitle}>Filter Doctors</Text>
+            <Text style={styles.modalTitle}>{t('allDoctors.modal.title')}</Text>
             <TouchableOpacity
               onPress={() => {
                 setSelectedSpecialties([]);
@@ -239,14 +297,14 @@ export default function AllDoctorsScreen() {
               }}
               activeOpacity={0.7}
             >
-              <Text style={styles.modalClearBtn}>Reset</Text>
+              <Text style={styles.modalClearBtn}>{t('allDoctors.modal.reset')}</Text>
             </TouchableOpacity>
           </View>
 
           <ScrollView style={styles.modalBody} contentContainerStyle={styles.modalBodyContent}>
-            <Text style={styles.modalSectionTitle}>Specialty</Text>
+            <Text style={styles.modalSectionTitle}>{t('allDoctors.modal.specialty')}</Text>
             <View style={styles.modalChipRow}>
-              {['All', 'Medicine', 'Gynaecology', 'Surgery', 'Dermatology'].map((spec) => {
+              {SPECIALTY_OPTIONS.map(({ value: spec, labelKey }) => {
                 const isActive = activeFilter === spec || selectedSpecialties.includes(spec);
                 return (
                   <TouchableOpacity
@@ -263,7 +321,7 @@ export default function AllDoctorsScreen() {
                     activeOpacity={0.7}
                   >
                     <Text style={[styles.modalChipText, isActive && styles.modalChipTextActive]}>
-                      {spec}
+                      {t(labelKey)}
                     </Text>
                   </TouchableOpacity>
                 );
@@ -277,7 +335,7 @@ export default function AllDoctorsScreen() {
               onPress={() => setFilterModalVisible(false)}
               activeOpacity={0.85}
             >
-              <Text style={styles.modalApplyBtnText}>Apply Filter</Text>
+              <Text style={styles.modalApplyBtnText}>{t('allDoctors.modal.apply')}</Text>
             </TouchableOpacity>
           </View>
         </SafeAreaView>
@@ -321,9 +379,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   pinIcon: {
-    fontSize: 16,
     marginRight: 6,
-    color: '#BD632F',
   },
   locationText: {
     fontSize: 14,
@@ -344,9 +400,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   searchIcon: {
-    fontSize: 16,
     marginRight: 10,
-    color: '#7C7672',
   },
   searchInput: {
     flex: 1,
@@ -437,8 +491,6 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   locationPin: {
-    fontSize: 11,
-    color: '#9C9690',
     marginRight: 4,
   },
   locationTextMeta: {
@@ -450,7 +502,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   starIcon: {
-    fontSize: 11,
     marginRight: 4,
   },
   ratingValue: {

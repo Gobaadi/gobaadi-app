@@ -24,8 +24,8 @@ export class WeatherQueryDto {
   @ApiPropertyOptional({ example: 'Munshiganj' })
   @IsOptional()
   @IsString()
-  @Matches(/^[a-zA-Z\s'-]+$/, {
-    message: 'district must contain only letters, spaces, and hyphens',
+  @Matches(/^[\p{L}\s'-]+$/u, {
+    message: 'district must contain only letters, spaces, hyphens, and apostrophes',
   })
   district?: string;
 }

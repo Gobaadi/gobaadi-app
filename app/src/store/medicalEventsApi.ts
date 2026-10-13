@@ -30,6 +30,10 @@ export const medicalEventsApi = createApi({
         url: `/animals/${animalId}/medical-events`,
         params,
       }),
+      // Backend returns PaginatedResult<MedicalEvent>; older/edge responses
+      // may be a bare array — normalise so callers always get an array.
+      transformResponse: (response: { data?: MedicalEvent[] } | MedicalEvent[] | null | undefined) =>
+        Array.isArray(response) ? response : response?.data ?? [],
       providesTags: (_result, _error, { animalId }) => [{ type: 'MedicalEvent', id: animalId }],
     }),
     createMedicalEvent: builder.mutation<MedicalEvent, { animalId: string; data: CreateMedicalEventInput }>({

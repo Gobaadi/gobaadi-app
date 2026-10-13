@@ -8,8 +8,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { ILike, IsNull, Repository } from 'typeorm';
 import { Doctor } from './doctor.entity';
 import { Availability } from './availability.entity';
+import { User } from '../users/user.entity';
 import { PaginatedResult } from '../common/paginated-result.interface';
 import { MeilisearchService } from '../meilisearch/meilisearch.service';
+import { S3Service } from '../s3/s3.service';
 import { UpdateSingleDayDto } from './dto/update-single-day.dto';
 export { Doctor } from './doctor.entity';
 export { Availability } from './availability.entity';
@@ -31,7 +33,10 @@ export class DoctorsService {
     private readonly doctorRepository: Repository<Doctor>,
     @InjectRepository(Availability)
     private readonly availabilityRepository: Repository<Availability>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
     private readonly meilisearchService: MeilisearchService,
+    private readonly s3Service: S3Service,
   ) {}
 
   async getDoctors(
@@ -292,6 +297,59 @@ export class DoctorsService {
     return this.doctorRepository.save(doctor);
   }
 
+  async uploadPhoto(
+    doctorUserId: number,
+    file: Express.Multer.File,
+  ): Promise<Doctor> {
+    const doctor = await this.doctorRepository.findOneBy({
+      userId: doctorUserId,
+    });
+    if (!doctor) {
+      throw new ForbiddenException('No doctor profile linked to this account');
+    }
+    const result = await this.s3Service.uploadFile(file.buffer, {
+      folder: 'gobadi/avatars',
+      contentType: file.mimetype,
+    });
+    doctor.avatar = result.url;
+    return this.doctorRepository.save(doctor);
+  }
+
+  async uploadCredentialDocument(
+    doctorUserId: number,
+    file: Express.Multer.File,
+  ): Promise<Doctor> {
+    const doctor = await this.doctorRepository.findOneBy({
+      userId: doctorUserId,
+    });
+    if (!doctor) {
+      throw new ForbiddenException('No doctor profile linked to this account');
+    }
+    const result = await this.s3Service.uploadFile(file.buffer, {
+      folder: 'doctor-credentials',
+      contentType: file.mimetype,
+    });
+    doctor.credentialDocuments = [
+      ...(doctor.credentialDocuments || []),
+      result.url,
+    ];
+    return this.doctorRepository.save(doctor);
+  }
+
+  async updateCredentialDocuments(
+    doctorUserId: number,
+    documents: string[],
+  ): Promise<Doctor> {
+    const doctor = await this.doctorRepository.findOneBy({
+      userId: doctorUserId,
+    });
+    if (!doctor) {
+      throw new ForbiddenException('No doctor profile linked to this account');
+    }
+    doctor.credentialDocuments = documents;
+    return this.doctorRepository.save(doctor);
+  }
+
   async updateExperiences(
     doctorUserId: number,
     experiences: Array<{
@@ -321,6 +379,14 @@ export class DoctorsService {
       bio?: string;
       consultationFee?: number;
       licenseNumber?: string;
+      location?: string;
+      credentialPeriod?: {
+        startMonth?: string;
+        startYear?: string;
+        endMonth?: string;
+        endYear?: string;
+        isCurrentlyStudying?: boolean;
+      };
     },
   ): Promise<Doctor> {
     const doctor = await this.doctorRepository.findOneBy({
@@ -334,9 +400,23 @@ export class DoctorsService {
     if (dto.experience !== undefined) doctor.experience = dto.experience;
     if (dto.avatar !== undefined) doctor.avatar = dto.avatar;
     if (dto.bio !== undefined) doctor.bio = dto.bio;
-    if (dto.consultationFee !== undefined) doctor.consultationFee = dto.consultationFee;
-    if (dto.licenseNumber !== undefined) doctor.licenseNumber = dto.licenseNumber;
-    return this.doctorRepository.save(doctor);
+    if (dto.consultationFee !== undefined)
+      doctor.consultationFee = dto.consultationFee;
+    if (dto.licenseNumber !== undefined)
+      doctor.licenseNumber = dto.licenseNumber;
+    if (dto.location !== undefined) doctor.location = dto.location;
+    if (dto.credentialPeriod !== undefined)
+      doctor.credentialPeriod = dto.credentialPeriod;
+    const saved = await this.doctorRepository.save(doctor);
+    // Keep the account-level name in sync so auth-derived UI (home greeting,
+    // JWT payload) matches the profile name.
+    if (dto.name !== undefined) {
+      await this.userRepository.update(
+        { id: doctorUserId },
+        { name: dto.name },
+      );
+    }
+    return saved;
   }
 
   async getDashboardStats(doctorUserId: number) {

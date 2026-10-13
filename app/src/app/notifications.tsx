@@ -10,10 +10,17 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { SvgXml } from 'react-native-svg';
+import {
+  backButtonSvg,
+  notificationSettingsSvg,
+} from '@/components/icons/svg-icon-sources';
 import { useGetNotificationsQuery, useMarkNotificationReadMutation } from '@/store/notificationsApi';
 import type { Notification } from '@/store/notificationsApi';
+import { formatNotificationTime } from '@/utils/date';
+import { useTranslation } from 'react-i18next';
 
-type FilterTab = 'all' | 'appointments' | 'patients' | 'messages';
+type FilterTab = 'all' | 'tasks' | 'hygiene' | 'health' | 'help';
 
 const TYPE_CONFIG: Record<string, { icon: string; iconBg: string; iconColor: string }> = {
   order: { icon: 'cart', iconBg: '#E3F2FD', iconColor: '#2196F3' },
@@ -31,9 +38,10 @@ const TYPE_CONFIG: Record<string, { icon: string; iconBg: string; iconColor: str
 
 const TAB_FILTER_MAP: Record<FilterTab, string[]> = {
   all: [],
-  appointments: ['booking', 'reminder'],
-  patients: ['message'],
-  messages: ['message'],
+  tasks: ['reminder'],
+  hygiene: ['system'],
+  health: ['ai_ready', 'prescription_ready'],
+  help: ['system', 'promotion'],
 };
 
 function isToday(dateStr: string): boolean {
@@ -49,16 +57,9 @@ function isThisWeek(dateStr: string): boolean {
   return date >= weekAgo && !isToday(dateStr);
 }
 
-function formatTime(dateStr: string): string {
-  const date = new Date(dateStr);
-  if (isToday(dateStr)) {
-    return `Today, ${date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`;
-  }
-  return date.toLocaleDateString('en-US', { weekday: 'short', hour: 'numeric', minute: '2-digit', hour12: true });
-}
-
 export default function NotificationsScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<FilterTab>('all');
   const { data: notifications, isLoading, isError } = useGetNotificationsQuery();
   const [markAsRead] = useMarkNotificationReadMutation();
@@ -110,7 +111,7 @@ export default function NotificationsScreen() {
         <View style={styles.notifInfo}>
           <Text style={styles.notifTitle}>{item.title}</Text>
           <Text style={styles.notifDesc}>{item.body}</Text>
-          <Text style={styles.notifTime}>{formatTime(item.createdAt)}</Text>
+          <Text style={styles.notifTime}>{formatNotificationTime(item.createdAt)}</Text>
         </View>
         {!item.isRead && <View style={styles.unreadDot} />}
       </TouchableOpacity>
@@ -122,11 +123,11 @@ export default function NotificationsScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
-            <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+            <SvgXml width={20} height={20} xml={backButtonSvg} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Notifications</Text>
+          <Text style={styles.headerTitle}>{t('notifications.title')}</Text>
           <TouchableOpacity style={styles.settingsBtn} onPress={() => router.push('/notification-preferences')} activeOpacity={0.7}>
-            <Ionicons name="settings-outline" size={20} color="#FFFFFF" />
+            <SvgXml width={20} height={20} xml={notificationSettingsSvg} />
           </TouchableOpacity>
         </View>
         <View style={styles.loadingContainer}>
@@ -141,37 +142,40 @@ export default function NotificationsScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
-            <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+            <SvgXml width={20} height={20} xml={backButtonSvg} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Notifications</Text>
+          <Text style={styles.headerTitle}>{t('notifications.title')}</Text>
           <TouchableOpacity style={styles.settingsBtn} onPress={() => router.push('/notification-preferences')} activeOpacity={0.7}>
-            <Ionicons name="settings-outline" size={20} color="#FFFFFF" />
+            <SvgXml width={20} height={20} xml={notificationSettingsSvg} />
           </TouchableOpacity>
         </View>
         <View style={styles.loadingContainer}>
           <Ionicons name="cloud-offline-outline" size={48} color="#9C9690" />
-          <Text style={styles.errorText}>Failed to load notifications</Text>
+          <Text style={styles.errorText}>{t('notifications.loadFailed')}</Text>
         </View>
       </SafeAreaView>
     );
   }
 
-  const hasNotifications = filteredNotifications.today.length > 0 || filteredNotifications.thisWeek.length > 0;
+  const hasNotifications =
+    filteredNotifications.today.length > 0 ||
+    filteredNotifications.thisWeek.length > 0 ||
+    filteredNotifications.older.length > 0;
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+          <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Notifications</Text>
+        <Text style={styles.headerTitle}>{t('notifications.title')}</Text>
         <TouchableOpacity style={styles.settingsBtn} onPress={() => router.push('/notification-preferences')} activeOpacity={0.7}>
-          <Ionicons name="settings-outline" size={20} color="#FFFFFF" />
+          <SvgXml width={20} height={20} xml={notificationSettingsSvg} />
         </TouchableOpacity>
       </View>
 
       <View style={styles.tabRow}>
-        {(['all', 'appointments', 'patients', 'messages'] as FilterTab[]).map((tab) => (
+        {(['all', 'tasks', 'hygiene', 'health', 'help'] as FilterTab[]).map((tab) => (
           <TouchableOpacity
             key={tab}
             style={[styles.tab, activeTab === tab && styles.tabActive]}
@@ -179,7 +183,7 @@ export default function NotificationsScreen() {
             activeOpacity={0.7}
           >
             <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-              {tab === 'all' ? 'All' : tab === 'appointments' ? 'Appointments' : tab === 'patients' ? 'Patients' : 'Messages'}
+              {t(`notifications.tabs.${tab}`)}
             </Text>
           </TouchableOpacity>
         ))}
@@ -189,21 +193,28 @@ export default function NotificationsScreen() {
         {!hasNotifications && (
           <View style={styles.emptyContainer}>
             <Ionicons name="notifications-off-outline" size={48} color="#9C9690" />
-            <Text style={styles.emptyText}>No notifications yet</Text>
+            <Text style={styles.emptyText}>{t('notifications.empty')}</Text>
           </View>
         )}
 
         {filteredNotifications.today.length > 0 && (
           <>
-            <Text style={styles.sectionTitle}>Today</Text>
+            <Text style={styles.sectionTitle}>{t('notifications.today')}</Text>
             {filteredNotifications.today.map(renderNotification)}
           </>
         )}
 
         {filteredNotifications.thisWeek.length > 0 && (
           <>
-            <Text style={[styles.sectionTitle, { marginTop: 20 }]}>This Week</Text>
+            <Text style={[styles.sectionTitle, { marginTop: 20 }]}>{t('notifications.thisWeek')}</Text>
             {filteredNotifications.thisWeek.map(renderNotification)}
+          </>
+        )}
+
+        {filteredNotifications.older.length > 0 && (
+          <>
+            <Text style={[styles.sectionTitle, { marginTop: 20 }]}>{t('notifications.earlier')}</Text>
+            {filteredNotifications.older.map(renderNotification)}
           </>
         )}
       </ScrollView>

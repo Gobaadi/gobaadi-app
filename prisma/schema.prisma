@@ -371,7 +371,7 @@ model Doctor {
   isVerified      Boolean  @default(false)
 
   // ── Outgoing FKs ──
-  user            User?    @relation(fields: [userId], references: [id])
+  user            User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // ── Reverse relations ──
   availability    Availability[]
@@ -545,7 +545,7 @@ model Appointment {
   updatedAt             DateTime          @updatedAt
 
   // ── Outgoing FKs ──
-  doctor                Doctor            @relation(fields: [doctorId], references: [id])
+  doctor                Doctor            @relation(fields: [doctorId], references: [id], onDelete: Cascade)
   clinic                Clinic?           @relation(fields: [clinicId], references: [id])
   patient               User              @relation("AppointmentPatient", fields: [patientId], references: [id])
   animal                Animal?           @relation(fields: [animalId], references: [id])
@@ -586,7 +586,7 @@ model Conversation {
 
   // ── Outgoing FKs ──
   doctor        Doctor     @relation(fields: [doctorId], references: [id], onDelete: Cascade)
-  doctorUser    User?      @relation("ConversationDoctorUser", fields: [doctorUserId], references: [id])
+  doctorUser    User?      @relation("ConversationDoctorUser", fields: [doctorUserId], references: [id], onDelete: Cascade)
   patient       User       @relation("ConversationPatient", fields: [patientId], references: [id])
   appointment   Appointment? @relation(fields: [appointmentId], references: [id])
 
@@ -1058,11 +1058,16 @@ model NotificationPreference {
   id                   Int      @id @default(autoincrement())
   userId               Int      @unique
   appointmentReminders Boolean  @default(true)
-  promotions           Boolean  @default(true)
+  promotionalOffers    Boolean  @default(true)
   chatMessages         Boolean  @default(true)
   prescriptionUpdates  Boolean  @default(true)
   labResults           Boolean  @default(true)
   vaccinationReminders Boolean  @default(true)
+  systemUpdates        Boolean  @default(true)
+  weatherAlerts        Boolean  @default(true)
+  taskReminders        Boolean  @default(true)
+  followUpReminders    Boolean  @default(true)
+  hygieneReminders     Boolean  @default(true)
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
@@ -1100,7 +1105,7 @@ model VideoSession {
   updatedAt     DateTime          @updatedAt
 
   appointment   Appointment       @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
-  doctorUser    User?             @relation("VideoSessionDoctorUser", fields: [doctorUserId], references: [id])
+  doctorUser    User?             @relation("VideoSessionDoctorUser", fields: [doctorUserId], references: [id], onDelete: Cascade)
   animal        Animal?           @relation("AnimalVideoSessions", fields: [patientId], references: [id])
 
   @@index([appointmentId])
@@ -1379,13 +1384,15 @@ model UserBadge {
 // ── SUPPORT ────────────────────────────────────────────────────────────────
 
 model SupportTicket {
-  id        Int          @id @default(autoincrement())
-  userId    Int
-  subject   String
-  message   String?      @db.Text
-  status    TicketStatus @default(open)
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
+  id                 Int          @id @default(autoincrement())
+  userId             Int
+  subject            String
+  message            String?      @db.Text
+  attachmentUrl      String?
+  attachmentFileName String?
+  status             TicketStatus @default(open)
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
 
   user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   replies   SupportTicketReply[]

@@ -19,7 +19,7 @@ export class Doctor {
   @Column('int', { nullable: true })
   userId?: number | null;
 
-  @ManyToOne(() => User, { nullable: true })
+  @ManyToOne(() => User, { nullable: true, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'userId' })
   user?: User;
 
@@ -48,6 +48,9 @@ export class Doctor {
   @Column('text', { array: true, default: '{}' })
   specializations: string[];
 
+  @Column('text', { array: true, default: '{}' })
+  credentialDocuments: string[];
+
   @Column('jsonb', { default: '[]' })
   experiences: Array<{
     title: string;
@@ -56,8 +59,20 @@ export class Doctor {
     description?: string;
   }>;
 
+  @Column('jsonb', { nullable: true })
+  credentialPeriod?: {
+    startMonth?: string;
+    startYear?: string;
+    endMonth?: string;
+    endYear?: string;
+    isCurrentlyStudying?: boolean;
+  } | null;
+
   @Column({ nullable: true })
   licenseNumber?: string;
+
+  @Column({ nullable: true })
+  location?: string;
 
   @Column('float', { default: 500 })
   consultationFee: number;

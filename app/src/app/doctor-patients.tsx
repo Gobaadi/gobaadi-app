@@ -10,6 +10,7 @@ import {
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { useRequireDoctor } from '@/hooks/use-require-doctor';
 import { useGetMyPatientsQuery } from '@/store/discountsApi';
@@ -18,6 +19,7 @@ import { MediaCardSkeleton } from '@/components/ui/skeleton';
 
 export default function DoctorPatientsScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const isDoctor = useRequireDoctor();
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -37,7 +39,7 @@ export default function DoctorPatientsScreen() {
         >
           <Ionicons name="arrow-back" size={20} color="#BD632F" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Patients</Text>
+        <Text style={styles.headerTitle}>{t('doctorPatients.title')}</Text>
         <View style={{ width: 44 }} />
       </View>
 
@@ -45,7 +47,7 @@ export default function DoctorPatientsScreen() {
         <Ionicons name="search" size={18} color="#9C9690" />
         <TextInput
           style={styles.searchInput}
-          placeholder="Search patients..."
+          placeholder={t('doctorPatients.searchPlaceholder')}
           placeholderTextColor="#9C9690"
           value={searchQuery}
           onChangeText={setSearchQuery}
@@ -70,25 +72,26 @@ export default function DoctorPatientsScreen() {
           </>
         ) : patients.length === 0 ? (
           <EmptyState
-            title={searchQuery ? 'No patients found' : 'No patients yet'}
+            title={searchQuery ? t('doctorPatients.empty.searchTitle') : t('doctorPatients.empty.title')}
             description={
               searchQuery
-                ? 'Try a different search term.'
-                : 'Patients will appear here after their first appointment.'
+                ? t('doctorPatients.empty.searchDescription')
+                : t('doctorPatients.empty.description')
             }
           />
         ) : (
           patients.map((patient) => (
             <TouchableOpacity
-              key={patient.id}
+              key={patient.ownerOnly ? `owner-${patient.id}` : `animal-${patient.id}`}
               style={styles.patientCard}
               activeOpacity={0.7}
-              onPress={() =>
+              onPress={() => {
+                if (patient.ownerOnly) return;
                 router.push({
                   pathname: '/patient-details',
                   params: { id: patient.id.toString() },
-                })
-              }
+                });
+              }}
             >
               <View style={styles.patientAvatar}>
                 {patient.image ? (
@@ -98,38 +101,54 @@ export default function DoctorPatientsScreen() {
                     contentFit="cover"
                   />
                 ) : (
-                  <Ionicons name="paw" size={28} color="#BD632F" />
+                  <Ionicons
+                    name={patient.ownerOnly ? 'person' : 'paw'}
+                    size={28}
+                    color="#BD632F"
+                  />
                 )}
               </View>
 
               <View style={styles.patientInfo}>
                 <Text style={styles.patientName}>{patient.name}</Text>
-                <Text style={styles.patientBreed}>{patient.breed}</Text>
+                {patient.breed ? (
+                  <Text style={styles.patientBreed}>{patient.breed}</Text>
+                ) : null}
                 <View style={styles.patientMetaRow}>
-                  <View style={styles.metaItem}>
-                    <Text style={styles.metaLabel}>Age</Text>
-                    <Text style={styles.metaValue}>{patient.age}</Text>
-                  </View>
-                  <View style={styles.metaDivider} />
-                  <View style={styles.metaItem}>
-                    <Text style={styles.metaLabel}>Weight</Text>
-                    <Text style={styles.metaValue}>{patient.weight}</Text>
-                  </View>
-                  {patient.ownerName && (
+                  {patient.age ? (
+                    <View style={styles.metaItem}>
+                      <Text style={styles.metaLabel}>{t('doctorPatients.meta.age')}</Text>
+                      <Text style={styles.metaValue}>{patient.age}</Text>
+                    </View>
+                  ) : null}
+                  {patient.weight ? (
                     <>
                       <View style={styles.metaDivider} />
                       <View style={styles.metaItem}>
-                        <Text style={styles.metaLabel}>Owner</Text>
+                        <Text style={styles.metaLabel}>{t('doctorPatients.meta.weight')}</Text>
+                        <Text style={styles.metaValue}>{patient.weight}</Text>
+                      </View>
+                    </>
+                  ) : null}
+                  {patient.ownerName ? (
+                    <>
+                      <View style={styles.metaDivider} />
+                      <View style={styles.metaItem}>
+                        <Text style={styles.metaLabel}>{t('doctorPatients.meta.owner')}</Text>
                         <Text style={styles.metaValue} numberOfLines={1}>
                           {patient.ownerName}
                         </Text>
                       </View>
                     </>
-                  )}
+                  ) : null}
                 </View>
               </View>
 
-              <Ionicons name="chevron-forward" size={18} color="#9C9690" />
+              {patient.ownerOnly ? (
+                <View style={{ width: 18 }} />
+              ) : (
+                <Ionicons name="chevron-forward" size={18} color="#9C9690" />
+              )}
             </TouchableOpacity>
           ))
         )}

@@ -8,9 +8,24 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 
+const LAST_UPDATED = 'October 1, 2026';
+
+type Section = {
+  headingKey: string;
+  bodyKey: string;
+};
+
+const SECTIONS: Section[] = [
+  { headingKey: 'privacyPolicy.s1.heading', bodyKey: 'privacyPolicy.s1.body' },
+  { headingKey: 'privacyPolicy.s2.heading', bodyKey: 'privacyPolicy.s2.body' },
+  { headingKey: 'privacyPolicy.s3.heading', bodyKey: 'privacyPolicy.s3.body' },
+];
+
 export default function PrivacyPolicyScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
 
   return (
@@ -24,39 +39,20 @@ export default function PrivacyPolicyScreen() {
         >
           <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Privacy Policy</Text>
+        <Text style={styles.headerTitle}>{t('privacyPolicy.title')}</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Section 1 */}
-        <Text style={styles.sectionHeading}>1. Types of Data We Collect</Text>
-        <Text style={styles.paragraph}>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt
-          ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco
-          laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in
-          voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat
-          non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+        <Text style={styles.lastUpdated}>
+          {t('privacyPolicy.lastUpdated', { date: LAST_UPDATED })}
         </Text>
 
-        {/* Section 2 */}
-        <Text style={styles.sectionHeading}>2. Use of Your Personal Data</Text>
-        <Text style={styles.paragraph}>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt
-          ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco
-          laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in
-          voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat
-          non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-        </Text>
-
-        {/* Section 3 */}
-        <Text style={styles.sectionHeading}>3. Disclosure of Your Personal Data</Text>
-        <Text style={styles.paragraph}>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt
-          ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco
-          laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in
-          voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat
-          non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-        </Text>
+        {SECTIONS.map((section) => (
+          <View key={section.headingKey}>
+            <Text style={styles.sectionHeading}>{t(section.headingKey)}</Text>
+            <Text style={styles.paragraph}>{t(section.bodyKey)}</Text>
+          </View>
+        ))}
       </ScrollView>
     </SafeAreaView>
   );
@@ -91,6 +87,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 10,
     paddingBottom: 40,
+  },
+  lastUpdated: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#9C9690',
+    marginTop: 6,
+    marginBottom: 4,
   },
   sectionHeading: {
     fontSize: 16,

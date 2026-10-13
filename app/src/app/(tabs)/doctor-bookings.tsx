@@ -17,15 +17,18 @@ import {
   type DoctorAppointment,
 } from '@/store/doctorPortalApi';
 import { useGetBlockTimesQuery } from '@/store/blockTimesApi';
+import { PatientAvatar } from '@/components/patient-avatar';
+import { formatTime12h } from '@/utils/date';
+import { useTranslation } from '@/hooks/use-translation';
 
 type ViewMode = 'monthly' | 'weekly';
 
-const MONTH_NAMES = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
+const MONTH_KEYS = [
+  'january', 'february', 'march', 'april', 'may', 'june',
+  'july', 'august', 'september', 'october', 'november', 'december',
 ];
 const DAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-const DAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
 function getDaysInMonth(year: number, month: number): number {
   return new Date(year, month + 1, 0).getDate();
@@ -55,11 +58,6 @@ function getWeekDates(reference: Date): Date[] {
   return dates;
 }
 
-function formatTime12h(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
-}
-
 function formatHourLabel(hour: number): string {
   const h = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
   const ampm = hour < 12 ? 'AM' : 'PM';
@@ -81,6 +79,7 @@ function MonthlyView({
   blockedDates: Set<string>;
   stats: { openDays: number; blockedDays: number; totalAppointments: number };
 }) {
+  const { t } = useTranslation();
   const year = selectedDate.getFullYear();
   const month = selectedDate.getMonth();
   const daysInMonth = getDaysInMonth(year, month);
@@ -94,7 +93,7 @@ function MonthlyView({
           <TouchableOpacity onPress={() => onNavigateMonth(-1)} style={styles.navBtn} activeOpacity={0.7}>
             <Ionicons name="chevron-back" size={18} color="#BD632F" />
           </TouchableOpacity>
-          <Text style={styles.monthTitle}>{MONTH_NAMES[month]} {year}</Text>
+          <Text style={styles.monthTitle}>{t(`doctorBookings.months.${MONTH_KEYS[month]}`)} {year}</Text>
           <TouchableOpacity onPress={() => onNavigateMonth(1)} style={styles.navBtn} activeOpacity={0.7}>
             <Ionicons name="chevron-forward" size={18} color="#BD632F" />
           </TouchableOpacity>
@@ -152,17 +151,17 @@ function MonthlyView({
       <View style={styles.statsRow}>
         <View style={styles.statItem}>
           <Text style={styles.statNumber}>{stats.openDays}</Text>
-          <Text style={styles.statLabel}>Open days</Text>
+          <Text style={styles.statLabel}>{t('doctorBookings.openDays')}</Text>
         </View>
         <View style={styles.statDivider} />
         <View style={styles.statItem}>
           <Text style={styles.statNumber}>{stats.blockedDays}</Text>
-          <Text style={styles.statLabel}>Blocked days</Text>
+          <Text style={styles.statLabel}>{t('doctorBookings.blockedDays')}</Text>
         </View>
         <View style={styles.statDivider} />
         <View style={styles.statItem}>
           <Text style={styles.statNumber}>{stats.totalAppointments}</Text>
-          <Text style={styles.statLabel}>Total appointments</Text>
+          <Text style={styles.statLabel}>{t('doctorBookings.totalAppointments')}</Text>
         </View>
       </View>
     </View>
@@ -170,7 +169,7 @@ function MonthlyView({
 }
 
 function formatAgendaTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+  return formatTime12h(iso);
 }
 
 function WeeklyView({
@@ -186,7 +185,8 @@ function WeeklyView({
   blockedDates: Set<string>;
   onAppointmentPress: (appointment: DoctorAppointment) => void;
 }) {
-  const weekDates = useMemo(() => getWeekDates(selectedDate), [selectedDate.getTime()]);
+  const { t } = useTranslation();
+  const weekDates = useMemo(() => getWeekDates(selectedDate), [selectedDate]);
 
   const dayAppointments = useMemo(() => {
     return bookings
@@ -198,8 +198,8 @@ function WeeklyView({
     <View>
       <View style={styles.weekStrip}>
         <View style={styles.weekDayHeader}>
-          {DAY_SHORT.map((d, i) => (
-            <Text key={i} style={styles.weekDayLabel}>{d}</Text>
+          {DAY_KEYS.map((d, i) => (
+            <Text key={i} style={styles.weekDayLabel}>{t(`doctorBookings.dayShort.${d}`)}</Text>
           ))}
         </View>
         <View style={styles.weekDateRow}>
@@ -237,15 +237,15 @@ function WeeklyView({
       <View style={styles.agendaContainer}>
         <View style={styles.dayTimelineHeaderRow}>
           <Text style={styles.dayTimelineHeader}>
-            {DAY_SHORT[selectedDate.getDay()]}, {selectedDate.getDate()} {MONTH_NAMES[selectedDate.getMonth()]}
+            {t(`doctorBookings.dayShort.${DAY_KEYS[selectedDate.getDay()]}`)}, {selectedDate.getDate()} {t(`doctorBookings.months.${MONTH_KEYS[selectedDate.getMonth()]}`)}
           </Text>
-          <Text style={styles.appointmentCount}>{dayAppointments.length} Appointments</Text>
+          <Text style={styles.appointmentCount}>{t('doctorBookings.appointmentsCount', { count: dayAppointments.length })}</Text>
         </View>
 
         {dayAppointments.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="calendar-outline" size={40} color="#E6E1DC" />
-            <Text style={styles.emptyStateText}>No appointments for this day</Text>
+            <Text style={styles.emptyStateText}>{t('doctorBookings.emptyDay')}</Text>
           </View>
         ) : (
           dayAppointments.map((appt) => (
@@ -269,16 +269,16 @@ function WeeklyView({
                 {appt.animalImage ? (
                   <Image source={{ uri: appt.animalImage }} style={styles.agendaAvatarImage} />
                 ) : (
-                  <Image source={{ uri: 'https://i.pravatar.cc/150?img=44' }} style={styles.agendaAvatarImage} />
+                  <PatientAvatar name={appt.patientName} image={appt.patientAvatar} size={50} />
                 )}
               </View>
 
               <View style={styles.agendaInfo}>
                 <Text style={styles.agendaName}>
-                  {appt.animalName || appt.patientName || `Patient #${appt.patientId}`}
+                    {appt.animalName || appt.patientName || t('doctorBookings.fallback.patient')}
                 </Text>
                 <Text style={styles.agendaDetail}>
-                  {appt.symptoms || 'General Checkup'}
+                  {appt.symptoms || t('doctorBookings.fallback.generalCheckup')}
                 </Text>
               </View>
 
@@ -295,8 +295,8 @@ function WeeklyView({
 
 export default function DoctorBookingsScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const isDoctor = useRequireDoctor();
-  if (!isDoctor) return null;
   const [viewMode, setViewMode] = useState<ViewMode>('monthly');
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showAllAppointments, setShowAllAppointments] = useState(false);
@@ -308,6 +308,7 @@ export default function DoctorBookingsScreen() {
   const appointmentDates = useMemo(() => {
     const dates = new Set<string>();
     bookings.forEach((b) => {
+      if (b.status === 'CANCELLED') return;
       dates.add(formatDateKey(new Date(b.startAt)));
     });
     return dates;
@@ -344,13 +345,14 @@ export default function DoctorBookingsScreen() {
     return { openDays, blockedDays, totalAppointments: bookings.length };
   }, [bookings.length, blockedDates]);
 
-  const upcomingAppointments = useMemo(() => {
+  const upcomingAll = useMemo(() => {
     const now = new Date();
     return bookings
       .filter((a) => new Date(a.startAt) >= now)
-      .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime())
-      .slice(0, showAllAppointments ? 10 : 2);
-  }, [bookings, showAllAppointments]);
+      .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
+  }, [bookings]);
+
+  const upcomingAppointments = showAllAppointments ? upcomingAll : upcomingAll.slice(0, 2);
 
   const handleSelectDate = useCallback((date: Date) => {
     setSelectedDate(date);
@@ -372,6 +374,8 @@ export default function DoctorBookingsScreen() {
     });
   }, [router]);
 
+  if (!isDoctor) return null;
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -382,7 +386,7 @@ export default function DoctorBookingsScreen() {
         >
           <Ionicons name="arrow-back" size={20} color="#BD632F" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Calendar</Text>
+        <Text style={styles.headerTitle}>{t('doctorBookings.title')}</Text>
         <TouchableOpacity
           style={styles.settingsBtn}
           onPress={() => router.push('/calendar-settings')}
@@ -399,7 +403,7 @@ export default function DoctorBookingsScreen() {
           activeOpacity={0.8}
         >
           <Text style={[styles.viewToggleText, viewMode === 'monthly' && styles.viewToggleTextActive]}>
-            Monthly
+            {t('doctorBookings.monthly')}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -408,7 +412,7 @@ export default function DoctorBookingsScreen() {
           activeOpacity={0.8}
         >
           <Text style={[styles.viewToggleText, viewMode === 'weekly' && styles.viewToggleTextActive]}>
-            Weekly
+            {t('doctorBookings.weekly')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -436,13 +440,19 @@ export default function DoctorBookingsScreen() {
         {viewMode === 'monthly' && (
           <View style={styles.upcomingSection}>
             <View style={styles.upcomingHeader}>
-              <Text style={styles.upcomingTitle}>Upcoming appointments</Text>
+              <Text style={styles.upcomingTitle}>{t('doctorBookings.upcoming')}</Text>
               <TouchableOpacity
                 onPress={() => setShowAllAppointments(!showAllAppointments)}
                 activeOpacity={0.7}
                 style={styles.viewAllBtn}
               >
-                <Text style={styles.viewAllText}>View all</Text>
+                <Text style={styles.viewAllText}>
+                  {showAllAppointments
+                    ? t('doctorBookings.showLess')
+                    : upcomingAll.length > 2
+                      ? t('doctorBookings.viewAllCount', { count: upcomingAll.length })
+                      : t('doctorBookings.viewAll')}
+                </Text>
                 <Ionicons
                   name={showAllAppointments ? 'chevron-up' : 'chevron-down'}
                   size={14}
@@ -470,14 +480,14 @@ export default function DoctorBookingsScreen() {
                     {new Date(appt.startAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })} · {formatTime12h(appt.startAt)}
                   </Text>
                   <Text style={styles.upcomingName}>
-                    {appt.animalName || appt.patientName || `Patient #${appt.patientId}`}
+                  {appt.animalName || appt.patientName || t('doctorBookings.fallback.patient')}
                     {appt.animalSpecies ? ` (${appt.animalSpecies})` : ''}
                   </Text>
-                  <Text style={styles.upcomingType}>Physical Consultation</Text>
+                  <Text style={styles.upcomingType}>{t('doctorBookings.physicalConsultation')}</Text>
                 </View>
                 <View style={[styles.statusBadge, appt.status === 'CONFIRMED' ? styles.statusConfirmed : styles.statusPending]}>
                   <Text style={[styles.statusText, appt.status === 'CONFIRMED' ? styles.statusTextConfirmed : styles.statusTextPending]}>
-                    {appt.status === 'CONFIRMED' ? 'Confirmed' : appt.status}
+                    {appt.status === 'CONFIRMED' ? t('doctorBookings.status.confirmed') : appt.status}
                   </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={16} color="#9C9690" />
@@ -511,11 +521,15 @@ const styles = StyleSheet.create({
   daysGrid: { flexDirection: 'row', flexWrap: 'wrap' },
   dayCell: { width: `${100 / 7}%`, alignItems: 'center', paddingVertical: 4 },
   dayNumber: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
-  dayNumberHasAppointment: { backgroundColor: '#BD632F' },
+  dayNumberHasAppointment: {
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+    borderColor: '#BD632F',
+  },
   dayNumberBlocked: { backgroundColor: '#F0EAE1' },
   dayNumberSelected: { backgroundColor: '#BD632F' },
   dayNumberText: { fontSize: 14, fontWeight: '500', color: '#1A1817' },
-  dayNumberTextAppointment: { color: '#FFFFFF', fontWeight: '700' },
+  dayNumberTextAppointment: { color: '#BD632F', fontWeight: '700' },
   dayNumberTextBlocked: { color: '#9C9690' },
   dayNumberTextSelected: { color: '#FFFFFF', fontWeight: '700' },
   statsRow: { flexDirection: 'row', backgroundColor: '#FFFFFF', borderRadius: 16, borderWidth: 1, borderColor: '#E6E1DC', padding: 16, marginBottom: 20 },
@@ -573,7 +587,14 @@ const styles = StyleSheet.create({
   upcomingSection: { marginTop: 20 },
   upcomingHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   upcomingTitle: { fontSize: 16, fontWeight: '700', color: '#1A1817' },
-  viewAllBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  viewAllBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 14,
+  },
   viewAllText: { fontSize: 14, fontWeight: '600', color: '#BD632F' },
   upcomingCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 14, borderWidth: 1, borderColor: '#E6E1DC', padding: 12, marginBottom: 10, gap: 10 },
   upcomingAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#FFF2EB', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },

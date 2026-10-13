@@ -3,7 +3,6 @@ import {
   StyleSheet,
   View,
   Text,
-  ScrollView,
   TouchableOpacity,
   Dimensions,
   Share,
@@ -12,29 +11,38 @@ import {
   ImageBackground,
   StatusBar,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { useGetAnimalsQuery } from '@/store/animalsApi';
 import { useGetTasksQuery, useToggleTaskMutation } from '@/store/tasksApi';
+import { useGetDoctorBookingsQuery } from '@/store/doctorPortalApi';
 import { useGetWeatherQuery } from '@/store/weatherApi';
-import { useGetAlertsQuery, useActOnAlertMutation } from '@/store/alertsApi';
 import { useGetMyReferralQuery, useClaimReferralMutation } from '@/store/referralsApi';
 import { useLanguage } from '@/hooks/use-language';
+import { useLocation } from '@/hooks/use-location';
+import { useTranslation } from '@/hooks/use-translation';
 import LanguageBottomSheet from '@/components/LanguageBottomSheet';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Path, SvgXml } from 'react-native-svg';
 import { EmptyState } from '@/components/ui/empty-state';
-import { RowSkeleton, AlertCardSkeleton, SkeletonBox } from '@/components/ui/skeleton';
+import {
+  languageGlobeSvg,
+  notificationBellSvg,
+  homeLocationSvg,
+} from '@/components/icons/svg-icon-sources';
+import { RowSkeleton, SkeletonBox } from '@/components/ui/skeleton';
+import { localDateKey, formatTime12h } from '@/utils/date';
+import { DoctorAvatar } from '@/components/doctor-avatar';
 
 const { width } = Dimensions.get('window');
 
 function todayDateKey(): string {
-  return new Date().toISOString().slice(0, 10);
+  return localDateKey();
 }
 
-function formatFullDate(): string {
-  return new Date().toLocaleDateString(undefined, {
+function formatFullDate(locale: string): string {
+  return new Date().toLocaleDateString(locale, {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
@@ -43,7 +51,13 @@ function formatFullDate(): string {
 }
 
 function formatTaskTime(scheduledTime: string): string {
-  return new Date(scheduledTime).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  return formatTime12h(scheduledTime);
+}
+
+function animalImage(breed: string) {
+  return breed?.toLowerCase().includes('buffalo')
+    ? require('@/assets/images/albino_buffalo.webp')
+    : require('@/assets/images/bangladeshi_cow.webp');
 }
 
 export default function HomeDashboard() {
@@ -51,27 +65,41 @@ export default function HomeDashboard() {
   const insets = useSafeAreaInsets();
 
   const { data: allAnimals, isLoading: isAnimalsLoading } = useGetAnimalsQuery();
-  const { data: tasks = [], isLoading: isTasksLoading } = useGetTasksQuery(todayDateKey());
-  const { data: weather, isLoading: isWeatherLoading } = useGetWeatherQuery();
-  const { data: alerts = [], isLoading: isAlertsLoading } = useGetAlertsQuery();
+  const { data: tasks = [], isLoading: isTasksLoading } = useGetTasksQuery(todayDateKey(), {
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
+  });
+  const { location } = useLocation();
+  const zila = location.split(',').map((part) => part.trim()).filter(Boolean).pop();
+  const { data: weather, isLoading: isWeatherLoading } = useGetWeatherQuery(zila);
   const { data: referral } = useGetMyReferralQuery();
   const [claimReferral, { isLoading: isClaiming }] = useClaimReferralMutation();
   const { language, languageCode, setLanguage } = useLanguage();
+  const { t } = useTranslation();
   const [showLangSheet, setShowLangSheet] = useState(false);
 
   const [toggleTaskMutation] = useToggleTaskMutation();
-  const [actOnAlertMutation] = useActOnAlertMutation();
+  const visibleTasks = tasks.filter((task) => !task.isDone);
 
   const [showClaimInput, setShowClaimInput] = useState(false);
   const [claimCode, setClaimCode] = useState('');
 
   const animals = (allAnimals || []).slice(0, 3);
 
+  const { data: allBookings = [] } = useGetDoctorBookingsQuery();
+  const upcomingAppointments = allBookings
+    .filter((b) => {
+      const start = new Date(b.startAt);
+      return b.status !== 'CANCELLED' && start >= new Date();
+    })
+    .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime())
+    .slice(0, 3);
+
   async function shareReferral() {
     if (!referral) return;
     try {
       await Share.share({
-        message: `Join me on Gobadi! Use my referral code ${referral.referralCode} to sign up: ${referral.shareLink}`,
+        message: t('home.referral.shareMsg', { code: referral.referralCode, link: referral.shareLink }),
       });
     } catch (err) {
       console.log('Error sharing referral:', err);
@@ -81,47 +109,52 @@ export default function HomeDashboard() {
   async function handleClaimReferral() {
     const code = claimCode.trim();
     if (!code) {
-      Alert.alert('Enter a code', 'Please enter a referral code to claim.');
+      Alert.alert(t('home.referral.alerts.enterCodeTitle'), t('home.referral.alerts.enterCodeMsg'));
       return;
     }
     if (!/^[A-Z0-9]{4,12}$/.test(code)) {
-      Alert.alert('Invalid code', 'Referral codes are 4-12 letters and numbers.');
+      Alert.alert(t('home.referral.alerts.invalidCodeTitle'), t('home.referral.alerts.invalidCodeMsg'));
       return;
     }
     try {
       await claimReferral(code).unwrap();
       setClaimCode('');
       setShowClaimInput(false);
-      Alert.alert('Success', 'Referral code claimed!');
+      Alert.alert(t('home.referral.alerts.successTitle'), t('home.referral.alerts.successMsg'));
     } catch (err) {
       console.log('Error claiming referral:', err);
-      Alert.alert('Could not claim', 'That code may be invalid or already used.');
+      Alert.alert(t('home.referral.alerts.claimFailTitle'), t('home.referral.alerts.claimFailMsg'));
     }
   }
 
-  function toggleTask(id: number) {
-    toggleTaskMutation(String(id));
-  }
-
-  function actOnAlert(alertId: number, actionChoice: 'MANAGE' | 'SCHEDULE') {
-    actOnAlertMutation({ id: alertId, actionChoice });
+  async function toggleTask(id: number) {
+    try {
+      await toggleTaskMutation(String(id)).unwrap();
+      Alert.alert(t('home.tasks.markedTitle'), t('home.tasks.markedMsg'));
+    } catch {
+      Alert.alert(t('home.tasks.markFailedTitle'), t('home.tasks.markFailedMsg'));
+    }
   }
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#BD632F" translucent />
-      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+      <KeyboardAwareScrollView
+        contentContainerStyle={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Header Section */}
         <View style={styles.headerWrapper}>
           <ImageBackground
-            source={require('@/assets/Top BG.png')}
+            source={require('@/assets/Top BG.webp')}
             style={[styles.header, { paddingTop: insets.top + 16 }]}
             resizeMode="cover"
           >
             <View style={styles.headerTextContainer}>
-              <Text style={styles.greetingTitle}>Good Morning</Text>
+              <Text style={styles.greetingTitle}>{t('home.greeting')}</Text>
               <TouchableOpacity style={styles.dateSelector} activeOpacity={0.7} onPress={() => router.push('/schedule')}>
-                <Text style={styles.dateText}>{formatFullDate()}</Text>
+                <Text style={styles.dateText}>{formatFullDate(language === 'bn' ? 'bn-BD' : 'en-US')}</Text>
                 <Text style={styles.dropdownArrow}>∨</Text>
               </TouchableOpacity>
             </View>
@@ -131,7 +164,7 @@ export default function HomeDashboard() {
                 activeOpacity={0.8}
                 onPress={() => setShowLangSheet(true)}
               >
-                <Ionicons name="globe-outline" size={15} color="#FFFFFF" />
+                <SvgXml width={16} height={16} xml={languageGlobeSvg} />
                 <Text style={styles.langTextHeader}>{languageCode}</Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -139,7 +172,7 @@ export default function HomeDashboard() {
                 onPress={() => router.push('/notifications')}
                 activeOpacity={0.8}
               >
-                <Ionicons name="notifications-outline" size={20} color="#BD632F" />
+                <SvgXml width={20} height={20} xml={notificationBellSvg} />
               </TouchableOpacity>
             </View>
           </ImageBackground>
@@ -148,9 +181,16 @@ export default function HomeDashboard() {
         {/* Farm Weather Card */}
         <View style={styles.weatherCard}>
           <View style={styles.weatherCardHeader}>
-            <Text style={styles.weatherLocation}>📍 Farm Weather{weather?.location ? ` - ${weather.location}` : ' - Munshiganj'}</Text>
+            <View style={styles.weatherLocationRow}>
+              <SvgXml width={16} height={16} xml={homeLocationSvg} />
+              <Text style={styles.weatherLocation}>
+                {weather?.location
+                  ? t('home.weather.title', { place: weather.location })
+                  : t('home.weather.titleOnly')}
+              </Text>
+            </View>
             <Image
-              source={require('@/assets/images/farm_barn.png')}
+              source={require('@/assets/images/farm_barn.webp')}
               style={styles.barnImage}
               contentFit="cover"
             />
@@ -180,8 +220,8 @@ export default function HomeDashboard() {
                   <Text style={styles.tempUnit}>°C</Text>
                 </View>
                 <View style={styles.hiLowContainer}>
-                  <Text style={styles.hiLowText}>H: <Text style={styles.hiText}>{weather ? Math.round(weather.highTemp) : '35'}°C</Text></Text>
-                  <Text style={styles.hiLowText}>L: <Text style={styles.lowText}>{weather ? Math.round(weather.lowTemp) : '15'}°C</Text></Text>
+                  <Text style={styles.hiLowText}>{t('home.weather.high')} <Text style={styles.hiText}>{weather ? Math.round(weather.highTemp) : '35'}°C</Text></Text>
+                  <Text style={styles.hiLowText}>{t('home.weather.low')} <Text style={styles.lowText}>{weather ? Math.round(weather.lowTemp) : '15'}°C</Text></Text>
                 </View>
               </View>
 
@@ -190,19 +230,19 @@ export default function HomeDashboard() {
               {/* Weather Metrics */}
               <View style={styles.metricsGrid}>
                 <View style={styles.metricItem}>
-                  <Text style={styles.metricLabel}>Humidity</Text>
+                  <Text style={styles.metricLabel}>{t('home.weather.humidity')}</Text>
                   <Text style={styles.metricValue}>{weather ? `${weather.humidityPercentage}%` : '40%'}</Text>
                 </View>
                 <View style={styles.metricItem}>
-                  <Text style={styles.metricLabel}>Precipitation</Text>
+                  <Text style={styles.metricLabel}>{t('home.weather.precipitation')}</Text>
                   <Text style={styles.metricValue}>{weather ? `${weather.precipitationMl} ml` : '--'}</Text>
                 </View>
                 <View style={styles.metricItem}>
-                  <Text style={styles.metricLabel}>Pressure</Text>
+                  <Text style={styles.metricLabel}>{t('home.weather.pressure')}</Text>
                   <Text style={styles.metricValue}>{weather ? `${weather.pressureHpa} hpa` : '--'}</Text>
                 </View>
                 <View style={styles.metricItem}>
-                  <Text style={styles.metricLabel}>Wind</Text>
+                  <Text style={styles.metricLabel}>{t('home.weather.wind')}</Text>
                   <Text style={styles.metricValue}>{weather ? `${weather.windMps} m/s` : '--'}</Text>
                 </View>
               </View>
@@ -226,11 +266,11 @@ export default function HomeDashboard() {
                 <View style={styles.arcLabels}>
                   <View>
                     <Text style={styles.arcTime}>{weather?.sunriseTime || '5:25 am'}</Text>
-                    <Text style={styles.arcTypeSunrise}>Sunrise</Text>
+                    <Text style={styles.arcTypeSunrise}>{t('home.weather.sunrise')}</Text>
                   </View>
                   <View style={{ alignItems: 'flex-end' }}>
                     <Text style={styles.arcTime}>{weather?.sunsetTime || '6:53 pm'}</Text>
-                    <Text style={styles.arcTypeSunset}>Sunset</Text>
+                    <Text style={styles.arcTypeSunset}>{t('home.weather.sunset')}</Text>
                   </View>
                 </View>
               </View>
@@ -240,9 +280,9 @@ export default function HomeDashboard() {
 
         {/* My Animals Section */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>My Animals</Text>
+          <Text style={styles.sectionTitle}>{t('home.sections.myAnimals')}</Text>
           <TouchableOpacity onPress={() => router.push('/(tabs)/animals')}>
-            <Text style={styles.viewAllText}>View all</Text>
+            <Text style={styles.viewAllText}>{t('home.sections.viewAll')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -255,8 +295,8 @@ export default function HomeDashboard() {
           ) : animals.length === 0 ? (
             <EmptyState
               compact
-              title="No animals added yet"
-              actionLabel="Add your first animal"
+              title={t('home.animals.empty')}
+              actionLabel={t('home.animals.addFirst')}
               onAction={() => router.push('/(tabs)/animals')}
             />
           ) : (
@@ -274,9 +314,11 @@ export default function HomeDashboard() {
                 })}
               >
                 <View style={styles.listItemLeft}>
-                  <View style={styles.checkeredIcon}>
-                    <View style={styles.checkeredGrid} />
-                  </View>
+                  <Image
+                    source={item.image ? { uri: item.image } : animalImage(item.breed)}
+                    style={styles.checkeredIcon}
+                    contentFit="cover"
+                  />
                   <View>
                     <Text style={styles.animalName}>{item.name}</Text>
                     <Text style={styles.animalBreed}>{item.breed}</Text>
@@ -288,8 +330,61 @@ export default function HomeDashboard() {
           )}
         </View>
 
+        {/* My Appointments Section */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>{t('home.sections.myAppointments')}</Text>
+          <TouchableOpacity onPress={() => router.push('/my-appointments')}>
+            <Text style={styles.viewAllText}>{t('home.sections.viewAll')}</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.listCard}>
+          {upcomingAppointments.length === 0 ? (
+            <EmptyState
+              compact
+              title={t('home.appointments.empty')}
+              actionLabel={t('home.appointments.bookConsult')}
+              onAction={() => router.push('/(tabs)/doctors')}
+            />
+          ) : (
+            upcomingAppointments.map((appt, idx) => (
+              <TouchableOpacity
+                key={appt.id}
+                style={[
+                  styles.listItem,
+                  idx < upcomingAppointments.length - 1 && styles.listItemBorderDashed,
+                ]}
+                activeOpacity={0.7}
+                onPress={() => router.push({
+                  pathname: '/appointment-details',
+                  params: { id: String(appt.id) },
+                })}
+              >
+                <View style={styles.listItemLeft}>
+                  <DoctorAvatar
+                    name={appt.doctorName || t('home.appointments.doctor')}
+                    avatar={appt.doctorAvatar}
+                    size={44}
+                    radius={22}
+                    style={styles.checkeredIcon}
+                  />
+                  <View>
+                    <Text style={styles.animalName}>
+                      {appt.doctorName || t('home.appointments.doctor')}
+                    </Text>
+                    <Text style={styles.animalBreed}>
+                      {appt.animalName || t('home.appointments.consultation')} · {new Date(appt.startAt).toLocaleDateString(language === 'bn' ? 'bn-BD' : 'en-US', { month: 'short', day: 'numeric' })}
+                    </Text>
+                  </View>
+                </View>
+                <Text style={styles.arrowIcon}>→</Text>
+              </TouchableOpacity>
+            ))
+          )}
+        </View>
+
         {/* Today's Task Section */}
-        <Text style={[styles.sectionTitle, { marginTop: 24, marginBottom: 16, marginLeft: 24 }]}>Today's Task</Text>
+        <Text style={[styles.sectionTitle, { marginTop: 24, marginBottom: 16, marginLeft: 24 }]}>{t('home.sections.todaysTask')}</Text>
 
         <View style={styles.listCard}>
           {isTasksLoading ? (
@@ -297,112 +392,85 @@ export default function HomeDashboard() {
               <RowSkeleton />
               <RowSkeleton />
             </>
-          ) : tasks.length === 0 ? (
-            <EmptyState compact title="No tasks scheduled for today" />
+          ) : visibleTasks.length === 0 ? (
+            <EmptyState compact title={t('home.tasks.empty')} />
           ) : (
-            tasks.map((task, idx) => (
-              <TouchableOpacity
+            visibleTasks.map((task, idx) => (
+              <View
                 key={idx}
-                activeOpacity={0.7}
-                onPress={() => toggleTask(task.id)}
-                style={[styles.taskItem, idx === tasks.length - 1 && { borderBottomWidth: 0 }]}
+                style={[styles.taskItem, idx === visibleTasks.length - 1 && { borderBottomWidth: 0 }]}
               >
                 <View style={styles.taskItemLeft}>
-                  <View style={styles.checkeredIcon}>
-                    <View style={styles.checkeredGrid} />
-                  </View>
-                  <View>
-                    <Text style={styles.taskTitle}>{task.title}</Text>
-                    {task.detail ? <Text style={styles.taskDetail}>{task.detail}</Text> : null}
+                  <View style={styles.taskTextCol}>
+                    <Text style={styles.taskTitle} numberOfLines={1}>
+                      {task.title}
+                    </Text>
+                    {task.detail ? (
+                      <Text style={styles.taskDetail} numberOfLines={2} ellipsizeMode="tail">
+                        {task.detail}
+                      </Text>
+                    ) : null}
                   </View>
                 </View>
 
                 <View style={styles.taskItemRight}>
                   <Text style={styles.taskTime}>{formatTaskTime(task.scheduledTime)}</Text>
-                  <View style={[styles.checkbox, task.isDone ? styles.checkboxChecked : styles.checkboxUnchecked]}>
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={() => toggleTask(task.id)}
+                    style={[styles.checkbox, task.isDone ? styles.checkboxChecked : styles.checkboxUnchecked]}
+                  >
                     {task.isDone ? <Text style={styles.checkIcon}>✓</Text> : null}
-                  </View>
+                  </TouchableOpacity>
                 </View>
-              </TouchableOpacity>
-            ))
-          )}
-        </View>
-
-        {/* Alerts Section */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Alerts</Text>
-          <TouchableOpacity activeOpacity={0.7}>
-            <Text style={styles.viewAllText}>View all</Text>
-          </TouchableOpacity>
-        </View>
-
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.alertsScroll}
-        >
-          {isAlertsLoading ? (
-            <>
-              <AlertCardSkeleton />
-              <AlertCardSkeleton />
-            </>
-          ) : alerts.length === 0 ? (
-            <Text style={styles.noAlertsText}>No active alerts right now.</Text>
-          ) : (
-            alerts.map((alert) => (
-              <View key={alert.id} style={styles.alertCard}>
-                <View
-                  style={[
-                    styles.alertIconCircle,
-                    alert.severity === 'HIGH' || alert.severity === 'CRITICAL'
-                      ? styles.alertIconRed
-                      : styles.alertIconOrange,
-                  ]}
-                >
-                  <Text style={styles.alertIconText}>{alert.actionType === 'MANAGE' ? '⚠' : '⚙'}</Text>
-                </View>
-                <Text style={styles.alertCardTitle}>{alert.title}</Text>
-                <Text style={styles.alertCardSub}>{alert.location} • {alert.crop}</Text>
-                <TouchableOpacity
-                  style={styles.alertCardBtn}
-                  activeOpacity={0.8}
-                  onPress={() => actOnAlert(alert.id, alert.actionType)}
-                >
-                  <Text style={styles.alertCardBtnText}>
-                    {alert.actionType === 'MANAGE' ? 'Manage Now' : 'Schedule'}
-                  </Text>
-                </TouchableOpacity>
               </View>
             ))
           )}
-        </ScrollView>
+        </View>
+
+        <View style={styles.taskActionsRow}>
+          <TouchableOpacity
+            style={styles.addTaskBtn}
+            activeOpacity={0.85}
+            onPress={() => router.push('/add-task')}
+          >
+            <Text style={styles.addTaskBtnText}>{t('home.tasks.add')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.viewAllTaskBtn}
+            activeOpacity={0.85}
+            onPress={() => router.push('/my-task')}
+          >
+            <Text style={styles.viewAllTaskBtnText}>{t('home.tasks.viewAll')}</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* Refer to Friend & Earn Banner */}
         <View style={styles.referBanner}>
           <View style={styles.referLeft}>
-            <Text style={styles.referTitle}>Refer to Your Friend and Earn</Text>
+            <Text style={styles.referTitle}>{t('home.referral.title')}</Text>
             <Text style={styles.referSub}>
               {referral && referral.totalEarned > 0
-                ? `You've earned Tk ${referral.totalEarned} from ${referral.referralCount} referrals`
-                : 'Earn Tk 100 For Every Referral'}
+                ? t('home.referral.earned', { amount: referral.totalEarned, count: referral.referralCount })
+                : t('home.referral.perReferral')}
             </Text>
             <View style={{ flexDirection: 'row', gap: 8 }}>
               <TouchableOpacity style={styles.referBtn} activeOpacity={0.8} onPress={shareReferral}>
-                <Text style={styles.referBtnText}>Refer Now</Text>
+                <Text style={styles.referBtnText}>{t('home.referral.referNow')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.referBtn}
                 activeOpacity={0.8}
                 onPress={() => setShowClaimInput((v) => !v)}
               >
-                <Text style={styles.referBtnText}>Have a code?</Text>
+                <Text style={styles.referBtnText}>{t('home.referral.haveCode')}</Text>
               </TouchableOpacity>
             </View>
             {showClaimInput ? (
               <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
                 <TextInput
                   style={styles.claimInput}
-                  placeholder="Enter code"
+                  placeholder={t('home.referral.enterCode')}
                   placeholderTextColor="#A39E99"
                   value={claimCode}
                   onChangeText={setClaimCode}
@@ -414,7 +482,7 @@ export default function HomeDashboard() {
                   onPress={handleClaimReferral}
                   disabled={isClaiming}
                 >
-                  <Text style={styles.referBtnText}>Claim</Text>
+                  <Text style={styles.referBtnText}>{t('home.referral.claim')}</Text>
                 </TouchableOpacity>
               </View>
             ) : null}
@@ -426,67 +494,7 @@ export default function HomeDashboard() {
           />
         </View>
 
-        {/* Marketplace Section */}
-        <Text style={[styles.sectionTitle, { marginHorizontal: 24, marginTop: 24, marginBottom: 16 }]}>Marketplace</Text>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.marketCategoriesRow}
-        >
-          {[
-            { label: 'Feeds', icon: '🌾' },
-            { label: 'Milk', icon: '🥛' },
-            { label: 'Meat', icon: '🥩' },
-            { label: 'Animals', icon: '🐂' }
-          ].map((item, idx) => (
-            <TouchableOpacity
-              key={idx}
-              style={styles.marketCategoryCard}
-              onPress={() => router.push('/market')}
-              activeOpacity={0.8}
-            >
-              <View style={styles.marketCategoryIconContainer}>
-                <Text style={styles.marketCategoryIconText}>{item.icon}</Text>
-              </View>
-              <Text style={styles.marketCategoryLabel}>{item.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-
-        {/* Today's Market Rates */}
-        <View style={styles.marketRatesCard}>
-          <View style={styles.ratesHeader}>
-            <Text style={styles.ratesTitle}>Today's Market Rates</Text>
-            <View style={styles.ratesDropdown}>
-              <Text style={styles.ratesDropdownText}>Feeds ∨</Text>
-            </View>
-          </View>
-
-          <View style={styles.ratesList}>
-            {[1, 2, 3].map((_, idx) => (
-              <View key={idx} style={styles.ratesItem}>
-                <View style={styles.ratesItemLeft}>
-                  <View style={styles.ratesItemDot} />
-                  <View>
-                    <Text style={styles.ratesItemTitle}>CATTLE BHUSHI MIX FEED</Text>
-                    <Text style={styles.ratesItemPrice}>Tk 1,350</Text>
-                  </View>
-                </View>
-                <Text style={styles.ratesChevron}>➔</Text>
-              </View>
-            ))}
-          </View>
-
-          <TouchableOpacity
-            style={styles.viewMarketBtn}
-            onPress={() => router.push('/market')}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.viewMarketBtnText}>View Market</Text>
-          </TouchableOpacity>
-        </View>
-
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
       <LanguageBottomSheet
         visible={showLangSheet}
@@ -601,6 +609,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: 8,
+  },
+  weatherLocationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   weatherLocation: {
     fontSize: 14,
@@ -759,6 +772,43 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
+  taskActionsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginHorizontal: 24,
+    marginTop: 12,
+  },
+  addTaskBtn: {
+    flex: 1,
+    backgroundColor: '#BD632F',
+    height: 50,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#BD632F',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 5,
+    elevation: 3,
+  },
+  addTaskBtnText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  viewAllTaskBtn: {
+    flex: 1,
+    backgroundColor: '#F0EAE1',
+    height: 50,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  viewAllTaskBtnText: {
+    color: '#1A1817',
+    fontSize: 16,
+    fontWeight: '600',
+  },
   listItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -786,14 +836,6 @@ const styles = StyleSheet.create({
     marginRight: 16,
     overflow: 'hidden',
   },
-  checkeredGrid: {
-    width: '80%',
-    height: '80%',
-    borderColor: '#E6E1DC',
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderRadius: 18,
-  },
   animalName: {
     fontSize: 15,
     fontWeight: '700',
@@ -820,19 +862,29 @@ const styles = StyleSheet.create({
   taskItemLeft: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
+    minWidth: 0,
+    marginRight: 12,
+  },
+  taskTextCol: {
+    flex: 1,
+    minWidth: 0,
   },
   taskTitle: {
     fontSize: 15,
     fontWeight: '700',
     color: '#1A1817',
+    flexShrink: 1,
   },
   taskDetail: {
     fontSize: 13,
     color: '#7C7672',
     marginTop: 2,
+    flexShrink: 1,
   },
   taskItemRight: {
     alignItems: 'flex-end',
+    flexShrink: 0,
   },
   taskTime: {
     fontSize: 13,
@@ -859,68 +911,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 10,
     fontWeight: '700',
-  },
-  alertsScroll: {
-    paddingLeft: 24,
-    paddingRight: 8,
-    gap: 16,
-  },
-  noAlertsText: {
-    fontSize: 13,
-    color: '#9C9690',
-    paddingHorizontal: 24,
-  },
-  alertCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: '#E6E1DC',
-    padding: 18,
-    width: 175,
-  },
-  alertIconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  alertIconRed: {
-    backgroundColor: '#FFEBEE',
-  },
-  alertIconOrange: {
-    backgroundColor: '#FFF3E0',
-  },
-  alertIconText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#E53935',
-  },
-  alertCardTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#1A1817',
-    marginBottom: 4,
-  },
-  alertCardSub: {
-    fontSize: 11,
-    color: '#9C9690',
-    marginBottom: 12,
-  },
-  alertCardBtn: {
-    backgroundColor: '#FAF9F6',
-    borderRadius: 12,
-    height: 36,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E9E5DF',
-  },
-  alertCardBtnText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#1A1817',
   },
   referBanner: {
     flexDirection: 'row',
@@ -972,125 +962,7 @@ const styles = StyleSheet.create({
     color: '#1A1817',
   },
   referImage: {
-    width: 70,
-    height: 70,
-    marginLeft: 10,
-    flex: 1,
-  },
-  marketCategoriesRow: {
-    paddingLeft: 24,
-    paddingRight: 8,
-    gap: 12,
-    paddingBottom: 4,
-  },
-  marketCategoryCard: {
-    width: 100,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E6E1DC',
-    borderRadius: 20,
-    paddingVertical: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  marketCategoryIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#FAF9F6',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  marketCategoryIconText: {
-    fontSize: 20,
-  },
-  marketCategoryLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#1A1817',
-  },
-  marketRatesCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 28,
-    borderWidth: 1,
-    borderColor: '#E6E1DC',
-    marginHorizontal: 24,
-    marginTop: 24,
-    padding: 20,
-  },
-  ratesHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  ratesTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#1A1817',
-  },
-  ratesDropdown: {
-    backgroundColor: '#FAF9F6',
-    borderWidth: 1,
-    borderColor: '#E6E1DC',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  ratesDropdownText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#7C7672',
-  },
-  ratesList: {
-    gap: 12,
-    marginBottom: 20,
-  },
-  ratesItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 8,
-  },
-  ratesItemLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  ratesItemDot: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#F3EFE9',
-    marginRight: 12,
-    borderWidth: 1,
-    borderColor: '#E6E1DC',
-    borderStyle: 'dashed',
-  },
-  ratesItemTitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#1A1817',
-    marginBottom: 2,
-  },
-  ratesItemPrice: {
-    fontSize: 11,
-    color: '#7C7672',
-  },
-  ratesChevron: {
-    fontSize: 12,
-    color: '#BD632F',
-  },
-  viewMarketBtn: {
-    backgroundColor: '#BD632F',
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  viewMarketBtnText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '700',
+    width: 80,
+    height: 80,
   },
 });

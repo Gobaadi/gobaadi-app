@@ -1,4 +1,12 @@
-import { Entity, PrimaryGeneratedColumn, Column, Index } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  Index,
+  JoinColumn,
+  ManyToOne,
+} from 'typeorm';
+import { Doctor } from './doctor.entity';
 
 @Entity('doctor_availability')
 @Index(['doctorId', 'dayOfWeek'])
@@ -10,6 +18,10 @@ export class Availability {
   @Index()
   @Column()
   doctorId: number;
+
+  @ManyToOne(() => Doctor, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'doctorId' })
+  doctor?: Doctor;
 
   /** 0 = Sunday .. 6 = Saturday. Used for recurring weekly availability. */
   @Column('int', { nullable: true })

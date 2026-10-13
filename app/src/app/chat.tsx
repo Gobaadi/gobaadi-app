@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   StyleSheet,
   View,
@@ -7,43 +7,130 @@ import {
   TouchableOpacity,
   FlatList,
   ScrollView,
-  KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
   Image,
   Linking,
   Alert,
+  Modal,
 } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useSelector } from 'react-redux';
+import type { RootState } from '@/store/store';
 import { Ionicons } from '@expo/vector-icons';
-import PrescriptionBottomSheet from '@/components/PrescriptionBottomSheet';
-import { useGetMessagesQuery, useSendMessageMutation } from '@/store/chatApi';
+import { SvgXml } from 'react-native-svg';
+import { backButtonSvg, chatPhoneSvg, chatVideoSvg } from '@/components/icons/svg-icon-sources';
+import * as ImagePicker from 'expo-image-picker';
+import { File, Paths } from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
+import * as MediaLibrary from 'expo-media-library';
+import { useCallSignalingContext } from '@/components/IncomingCallProvider';
+import type { CallType } from '@/hooks/use-call-signaling';
+import {
+  useGetMessagesQuery,
+  useSendMessageMutation,
+  useSendAttachmentMessageMutation,
+  useCreateConversationMutation,
+  useGetDoctorAppointmentsQuery,
+  useGetConversationsQuery,
+  type ChatMessage,
+} from '@/store/chatApi';
+import { compressImageForUpload } from '@/utils/compress-image';
 import {
   useGetByIdQuery as useGetConsultationQuery,
-  useStartConsultationMutation,
+  useGetForAppointmentQuery,
+  useStartForAppointmentMutation,
   useEndConsultationMutation,
+  consultationStartedAt,
 } from '@/store/consultationsApi';
-import {
-  useCreatePrescriptionMutation,
-  useSendPrescriptionMutation,
-} from '@/store/prescriptionsApi';
+import { useGetByAppointmentQuery } from '@/store/prescriptionsApi';
+import { useGetMyProfileQuery } from '@/store/usersApi';
+import { useGetMyDoctorProfileQuery, useGetDoctorBookingsQuery } from '@/store/doctorPortalApi';
 import { useChatSocket } from '@/hooks/use-chat-socket';
+import { useTranslation } from '@/hooks/use-translation';
+import i18n from '@/i18n';
 
 type ConsultationState = 'idle' | 'active' | 'ended' | 'prescription_sent';
+
+const DHAKA_TZ = 'Asia/Dhaka';
+
+function formatDhakaClock(value: string | number | Date): string {
+  return new Date(value).toLocaleTimeString('en-GB', {
+    timeZone: DHAKA_TZ,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+}
+
+function dhakaDayKey(value: string | number | Date): string {
+  return new Date(value).toLocaleDateString('en-CA', { timeZone: DHAKA_TZ });
+}
+
+function formatDhakaDayLabel(value: string | number | Date): string {
+  const key = dhakaDayKey(value);
+  const now = Date.now();
+  if (key === dhakaDayKey(now)) return i18n.t('chat.date.today');
+  if (key === dhakaDayKey(now - 86_400_000)) return i18n.t('chat.date.yesterday');
+  return new Date(value).toLocaleDateString('en-GB', {
+    timeZone: DHAKA_TZ,
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+function formatDhakaDate(value: string | number | Date): string {
+  return new Date(value).toLocaleDateString('en-GB', {
+    timeZone: DHAKA_TZ,
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+}
 
 interface ChatMessageUI {
   id: string;
   sender: 'patient' | 'doctor';
   text: string;
   time: string;
+  createdAt: string;
+  status?: ChatMessage['status'];
   isPrescription?: boolean;
   prescriptionDate?: string;
   prescriptionSize?: string;
   attachmentUrl?: string;
+  attachmentType?: 'image' | 'document';
+  isPdf?: boolean;
+  pdfUri?: string;
 }
 
 const CONSULTATION_DURATION_SECONDS = 30 * 60;
+
+function toUIMessage(msg: ChatMessage): ChatMessageUI {
+  const isPdf =
+    msg.attachmentType === 'document' && !!msg.attachmentMimeType?.includes('pdf');
+  return {
+    id: msg.id.toString(),
+    sender: msg.sender === 'doctor' ? 'doctor' : 'patient',
+    text: msg.text,
+    time: formatDhakaClock(msg.createdAt),
+    createdAt: msg.createdAt,
+    status: msg.status,
+    isPrescription: !!(
+      msg.attachmentType === 'document' ||
+      (msg.text?.startsWith('Prescription -') && msg.attachmentUrl)
+    ),
+    isPdf: msg.attachmentType === 'document' ? isPdf : undefined,
+    prescriptionDate: msg.attachmentUrl ? formatDhakaDate(msg.createdAt) : undefined,
+    prescriptionSize:
+      msg.attachmentType === 'document' ? (isPdf ? `PDF` : i18n.t('chat.prescription.file')) : undefined,
+    attachmentUrl: msg.attachmentUrl || undefined,
+    attachmentType: msg.attachmentType || undefined,
+  };
+}
 
 function formatTimeRemaining(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -51,155 +138,653 @@ function formatTimeRemaining(seconds: number): string {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
+function ReadTicks({ status, light }: { status?: ChatMessage['status']; light?: boolean }) {
+  return (
+    <Ionicons
+      name="checkmark-done"
+      size={14}
+      color={status === 'READ' ? '#38BDF8' : light ? '#9C9690' : 'rgba(255,255,255,0.75)'}
+    />
+  );
+}
+
+function MessageAvatar({ uri, mine }: { uri?: string; mine: boolean }) {
+  return (
+    <View style={[styles.patientAvatar, mine && styles.mineAvatar]}>
+      {uri ? (
+        <Image source={{ uri }} style={styles.patientAvatarImage} />
+      ) : (
+        <Ionicons name="person" size={16} color="#BD632F" />
+      )}
+    </View>
+  );
+}
+
+function ChatImageBubble({
+  uri,
+  isMine,
+  time,
+  caption,
+  status,
+  onView,
+}: {
+  uri: string;
+  isMine: boolean;
+  time: string;
+  caption?: string;
+  status?: ChatMessage['status'];
+  onView: (uri: string, mine: boolean) => void;
+}) {
+  const { t } = useTranslation();
+  const [failed, setFailed] = useState(false);
+
+  return (
+    <View style={isMine ? styles.imageBubble : styles.imageBubbleLeft}>
+      <TouchableOpacity activeOpacity={0.8} onPress={() => onView(uri, isMine)}>
+        {failed ? (
+          <View style={styles.imageFallback}>
+            <Ionicons name="image-outline" size={36} color="#BD632F" />
+            <Text style={styles.imageFallbackText}>{t('chat.viewer.tapToOpen')}</Text>
+          </View>
+        ) : (
+          <Image
+            source={{ uri }}
+            style={styles.messageImage}
+            resizeMode="cover"
+            onError={() => setFailed(true)}
+          />
+        )}
+      </TouchableOpacity>
+      {!!caption && (
+        <Text style={isMine ? styles.imageCaptionMine : styles.imageCaption}>{caption}</Text>
+      )}
+      <View style={styles.metaRow}>
+        <Text style={isMine ? styles.imageTimeMine : styles.imageTime}>{time}</Text>
+        {isMine && <ReadTicks status={status} light />}
+      </View>
+    </View>
+  );
+}
+
 export default function ChatScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const params = useLocalSearchParams<{
     consultationId?: string;
     conversationId?: string;
     patientName?: string;
+    peerName?: string;
     animalImage?: string;
+    theirAvatar?: string;
     animalId?: string;
+    animalName?: string;
     appointmentId?: string;
+    appointmentTime?: string;
   }>();
 
-  const consultationId = params.consultationId || '';
-  const conversationId = params.conversationId ? parseInt(params.conversationId, 10) : undefined;
-  const patientName = params.patientName || 'Patient';
+  const [consultationId, setConsultationId] = useState(params.consultationId || '');
+  const [conversationId, setConversationId] = useState<number | undefined>(
+    params.conversationId ? parseInt(params.conversationId, 10) : undefined,
+  );
+  const patientName = params.patientName || t('chat.fallbacks.patient');
   const animalImage = params.animalImage || '';
   const animalId = params.animalId || '';
-  const appointmentId = params.appointmentId || '';
+  const rawAppointmentId = params.appointmentId || '';
+  const paramAppointmentId =
+    rawAppointmentId && rawAppointmentId !== '0' && rawAppointmentId !== 'undefined'
+      ? rawAppointmentId
+      : '';
+
+  const viewerRole = useSelector((state: RootState) => state.auth.user?.role);
+  const isViewerDoctor = viewerRole === 'doctor';
+  // Counterparty shown in the header/banners: the doctor sees the patient,
+  // the farmer sees the doctor (peerName supplied by the entry point).
+  const peerName = isViewerDoctor ? patientName : params.peerName || t('chat.fallbacks.doctor');
+
+  const { data: myProfile } = useGetMyProfileQuery();
+  const { data: myDoctorProfile } = useGetMyDoctorProfileQuery(undefined, {
+    skip: !isViewerDoctor,
+  });
+  // Doctor's photo lives in the doctors table; farmer's in users.
+  const myAvatarUri = isViewerDoctor
+    ? myDoctorProfile?.avatar || undefined
+    : myProfile?.avatar || myProfile?.profilePhoto || undefined;
+  // Doctor: patient photo. Farmer: doctor photo. Resolve from API — several
+  // navigators pass nothing (or the animal photo), which showed a dummy avatar.
+  const { data: conversations } = useGetConversationsQuery();
+  const { data: myBookings } = useGetDoctorBookingsQuery(undefined, {
+    skip: isViewerDoctor,
+  });
+  const { data: doctorAppointments } = useGetDoctorAppointmentsQuery(
+    { limit: 100 },
+    { skip: !isViewerDoctor },
+  );
+  const resolvedAppointmentId = useMemo(() => {
+    if (paramAppointmentId) return paramAppointmentId;
+    if (!isViewerDoctor) return '';
+    const list = doctorAppointments?.data;
+    if (!list?.length) return '';
+    const conversation = conversations?.find(
+      (c) => String(c.id) === String(conversationId),
+    );
+    const byPatient = conversation
+      ? list.filter((a) => String(a.patientId) === String(conversation.patientId))
+      : [];
+    const pool =
+      byPatient.length > 0
+        ? byPatient
+        : animalId
+          ? list.filter((a) => String(a.animalId) === String(animalId))
+          : [];
+    if (!pool.length) return '';
+    const now = new Date().getTime();
+    const sorted = [...pool].sort((a, b) => {
+      const aUp = new Date(a.startAt).getTime() >= now;
+      const bUp = new Date(b.startAt).getTime() >= now;
+      if (aUp !== bUp) return aUp ? -1 : 1;
+      return aUp
+        ? new Date(a.startAt).getTime() - new Date(b.startAt).getTime()
+        : new Date(b.startAt).getTime() - new Date(a.startAt).getTime();
+    });
+    return String(sorted[0].id);
+  }, [paramAppointmentId, isViewerDoctor, conversations, conversationId, doctorAppointments, animalId]);
+  const appointmentId = paramAppointmentId || resolvedAppointmentId;
+  const resolvedTheirAvatar = useMemo(() => {
+    if (isViewerDoctor) {
+      return (
+        conversations?.find((c) => String(c.id) === String(conversationId))
+          ?.patientPhoto || undefined
+      );
+    }
+    return (
+      myBookings?.find((a) => String(a.id) === appointmentId)?.doctorAvatar ||
+      undefined
+    );
+  }, [isViewerDoctor, conversations, conversationId, myBookings, appointmentId]);
+  const theirAvatarUri =
+    params.theirAvatar || resolvedTheirAvatar || (!isViewerDoctor ? animalImage : undefined) || undefined;
+  // Counterparty NAME, resolved live from API (same sources as the avatar) —
+  // navigators pass a stale/missing name often; params stay as fallback only.
+  const resolvedTheirName = useMemo(() => {
+    if (isViewerDoctor) {
+      return (
+        conversations?.find((c) => String(c.id) === String(conversationId))
+          ?.patientName || undefined
+      );
+    }
+    return (
+      myBookings?.find((a) => String(a.id) === appointmentId)?.doctorName ||
+      undefined
+    );
+  }, [isViewerDoctor, conversations, conversationId, myBookings, appointmentId]);
+  const counterpartyName = resolvedTheirName || patientName;
+
+  // Prescriptions need animalId, but most navigators only pass appointmentId —
+  // resolve it (plus the appointment time / animal name for the session card)
+  // from the doctor's appointment list.
+  const appointmentInfo = useMemo(
+    () => doctorAppointments?.data?.find((a) => String(a.id) === appointmentId),
+    [doctorAppointments, appointmentId],
+  );
+  const resolvedAnimalId =
+    animalId || (appointmentInfo?.animalId ? String(appointmentInfo.animalId) : '');
+  const appointmentTime =
+    params.appointmentTime || appointmentInfo?.startAt || '';
+  const animalName = params.animalName || appointmentInfo?.animalName || '';
+
+  // Dynamic Join card: only when a real upcoming appointment exists —
+  // completed/cancelled ones (or chats opened without appointment context)
+  // must not show it. The chat appointments endpoint only lists
+  // CONFIRMED/RESCHEDULED/COMPLETED, so undefined = nothing upcoming.
+  const hasUpcomingAppointment =
+    !!appointmentId &&
+    !!appointmentInfo &&
+    ['PENDING', 'CONFIRMED', 'RESCHEDULED'].includes(appointmentInfo.status);
 
   const { data: consultation } = useGetConsultationQuery(consultationId, { skip: !consultationId });
+  // Re-attach to an already-running consultation when the chat is (re)opened —
+  // params.consultationId is rarely passed by navigators.
+  const { data: appointmentConsultation } = useGetForAppointmentQuery(appointmentId, {
+    skip: !appointmentId,
+  });
+  const activeConsultation = consultation ?? appointmentConsultation ?? undefined;
+  // params.consultationId is rarely passed — fall back to the appointment's
+  // consultation so End / auto-end / prescription always hit the API. Without
+  // this, ending was local-only and a reload resurrected the session.
+  const resolvedConsultationId =
+    consultationId ||
+    (appointmentConsultation?.id ? String(appointmentConsultation.id) : '');
   const { data: apiMessages, isLoading: messagesLoading } = useGetMessagesQuery(conversationId, { skip: !conversationId });
   const [sendMessage, { isLoading: sending }] = useSendMessageMutation();
-  const [startConsultation, { isLoading: starting }] = useStartConsultationMutation();
+  const [startConsultation, { isLoading: starting }] = useStartForAppointmentMutation();
   const [endConsultation, { isLoading: ending }] = useEndConsultationMutation();
-  const [createPrescription] = useCreatePrescriptionMutation();
-  const [sendPrescriptionApi] = useSendPrescriptionMutation();
+  const [sendAttachment, { isLoading: sendingAttachment }] = useSendAttachmentMessageMutation();
+  const [createConversation] = useCreateConversationMutation();
+  // Green check in Next Step when a prescription already exists for THIS
+  // appointment — survives navigation and sends done from the video screen.
+  const { data: existingPrescription } = useGetByAppointmentQuery(appointmentId, {
+    skip: !appointmentId,
+  });
 
-  useChatSocket(conversationId);
+  useEffect(() => {
+    if (conversationId || !appointmentId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const conv = await createConversation({
+          appointmentId: parseInt(appointmentId, 10),
+        }).unwrap();
+        if (!cancelled && conv?.id) setConversationId(conv.id);
+      } catch {
+        // leave undefined — backend still auto-resolves for the farmer
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [conversationId, appointmentId, createConversation]);
+
+  useChatSocket(conversationId, isViewerDoctor ? 'doctor' : 'user');
+  const { ringCall } = useCallSignalingContext();
 
   const [consultationState, setConsultationState] = useState<ConsultationState>('idle');
+  const [startingCall, setStartingCall] = useState(false);
   const [inputText, setInputText] = useState('');
   const [remainingTime, setRemainingTime] = useState(CONSULTATION_DURATION_SECONDS);
   const flatListRef = useRef<FlatList>(null);
-  const [showPrescriptionSheet, setShowPrescriptionSheet] = useState(false);
+  const atBottomRef = useRef(true);
+  const [showActionsMenu, setShowActionsMenu] = useState(false);
   const [localMessages, setLocalMessages] = useState<ChatMessageUI[]>([]);
+  // In-app full-screen viewer for chat images (never leaves to a browser).
+  const [viewerUri, setViewerUri] = useState<string | null>(null);
+  const [viewerMine, setViewerMine] = useState<boolean | null>(null);
+  const [viewerLoading, setViewerLoading] = useState(false);
+  const [viewerError, setViewerError] = useState(false);
+  const [sharingImage, setSharingImage] = useState(false);
+  const [savingImage, setSavingImage] = useState(false);
+  const [savedFlash, setSavedFlash] = useState(false);
+  const savedFlashTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const consultationFinished =
+    consultationState === 'ended' || consultationState === 'prescription_sent';
+  const appointmentCallStatusOk =
+    !appointmentInfo ||
+    appointmentInfo.status === 'CONFIRMED' ||
+    appointmentInfo.status === 'RESCHEDULED';
+  const canCall =
+    !consultationFinished &&
+    appointmentCallStatusOk &&
+    (consultationState === 'active' || !!appointmentInfo);
 
   useEffect(() => {
-    if (consultation) {
-      if (consultation.status === 'COMPLETED' || consultation.status === 'ENDED') {
-        setConsultationState('ended');
-      } else if (consultation.status === 'IN_PROGRESS') {
-        setConsultationState('active');
-        if (consultation.startedAt) {
-          const elapsed = Math.floor(
-            (Date.now() - new Date(consultation.startedAt).getTime()) / 1000,
-          );
-          setRemainingTime(Math.max(0, CONSULTATION_DURATION_SECONDS - elapsed));
-        }
+    return () => {
+      if (savedFlashTimeoutRef.current) clearTimeout(savedFlashTimeoutRef.current);
+    };
+  }, []);
+
+  const openImageViewer = (uri: string, mine: boolean) => {
+    setViewerError(false);
+    setViewerLoading(true);
+    setViewerMine(mine);
+    setViewerUri(uri);
+  };
+
+  const closeImageViewer = () => {
+    if (savedFlashTimeoutRef.current) clearTimeout(savedFlashTimeoutRef.current);
+    setSavedFlash(false);
+    setViewerUri(null);
+    setViewerMine(null);
+    setViewerLoading(false);
+    setViewerError(false);
+  };
+
+  /** Fetch the remote image into cache; returns local uri + extension. */
+  const downloadToCache = async (
+    uri: string,
+  ): Promise<{ cacheUri: string; ext: string }> => {
+    const rawExt = uri.split('?')[0].match(/\.([a-z0-9]+)$/i)?.[1]?.toLowerCase();
+    const ext = rawExt && ['png', 'webp', 'gif'].includes(rawExt) ? rawExt : 'jpg';
+    const file = await File.downloadFileAsync(
+      uri,
+      new File(Paths.cache, `chat-image-${Date.now()}.${ext}`),
+    );
+    return { cacheUri: file.uri, ext };
+  };
+
+  /** Download to cache, then open the native share sheet — stays in-app. */
+  const shareViewedImage = async () => {
+    if (!viewerUri || sharingImage) return;
+    setSharingImage(true);
+    try {
+      const { cacheUri, ext } = await downloadToCache(viewerUri);
+      if (!(await Sharing.isAvailableAsync())) {
+        throw new Error('Sharing is not available on this device');
       }
+      await Sharing.shareAsync(cacheUri, {
+        mimeType: ext === 'jpg' ? 'image/jpeg' : `image/${ext}`,
+        dialogTitle: t('chat.viewer.shareDialogTitle'),
+      });
+    } catch {
+      Alert.alert(t('chat.alerts.error'), t('chat.alerts.shareFailed'));
+    } finally {
+      setSharingImage(false);
     }
-  }, [consultation]);
+  };
+
+  /** Save the viewed image into the device gallery/photos. */
+  const downloadViewedImage = async () => {
+    if (!viewerUri || savingImage) return;
+    setSavingImage(true);
+    try {
+      const permission = await MediaLibrary.requestPermissionsAsync(true);
+      if (!permission.granted) {
+        Alert.alert(
+          t('chat.alerts.permissionTitle'),
+          t('chat.alerts.savePermissionMsg'),
+        );
+        return;
+      }
+      const { cacheUri } = await downloadToCache(viewerUri);
+      await MediaLibrary.Asset.create(cacheUri);
+      setSavedFlash(true);
+      if (savedFlashTimeoutRef.current) clearTimeout(savedFlashTimeoutRef.current);
+      savedFlashTimeoutRef.current = setTimeout(() => setSavedFlash(false), 2000);
+    } catch {
+      Alert.alert(t('chat.alerts.error'), t('chat.alerts.saveImageFailed'));
+    } finally {
+      setSavingImage(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!activeConsultation) return;
+    if (activeConsultation.status === 'COMPLETED') {
+      setRemainingTime(0);
+      setConsultationState((prev) => (prev === 'prescription_sent' ? prev : 'ended'));
+      return;
+    }
+    if (activeConsultation.status === 'ONGOING') {
+      setConsultationState((prev) =>
+        prev === 'ended' || prev === 'prescription_sent' ? prev : 'active',
+      );
+      const elapsed = Math.floor(
+        (Date.now() - new Date(consultationStartedAt(activeConsultation)).getTime()) / 1000,
+      );
+      setRemainingTime(Math.max(0, CONSULTATION_DURATION_SECONDS - elapsed));
+    }
+  }, [activeConsultation]);
 
   useEffect(() => {
     if (consultationState !== 'active') return;
+    // Auto-end at 0: nobody has to press "End Consultation". finish() runs
+    // from a deferred timeout so it stays out of the effect body (lint) and
+    // after the updater flushes; the `finished` guard makes double fires safe.
+    let finished = false;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      setConsultationState('ended');
+      if (resolvedConsultationId) {
+        endConsultation(resolvedConsultationId).unwrap().catch(() => { });
+      }
+    };
     const interval = setInterval(() => {
       setRemainingTime((prev) => {
         if (prev <= 1) {
           clearInterval(interval);
+          setTimeout(finish, 0);
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [consultationState]);
+  }, [consultationState, resolvedConsultationId, endConsultation]);
+
+  // Farmer: consultation ended while chat is open (doctor pressed End, or the
+  // 30-min timer auto-ended) — congratulate once and offer a Home shortcut.
+  // Mounting into an already-ended consultation (history view) stays silent.
+  const farmerEndNotifiedRef = useRef(false);
+  const prevConsultationStateRef = useRef<ConsultationState>(consultationState);
+  useEffect(() => {
+    const prev = prevConsultationStateRef.current;
+    prevConsultationStateRef.current = consultationState;
+    if (isViewerDoctor || farmerEndNotifiedRef.current) return;
+    if (prev !== 'active') return;
+    if (consultationState !== 'ended' && consultationState !== 'prescription_sent') return;
+    farmerEndNotifiedRef.current = true;
+    Alert.alert(
+      t('chat.alerts.congratsTitle'),
+      t('chat.alerts.congratsMsg'),
+      [{ text: t('chat.alerts.goToHome'), onPress: () => router.replace('/(tabs)') }],
+      { cancelable: false },
+    );
+  }, [consultationState, isViewerDoctor, router]);
 
   useEffect(() => {
-    if (apiMessages) {
-      const mapped: ChatMessageUI[] = apiMessages.map((msg) => ({
-        id: msg.id.toString(),
-        sender: msg.sender === 'doctor' ? 'doctor' : 'patient',
-        text: msg.text,
-        time: new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        isPrescription: msg.attachmentType === 'document',
-        prescriptionDate: msg.attachmentUrl ? new Date(msg.createdAt).toLocaleDateString() : undefined,
-        prescriptionSize: msg.attachmentType === 'document' ? (msg.attachmentMimeType?.includes('pdf') ? 'PDF' : 'File') : undefined,
-        attachmentUrl: msg.attachmentUrl || undefined,
-      }));
-      setLocalMessages(mapped);
-    }
+    if (!apiMessages) return;
+    setLocalMessages((prev) => {
+      // Build a map from the server response (authoritative, deduplicated by real ID).
+      const serverMap = new Map<string, ChatMessageUI>();
+      apiMessages.forEach((m) => serverMap.set(String(m.id), toUIMessage(m)));
+
+      // Preserve any in-flight optimistic bubbles (temp-* IDs) that haven't
+      // been confirmed by the server yet — they will be replaced once the
+      // mutation resolves and writes the real server ID into localMessages.
+      const optimistic = prev.filter((m) => m.id.startsWith('temp-'));
+
+      // Merge: server messages first (sorted by id), then any pending optimistic ones.
+      const merged = [...serverMap.values()].sort(
+        (a, b) => Number(a.id) - Number(b.id),
+      );
+      for (const opt of optimistic) {
+        if (!serverMap.has(opt.id)) merged.push(opt);
+      }
+      return merged;
+    });
   }, [apiMessages]);
 
-  const handleStartConsultation = async () => {
-    if (!consultationId) return;
+  const handleStartConsultation = async (): Promise<'started' | 'ended' | 'failed'> => {
+    if (!appointmentId) {
+      Alert.alert(
+        t('chat.alerts.error'),
+        t('chat.alerts.missingAppointment'),
+      );
+      return 'failed';
+    }
     try {
-      await startConsultation(consultationId).unwrap();
+      const started = await startConsultation(appointmentId).unwrap();
+      setConsultationId(String(started.id));
+      if (started.status === 'COMPLETED') {
+        // One consultation per appointment — a finished session stays ended.
+        setRemainingTime(0);
+        setConsultationState('ended');
+        return 'ended';
+      }
       setConsultationState('active');
-      setRemainingTime(CONSULTATION_DURATION_SECONDS);
+      const elapsed = Math.floor(
+        (Date.now() - new Date(consultationStartedAt(started)).getTime()) / 1000,
+      );
+      setRemainingTime(Math.max(0, CONSULTATION_DURATION_SECONDS - elapsed));
+      return 'started';
     } catch {
-      Alert.alert('Error', 'Failed to start consultation. Please try again.');
+      Alert.alert(t('chat.alerts.error'), t('chat.alerts.startFailed'));
+      return 'failed';
     }
   };
 
   const handleEndConsultation = async () => {
-    if (consultationId) {
+    if (resolvedConsultationId) {
       try {
-        await endConsultation(consultationId).unwrap();
+        await endConsultation(resolvedConsultationId).unwrap();
       } catch {
-        Alert.alert('Error', 'Failed to end consultation. Please try again.');
+        Alert.alert(t('chat.alerts.error'), t('chat.alerts.endFailed'));
       }
     }
     setConsultationState('ended');
     router.push({
       pathname: '/consultation-ended',
       params: {
-        consultationId,
+        consultationId: resolvedConsultationId,
         patientName,
-        startedAt: consultation?.startedAt || '',
+        peerName,
+        startedAt: activeConsultation ? consultationStartedAt(activeConsultation) : '',
         conversationId: conversationId ? String(conversationId) : '',
-        animalId,
+        animalId: resolvedAnimalId,
         appointmentId,
       },
     });
   };
 
-  const handleSendPrescription = () => {
-    setShowPrescriptionSheet(true);
+  const openSendPrescription = () => {
+    if (!isViewerDoctor || !appointmentId) {
+      Alert.alert(
+        t('chat.alerts.error'),
+        t('chat.alerts.missingAppointment'),
+      );
+      return;
+    }
+    const ownerEmail =
+      conversations?.find((c) => String(c.id) === String(conversationId))
+        ?.patientEmail || '';
+    router.push({
+      pathname: '/send-prescription',
+      params: {
+        appointmentId,
+        conversationId: conversationId ? String(conversationId) : '',
+        animalId: resolvedAnimalId,
+        patientName,
+        userEmail: ownerEmail,
+      },
+    });
   };
 
-  const handlePrescriptionSent = useCallback(async (data: { medications: any[]; instructions: string; note: string }) => {
-    setConsultationState('prescription_sent');
-    setShowPrescriptionSheet(false);
-
-    if (appointmentId && animalId) {
-      try {
-        const medicines = data.medications.map((m) => ({
-          name: m.name,
-          dosage: `${m.dosage} ${m.dosageUnit} ${m.frequency}`,
-          duration: `${m.duration} ${m.durationUnit}`,
-          notes: data.instructions || undefined,
-        }));
-
-        const prescription = await createPrescription({
-          appointmentId: parseInt(appointmentId, 10),
-          animalId: parseInt(animalId, 10),
-          medicines,
-        }).unwrap();
-
-        await sendPrescriptionApi(prescription.id).unwrap();
-
-        const summary = `Prescription - ${new Date().toLocaleDateString()}`;
-        await sendMessage({
-          text: summary,
-          conversationId,
-        }).unwrap();
-      } catch {
-        Alert.alert('Error', 'Failed to send prescription. Please try again.');
-      }
+  /**
+   * Ring the other party (socket callStarted), then join the call screen
+   * immediately and wait in the Agora channel.
+   */
+  const handleStartCall = (callType: CallType = 'video') => {
+    if (!appointmentId) {
+      Alert.alert(
+        t('chat.alerts.error'),
+        t('chat.alerts.missingAppointment'),
+      );
+      return;
     }
-  }, [appointmentId, animalId, conversationId, createPrescription, sendPrescriptionApi, sendMessage]);
+    ringCall(parseInt(appointmentId, 10), callType);
+    router.push({
+      pathname: '/video-call',
+      params: {
+        appointmentId,
+        callType,
+        conversationId: conversationId ? String(conversationId) : '',
+        patientName,
+        peerName,
+        animalImage,
+        animalId: resolvedAnimalId,
+      },
+    });
+  };
+
+  const handleCallPress = async (callType: CallType) => {
+    if (startingCall) return;
+    if (!appointmentId || !canCall) {
+      Alert.alert(
+        t('chat.alerts.callsUnavailableTitle'),
+        consultationFinished
+          ? t('chat.alerts.callEndedOnlyMsg')
+          : t('chat.alerts.callNotAvailableMsg'),
+      );
+      return;
+    }
+    setStartingCall(true);
+    try {
+      if (consultationState === 'idle') {
+        const result = await handleStartConsultation();
+        if (result === 'ended') {
+          Alert.alert(t('chat.alerts.callsUnavailableTitle'), t('chat.alerts.callEndedOnlyMsg'));
+          return;
+        }
+        if (result === 'failed') return;
+      }
+      handleStartCall(callType);
+    } finally {
+      setStartingCall(false);
+    }
+  };
+
+  const textInputRef = useRef<TextInput>(null);
+
+  const handleSendNote = () => {
+    if (Platform.OS === 'ios') {
+      Alert.prompt(t('chat.actions.sendNote'), t('chat.alerts.sendNoteMsg'), (text) => {
+        if (text && text.trim()) {
+          setInputText(text.trim());
+        }
+      });
+    } else {
+      textInputRef.current?.focus();
+    }
+  };
+
+  const handleSendAttachment = async () => {
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert(t('chat.alerts.permissionRequiredTitle'), t('chat.alerts.sendPermissionMsg'));
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        quality: 0.8,
+      });
+
+      if (result.canceled || !result.assets[0]) return;
+
+      const asset = result.assets[0];
+      const fileName = asset.fileName || `photo-${Date.now()}.jpg`;
+
+      const isImage = (asset.mimeType || 'image/jpeg').startsWith('image/');
+      const file = isImage
+        ? await compressImageForUpload(asset.uri, {
+          fileName,
+          mimeType: asset.mimeType || 'image/jpeg',
+        })
+        : { uri: asset.uri, name: fileName, type: asset.mimeType || 'application/octet-stream' };
+
+      let targetConversationId = conversationId;
+      if (!targetConversationId) {
+        if (!appointmentId) {
+          Alert.alert(t('chat.alerts.error'), t('chat.alerts.openFromAppointment'));
+          return;
+        }
+        const conv = await createConversation({
+          appointmentId: parseInt(appointmentId, 10),
+        }).unwrap();
+        targetConversationId = conv.id;
+        setConversationId(conv.id);
+      }
+
+      const saved = await sendAttachment({
+        conversationId: targetConversationId,
+        file: { uri: file.uri, name: file.name, type: file.type },
+      }).unwrap();
+
+      atBottomRef.current = true;
+      setLocalMessages((prev) =>
+        prev.some((m) => m.id === String(saved.id)) ? prev : [...prev, toUIMessage(saved)],
+      );
+    } catch (err) {
+      const status = (err as { status?: number | string })?.status;
+      Alert.alert(
+        t('chat.alerts.error'),
+        status === 413
+          ? t('chat.alerts.attachmentTooLarge')
+          : t('chat.alerts.attachmentFailed'),
+      );
+    }
+  };
 
   const handleSendMessage = async () => {
     if (!inputText.trim() || sending) return;
@@ -207,35 +792,74 @@ export default function ChatScreen() {
     setInputText('');
     const optimistic: ChatMessageUI = {
       id: `temp-${Date.now()}`,
-      sender: 'doctor',
+      sender: isViewerDoctor ? 'doctor' : 'patient',
       text,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      time: formatDhakaClock(new Date()),
+      createdAt: new Date().toISOString(),
+      status: 'SENT',
     };
+    atBottomRef.current = true;
     setLocalMessages((prev) => [...prev, optimistic]);
     try {
-      await sendMessage({ text, conversationId }).unwrap();
+      const saved = await sendMessage({ text, conversationId }).unwrap();
+      // Replace the optimistic bubble with the server copy so the double-tick
+      // status updates patch the same id (avoids temp/real duplicates).
+      setLocalMessages((prev) =>
+        prev.map((m) => (m.id === optimistic.id ? toUIMessage(saved) : m)),
+      );
     } catch {
       setLocalMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
-      Alert.alert('Error', 'Failed to send message. Please try again.');
+      Alert.alert(t('chat.alerts.error'), t('chat.alerts.messageFailed'));
     }
   };
 
-  const renderMessage = ({ item }: { item: ChatMessageUI }) => {
-    const isDoctor = item.sender === 'doctor';
+  const renderMessage = ({ item, index }: { item: ChatMessageUI; index: number }) => {
+    const isMine = isViewerDoctor ? item.sender === 'doctor' : item.sender === 'patient';
+    const prev = index > 0 ? localMessages[index - 1] : undefined;
+    const itemKey = dhakaDayKey(item.createdAt);
+    const prevKey = prev ? dhakaDayKey(prev.createdAt) : undefined;
+    const showDateSeparator =
+      itemKey !== 'Invalid Date' && (!prev || prevKey !== itemKey);
+    const separator = showDateSeparator ? (
+      <View style={styles.dateSeparator}>
+        <Text style={styles.dateSeparatorText}>{formatDhakaDayLabel(item.createdAt)}</Text>
+      </View>
+    ) : null;
 
-    if (item.isPrescription) {
-      return (
-        <View style={styles.messageRowRight}>
-          <View style={styles.prescriptionBubble}>
+    let content: React.ReactNode;
+
+    if (item.attachmentType === 'image' && item.attachmentUrl && !item.isPrescription) {
+      content = (
+        <View style={isMine ? styles.messageRowRight : styles.messageRowLeft}>
+          {!isMine && <MessageAvatar uri={theirAvatarUri} mine={false} />}
+          <ChatImageBubble
+            uri={item.attachmentUrl}
+            isMine={isMine}
+            time={item.time}
+            caption={item.text}
+            status={item.status}
+            onView={openImageViewer}
+          />
+          {isMine && <MessageAvatar uri={myAvatarUri} mine />}
+        </View>
+      );
+    } else if (item.isPrescription) {
+      content = (
+        <View style={isMine ? styles.messageRowRight : styles.messageRowLeft}>
+          {!isMine && <MessageAvatar uri={theirAvatarUri} mine={false} />}
+          <View style={isMine ? styles.prescriptionBubble : styles.prescriptionBubbleLeft}>
             <View style={styles.prescriptionHeader}>
               <Ionicons name="document-text" size={18} color="#FFFFFF" />
-              <Text style={styles.prescriptionTitle}>Prescription - {item.prescriptionDate}</Text>
+              <Text style={styles.prescriptionTitle}>{t('chat.prescription.title', { date: item.prescriptionDate ?? '' })}</Text>
             </View>
             <Text style={styles.prescriptionMeta}>
               {item.prescriptionDate} · {item.prescriptionSize}
             </Text>
             <View style={styles.prescriptionFooter}>
-              <Text style={styles.prescriptionTime}>{item.time}</Text>
+              <View style={styles.metaRowPrescription}>
+                <Text style={styles.prescriptionTime}>{item.time}</Text>
+                {isMine && <ReadTicks status={item.status} />}
+              </View>
               <TouchableOpacity
                 activeOpacity={0.7}
                 onPress={() => {
@@ -248,82 +872,113 @@ export default function ChatScreen() {
               </TouchableOpacity>
             </View>
           </View>
+          {isMine && <MessageAvatar uri={myAvatarUri} mine />}
+        </View>
+      );
+    } else {
+      content = (
+        <View style={isMine ? styles.messageRowRight : styles.messageRowLeft}>
+          {!isMine && <MessageAvatar uri={theirAvatarUri} mine={false} />}
+          <View style={isMine ? styles.mineBubble : styles.theirsBubble}>
+            <Text style={isMine ? styles.mineBubbleText : styles.theirsBubbleText}>
+              {item.text}
+            </Text>
+            <View style={styles.metaRow}>
+              <Text style={isMine ? styles.mineTimeText : styles.theirsTimeText}>
+                {item.time}
+              </Text>
+              {isMine && <ReadTicks status={item.status} />}
+            </View>
+          </View>
+          {isMine && <MessageAvatar uri={myAvatarUri} mine />}
         </View>
       );
     }
 
     return (
-      <View style={isDoctor ? styles.messageRowRight : styles.messageRowLeft}>
-        {!isDoctor && (
-          <View style={styles.patientAvatar}>
-            {animalImage ? (
-              <Image source={{ uri: animalImage }} style={styles.patientAvatarImage} />
-            ) : (
-              <Ionicons name="paw" size={16} color="#BD632F" />
-            )}
-          </View>
-        )}
-        <View style={isDoctor ? styles.doctorBubble : styles.patientBubble}>
-          <Text style={isDoctor ? styles.doctorBubbleText : styles.patientBubbleText}>
-            {item.text}
-          </Text>
-          <Text style={isDoctor ? styles.doctorTimeText : styles.patientTimeText}>
-            {item.time}
-          </Text>
-        </View>
+      <View>
+        {separator}
+        {content}
       </View>
     );
   };
 
+  const prescriptionAlreadySent =
+    consultationState === 'prescription_sent' || !!existingPrescription;
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>{patientName}</Text>
+        <View style={styles.headerLeft}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
+            <SvgXml width={20} height={20} xml={backButtonSvg} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle} numberOfLines={1}>
+            {counterpartyName}
+          </Text>
+        </View>
         <View style={styles.headerActions}>
-          <TouchableOpacity
-            style={styles.headerActionBtn}
-            activeOpacity={0.7}
-            onPress={() =>
-              router.push({
-                pathname: '/video-call',
-                params: {
-                  appointmentId,
-                  conversationId: conversationId ? String(conversationId) : '',
-                  patientName,
-                  animalImage,
-                },
-              })
-            }
-          >
-            <Ionicons name="call" size={18} color="#FFFFFF" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.headerActionBtn}
-            activeOpacity={0.7}
-            onPress={() =>
-              router.push({
-                pathname: '/video-call',
-                params: {
-                  appointmentId,
-                  conversationId: conversationId ? String(conversationId) : '',
-                  patientName,
-                  animalImage,
-                },
-              })
-            }
-          >
-            <Ionicons name="videocam" size={18} color="#FFFFFF" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.headerActionBtn} activeOpacity={0.7} onPress={() => Alert.alert('Options', 'More options coming soon.')}>
-            <Ionicons name="ellipsis-vertical" size={18} color="#FFFFFF" />
+          {isViewerDoctor && !!appointmentId && canCall && (
+            <>
+              <TouchableOpacity
+                style={[styles.headerActionBtn, startingCall && styles.headerActionBtnDisabled]}
+                activeOpacity={0.7}
+                disabled={startingCall}
+                onPress={() => handleCallPress('audio')}
+              >
+                <SvgXml width={20} height={20} xml={chatPhoneSvg} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.headerActionBtn, startingCall && styles.headerActionBtnDisabled]}
+                activeOpacity={0.7}
+                disabled={startingCall}
+                onPress={() => handleCallPress('video')}
+              >
+                <SvgXml width={22} height={18} xml={chatVideoSvg} />
+              </TouchableOpacity>
+            </>
+          )}
+          <TouchableOpacity style={styles.headerActionBtn} activeOpacity={0.7} onPress={() => setShowActionsMenu((prev) => !prev)}>
+            <Ionicons name="ellipsis-vertical" size={18} color="#141B34" />
           </TouchableOpacity>
         </View>
       </View>
 
-      {(consultationState === 'idle' || consultationState === 'active') && consultation && (
+      {showActionsMenu && (
+        <>
+          <TouchableOpacity style={styles.actionsMenuBackdrop} activeOpacity={1} onPress={() => setShowActionsMenu(false)} />
+          <View style={styles.actionsMenuContainer}>
+            {isViewerDoctor && (
+              <TouchableOpacity
+                style={styles.actionsMenuItem}
+                activeOpacity={0.7}
+                onPress={() => {
+                  setShowActionsMenu(false);
+                  openSendPrescription();
+                }}
+              >
+                <Ionicons name="document-text-outline" size={18} color="#BD632F" />
+                <Text style={styles.actionsMenuItemText}>{t('chat.actions.sendRecommendation')}</Text>
+              </TouchableOpacity>
+            )}
+            {/* <TouchableOpacity
+              style={styles.actionsMenuItem}
+              activeOpacity={0.7}
+              onPress={() => {
+                setShowActionsMenu(false);
+                handleSendNote();
+              }}
+            >
+              <Ionicons name="chatbubble-outline" size={18} color="#BD632F" />
+              <Text style={styles.actionsMenuItemText}>{t('chat.actions.sendNote')}</Text>
+            </TouchableOpacity> */}
+          </View>
+        </>
+      )}
+
+      {/* Upcoming-session card (doctor's entry point): Join jumps into the
+          video call before the consultation timer starts. */}
+      {isViewerDoctor && consultationState === 'idle' && hasUpcomingAppointment && (
         <View style={styles.upcomingBanner}>
           <View style={styles.upcomingBannerLeft}>
             <View style={styles.upcomingBannerAvatar}>
@@ -335,78 +990,75 @@ export default function ChatScreen() {
             </View>
             <View>
               <Text style={styles.upcomingBannerTime}>
-                {new Date(consultation.startedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · Today
+                {appointmentTime
+                  ? `${formatDhakaClock(appointmentTime)} · ${formatDhakaDayLabel(appointmentTime)}`
+                  : t('chat.date.today')}
               </Text>
-              <Text style={styles.upcomingBannerName}>{patientName}</Text>
+              <Text style={styles.upcomingBannerName}>{animalName || patientName}</Text>
+              {!!animalName && (
+                <Text style={styles.upcomingBannerOwner}>{t('chat.upcoming.owner', { name: patientName })}</Text>
+              )}
             </View>
           </View>
           <TouchableOpacity
             style={styles.upcomingBannerJoin}
             activeOpacity={0.85}
-            onPress={() =>
-              router.push({
-                pathname: '/video-call',
-                params: {
-                  appointmentId,
-                  conversationId: conversationId ? String(conversationId) : '',
-                  patientName,
-                  animalImage,
-                },
-              })
-            }
+            onPress={() => handleStartCall('video')}
           >
-            <Text style={styles.upcomingBannerJoinText}>Join</Text>
+            <Text style={styles.upcomingBannerJoinText}>{t('chat.upcoming.join')}</Text>
           </TouchableOpacity>
         </View>
       )}
 
-      {consultationState === 'active' && (
+      {isViewerDoctor && consultationState === 'active' && (
         <View style={styles.consultationBanner}>
-          <Text style={styles.consultationBannerTitle}>Consultation started</Text>
-          <Text style={styles.consultationBannerDesc}>You are now in consultation with {patientName}</Text>
-          <Text style={styles.consultationBannerBullet}>•  Start time: {consultation ? new Date(consultation.startedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</Text>
-          <Text style={styles.consultationBannerBullet}>•  Max Duration: 30 min</Text>
-          <Text style={styles.consultationBannerRemaining}>•  Remaining time: {formatTimeRemaining(remainingTime)}</Text>
+          <Text style={styles.consultationBannerTitle}>{t('chat.consultation.startedTitle')}</Text>
+          <Text style={styles.consultationBannerDesc}>{t('chat.consultation.startedDesc', { name: patientName })}</Text>
+          <Text style={styles.consultationBannerBullet}>{t('chat.consultation.startTime', { time: activeConsultation ? formatDhakaClock(consultationStartedAt(activeConsultation)) : '' })}</Text>
+          <Text style={styles.consultationBannerBullet}>{t('chat.consultation.maxDuration')}</Text>
+          <Text style={styles.consultationBannerRemaining}>{t('chat.consultation.remainingTime', { time: formatTimeRemaining(remainingTime) })}</Text>
           <TouchableOpacity style={styles.endConsultationBtn} onPress={handleEndConsultation} activeOpacity={0.85} disabled={ending}>
             {ending ? (
               <ActivityIndicator size="small" color="#1A1817" />
             ) : (
-              <Text style={styles.endConsultationBtnText}>End Consultation</Text>
+              <Text style={styles.endConsultationBtnText}>{t('chat.actions.endConsultation')}</Text>
             )}
           </TouchableOpacity>
         </View>
       )}
 
-      {(consultationState === 'ended' || consultationState === 'prescription_sent') && (
-        <View style={styles.consultationBanner}>
-          <Text style={styles.consultationBannerEndedTitle}>Consultation ended!</Text>
-          <Text style={styles.consultationBannerDesc}>Your consultation with {patientName} has ended.</Text>
-          <Text style={styles.consultationBannerBullet}>•  Start time: {consultation ? new Date(consultation.startedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</Text>
-          <Text style={styles.consultationBannerBullet}>•  Max Duration: 30 min</Text>
-          <Text style={styles.consultationBannerRemaining}>•  Remaining time: {formatTimeRemaining(remainingTime)}</Text>
-        </View>
-      )}
-
-      {(consultationState === 'ended' || consultationState === 'prescription_sent') && (
-        <View style={styles.nextStepInline}>
-          <Text style={styles.nextStepInlineTitle}>Next Step</Text>
-          <View style={styles.nextStepInlineOption}>
-            {consultationState === 'prescription_sent' ? (
-              <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
-            ) : (
-              <View style={styles.radioOuter}>
-                <View style={styles.radioInner} />
-              </View>
-            )}
-            <Text style={styles.nextStepInlineText}>Send prescription, recommendation, note</Text>
+      {isViewerDoctor &&
+        (consultationState === 'ended' || consultationState === 'prescription_sent') && (
+          <View style={styles.consultationBanner}>
+            <Text style={styles.consultationBannerEndedTitle}>{t('chat.consultation.endedTitle')}</Text>
+            <Text style={styles.consultationBannerDesc}>{t('chat.consultation.endedDesc', { name: patientName })}</Text>
+            <Text style={styles.consultationBannerBullet}>{t('chat.consultation.startTime', { time: activeConsultation ? formatDhakaClock(consultationStartedAt(activeConsultation)) : '' })}</Text>
+            <Text style={styles.consultationBannerBullet}>{t('chat.consultation.maxDuration')}</Text>
+            <Text style={styles.consultationBannerRemaining}>{t('chat.consultation.remainingTime', { time: formatTimeRemaining(remainingTime) })}</Text>
           </View>
-          {consultationState === 'ended' && (
-            <TouchableOpacity style={styles.sendPrescriptionInlineBtn} onPress={handleSendPrescription} activeOpacity={0.85}>
-              <Text style={styles.sendPrescriptionInlineBtnText}>Send Prescription</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      )}
+        )}
+
+      {isViewerDoctor &&
+        (consultationState === 'ended' || consultationState === 'prescription_sent') && (
+          <View style={styles.nextStepInline}>
+            <Text style={styles.nextStepInlineTitle}>{t('chat.nextStep.title')}</Text>
+            <View style={styles.nextStepInlineOption}>
+              {prescriptionAlreadySent ? (
+                <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
+              ) : (
+                <View style={styles.radioOuter}>
+                  <View style={styles.radioInner} />
+                </View>
+              )}
+              <Text style={styles.nextStepInlineText}>{t('chat.nextStep.option')}</Text>
+            </View>
+            {consultationState === 'ended' && !prescriptionAlreadySent && (
+              <TouchableOpacity style={styles.sendPrescriptionInlineBtn} onPress={openSendPrescription} activeOpacity={0.85}>
+                <Text style={styles.sendPrescriptionInlineBtnText}>{t('chat.actions.sendPrescription')}</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
 
       {messagesLoading ? (
         <View style={styles.loadingContainer}>
@@ -415,71 +1067,72 @@ export default function ChatScreen() {
       ) : (
         <FlatList
           ref={flatListRef}
+          style={{ flex: 1 }}
           data={localMessages}
           keyExtractor={(item) => item.id}
           renderItem={renderMessage}
           contentContainerStyle={styles.messagesList}
           showsVerticalScrollIndicator={false}
-          onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-          ListHeaderComponent={
-            <View style={styles.dateSeparator}>
-              <Text style={styles.dateSeparatorText}>
-                {new Date().toLocaleDateString('en-US', {
-                  day: 'numeric',
-                  month: 'long',
-                  year: 'numeric',
-                })}
-              </Text>
-            </View>
-          }
+          keyboardShouldPersistTaps="handled"
+          removeClippedSubviews={false}
+          scrollEventThrottle={16}
+          onScroll={(e) => {
+            const { layoutMeasurement, contentOffset, contentSize } = e.nativeEvent;
+            const distanceFromBottom =
+              contentSize.height - layoutMeasurement.height - contentOffset.y;
+            atBottomRef.current = distanceFromBottom < 80;
+          }}
+          onContentSizeChange={() => {
+            if (atBottomRef.current) {
+              flatListRef.current?.scrollToEnd({ animated: true });
+            }
+          }}
         />
       )}
 
-      {consultationState === 'active' && (
+      {isViewerDoctor && consultationState === 'active' && (
         <View style={styles.quickActionsContainer}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickActions}>
-            <TouchableOpacity style={styles.quickActionBtn} activeOpacity={0.8} onPress={() => setShowPrescriptionSheet(true)}>
-              <Text style={styles.quickActionText}>Send prescription</Text>
+            <TouchableOpacity style={styles.quickActionBtn} activeOpacity={0.8} onPress={openSendPrescription}>
+              <Text style={styles.quickActionText}>{t('chat.actions.sendPrescriptionLower')}</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.quickActionBtn} activeOpacity={0.8} onPress={handleSendPrescription}>
-              <Text style={styles.quickActionText}>Send recommendation</Text>
+            <TouchableOpacity style={styles.quickActionBtn} activeOpacity={0.8} onPress={openSendPrescription}>
+              <Text style={styles.quickActionText}>{t('chat.actions.sendRecommendationLower')}</Text>
             </TouchableOpacity>
           </ScrollView>
         </View>
       )}
 
-      {consultationState === 'idle' && (
+      {isViewerDoctor && consultationState === 'idle' && !!appointmentId && (
         <View style={styles.startConsultationContainer}>
           <TouchableOpacity style={styles.startConsultationBtn} onPress={handleStartConsultation} activeOpacity={0.85} disabled={starting}>
             {starting ? (
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
-              <Text style={styles.startConsultationBtnText}>Start Consultation</Text>
+              <Text style={styles.startConsultationBtnText}>{t('chat.actions.startConsultation')}</Text>
             )}
           </TouchableOpacity>
         </View>
       )}
 
-      {consultationState !== 'idle' && (
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={0}
-        >
+      {(!!conversationId || consultationState !== 'idle') && (
+        <KeyboardAvoidingView behavior="padding">
           <View style={styles.inputBar}>
             <TextInput
+              ref={textInputRef}
               style={styles.textInput}
-              placeholder="Type a message..."
+              placeholder={t('chat.input.placeholder')}
               placeholderTextColor="#A39E99"
               value={inputText}
               onChangeText={setInputText}
             />
-            <TouchableOpacity style={styles.plusBtn} activeOpacity={0.8} onPress={() => Alert.alert('Attachments', 'File attachment feature coming soon.')}>
+            <TouchableOpacity style={[styles.plusBtn, sendingAttachment && { opacity: 0.5 }]} activeOpacity={0.8} onPress={handleSendAttachment} disabled={sendingAttachment}>
               <Ionicons name="add" size={22} color="#BD632F" />
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.micBtn, sending && { opacity: 0.5 }]}
               activeOpacity={0.8}
-              onPress={inputText.trim() ? handleSendMessage : () => Alert.alert('Audio Recording', 'Audio recording feature coming soon.')}
+              onPress={inputText.trim() ? handleSendMessage : () => Alert.alert(t('chat.alerts.audioTitle'), t('chat.alerts.audioMsg'))}
               disabled={sending}
             >
               {sending ? (
@@ -492,28 +1145,110 @@ export default function ChatScreen() {
         </KeyboardAvoidingView>
       )}
 
-      <PrescriptionBottomSheet
-        visible={showPrescriptionSheet}
-        onClose={() => setShowPrescriptionSheet(false)}
-        onSend={handlePrescriptionSent}
-      />
+      {/* In-app full-screen viewer for chat images */}
+      <Modal
+        visible={!!viewerUri}
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={closeImageViewer}
+      >
+        <View style={styles.viewerContainer}>
+          <Image
+            source={{ uri: viewerUri ?? undefined }}
+            style={styles.viewerImage}
+            resizeMode="contain"
+            onLoad={() => setViewerLoading(false)}
+            onError={() => {
+              setViewerLoading(false);
+              setViewerError(true);
+            }}
+          />
+          {viewerLoading && !viewerError && (
+            <View style={styles.viewerCenter} pointerEvents="none">
+              <ActivityIndicator size="large" color="#FFFFFF" />
+            </View>
+          )}
+          {viewerError && (
+            <View style={styles.viewerCenter} pointerEvents="none">
+              <Ionicons name="image-outline" size={48} color="rgba(255,255,255,0.6)" />
+              <Text style={styles.viewerErrorText}>{t('chat.viewer.loadFailed')}</Text>
+            </View>
+          )}
+          <SafeAreaView style={styles.viewerTopBar} edges={['top']}>
+            <TouchableOpacity
+              style={styles.viewerIconBtn}
+              onPress={closeImageViewer}
+              activeOpacity={0.7}
+              accessibilityLabel={t('chat.viewer.closeImage')}
+            >
+              <Ionicons name="close" size={26} color="#FFFFFF" />
+            </TouchableOpacity>
+            {viewerMine !== null && viewerUri && (
+              <View style={styles.viewerSenderRow}>
+                <MessageAvatar
+                  uri={viewerMine ? myAvatarUri : theirAvatarUri}
+                  mine={false}
+                />
+                <Text numberOfLines={1} ellipsizeMode="tail" style={styles.viewerSenderName}>
+                  {viewerMine ? t('chat.viewer.you') : counterpartyName}
+                </Text>
+              </View>
+            )}
+            <View style={styles.viewerTopActions}>
+              <TouchableOpacity
+                style={styles.viewerIconBtn}
+                onPress={downloadViewedImage}
+                activeOpacity={0.7}
+                disabled={savingImage || sharingImage}
+                accessibilityLabel={t('chat.viewer.downloadImage')}
+              >
+                {savingImage ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Ionicons
+                    name={savedFlash ? 'checkmark' : 'download-outline'}
+                    size={24}
+                    color={savedFlash ? '#4CAF50' : '#FFFFFF'}
+                  />
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.viewerIconBtn}
+                onPress={shareViewedImage}
+                activeOpacity={0.7}
+                disabled={sharingImage || savingImage}
+                accessibilityLabel={t('chat.viewer.shareImage')}
+              >
+                {sharingImage ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Ionicons name="share-outline" size={24} color="#FFFFFF" />
+                )}
+              </TouchableOpacity>
+            </View>
+          </SafeAreaView>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FAF9F6' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 4, paddingBottom: 12, backgroundColor: '#BD632F' },
-  backBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
-  headerTitle: { fontSize: 18, fontWeight: '800', color: '#FFFFFF' },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 4, paddingBottom: 12, backgroundColor: '#FAF9F6' },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, minWidth: 0, marginRight: 8 },
+  backBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: '#BD632F', justifyContent: 'center', alignItems: 'center' },
+  headerTitle: { fontSize: 18, fontWeight: '800', color: '#1A1817', flexShrink: 1 },
   headerActions: { flexDirection: 'row', gap: 4 },
-  headerActionBtn: { width: 36, height: 36, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
+  headerActionBtn: { width: 36, height: 36, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  headerActionBtnDisabled: { opacity: 0.4 },
   upcomingBanner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#E6D5C3', marginHorizontal: 20, borderRadius: 14, padding: 12, marginBottom: 12 },
   upcomingBannerLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   upcomingBannerAvatar: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFF2EB', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
   upcomingBannerAvatarImage: { width: 44, height: 44, borderRadius: 12 },
   upcomingBannerTime: { fontSize: 11, fontWeight: '600', color: '#BD632F' },
   upcomingBannerName: { fontSize: 15, fontWeight: '800', color: '#1A1817' },
+  upcomingBannerOwner: { fontSize: 11, fontWeight: '500', color: '#7C7672', marginTop: 2 },
   upcomingBannerJoin: { backgroundColor: '#BD632F', borderRadius: 14, paddingHorizontal: 16, paddingVertical: 8 },
   upcomingBannerJoinText: { color: '#FFFFFF', fontSize: 13, fontWeight: '700' },
   consultationBanner: { backgroundColor: '#FFFFFF', marginHorizontal: 20, borderRadius: 14, borderWidth: 1, borderColor: '#E6E1DC', padding: 14, marginBottom: 12 },
@@ -538,14 +1273,78 @@ const styles = StyleSheet.create({
   messageRowLeft: { flexDirection: 'row', alignItems: 'flex-end', marginBottom: 14, maxWidth: '85%' },
   messageRowRight: { flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 14, maxWidth: '85%', alignSelf: 'flex-end' },
   patientAvatar: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#FFF2EB', justifyContent: 'center', alignItems: 'center', marginRight: 8, overflow: 'hidden' },
+  mineAvatar: { marginRight: 0, marginLeft: 8 },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-end' },
+  metaRowPrescription: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   patientAvatarImage: { width: 32, height: 32, borderRadius: 16 },
-  patientBubble: { backgroundColor: '#F5EDE6', borderRadius: 18, borderBottomLeftRadius: 4, paddingHorizontal: 14, paddingVertical: 10, maxWidth: '100%' },
-  patientBubbleText: { fontSize: 14, fontWeight: '500', color: '#1A1817', lineHeight: 19 },
-  patientTimeText: { fontSize: 10, fontWeight: '500', color: '#9C9690', marginTop: 4, alignSelf: 'flex-end' },
-  doctorBubble: { backgroundColor: '#BD632F', borderRadius: 18, borderBottomRightRadius: 4, paddingHorizontal: 14, paddingVertical: 10, maxWidth: '100%' },
-  doctorBubbleText: { fontSize: 14, fontWeight: '500', color: '#FFFFFF', lineHeight: 19 },
-  doctorTimeText: { fontSize: 10, fontWeight: '500', color: 'rgba(255,255,255,0.7)', marginTop: 4, alignSelf: 'flex-end' },
+  theirsBubble: { backgroundColor: '#FFFFFF', borderRadius: 18, borderBottomLeftRadius: 4, borderWidth: 1, borderColor: '#F0EAE1', paddingHorizontal: 14, paddingVertical: 10, maxWidth: '100%' },
+  theirsBubbleText: { fontSize: 14, fontWeight: '500', color: '#BD632F', lineHeight: 19 },
+  theirsTimeText: { fontSize: 10, fontWeight: '500', color: 'rgba(189, 99, 47, 0.6)', marginTop: 4, alignSelf: 'flex-end' },
+  mineBubble: { backgroundColor: '#BD632F', borderRadius: 18, borderBottomRightRadius: 4, paddingHorizontal: 14, paddingVertical: 10, maxWidth: '100%' },
+  mineBubbleText: { fontSize: 14, fontWeight: '500', color: '#FFFFFF', lineHeight: 19 },
+  mineTimeText: { fontSize: 10, fontWeight: '500', color: 'rgba(255,255,255,0.7)', marginTop: 4, alignSelf: 'flex-end' },
+  imageBubble: {
+    backgroundColor: '#FFF2EB',
+    borderRadius: 18,
+    borderBottomRightRadius: 4,
+    overflow: 'hidden',
+    maxWidth: '100%',
+  },
+  imageBubbleLeft: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    borderBottomLeftRadius: 4,
+    borderWidth: 1,
+    borderColor: '#F0EAE1',
+    overflow: 'hidden',
+    maxWidth: '100%',
+  },
+  messageImage: { width: 200, height: 200, backgroundColor: '#E6E1DC' },
+  imageFallback: {
+    width: 200,
+    height: 200,
+    backgroundColor: '#F0EAE1',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 6,
+  },
+  imageFallbackText: { fontSize: 12, fontWeight: '600', color: '#BD632F' },
+  imageCaption: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#BD632F',
+    lineHeight: 19,
+    paddingHorizontal: 12,
+    paddingTop: 8,
+  },
+  imageCaptionMine: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#FFFFFF',
+    lineHeight: 19,
+    paddingHorizontal: 12,
+    paddingTop: 8,
+  },
+  imageTime: {
+    fontSize: 10,
+    fontWeight: '500',
+    color: 'rgba(189, 99, 47, 0.6)',
+    paddingHorizontal: 12,
+    paddingBottom: 8,
+    paddingTop: 4,
+    alignSelf: 'flex-end',
+  },
+  imageTimeMine: {
+    fontSize: 10,
+    fontWeight: '500',
+    color: 'rgba(189, 99, 47, 0.7)',
+    paddingHorizontal: 12,
+    paddingBottom: 8,
+    paddingTop: 4,
+    alignSelf: 'flex-end',
+  },
   prescriptionBubble: { backgroundColor: '#BD632F', borderRadius: 18, borderBottomRightRadius: 4, paddingHorizontal: 14, paddingVertical: 12, maxWidth: '100%', minWidth: 220 },
+  prescriptionBubbleLeft: { backgroundColor: '#BD632F', borderRadius: 18, borderBottomLeftRadius: 4, borderBottomRightRadius: 18, paddingHorizontal: 14, paddingVertical: 12, maxWidth: '100%', minWidth: 220 },
   prescriptionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
   prescriptionTitle: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
   prescriptionMeta: { fontSize: 11, fontWeight: '500', color: 'rgba(255,255,255,0.7)', marginBottom: 4 },
@@ -559,8 +1358,85 @@ const styles = StyleSheet.create({
   startConsultationBtn: { backgroundColor: '#BD632F', borderRadius: 14, paddingVertical: 16, alignItems: 'center' },
   startConsultationBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
   inputBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 28, borderWidth: 1, borderColor: '#E6E1DC', height: 52, paddingHorizontal: 16, marginHorizontal: 20, marginBottom: 12, gap: 8 },
-  textInput: { flex: 1, fontSize: 14, color: '#1A1817', height: '100%' },
+  textInput: { flex: 1, fontSize: 14, color: '#1A1817', height: '100%', textAlignVertical: 'center' },
   plusBtn: { width: 32, height: 32, borderRadius: 16, borderWidth: 1.5, borderColor: '#BD632F', justifyContent: 'center', alignItems: 'center' },
   micBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#BD632F', justifyContent: 'center', alignItems: 'center' },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  actionsMenuBackdrop: { ...StyleSheet.absoluteFill, zIndex: 100 },
+  actionsMenuContainer: {
+    position: 'absolute',
+    top: 56,
+    right: 20,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#E6E1DC',
+    paddingVertical: 4,
+    minWidth: 190,
+    zIndex: 101,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  actionsMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  actionsMenuItemText: { fontSize: 14, fontWeight: '600', color: '#1A1817' },
+  viewerContainer: { flex: 1, backgroundColor: '#000000', justifyContent: 'center' },
+  viewerImage: { width: '100%', height: '100%' },
+  viewerCenter: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 10,
+  },
+  viewerErrorText: { color: 'rgba(255,255,255,0.7)', fontSize: 14, fontWeight: '600' },
+  viewerTopBar: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    zIndex: 10,
+  },
+  viewerIconBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  viewerTopActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  viewerSenderRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 8,
+    minWidth: 0,
+  },
+  viewerSenderName: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '700',
+    flexShrink: 1,
+  },
 });

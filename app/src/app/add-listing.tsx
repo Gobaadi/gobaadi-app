@@ -5,27 +5,36 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  ScrollView,
   Alert,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useCreateListingMutation } from '@/store/livestockApi';
 
-const CATEGORIES = ['Animals', 'Proteins', 'Dairy', 'Food', 'Equipments', 'Vaccines'];
+const CATEGORIES = [
+  { key: 'animals', labelKey: 'addListing.categories.animals' },
+  { key: 'proteins', labelKey: 'addListing.categories.proteins' },
+  { key: 'dairy', labelKey: 'addListing.categories.dairy' },
+  { key: 'food', labelKey: 'addListing.categories.food' },
+  { key: 'equipments', labelKey: 'addListing.categories.equipments' },
+  { key: 'vaccines', labelKey: 'addListing.categories.vaccines' },
+];
 
 export default function AddListingScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
-  const [category, setCategory] = useState(CATEGORIES[0]);
+  const [category, setCategory] = useState(CATEGORIES[0].key);
   const [createListing, { isLoading }] = useCreateListingMutation();
 
   async function handleSubmit() {
     const trimmedName = name.trim();
     const parsedPrice = parseFloat(price);
     if (!trimmedName || !parsedPrice || parsedPrice <= 0) {
-      Alert.alert('Missing info', 'Please enter a name and a valid price.');
+      Alert.alert(t('addListing.alerts.missingInfo'), t('addListing.alerts.missingMsg'));
       return;
     }
     try {
@@ -44,7 +53,7 @@ export default function AddListingScreen() {
       router.replace('/(tabs)/market');
     } catch (err) {
       console.log('Error creating listing:', err);
-      Alert.alert('Could not create listing', 'Please try again.');
+      Alert.alert(t('addListing.alerts.createFailed'), t('addListing.alerts.tryAgain'));
     }
   }
 
@@ -54,46 +63,50 @@ export default function AddListingScreen() {
         <TouchableOpacity style={styles.circleButton} onPress={() => router.back()} activeOpacity={0.8}>
           <Text style={styles.buttonText}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>New Listing</Text>
+        <Text style={styles.headerTitle}>{t('addListing.title')}</Text>
         <View style={{ width: 44 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+      <KeyboardAwareScrollView
+        contentContainerStyle={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.fieldContainer}>
-          <Text style={styles.fieldLabel}>Name*</Text>
+          <Text style={styles.fieldLabel}>{t('addListing.fields.name')}</Text>
           <TextInput
             style={styles.input}
             value={name}
             onChangeText={setName}
-            placeholder="e.g. Kota Goat"
+            placeholder={t('addListing.namePlaceholder')}
             placeholderTextColor="#A39E99"
           />
         </View>
 
         <View style={styles.fieldContainer}>
-          <Text style={styles.fieldLabel}>Price (৳)*</Text>
+          <Text style={styles.fieldLabel}>{t('addListing.fields.price')}</Text>
           <TextInput
             style={styles.input}
             value={price}
             onChangeText={setPrice}
-            placeholder="e.g. 16000"
+            placeholder={t('addListing.pricePlaceholder')}
             placeholderTextColor="#A39E99"
             keyboardType="numeric"
           />
         </View>
 
         <View style={styles.fieldContainer}>
-          <Text style={styles.fieldLabel}>Category*</Text>
+          <Text style={styles.fieldLabel}>{t('addListing.fields.category')}</Text>
           <View style={styles.categoryRow}>
             {CATEGORIES.map((cat) => (
               <TouchableOpacity
-                key={cat}
-                style={[styles.categoryChip, category === cat && styles.categoryChipActive]}
-                onPress={() => setCategory(cat)}
+                key={cat.key}
+                style={[styles.categoryChip, category === cat.key && styles.categoryChipActive]}
+                onPress={() => setCategory(cat.key)}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.categoryChipText, category === cat && styles.categoryChipTextActive]}>
-                  {cat}
+                <Text style={[styles.categoryChipText, category === cat.key && styles.categoryChipTextActive]}>
+                  {t(cat.labelKey)}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -106,9 +119,9 @@ export default function AddListingScreen() {
           disabled={isLoading}
           activeOpacity={0.85}
         >
-          <Text style={styles.submitButtonText}>{isLoading ? 'Creating...' : 'Create Listing'}</Text>
+          <Text style={styles.submitButtonText}>{isLoading ? t('addListing.creating') : t('addListing.createListing')}</Text>
         </TouchableOpacity>
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }

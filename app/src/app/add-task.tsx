@@ -1,67 +1,161 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   StyleSheet,
   View,
   Text,
   TextInput,
   TouchableOpacity,
-  ScrollView,
   Alert,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useCreateTaskMutation } from '@/store/tasksApi';
+import { SvgXml } from 'react-native-svg';
+import { useCreateTaskMutation, useGetTasksQuery } from '@/store/tasksApi';
+import { localDateKey } from '@/utils/date';
+import { apiErrorMessage } from '@/utils/api-error';
+import {
+  backButtonSvg,
+  myTaskCalendarSvg,
+  cowShedSvg,
+  goatShedSvg,
+  poultryShedSvg,
+  addTaskFeedingSvg,
+  addTaskWaterSupplySvg,
+  addTaskHygieneSvg,
+  addTaskCleaningSvg,
+  addTaskVaccinationSvg,
+  addTaskHealthCheckSvg,
+  addTaskMicrophoneSvg,
+} from '@/components/icons/svg-icon-sources';
+import { useTranslation } from '@/hooks/use-translation';
 
 const SHEDS = [
-  { id: 'cow', name: 'Cow Shed', icon: '🐮' },
-  { id: 'goat', name: 'Goat Shed', icon: '🐐' },
-  { id: 'poultry', name: 'Poultry Shed', icon: '🐓' },
+  { id: 'cow', name: 'Cow Shed', nameKey: 'addTask.sheds.cow', icon: cowShedSvg },
+  { id: 'goat', name: 'Goat Shed', nameKey: 'addTask.sheds.goat', icon: goatShedSvg },
+  { id: 'poultry', name: 'Poultry Shed', nameKey: 'addTask.sheds.poultry', icon: poultryShedSvg },
 ];
 
 const TASK_TYPES = [
-  { id: 'feeding', name: 'Feeding', icon: '💧' },
-  { id: 'water', name: 'Water Supply', icon: '🧪' },
-  { id: 'hygiene', name: 'Hygiene', icon: '🧼' },
-  { id: 'cleaning', name: 'Cleaning', icon: '🧹' },
-  { id: 'vaccination', name: 'Vaccination', icon: '💉' },
-  { id: 'health', name: 'Health Check', icon: '🩺' },
+  { id: 'feeding', name: 'Feeding', nameKey: 'addTask.types.feeding', icon: addTaskFeedingSvg },
+  { id: 'water', name: 'Water Supply', nameKey: 'addTask.types.water', icon: addTaskWaterSupplySvg },
+  { id: 'hygiene', name: 'Hygiene', nameKey: 'addTask.types.hygiene', icon: addTaskHygieneSvg },
+  { id: 'cleaning', name: 'Cleaning', nameKey: 'addTask.types.cleaning', icon: addTaskCleaningSvg },
+  { id: 'vaccination', name: 'Vaccination', nameKey: 'addTask.types.vaccination', icon: addTaskVaccinationSvg },
+  { id: 'health', name: 'Health Check', nameKey: 'addTask.types.health', icon: addTaskHealthCheckSvg },
 ];
 
-const DATE_PILLS = [
-  { day: 'Mon', date: '18', count: '(3)' },
-  { day: 'Tue', date: '19', count: '(1)' },
-  { day: 'Wed', date: '20', count: '(2)' },
-  { day: 'Thu', date: '21', count: '(-)' },
-  { day: 'Fri', date: '22', count: '(3)' },
-];
+function generateDatePills() {
+  const pills = [];
+  const today = new Date();
+  for (let i = 0; i < 5; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    pills.push({
+      day: d.toLocaleDateString('en-US', { weekday: 'short' }).slice(0, 3),
+      date: String(d.getDate()).padStart(2, '0'),
+      fullDate: localDateKey(d),
+    });
+  }
+  return pills;
+}
+
+function getDefaultTimes(): { startTime: string; endTime: string } {
+  const now = new Date();
+  const start = new Date(now);
+  start.setMinutes(0, 0, 0);
+  start.setHours(start.getHours() + 1);
+
+  // Default date is always today, so the default time must never leave today
+  const dayEnd = new Date(now);
+  dayEnd.setHours(23, 59, 0, 0);
+  if (start.getTime() > dayEnd.getTime()) {
+    start.setTime(dayEnd.getTime());
+  }
+
+  const end = new Date(start.getTime() + 60 * 60 * 1000);
+
+  function fmt(d: Date): string {
+    let h = d.getHours();
+    const m = String(d.getMinutes()).padStart(2, '0');
+    const p = h >= 12 ? 'PM' : 'AM';
+    if (h === 0) h = 12;
+    else if (h > 12) h -= 12;
+    return `${h}:${m} ${p}`;
+  }
+
+  return { startTime: fmt(start), endTime: fmt(end) };
+}
+
+function DatePillItem({ pill, isSelected, onSelect }: {
+  pill: { day: string; date: string; fullDate: string };
+  isSelected: boolean;
+  onSelect: () => void;
+}) {
+  const { data: tasks = [] } = useGetTasksQuery(pill.fullDate);
+  const count = tasks.length;
+
+  return (
+    <TouchableOpacity
+      style={[styles.datePillCard, isSelected && styles.datePillCardSelected]}
+      onPress={onSelect}
+      activeOpacity={0.7}
+    >
+      <Text style={[styles.datePillDay, isSelected && styles.datePillTextSelected]}>{pill.day}</Text>
+      <Text style={[styles.datePillNum, isSelected && styles.datePillTextSelected]}>{pill.date}</Text>
+      <Text style={[styles.datePillCount, isSelected && styles.datePillTextSelected]}>
+        {count > 0 ? `(${count})` : '(-)'}
+      </Text>
+    </TouchableOpacity>
+  );
+}
 
 export default function AddTaskScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [createTask, { isLoading: isSubmitting }] = useCreateTaskMutation();
 
-  const [selectedDate, setSelectedDate] = useState('18');
+  const datePills = useMemo(() => generateDatePills(), []);
+  const defaults = useMemo(() => getDefaultTimes(), []);
+  const [selectedDate, setSelectedDate] = useState(datePills[0].fullDate);
   const [selectedShed, setSelectedShed] = useState('cow');
   const [selectedType, setSelectedType] = useState('hygiene');
   const [customTask, setCustomTask] = useState('');
   const [repeat, setRepeat] = useState<'none' | 'daily' | 'weekly'>('none');
   const [instruction, setInstruction] = useState('');
-  const [startTime, setStartTime] = useState('07:00 PM');
-  const [endTime, setEndTime] = useState('08:00 PM');
+  const [startTime, setStartTime] = useState(defaults.startTime);
+  const [endTime, setEndTime] = useState(defaults.endTime);
 
   async function handleSubmit() {
-    const typeObj = TASK_TYPES.find((t) => t.id === selectedType);
-    const shedObj = SHEDS.find((s) => s.id === selectedShed);
+    if (!customTask.trim()) {
+      Alert.alert(t('addTask.alerts.requiredField'), t('addTask.alerts.enterDescription'));
+      return;
+    }
+    if (!startTime.trim() || !endTime.trim()) {
+      Alert.alert(t('addTask.alerts.requiredField'), t('addTask.alerts.enterTimes'));
+      return;
+    }
+
+    const typeObj = TASK_TYPES.find((type) => type.id === selectedType);
+    const shedObj = SHEDS.find((shed) => shed.id === selectedShed);
     const title = customTask.trim() || `${typeObj?.name || 'Task'} - ${shedObj?.name || 'Farm'}`;
 
     const detailParts = [`${shedObj?.name || 'Farm'} • ${startTime} - ${endTime}`];
     if (repeat !== 'none') detailParts.push(`Repeat: ${repeat.charAt(0).toUpperCase() + repeat.slice(1)}`);
     if (instruction.trim()) detailParts.push(`Instruction: ${instruction.trim()}`);
 
-    // Construct proper scheduled time from selected date pill + time
-    const now = new Date();
-    const selectedDateNum = parseInt(selectedDate, 10);
-    const scheduledDate = new Date(now.getFullYear(), now.getMonth(), selectedDateNum);
+    // Parse selected local calendar date (YYYY-MM-DD), not UTC midnight
+    const dateParts = selectedDate.split('-').map((p) => parseInt(p, 10));
+    const scheduledDate = new Date(
+      dateParts[0],
+      (dateParts[1] || 1) - 1,
+      dateParts[2] || 1,
+      0,
+      0,
+      0,
+      0,
+    );
 
     const timeParts = startTime.match(/(\d+):(\d+)\s*(AM|PM)/i);
     if (timeParts) {
@@ -75,7 +169,7 @@ export default function AddTaskScreen() {
 
     // TC-057: reject past dates
     if (scheduledDate.getTime() < Date.now()) {
-      Alert.alert('Invalid date', 'Please select a future date and time.');
+      Alert.alert(t('addTask.alerts.invalidDate'), t('addTask.alerts.futureDate'));
       return;
     }
 
@@ -86,10 +180,13 @@ export default function AddTaskScreen() {
         scheduledTime: scheduledDate.toISOString(),
       }).unwrap();
 
-      router.back();
+      router.replace({
+        pathname: '/my-task',
+        params: { date: selectedDate },
+      });
     } catch (err) {
       console.log('Error adding task:', err);
-      Alert.alert('Could not add task', 'Please try again.');
+      Alert.alert(t('addTask.alerts.addFailed'), apiErrorMessage(err, t('addTask.alerts.tryAgain')));
     }
   }
 
@@ -102,46 +199,47 @@ export default function AddTaskScreen() {
           onPress={() => router.back()}
           activeOpacity={0.8}
         >
-          <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+          <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>Add Task</Text>
+        <Text style={styles.headerTitle}>{t('addTask.header')}</Text>
 
-        <TouchableOpacity style={styles.headerSquareBtn} activeOpacity={0.8}>
-          <Ionicons name="calendar-outline" size={20} color="#FFFFFF" />
+        <TouchableOpacity
+          style={styles.headerSquareBtn}
+          onPress={() => router.push('/my-task')}
+          activeOpacity={0.8}
+        >
+          <SvgXml width={20} height={20} xml={myTaskCalendarSvg} />
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+      <KeyboardAwareScrollView
+        contentContainerStyle={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Date Selector Pills */}
         <View style={styles.datePillsRow}>
-          {DATE_PILLS.map((p) => {
-            const isSel = p.date === selectedDate;
-            return (
-              <TouchableOpacity
-                key={p.date}
-                style={[styles.datePillCard, isSel && styles.datePillCardSelected]}
-                onPress={() => setSelectedDate(p.date)}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.datePillDay, isSel && styles.datePillTextSelected]}>{p.day}</Text>
-                <Text style={[styles.datePillNum, isSel && styles.datePillTextSelected]}>{p.date}</Text>
-                <Text style={[styles.datePillCount, isSel && styles.datePillTextSelected]}>{p.count}</Text>
-              </TouchableOpacity>
-            );
-          })}
+          {datePills.map((p) => (
+            <DatePillItem
+              key={p.fullDate}
+              pill={p}
+              isSelected={p.fullDate === selectedDate}
+              onSelect={() => setSelectedDate(p.fullDate)}
+            />
+          ))}
         </View>
 
         {/* Recommended Banner */}
         <View style={styles.recommendedBanner}>
-          <Text style={styles.recommendedEmoji}>🧪</Text>
-          <Text style={styles.recommendedText}>Hygiene Task Recommended Cow Shed</Text>
+          <SvgXml width={20} height={20} xml={cowShedSvg} style={styles.recommendedIcon} />
+          <Text style={styles.recommendedText}>{t('addTask.banner')}</Text>
         </View>
 
         {/* Card Form */}
         <View style={styles.formCard}>
           {/* Select Farm */}
-          <Text style={styles.sectionHeading}>Select Farm</Text>
+          <Text style={styles.sectionHeading}>{t('addTask.selectFarm')}</Text>
           <View style={styles.shedsList}>
             {SHEDS.map((s) => {
               const isSel = s.id === selectedShed;
@@ -154,10 +252,10 @@ export default function AddTaskScreen() {
                 >
                   <View style={styles.shedRowLeft}>
                     <View style={styles.shedIconCircle}>
-                      <Text style={styles.shedEmoji}>{s.icon}</Text>
+                      <SvgXml width={24} height={24} xml={s.icon} />
                     </View>
                     <Text style={[styles.shedName, isSel && styles.shedNameSelected]}>
-                      {s.name}
+                      {t(s.nameKey)}
                     </Text>
                   </View>
                   <Ionicons
@@ -171,15 +269,15 @@ export default function AddTaskScreen() {
           </View>
 
           {/* Select Task Type */}
-          <Text style={styles.sectionHeading}>Select Task Type</Text>
+          <Text style={styles.sectionHeading}>{t('addTask.selectType')}</Text>
           <View style={styles.typesGrid}>
-            {TASK_TYPES.map((t) => {
-              const isSel = t.id === selectedType;
+            {TASK_TYPES.map((type) => {
+              const isSel = type.id === selectedType;
               return (
                 <TouchableOpacity
-                  key={t.id}
+                  key={type.id}
                   style={[styles.typeCard, isSel && styles.typeCardSelected]}
-                  onPress={() => setSelectedType(t.id)}
+                  onPress={() => setSelectedType(type.id)}
                   activeOpacity={0.7}
                 >
                   <View style={styles.typeRadioPos}>
@@ -190,10 +288,10 @@ export default function AddTaskScreen() {
                     />
                   </View>
                   <View style={styles.typeIconCircle}>
-                    <Text style={styles.typeEmoji}>{t.icon}</Text>
+                    <SvgXml width={24} height={24} xml={type.icon} />
                   </View>
                   <Text style={[styles.typeName, isSel && styles.typeNameSelected]}>
-                    {t.name}
+                    {t(type.nameKey)}
                   </Text>
                 </TouchableOpacity>
               );
@@ -204,18 +302,24 @@ export default function AddTaskScreen() {
           <View style={styles.customTaskWrapper}>
             <TextInput
               style={styles.customTaskInput}
-              placeholder="Custom Task"
+              placeholder={t('addTask.taskHeadingPlaceholder')}
               placeholderTextColor="#A39E99"
               value={customTask}
               onChangeText={setCustomTask}
             />
-            <TouchableOpacity style={styles.micBtn} activeOpacity={0.7}>
-              <Ionicons name="mic-outline" size={20} color="#BD632F" />
+            <TouchableOpacity
+              style={styles.micBtn}
+              onPress={() =>
+                Alert.alert(t('addTask.alerts.voiceInput'), t('addTask.alerts.voiceInputSoon'))
+              }
+              activeOpacity={0.7}
+            >
+              <SvgXml width={20} height={20} xml={addTaskMicrophoneSvg} />
             </TouchableOpacity>
           </View>
 
           {/* Repeat */}
-          <Text style={styles.sectionHeading}>Repeat</Text>
+          <Text style={styles.sectionHeading}>{t('addTask.repeat')}</Text>
           <View style={styles.repeatRow}>
             {(['daily', 'weekly'] as const).map((opt) => {
               const isSel = repeat === opt;
@@ -227,7 +331,7 @@ export default function AddTaskScreen() {
                   activeOpacity={0.7}
                 >
                   <Text style={[styles.repeatChipText, isSel && styles.repeatChipTextSelected]}>
-                    {opt.charAt(0).toUpperCase() + opt.slice(1)}
+                    {t(`addTask.repeatOptions.${opt}`)}
                   </Text>
                 </TouchableOpacity>
               );
@@ -235,10 +339,10 @@ export default function AddTaskScreen() {
           </View>
 
           {/* Add Instruction */}
-          <Text style={styles.sectionHeading}>Add Instruction</Text>
+          <Text style={styles.sectionHeading}>{t('addTask.instructionLabel')}</Text>
           <TextInput
             style={styles.instructionTextarea}
-            placeholder="Write task instructions..."
+            placeholder={t('addTask.instructionPlaceholder')}
             placeholderTextColor="#A39E99"
             value={instruction}
             onChangeText={setInstruction}
@@ -247,10 +351,10 @@ export default function AddTaskScreen() {
           />
 
           {/* Set Time */}
-          <Text style={styles.sectionHeading}>Set Time</Text>
+          <Text style={styles.sectionHeading}>{t('addTask.setTime')}</Text>
           <View style={styles.timeInputsRow}>
             <View style={styles.timeInputCol}>
-              <Text style={styles.timeInputLabel}>Work Start</Text>
+              <Text style={styles.timeInputLabel}>{t('addTask.workStart')}</Text>
               <TextInput
                 style={styles.timeInputBox}
                 value={startTime}
@@ -258,7 +362,7 @@ export default function AddTaskScreen() {
               />
             </View>
             <View style={styles.timeInputCol}>
-              <Text style={styles.timeInputLabel}>Work End</Text>
+              <Text style={styles.timeInputLabel}>{t('addTask.workEnd')}</Text>
               <TextInput
                 style={styles.timeInputBox}
                 value={endTime}
@@ -275,9 +379,9 @@ export default function AddTaskScreen() {
           disabled={isSubmitting}
           activeOpacity={0.85}
         >
-          <Text style={styles.submitBtnText}>Add Task</Text>
+          <Text style={styles.submitBtnText}>{t('addTask.submit')}</Text>
         </TouchableOpacity>
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }
@@ -365,8 +469,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     marginBottom: 20,
   },
-  recommendedEmoji: {
-    fontSize: 16,
+  recommendedIcon: {
     marginRight: 10,
   },
   recommendedText: {
@@ -427,9 +530,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
   },
-  shedEmoji: {
-    fontSize: 18,
-  },
   shedName: {
     fontSize: 14,
     fontWeight: '600',
@@ -475,9 +575,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 8,
     marginTop: 4,
-  },
-  typeEmoji: {
-    fontSize: 18,
   },
   typeName: {
     fontSize: 12,

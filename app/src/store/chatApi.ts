@@ -30,12 +30,19 @@ export interface Conversation {
   lastMessageText?: string | null;
   unreadCount?: number;
   createdAt: string;
+  patientName?: string;
+  patientPhone?: string;
+  patientPhoto?: string;
+  patientEmail?: string;
+  animalName?: string;
+  animalImage?: string;
 }
 
 export interface ChatAppointment {
   id: number;
   doctorId: number;
   patientId: number;
+  animalId?: number;
   patientName?: string;
   animalName?: string;
   startAt: string;
@@ -99,13 +106,30 @@ export const chatApi = createApi({
       },
       invalidatesTags: ['ChatMessage', 'Conversation'],
     }),
-    createConversation: builder.mutation<Conversation, { patientId: number }>({
-      query: ({ patientId }) => ({
+    createConversation: builder.mutation<
+      Conversation,
+      { patientId?: number; doctorId?: number; appointmentId?: number }
+    >({
+      query: (body) => ({
         url: '/chat/conversations',
         method: 'POST',
-        body: { patientId },
+        body,
       }),
       invalidatesTags: ['Conversation'],
+    }),
+    markConversationRead: builder.mutation<{ updatedIds: number[] }, number>({
+      query: (conversationId) => ({
+        url: `/chat/conversations/${conversationId}/read`,
+        method: 'PATCH',
+      }),
+      invalidatesTags: ['Conversation'],
+    }),
+    markMessageRead: builder.mutation<ChatMessage, number>({
+      // REST fallback for marking read when the socket is not connected.
+      query: (messageId) => ({
+        url: `/chat/messages/${messageId}/read`,
+        method: 'PATCH',
+      }),
     }),
   }),
 });
@@ -117,4 +141,6 @@ export const {
   useSendMessageMutation,
   useSendAttachmentMessageMutation,
   useCreateConversationMutation,
+  useMarkConversationReadMutation,
+  useMarkMessageReadMutation,
 } = chatApi;

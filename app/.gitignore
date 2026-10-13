@@ -43,7 +43,9 @@ example
 /android
 
 # apk
-gobadi.apk
+gobaadi.apk
 
 # sync status
 BACKEND_SYNC_STATUS.md
+
+metro.log

@@ -11,12 +11,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import * as ImagePicker from 'expo-image-picker';
 import {
   useGetMedicalRecordsQuery,
   useUploadMedicalRecordMutation,
   type AttachmentStatus,
 } from '@/store/medicalRecordsApi';
+import { compressImageForUpload } from '@/utils/compress-image';
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, {
@@ -38,6 +40,7 @@ function statusStyle(status: AttachmentStatus) {
 }
 
 export default function MedicalRecordsScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { data: records, isLoading } = useGetMedicalRecordsQuery();
   const [uploadMedicalRecord, { isLoading: isUploading }] = useUploadMedicalRecordMutation();
@@ -45,7 +48,7 @@ export default function MedicalRecordsScreen() {
   async function handleUpload() {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Permission needed', 'Please allow photo library access to upload a document.');
+      Alert.alert(t('medicalRecords.permissionTitle'), t('medicalRecords.permissionBody'));
       return;
     }
 
@@ -55,19 +58,26 @@ export default function MedicalRecordsScreen() {
     }
 
     const asset = result.assets[0];
-    const fileName = asset.uri.split('/').pop() || `upload-${Date.now()}.jpg`;
+    const file = await compressImageForUpload(asset.uri, {
+      fileName: asset.fileName || `upload-${Date.now()}.jpg`,
+      mimeType: asset.mimeType || 'image/jpeg',
+    });
     const formData = new FormData();
     formData.append('file', {
-      uri: asset.uri,
-      name: fileName,
-      type: asset.mimeType || 'image/jpeg',
+      uri: file.uri,
+      name: file.name,
+      type: file.type,
     } as any);
 
     try {
       await uploadMedicalRecord(formData).unwrap();
     } catch (err) {
       console.log('Error uploading medical record:', err);
-      Alert.alert('Upload failed', 'Please try again.');
+      const status = (err as { status?: number | string })?.status;
+      Alert.alert(
+        t('medicalRecords.uploadFailedTitle'),
+        status === 413 ? t('medicalRecords.tooLarge') : t('medicalRecords.tryAgain'),
+      );
     }
   }
 
@@ -82,7 +92,7 @@ export default function MedicalRecordsScreen() {
         <TouchableOpacity style={styles.circleButton} onPress={() => router.back()} activeOpacity={0.8}>
           <Text style={styles.buttonText}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Medical Records</Text>
+        <Text style={styles.headerTitle}>{t('medicalRecords.title')}</Text>
         <View style={{ width: 44 }} />
       </View>
 
@@ -90,7 +100,7 @@ export default function MedicalRecordsScreen() {
         {isLoading ? (
           <ActivityIndicator size="small" color="#BD632F" style={{ marginTop: 30 }} />
         ) : !records || records.length === 0 ? (
-          <Text style={styles.emptyText}>No medical records uploaded yet.</Text>
+          <Text style={styles.emptyText}>{t('medicalRecords.empty')}</Text>
         ) : (
           records.map((record) => {
             const { badge, text } = statusStyle(record.status);
@@ -126,7 +136,7 @@ export default function MedicalRecordsScreen() {
           {isUploading ? (
             <ActivityIndicator size="small" color="#FFFFFF" />
           ) : (
-            <Text style={styles.uploadButtonText}>＋ Upload Document</Text>
+            <Text style={styles.uploadButtonText}>{t('medicalRecords.upload')}</Text>
           )}
         </TouchableOpacity>
       </View>

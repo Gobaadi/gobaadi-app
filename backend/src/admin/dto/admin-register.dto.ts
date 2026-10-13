@@ -7,7 +7,11 @@ import {
   IsEnum,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { AdminRole, AdminDesignation, AdminStatus } from '../entities/admin.entity';
+import {
+  AdminRole,
+  AdminDesignation,
+  AdminStatus,
+} from '../entities/admin.entity';
 
 export class AdminRegisterDto {
   @ApiPropertyOptional({ example: 'Admin User' })

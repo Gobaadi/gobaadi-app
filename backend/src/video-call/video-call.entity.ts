@@ -3,9 +3,12 @@ import {
   CreateDateColumn,
   Entity,
   Index,
+  JoinColumn,
+  ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { User } from '../users/user.entity';
 
 export enum VideoSessionStatus {
   WAITING = 'WAITING',
@@ -34,6 +37,10 @@ export class VideoSession {
 
   @Column('int', { nullable: true })
   doctorUserId: number | null;
+
+  @ManyToOne(() => User, { nullable: true, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'doctorUserId' })
+  doctorUser?: User;
 
   @Column('int', { nullable: true })
   patientId: number | null;

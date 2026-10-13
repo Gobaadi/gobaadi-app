@@ -1,6 +1,7 @@
 import * as dns from 'dns';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
@@ -13,10 +14,29 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 // connections fail with ENETUNREACH unless IPv4 is preferred explicitly.
 dns.setDefaultResultOrder('ipv4first');
 
+function parseTrustProxy(value: string): boolean | number | string {
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  const asNumber = Number(value);
+  return Number.isNaN(asNumber) ? value : asNumber;
+}
+
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.use(helmet());
-  app.enableCors();
+
+  // Behind nginx/ALB every request arrives from a proxy address, so without
+  // this the throttler keys all users off ONE IP (shared /auth 10/min bucket).
+  // TRUST_PROXY: number of hops (e.g. "1"), or "true"/preset — see .env.example.
+  const trustProxy = process.env.TRUST_PROXY;
+  app.set('trust proxy', trustProxy ? parseTrustProxy(trustProxy) : 'loopback');
+
+  // origin: true reflects any requesting origin (wildcard "*" is invalid with
+  // credentials: true). Every web/Expo-web client is allowed.
+  app.enableCors({
+    origin: true,
+    credentials: true,
+  });
   app.use(cookieParser());
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   app.useGlobalFilters(new HttpExceptionFilter());

@@ -30,13 +30,23 @@ export class MailService implements OnModuleInit {
     //   );
     // }
 
-    // ─── GMAIL OAuth2 CLIENT SETUP ────────────────────────────────────────
+    // ─── GMAIL SMTP SETUP (app password — primary) ──────────────────────
+    const gmailUser = process.env.GMAIL_USER;
+    const gmailPass = process.env.GMAIL_APP_PASS;
+
+    // ─── GMAIL OAuth2 CLIENT SETUP (fallback) ───────────────────────────
     const clientId = process.env.GMAIL_API_CLIENT_ID;
     const clientSecret = process.env.GMAIL_API_CLIENT_SECRET;
     const refreshToken = process.env.GMAIL_API_REFRESH_TOKEN;
-    const gmailUser = process.env.GMAIL_USER;
 
-    if (clientId && clientSecret && refreshToken && gmailUser) {
+    if (gmailUser && gmailPass) {
+      this.transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: { user: gmailUser, pass: gmailPass },
+      });
+
+      this.logger.log('Gmail SMTP configured for outbound email.');
+    } else if (clientId && clientSecret && refreshToken && gmailUser) {
       // Single transporter instance — Nodemailer automatically manages
       // access token generation and refresh using these credentials.
       this.transporter = nodemailer.createTransport({
@@ -53,7 +63,7 @@ export class MailService implements OnModuleInit {
       this.logger.log('Gmail OAuth2 configured for outbound email.');
     } else {
       this.logger.warn(
-        'Gmail OAuth2 env vars missing. Mock local fallback will be used.',
+        'Gmail env vars missing (GMAIL_USER/GMAIL_APP_PASS or OAuth). Mock local fallback will be used.',
       );
     }
   }
@@ -82,9 +92,8 @@ export class MailService implements OnModuleInit {
         this.logger.log(`Email dispatched to ${to} (Subject: "${subject}")`);
         return true;
       } catch (error) {
-        this.logger.error(
-          `Gmail OAuth2 dispatch failed to ${to}: ${error.message}`,
-        );
+        const message = error instanceof Error ? error.message : String(error);
+        this.logger.error(`Gmail dispatch failed to ${to}: ${message}`);
         return false;
       }
     }

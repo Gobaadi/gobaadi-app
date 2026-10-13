@@ -8,7 +8,12 @@ import { Availability } from '../doctors/availability.entity';
 import { ChatMessage, MessageStatus } from '../chat/chat-message.entity';
 import { Conversation } from '../chat/conversation.entity';
 import { User, UserRole } from '../users/user.entity';
-import { Admin, AdminRole, AdminDesignation, AdminStatus } from '../admin/entities/admin.entity';
+import {
+  Admin,
+  AdminRole,
+  AdminDesignation,
+  AdminStatus,
+} from '../admin/entities/admin.entity';
 
 import { Category } from '../products/category.entity';
 import { Brand } from '../products/brand.entity';
@@ -101,9 +106,12 @@ export class SeedService implements OnModuleInit {
     } catch (err) {
       this.logger.error('Failed to seed FAQs', err);
     }
+    try {
+      await this.seedAdmins();
+    } catch (err) {
+      this.logger.error('Failed to seed admin accounts', err);
+    }
   }
-
-
 
   private async backfillDemoLoginCredentials(): Promise<void> {
     const passwordHash = await bcrypt.hash(SEED_PASSWORD, 10);
@@ -241,6 +249,7 @@ export class SeedService implements OnModuleInit {
           bio: 'Dr. Michael has spent over 8 years caring for farm animals, specialized in large cattle surgery and herd management.',
           qualifications: ['DVM, BAU', 'MS in Large Animal Surgery'],
           licenseNumber: 'VET-LIC-8821',
+          location: 'Uttar Badda, Dhaka',
           consultationFee: 800,
           isVerified: true,
         },
@@ -254,6 +263,7 @@ export class SeedService implements OnModuleInit {
           bio: 'Dr. Jessica specializes in optimal nutrition and disease prevention for cows, goats, and sheep.',
           qualifications: ['DVM, BAU', 'MS in Animal Nutrition'],
           licenseNumber: 'VET-LIC-9932',
+          location: 'Dhanmondi, Dhaka',
           consultationFee: 600,
           isVerified: true,
         },
@@ -771,22 +781,94 @@ export class SeedService implements OnModuleInit {
 
     const faqs = [
       // General
-      { question: 'What is the Smart Farming App?', answer: 'The Smart Farming App helps farmers manage daily agricultural activities such as crop planning, weather tracking, pest alerts, marketplace trading, and equipment sharing—all in one place.', category: 'general', sortOrder: 1 },
-      { question: 'How accurate is the weather forecast?', answer: 'Our weather forecasts are powered by trusted meteorological data sources and are updated in real-time. While we strive for high accuracy, local conditions may vary, so we recommend using forecasts as a guiding tool alongside your own observations.', category: 'general', sortOrder: 2 },
-      { question: 'How can I add my farm or field details?', answer: 'Go to the Profile tab, tap on your farm section, and fill in the required details such as farm name, location, size, and crop types. You can update this information anytime.', category: 'general', sortOrder: 3 },
-      { question: 'Can I share my equipment with others?', answer: 'Yes! The app has an equipment sharing feature where you can list your unused tools and machinery for other farmers to rent or borrow. Go to the Marketplace section to get started.', category: 'general', sortOrder: 4 },
+      {
+        question: 'What is the Smart Farming App?',
+        answer:
+          'The Smart Farming App helps farmers manage daily agricultural activities such as crop planning, weather tracking, pest alerts, marketplace trading, and equipment sharing—all in one place.',
+        category: 'general',
+        sortOrder: 1,
+      },
+      {
+        question: 'How accurate is the weather forecast?',
+        answer:
+          'Our weather forecasts are powered by trusted meteorological data sources and are updated in real-time. While we strive for high accuracy, local conditions may vary, so we recommend using forecasts as a guiding tool alongside your own observations.',
+        category: 'general',
+        sortOrder: 2,
+      },
+      {
+        question: 'How can I add my farm or field details?',
+        answer:
+          'Go to the Profile tab, tap on your farm section, and fill in the required details such as farm name, location, size, and crop types. You can update this information anytime.',
+        category: 'general',
+        sortOrder: 3,
+      },
+      {
+        question: 'Can I share my equipment with others?',
+        answer:
+          'Yes! The app has an equipment sharing feature where you can list your unused tools and machinery for other farmers to rent or borrow. Go to the Marketplace section to get started.',
+        category: 'general',
+        sortOrder: 4,
+      },
 
       // Doctor Connection
-      { question: 'How do I connect with a veterinarian?', answer: 'Navigate to the Doctors tab, browse available veterinarians, check their ratings and availability, and book a consultation directly through the app.', category: 'doctor', sortOrder: 1 },
-      { question: 'Can I have video consultations with doctors?', answer: 'Yes, the app supports video call consultations with verified veterinarians. Simply book a video appointment and join at the scheduled time from the app.', category: 'doctor', sortOrder: 2 },
-      { question: 'What if the doctor is unavailable?', answer: 'If your preferred doctor is unavailable, you can check other available veterinarians or book an appointment for a later date. You can also set up notifications to be alerted when the doctor becomes available.', category: 'doctor', sortOrder: 3 },
-      { question: 'How are consultation fees determined?', answer: 'Consultation fees are set by each veterinarian based on their specialty, experience, and consultation type. Fees are displayed before you confirm any booking.', category: 'doctor', sortOrder: 4 },
+      {
+        question: 'How do I connect with a veterinarian?',
+        answer:
+          'Navigate to the Doctors tab, browse available veterinarians, check their ratings and availability, and book a consultation directly through the app.',
+        category: 'doctor',
+        sortOrder: 1,
+      },
+      {
+        question: 'Can I have video consultations with doctors?',
+        answer:
+          'Yes, the app supports video call consultations with verified veterinarians. Simply book a video appointment and join at the scheduled time from the app.',
+        category: 'doctor',
+        sortOrder: 2,
+      },
+      {
+        question: 'What if the doctor is unavailable?',
+        answer:
+          'If your preferred doctor is unavailable, you can check other available veterinarians or book an appointment for a later date. You can also set up notifications to be alerted when the doctor becomes available.',
+        category: 'doctor',
+        sortOrder: 3,
+      },
+      {
+        question: 'How are consultation fees determined?',
+        answer:
+          'Consultation fees are set by each veterinarian based on their specialty, experience, and consultation type. Fees are displayed before you confirm any booking.',
+        category: 'doctor',
+        sortOrder: 4,
+      },
 
       // Photo Diagnosis
-      { question: 'How does the AI photo diagnosis work?', answer: 'Simply upload a photo of your animal showing any symptoms. Our AI system analyzes the image and provides a preliminary diagnosis along with recommended actions. For confirmation, consult a veterinarian.', category: 'photo', sortOrder: 1 },
-      { question: 'Is the AI diagnosis accurate?', answer: 'Our AI model is trained on thousands of veterinary images and provides a confidence score with each diagnosis. While it is highly accurate for common conditions, it should be used as a preliminary screening tool, not a replacement for professional veterinary advice.', category: 'photo', sortOrder: 2 },
-      { question: 'What types of animals can be diagnosed?', answer: 'The AI photo diagnosis supports cattle (cows, buffalo), goats, and other common livestock animals. The system continuously improves and adds support for more species over time.', category: 'photo', sortOrder: 3 },
-      { question: 'Can I save diagnosis results for my vet?', answer: 'Yes, all diagnosis results are saved in your medical records. You can share them with your veterinarian during consultations for better treatment planning.', category: 'photo', sortOrder: 4 },
+      {
+        question: 'How does the AI photo diagnosis work?',
+        answer:
+          'Simply upload a photo of your animal showing any symptoms. Our AI system analyzes the image and provides a preliminary diagnosis along with recommended actions. For confirmation, consult a veterinarian.',
+        category: 'photo',
+        sortOrder: 1,
+      },
+      {
+        question: 'Is the AI diagnosis accurate?',
+        answer:
+          'Our AI model is trained on thousands of veterinary images and provides a confidence score with each diagnosis. While it is highly accurate for common conditions, it should be used as a preliminary screening tool, not a replacement for professional veterinary advice.',
+        category: 'photo',
+        sortOrder: 2,
+      },
+      {
+        question: 'What types of animals can be diagnosed?',
+        answer:
+          'The AI photo diagnosis supports cattle (cows, buffalo), goats, and other common livestock animals. The system continuously improves and adds support for more species over time.',
+        category: 'photo',
+        sortOrder: 3,
+      },
+      {
+        question: 'Can I save diagnosis results for my vet?',
+        answer:
+          'Yes, all diagnosis results are saved in your medical records. You can share them with your veterinarian during consultations for better treatment planning.',
+        category: 'photo',
+        sortOrder: 4,
+      },
     ];
 
     for (const faq of faqs) {

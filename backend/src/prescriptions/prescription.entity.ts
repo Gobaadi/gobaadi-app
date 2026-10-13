@@ -3,9 +3,12 @@ import {
   PrimaryGeneratedColumn,
   Column,
   Index,
+  JoinColumn,
+  ManyToOne,
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { Doctor } from '../doctors/doctor.entity';
 
 export interface Medicine {
   name: string;
@@ -29,6 +32,10 @@ export class Prescription {
   @Index()
   @Column()
   doctorId: number;
+
+  @ManyToOne(() => Doctor, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'doctorId' })
+  doctor?: Doctor;
 
   /** Animal.id (the patient) */
   @Index()

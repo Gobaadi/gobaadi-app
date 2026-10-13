@@ -11,7 +11,7 @@ import { CreatePrescriptionDto } from './dto/create-prescription.dto';
 import { UpdatePrescriptionDto } from './dto/update-prescription.dto';
 import { Appointment } from '../appointments/appointment.entity';
 import { Animal } from '../animals/animal.entity';
-import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import { S3Service } from '../s3/s3.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/notification.entity';
 export { Prescription } from './prescription.entity';
@@ -25,12 +25,12 @@ export class PrescriptionsService {
     private readonly appointmentRepository: Repository<Appointment>,
     @InjectRepository(Animal)
     private readonly animalRepository: Repository<Animal>,
-    private readonly cloudinaryService: CloudinaryService,
+    private readonly s3Service: S3Service,
     private readonly notificationsService: NotificationsService,
   ) {}
 
   async create(
-    doctorUserId: number,
+    doctorId: number,
     dto: CreatePrescriptionDto,
   ): Promise<Prescription> {
     // Verify appointment exists and doctor owns it
@@ -40,20 +40,46 @@ export class PrescriptionsService {
     if (!appointment) {
       throw new NotFoundException('Appointment not found');
     }
+    if (appointment.doctorId !== doctorId) {
+      throw new ForbiddenException(
+        'You are not the doctor for this appointment',
+      );
+    }
+
+    // Older bookings were saved without animalId — resolve it in priority
+    // order: request value → appointment animal → the owner's only animal.
+    let animalId = dto.animalId ?? appointment.animalId ?? null;
+    if (!animalId) {
+      const ownerAnimals = await this.animalRepository.find({
+        where: { userId: appointment.patientId },
+      });
+      if (ownerAnimals.length === 1) {
+        animalId = ownerAnimals[0].id;
+      } else {
+        throw new BadRequestException(
+          ownerAnimals.length === 0
+            ? 'No animal found for this appointment owner'
+            : 'Owner has multiple animals — animalId is required',
+        );
+      }
+    }
 
     // Verify animal exists
     const animal = await this.animalRepository.findOneBy({
-      id: dto.animalId,
+      id: animalId,
     });
     if (!animal) {
       throw new NotFoundException('Animal not found');
+    }
+    if (animal.userId == null) {
+      throw new BadRequestException('Animal has no registered owner');
     }
 
     return this.prescriptionRepository.save(
       this.prescriptionRepository.create({
         appointmentId: dto.appointmentId,
-        doctorId: doctorUserId,
-        animalId: dto.animalId,
+        doctorId,
+        animalId: animal.id,
         ownerId: animal.userId,
         medicines: dto.medicines,
       }),
@@ -63,6 +89,7 @@ export class PrescriptionsService {
   async findByAppointmentId(
     appointmentId: number,
     userId: number,
+    doctorId?: number,
   ): Promise<Prescription | null> {
     const prescription = await this.prescriptionRepository.findOneBy({
       appointmentId,
@@ -78,7 +105,7 @@ export class PrescriptionsService {
     if (
       appointment &&
       appointment.patientId !== userId &&
-      appointment.doctorId !== userId
+      appointment.doctorId !== doctorId
     ) {
       throw new ForbiddenException('Access denied');
     }
@@ -107,14 +134,14 @@ export class PrescriptionsService {
 
   async update(
     id: number,
-    doctorUserId: number,
+    doctorId: number,
     dto: UpdatePrescriptionDto,
   ): Promise<Prescription> {
     const prescription = await this.prescriptionRepository.findOneBy({ id });
     if (!prescription) {
       throw new NotFoundException('Prescription not found');
     }
-    if (prescription.doctorId !== doctorUserId) {
+    if (prescription.doctorId !== doctorId) {
       throw new ForbiddenException('Only the creating doctor can edit');
     }
 
@@ -127,33 +154,34 @@ export class PrescriptionsService {
 
   async addAttachment(
     id: number,
-    doctorUserId: number,
+    doctorId: number,
     file: Express.Multer.File,
   ): Promise<Prescription> {
     const prescription = await this.prescriptionRepository.findOneBy({ id });
     if (!prescription) {
       throw new NotFoundException('Prescription not found');
     }
-    if (prescription.doctorId !== doctorUserId) {
+    if (prescription.doctorId !== doctorId) {
       throw new ForbiddenException(
         'Only the creating doctor can add attachments',
       );
     }
 
-    const uploadResult = await this.cloudinaryService.uploadFile(file.buffer, {
+    const uploadResult = await this.s3Service.uploadFile(file.buffer, {
       folder: 'prescriptions',
+      contentType: file.mimetype,
     });
     prescription.attachmentUrl = uploadResult.url;
 
     return this.prescriptionRepository.save(prescription);
   }
 
-  async send(id: number, doctorUserId: number): Promise<Prescription> {
+  async send(id: number, doctorId: number): Promise<Prescription> {
     const prescription = await this.prescriptionRepository.findOneBy({ id });
     if (!prescription) {
       throw new NotFoundException('Prescription not found');
     }
-    if (prescription.doctorId !== doctorUserId) {
+    if (prescription.doctorId !== doctorId) {
       throw new ForbiddenException('Only the creating doctor can send');
     }
 

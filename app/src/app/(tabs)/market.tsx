@@ -7,8 +7,8 @@ import {
   TouchableOpacity,
   ScrollView,
   Modal,
-  Alert,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -18,10 +18,14 @@ import { useGetLivestockQuery, useGetMyListingsQuery } from '@/store/livestockAp
 import { useDebounce } from '@/hooks/use-debounce';
 import { EmptyState } from '@/components/ui/empty-state';
 import { MediaCardSkeleton } from '@/components/ui/skeleton';
+import { useLocation } from '@/hooks/use-location';
+import LocationBottomSheet from '@/components/LocationBottomSheet';
+import { useTranslation } from '@/hooks/use-translation';
 
 interface Category {
   id: string;
   name: string;
+  labelKey: string;
   icon: string;
 }
 
@@ -40,6 +44,7 @@ interface MarketItemView {
 
 export default function MarketScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [tradeType, setTradeType] = useState<'Buy' | 'Sell'>('Buy');
   const [activeCategory, setActiveCategory] = useState('Animals');
   const [searchQuery, setSearchQuery] = useState('');
@@ -48,14 +53,16 @@ export default function MarketScreen() {
   const [selectedSpecies, setSelectedSpecies] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState<{ min: string; max: string }>({ min: '', max: '' });
   const debouncedSearch = useDebounce(searchQuery, 300);
+  const { location, setLocation } = useLocation();
+  const [locationSheetOpen, setLocationSheetOpen] = useState(false);
 
   const categories: Category[] = [
-    { id: '1', name: 'Animals', icon: '🐂' },
-    { id: '2', name: 'Proteins', icon: '🥩' },
-    { id: '3', name: 'Dairy', icon: '🧀' },
-    { id: '4', name: 'Food', icon: '🌾' },
-    { id: '5', name: 'Equipments', icon: '🪓' },
-    { id: '6', name: 'Vaccines', icon: '💉' },
+    { id: '1', name: 'Animals', labelKey: 'market.categories.animals', icon: '🐂' },
+    { id: '2', name: 'Proteins', labelKey: 'market.categories.proteins', icon: '🥩' },
+    { id: '3', name: 'Dairy', labelKey: 'market.categories.dairy', icon: '🧀' },
+    { id: '4', name: 'Food', labelKey: 'market.categories.food', icon: '🌾' },
+    { id: '5', name: 'Equipments', labelKey: 'market.categories.equipments', icon: '🪓' },
+    { id: '6', name: 'Vaccines', labelKey: 'market.categories.vaccines', icon: '💉' },
   ];
 
   const { data: products, isLoading: isProductsLoading } = useGetProductsQuery({}, { skip: activeCategory === 'Animals' || tradeType !== 'Buy' });
@@ -75,20 +82,20 @@ export default function MarketScreen() {
         id: item.id,
         title: item.name || `${item.breed || ''} ${item.species || ''}`,
         price: item.price.toLocaleString(),
-        timeAgo: 'Just now',
-        species: isLivestock ? (item.species || 'Cattle') : 'Feed/Med',
-        age: isLivestock ? (item.age || 'N/A') : 'N/A',
-        liveWeight: isLivestock ? `${item.weight || 0} Kg` : 'N/A',
-        sellerName: isLivestock ? (item.farmName || 'Seller') : 'Gobadi Store',
+        timeAgo: t('market.justNow'),
+        species: isLivestock ? (item.species || t('market.fallback.cattle')) : t('market.fallback.feedMed'),
+        age: isLivestock ? (item.age || t('market.notAvailable')) : t('market.notAvailable'),
+        liveWeight: isLivestock ? t('market.weightKg', { weight: item.weight || 0 }) : t('market.notAvailable'),
+        sellerName: isLivestock ? (item.farmName || t('market.fallback.seller')) : 'Gobadi Store',
         location: item.location || 'Dhaka',
         image: item.images && item.images[0]
           ? { uri: item.images[0] }
           : (item.name || '').toLowerCase().includes('goat') || (item.breed || '').toLowerCase().includes('goat')
-            ? require('@/assets/images/kota_goat.png')
-            : require('@/assets/images/albino_buffalo.png'),
+            ? require('@/assets/images/kota_goat.webp')
+            : require('@/assets/images/albino_buffalo.webp'),
       };
     });
-  }, [catalogList, activeCategory]);
+  }, [catalogList, activeCategory, t]);
 
   const filteredItems = useMemo(() => {
     const items = tradeType === 'Sell'
@@ -96,15 +103,15 @@ export default function MarketScreen() {
           id: item.id,
           title: `${item.breed || ''} ${item.species || ''}`.trim(),
           price: item.price?.toLocaleString() || '0',
-          timeAgo: 'Active',
-          species: item.species || 'Cattle',
-          age: item.age || 'N/A',
-          liveWeight: `${item.weight || 0} Kg`,
-          sellerName: 'Me',
-          location: item.location || 'My Farm',
+          timeAgo: t('market.active'),
+          species: item.species || t('market.fallback.cattle'),
+          age: item.age || t('market.notAvailable'),
+          liveWeight: t('market.weightKg', { weight: item.weight || 0 }),
+          sellerName: t('market.me'),
+          location: item.location || t('market.myFarm'),
           image: item.images && item.images[0]
             ? { uri: item.images[0] }
-            : require('@/assets/images/kota_goat.png'),
+            : require('@/assets/images/kota_goat.webp'),
         }))
       : marketItems;
 
@@ -135,7 +142,7 @@ export default function MarketScreen() {
 
       return true;
     });
-  }, [tradeType, myListings, marketItems, debouncedSearch, activeFilter, selectedSpecies, priceRange]);
+  }, [tradeType, myListings, marketItems, debouncedSearch, activeFilter, selectedSpecies, priceRange, t]);
 
   // Derive dynamic filter chip counts from current items
   const filterChips = useMemo(() => {
@@ -144,11 +151,11 @@ export default function MarketScreen() {
     const bullCount = marketItems.filter((i) => /bull|ox|steer/i.test(`${i.title} ${i.species}`)).length;
 
     return [
-      { label: `All (${allCount})`, value: 'All' },
-      { label: `Calf (${calfCount})`, value: 'Calf' },
-      { label: `Bull (${bullCount})`, value: 'Bull' },
+      { label: t('market.chips.all', { count: allCount }), value: 'All' },
+      { label: t('market.chips.calf', { count: calfCount }), value: 'Calf' },
+      { label: t('market.chips.bull', { count: bullCount }), value: 'Bull' },
     ];
-  }, [marketItems]);
+  }, [marketItems, t]);
 
   const hasActiveFilters = activeFilter !== 'All' || selectedSpecies.length > 0 || priceRange.min || priceRange.max;
 
@@ -177,13 +184,23 @@ export default function MarketScreen() {
       {/* Header */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.headerTitle}>Marketplace</Text>
+          <Text style={styles.headerTitle}>{t('market.title')}</Text>
           {/* Location row */}
-          <TouchableOpacity style={styles.locationRow} activeOpacity={0.7} onPress={() => Alert.alert('Location', 'Location selection coming soon.')}>
+          <TouchableOpacity
+            style={styles.locationRow}
+            activeOpacity={0.7}
+            onPress={() => setLocationSheetOpen(true)}
+          >
             <Text style={styles.locationPin}>📍</Text>
-            <Text style={styles.locationText}>Uttar Badda, Dhaka</Text>
+            <Text style={styles.locationText}>{location}</Text>
             <Text style={styles.dropdownArrow}>▼</Text>
           </TouchableOpacity>
+          <LocationBottomSheet
+            visible={locationSheetOpen}
+            selectedLocation={location}
+            onClose={() => setLocationSheetOpen(false)}
+            onSave={setLocation}
+          />
         </View>
 
         <View style={styles.headerActions}>
@@ -201,12 +218,16 @@ export default function MarketScreen() {
             onPress={() => router.push('/cart')}
             activeOpacity={0.8}
           >
-            <Text style={styles.cartText}>🛒 My Cart</Text>
+            <Text style={styles.cartText}>🛒 {t('market.myCart')}</Text>
           </TouchableOpacity>
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+      <KeyboardAwareScrollView
+        contentContainerStyle={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Buy / Sell Toggle Selector */}
         <View style={styles.toggleRow}>
           <TouchableOpacity
@@ -215,7 +236,7 @@ export default function MarketScreen() {
             activeOpacity={0.8}
           >
             <Text style={[styles.toggleBtnText, tradeType === 'Buy' && styles.toggleBtnTextActive]}>
-              Buy
+              {t('market.buy')}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -224,7 +245,7 @@ export default function MarketScreen() {
             activeOpacity={0.8}
           >
             <Text style={[styles.toggleBtnText, tradeType === 'Sell' && styles.toggleBtnTextActive]}>
-              Sell
+              {t('market.sell')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -234,7 +255,7 @@ export default function MarketScreen() {
           <Text style={styles.searchIcon}>🔍</Text>
           <TextInput
             style={styles.textInput}
-            placeholder="Search anything...."
+            placeholder={t('market.searchPlaceholder')}
             placeholderTextColor="#A39E99"
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -250,10 +271,12 @@ export default function MarketScreen() {
         {hasActiveFilters && (
           <View style={styles.activeFiltersBanner}>
             <Text style={styles.activeFiltersText}>
-              Filters active{filteredItems.length > 0 ? ` — ${filteredItems.length} results` : ''}
+              {filteredItems.length > 0
+                ? t('market.filtersActiveResults', { count: filteredItems.length })
+                : t('market.filtersActive')}
             </Text>
             <TouchableOpacity onPress={clearFilters} activeOpacity={0.7}>
-              <Text style={styles.clearFiltersText}>Clear all</Text>
+              <Text style={styles.clearFiltersText}>{t('market.clearAll')}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -277,7 +300,7 @@ export default function MarketScreen() {
                   <Text style={styles.categoryIcon}>{cat.icon}</Text>
                 </View>
                 <Text style={[styles.categoryLabel, isActive && styles.categoryLabelActive]}>
-                  {cat.name}
+                  {t(cat.labelKey)}
                 </Text>
               </TouchableOpacity>
             );
@@ -287,7 +310,7 @@ export default function MarketScreen() {
         {tradeType === 'Sell' ? (
           <>
             <View style={styles.sectionHeaderRow}>
-              <Text style={styles.sectionTitle}>My Listings</Text>
+              <Text style={styles.sectionTitle}>{t('market.myListings')}</Text>
             </View>
 
             <View style={styles.itemsList}>
@@ -296,9 +319,9 @@ export default function MarketScreen() {
               ) : filteredItems.length === 0 ? (
                 <EmptyState
                   compact
-                  title="No listings yet"
-                  description="You haven't listed anything for sale yet."
-                  actionLabel="Add Listing"
+                  title={t('market.empty.noListingsTitle')}
+                  description={t('market.empty.noListingsDesc')}
+                  actionLabel={t('market.addListing')}
                   onAction={() => router.push('/add-listing')}
                 />
               ) : (
@@ -322,14 +345,14 @@ export default function MarketScreen() {
               onPress={() => router.push('/add-listing')}
               activeOpacity={0.85}
             >
-              <Text style={styles.addListingBtnText}>＋ Add Listing</Text>
+              <Text style={styles.addListingBtnText}>＋ {t('market.addListing')}</Text>
             </TouchableOpacity>
           </>
         ) : (
           <>
             {/* Trending Section */}
             <View style={styles.sectionHeaderRow}>
-              <Text style={styles.sectionTitle}>Most Trending Animals</Text>
+              <Text style={styles.sectionTitle}>{t('market.trending')}</Text>
             </View>
 
             {/* Filters Row */}
@@ -344,7 +367,7 @@ export default function MarketScreen() {
                 onPress={() => setFilterModalVisible(true)}
               >
                 <Text style={styles.filterBtnIcon}>⚙️</Text>
-                <Text style={styles.filterBtnText}>Filter</Text>
+                <Text style={styles.filterBtnText}>{t('market.filter')}</Text>
               </TouchableOpacity>
               {filterChips.map((chip) => {
                 const isSelected = activeFilter === chip.value;
@@ -373,8 +396,8 @@ export default function MarketScreen() {
               ) : filteredItems.length === 0 ? (
                 <EmptyState
                   compact
-                  title="Nothing here yet"
-                  description="No items match this category right now."
+                  title={t('market.empty.nothingTitle')}
+                  description={t('market.empty.nothingDesc')}
                 />
               ) : (
               filteredItems.map((item) => (
@@ -401,15 +424,15 @@ export default function MarketScreen() {
                       {/* Animal Specifications */}
                       <View style={styles.specsRow}>
                         <View style={styles.specCell}>
-                          <Text style={styles.specLabel}>Species</Text>
+                          <Text style={styles.specLabel}>{t('market.species')}</Text>
                           <Text style={styles.specValue}>{item.species}</Text>
                         </View>
                         <View style={styles.specCell}>
-                          <Text style={styles.specLabel}>Age</Text>
+                          <Text style={styles.specLabel}>{t('market.age')}</Text>
                           <Text style={styles.specValue}>{item.age}</Text>
                         </View>
                         <View style={styles.specCell}>
-                          <Text style={styles.specLabel}>Live Weight</Text>
+                          <Text style={styles.specLabel}>{t('market.liveWeight')}</Text>
                           <Text style={styles.specValue}>{item.liveWeight}</Text>
                         </View>
                       </View>
@@ -430,7 +453,7 @@ export default function MarketScreen() {
                           onPress={() => router.push('/chat')}
                           activeOpacity={0.8}
                         >
-                          <Text style={styles.messageBtnText}>💬 Message</Text>
+                          <Text style={styles.messageBtnText}>💬 {t('market.message')}</Text>
                         </TouchableOpacity>
                       </View>
                     </View>
@@ -443,14 +466,14 @@ export default function MarketScreen() {
                       onPress={() => router.push({ pathname: '/book-animal', params: { id: item.id } })}
                       activeOpacity={0.85}
                     >
-                      <Text style={styles.bookBtnText}>🏷️ Book Animal</Text>
+                      <Text style={styles.bookBtnText}>🏷️ {t('market.bookAnimal')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={styles.buyBtn}
                       onPress={() => router.push({ pathname: '/checkout', params: { id: item.id } })}
                       activeOpacity={0.85}
                     >
-                      <Text style={styles.buyBtnText}>🛒 Buy Animal</Text>
+                      <Text style={styles.buyBtnText}>🛒 {t('market.buyAnimal')}</Text>
                     </TouchableOpacity>
                   </View>
                 </TouchableOpacity>
@@ -458,7 +481,7 @@ export default function MarketScreen() {
             </View>
           </>
         )}
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
       {/* Filter Modal */}
       <Modal
@@ -472,15 +495,15 @@ export default function MarketScreen() {
             <TouchableOpacity onPress={() => setFilterModalVisible(false)} activeOpacity={0.7}>
               <Ionicons name="close" size={24} color="#1A1817" />
             </TouchableOpacity>
-            <Text style={styles.modalTitle}>Filters</Text>
+            <Text style={styles.modalTitle}>{t('market.filters')}</Text>
             <TouchableOpacity onPress={clearFilters} activeOpacity={0.7}>
-              <Text style={styles.modalClearBtn}>Reset</Text>
+              <Text style={styles.modalClearBtn}>{t('market.reset')}</Text>
             </TouchableOpacity>
           </View>
 
-          <ScrollView style={styles.modalBody} contentContainerStyle={styles.modalBodyContent}>
+          <KeyboardAwareScrollView style={styles.modalBody} contentContainerStyle={styles.modalBodyContent}>
             {/* Species filter */}
-            <Text style={styles.modalSectionTitle}>Species</Text>
+            <Text style={styles.modalSectionTitle}>{t('market.species')}</Text>
             <View style={styles.modalChipRow}>
               {availableSpecies.map((species) => {
                 const isActive = selectedSpecies.includes(species);
@@ -500,11 +523,11 @@ export default function MarketScreen() {
             </View>
 
             {/* Price Range */}
-            <Text style={[styles.modalSectionTitle, { marginTop: 24 }]}>Price Range (৳)</Text>
+            <Text style={[styles.modalSectionTitle, { marginTop: 24 }]}>{t('market.priceRange')}</Text>
             <View style={styles.priceRow}>
               <TextInput
                 style={styles.priceInput}
-                placeholder="Min"
+                placeholder={t('market.min')}
                 placeholderTextColor="#A39E99"
                 keyboardType="numeric"
                 value={priceRange.min}
@@ -513,14 +536,14 @@ export default function MarketScreen() {
               <Text style={styles.priceDash}>—</Text>
               <TextInput
                 style={styles.priceInput}
-                placeholder="Max"
+                placeholder={t('market.max')}
                 placeholderTextColor="#A39E99"
                 keyboardType="numeric"
                 value={priceRange.max}
                 onChangeText={(v) => setPriceRange((p) => ({ ...p, max: v }))}
               />
             </View>
-          </ScrollView>
+          </KeyboardAwareScrollView>
 
           {/* Apply button */}
           <View style={styles.modalFooter}>
@@ -530,7 +553,7 @@ export default function MarketScreen() {
               activeOpacity={0.85}
             >
               <Text style={styles.modalApplyBtnText}>
-                Show {filteredItems.length} result{filteredItems.length !== 1 ? 's' : ''}
+                {t('market.showResults', { count: filteredItems.length })}
               </Text>
             </TouchableOpacity>
           </View>

@@ -14,7 +14,7 @@ import { DoctorsModule } from './doctors/doctors.module';
 import { AppointmentsModule } from './appointments/appointments.module';
 import { ChatModule } from './chat/chat.module';
 import { SeedModule } from './seed/seed.module';
-import { CloudinaryModule } from './cloudinary/cloudinary.module';
+import { S3Module } from './s3/s3.module';
 import { HealthController } from './health/health.controller';
 import { MailModule } from './mail/mail.module';
 import { MedicalRecordsModule } from './medical-records/medical-records.module';
@@ -56,6 +56,7 @@ import { BadgesModule } from './badges/badges.module';
 import { VideoCallModule } from './video-call/video-call.module';
 import { AiModule } from './ai/ai.module';
 import { PatientsModule } from './patients/patients.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -67,8 +68,9 @@ import { PatientsModule } from './patients/patients.module';
       password: process.env.DB_PASSWORD || 'postgrespassword',
       database: process.env.DB_DATABASE || 'gobadi',
       autoLoadEntities: true,
-      synchronize: true,
-      dropSchema: true,
+      synchronize: false,
+      retryAttempts: 10,
+      retryDelay: 3000,
       ssl:
         process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
     }),
@@ -102,7 +104,7 @@ import { PatientsModule } from './patients/patients.module';
     AppointmentsModule,
     ChatModule,
     SeedModule,
-    CloudinaryModule,
+    S3Module,
     MailModule,
     MedicalRecordsModule,
     RemindersModule,
@@ -141,6 +143,7 @@ import { PatientsModule } from './patients/patients.module';
     VideoCallModule,
     AiModule,
     PatientsModule,
+    DashboardModule,
   ],
   controllers: [AppController, HealthController],
   providers: [

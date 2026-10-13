@@ -2,6 +2,7 @@ import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Inject, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Job } from 'bullmq';
+import { Expo } from 'expo-server-sdk';
 import { In, Repository } from 'typeorm';
 import { PushToken } from './push-token.entity';
 import { Notification, NotificationType } from './notification.entity';
@@ -79,12 +80,40 @@ export class NotificationsProcessor extends WorkerHost {
       return;
     }
 
+    const selected = this.selectTokensPerDevice(tokens);
     const staleTokens = await this.pushProvider.sendPush(
-      tokens.map((t) => ({ token: t.token, title, body, data })),
+      selected.map((t) => ({ token: t.token, title, body, data })),
     );
     if (staleTokens.length > 0) {
       await this.pushTokenRepository.delete({ token: In(staleTokens) });
       this.logger.log(`Pruned ${staleTokens.length} stale push token(s)`);
     }
+  }
+
+  /**
+   * A device may register both its native FCM token and its Expo push token.
+   * Sending to both would deliver the same notification twice on that device,
+   * so group tokens by device and keep only one per group — preferring the
+   * native (non-Expo) token, since it goes straight through FCM. Tokens
+   * without a deviceId are each treated as their own device.
+   */
+  private selectTokensPerDevice(tokens: PushToken[]): PushToken[] {
+    const groups = new Map<string, PushToken[]>();
+    for (const t of tokens) {
+      const key = t.deviceId ?? `token:${t.token}`;
+      const group = groups.get(key);
+      if (group) {
+        group.push(t);
+      } else {
+        groups.set(key, [t]);
+      }
+    }
+
+    const selected: PushToken[] = [];
+    for (const group of groups.values()) {
+      const native = group.find((t) => !Expo.isExpoPushToken(t.token));
+      selected.push(native ?? group[0]);
+    }
+    return selected;
   }
 }

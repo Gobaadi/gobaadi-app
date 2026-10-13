@@ -7,6 +7,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import type { RootState } from '@/store/store';
 import { Image } from 'expo-image';
@@ -29,6 +30,7 @@ function formatPhone(raw: string): string {
 
 export default function AccountDetailsScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const user = useSelector((state: RootState) => state.auth.user);
   const params = useLocalSearchParams<{
     name?: string;
@@ -36,14 +38,14 @@ export default function AccountDetailsScreen() {
     phone?: string;
   }>();
 
-  const doctorName = params.name || 'Doctor';
+  const doctorName = params.name || t('accountDetails.defaults.doctor');
   const bvcNumber = params.bvcNumber || '';
   const phoneDisplay = params.phone ? formatPhone(params.phone) : '';
 
   const steps = [
-    { label: 'Submit Application', completed: true },
-    { label: 'Account Verification', completed: false },
-    { label: 'Account Created', completed: false },
+    { labelKey: 'accountDetails.steps.submitApplication', completed: true },
+    { labelKey: 'accountDetails.steps.verification', completed: false },
+    { labelKey: 'accountDetails.steps.created', completed: false },
   ];
 
   return (
@@ -59,27 +61,27 @@ export default function AccountDetailsScreen() {
 
         {/* Account Details Card */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Account Details</Text>
+          <Text style={styles.cardTitle}>{t('accountDetails.title')}</Text>
 
-          <Text style={styles.doctorName}>Dr. {doctorName}</Text>
+          <Text style={styles.doctorName}>{t('accountDetails.doctorName', { name: doctorName })}</Text>
 
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>BVC Registration Number : </Text>
+            <Text style={styles.detailLabel}>{t('accountDetails.bvcLabel')}</Text>
             <Text style={styles.detailValue}>{bvcNumber}</Text>
           </View>
 
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Phone Number : </Text>
+            <Text style={styles.detailLabel}>{t('accountDetails.phoneLabel')}</Text>
             <Text style={styles.detailValue}>{phoneDisplay}</Text>
           </View>
 
           {/* Application Status */}
-          <Text style={styles.statusTitle}>Application Status</Text>
+          <Text style={styles.statusTitle}>{t('accountDetails.statusTitle')}</Text>
 
           {steps.map((step, index) => (
             <View key={index} style={styles.stepRow}>
               <Text style={[styles.stepLabel, step.completed && styles.stepLabelCompleted]}>
-                {step.label}
+                {t(step.labelKey)}
               </Text>
               {step.completed ? (
                 <View style={styles.checkCircle}>
@@ -108,7 +110,7 @@ export default function AccountDetailsScreen() {
           }}
           activeOpacity={0.85}
         >
-          <Text style={styles.closeButtonText}>Close</Text>
+          <Text style={styles.closeButtonText}>{t('accountDetails.close')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

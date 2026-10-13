@@ -15,25 +15,61 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { SvgXml } from 'react-native-svg';
 import { useSelector } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import type { RootState } from '@/store/store';
 import {
   useGetDoctorBookingsQuery,
   type DoctorAppointment,
 } from '@/store/doctorPortalApi';
+import { PatientAvatar } from '@/components/patient-avatar';
+import {
+  backButtonSvg,
+  doctorScheduleFilterSvg,
+  doctorScheduleVideoSvg,
+} from '@/components/icons/svg-icon-sources';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 type ViewMode = 'calendar' | 'list';
 type CalendarGranularity = 'yearly' | 'monthly';
 
-const MONTH_NAMES = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
+type FilterStatus = 'all' | 'upcoming' | 'completed' | 'cancelled';
+type FilterConsultation = 'all' | 'video' | 'voice' | 'chat' | 'physical';
+
+const STATUS_FILTER_OPTIONS: { value: FilterStatus; labelKey: string }[] = [
+  { value: 'all', labelKey: 'schedule.filters.status.all' },
+  { value: 'upcoming', labelKey: 'schedule.filters.status.upcoming' },
+  { value: 'completed', labelKey: 'schedule.filters.status.completed' },
+  { value: 'cancelled', labelKey: 'schedule.filters.status.cancelled' },
 ];
-const DAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-const DAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const DAY_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+const CONSULTATION_FILTER_OPTIONS: { value: FilterConsultation; labelKey: string }[] = [
+  { value: 'all', labelKey: 'schedule.filters.consultation.all' },
+  { value: 'video', labelKey: 'schedule.filters.consultation.video' },
+  { value: 'voice', labelKey: 'schedule.filters.consultation.voice' },
+  { value: 'chat', labelKey: 'schedule.filters.consultation.chat' },
+  { value: 'physical', labelKey: 'schedule.filters.consultation.physical' },
+];
+
+const CONSULTATION_TYPE_VALUE: Record<Exclude<FilterConsultation, 'all'>, string> = {
+  video: 'online_video',
+  voice: 'online_voice',
+  chat: 'online_chat',
+  physical: 'physical',
+};
+
+const UPCOMING_STATUSES = ['PENDING', 'CONFIRMED', 'RESCHEDULED'];
+
+const MONTH_NAMES = [
+  'schedule.months.january', 'schedule.months.february', 'schedule.months.march', 'schedule.months.april',
+  'schedule.months.may', 'schedule.months.june', 'schedule.months.july', 'schedule.months.august',
+  'schedule.months.september', 'schedule.months.october', 'schedule.months.november', 'schedule.months.december',
+];
+const DAY_LETTERS = ['schedule.dayLetters.sun', 'schedule.dayLetters.mon', 'schedule.dayLetters.tue', 'schedule.dayLetters.wed', 'schedule.dayLetters.thu', 'schedule.dayLetters.fri', 'schedule.dayLetters.sat'];
+const DAY_SHORT = ['schedule.dayShort.sun', 'schedule.dayShort.mon', 'schedule.dayShort.tue', 'schedule.dayShort.wed', 'schedule.dayShort.thu', 'schedule.dayShort.fri', 'schedule.dayShort.sat'];
+const DAY_FULL = ['schedule.dayFull.sunday', 'schedule.dayFull.monday', 'schedule.dayFull.tuesday', 'schedule.dayFull.wednesday', 'schedule.dayFull.thursday', 'schedule.dayFull.friday', 'schedule.dayFull.saturday'];
 
 function getDaysInMonth(year: number, month: number): number {
   return new Date(year, month + 1, 0).getDate();
@@ -81,16 +117,17 @@ function MonthGrid({
   selectedDate: Date;
   onSelectDate: (d: Date) => void;
 }) {
+  const { t } = useTranslation();
   const daysInMonth = getDaysInMonth(year, month);
   const firstDay = getFirstDayOfMonth(year, month);
   const blanks = Array.from({ length: firstDay }, (_, i) => i);
 
   return (
     <View style={styles.monthGrid}>
-      <Text style={styles.monthTitle}>{MONTH_NAMES[month]} {year}</Text>
+      <Text style={styles.monthTitle}>{t(MONTH_NAMES[month])} {year}</Text>
       <View style={styles.dayHeaderRow}>
         {DAY_LETTERS.map((d, i) => (
-          <Text key={i} style={styles.dayHeaderText}>{d}</Text>
+          <Text key={i} style={styles.dayHeaderText}>{t(d)}</Text>
         ))}
       </View>
       <View style={styles.daysGrid}>
@@ -121,7 +158,7 @@ function MonthGrid({
                   style={[
                     styles.dayNumberText,
                     hasAppointment && styles.dayNumberTextAppointment,
-                    isToday && styles.dayNumberTextToday,
+                    isToday && !hasAppointment && styles.dayNumberTextToday,
                   ]}
                 >
                   {day}
@@ -145,13 +182,14 @@ function WeekStrip({
   selectedDate: Date;
   onSelectDate: (d: Date) => void;
 }) {
-  const weekDates = useMemo(() => getWeekDates(selectedDate), [selectedDate.getTime()]);
+  const { t } = useTranslation();
+  const weekDates = useMemo(() => getWeekDates(selectedDate), [selectedDate]);
 
   return (
     <View style={styles.weekStrip}>
       <View style={styles.weekDayHeader}>
         {DAY_SHORT.map((d, i) => (
-          <Text key={i} style={styles.weekDayLabel}>{d}</Text>
+          <Text key={i} style={styles.weekDayLabel}>{t(d)}</Text>
         ))}
       </View>
       <View style={styles.weekDateRow}>
@@ -193,6 +231,7 @@ function DayBottomSheet({
   selectedDate: Date;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const dayAppointments = useMemo(() => {
     return appointments
       .filter((a) => isSameDay(new Date(a.startAt), selectedDate))
@@ -207,8 +246,8 @@ function DayBottomSheet({
   const pastAppts = dayAppointments.filter((a) => new Date(a.endAt) < now);
   const upcomingAppts = dayAppointments.filter((a) => new Date(a.startAt) >= now);
 
-  const dayName = DAY_FULL[selectedDate.getDay()];
-  const monthName = MONTH_NAMES[selectedDate.getMonth()];
+  const dayName = t(DAY_FULL[selectedDate.getDay()]);
+  const monthName = t(MONTH_NAMES[selectedDate.getMonth()]);
 
   const formatHourLabel = (hour: number) => {
     const h = hour > 12 ? hour - 12 : hour;
@@ -232,7 +271,7 @@ function DayBottomSheet({
               {dayName}, {selectedDate.getDate()} {monthName}
             </Text>
             <Text style={styles.bottomSheetCount}>
-              {dayAppointments.length} Appointment{dayAppointments.length !== 1 ? 's' : ''}
+              {t('schedule.appointmentCount', { count: dayAppointments.length })}
             </Text>
           </View>
 
@@ -243,7 +282,7 @@ function DayBottomSheet({
             {dayAppointments.length === 0 ? (
               <View style={styles.emptyDayContainer}>
                 <Ionicons name="calendar-outline" size={40} color="#E6E1DC" />
-                <Text style={styles.emptyDayText}>No appointments for this day</Text>
+                <Text style={styles.emptyDayText}>{t('schedule.empty.day')}</Text>
               </View>
             ) : (
               <>
@@ -267,7 +306,7 @@ function DayBottomSheet({
 
                 {upcomingAppts.length > 0 && (
                   <>
-                    <Text style={styles.upcoming_label}>Upcoming</Text>
+                    <Text style={styles.upcoming_label}>{t('schedule.upcoming')}</Text>
                     {upcomingAppts.map((appt) => (
                       <View key={appt.id} style={styles.appointmentRow}>
                         <Text style={styles.appointmentTimeLabel}>{formatTime(appt.startAt)}</Text>
@@ -286,19 +325,20 @@ function DayBottomSheet({
 }
 
 function DayAppointmentCard({ appointment, isPast, isUpcoming }: { appointment: DoctorAppointment; isPast?: boolean; isUpcoming?: boolean }) {
+  const { t } = useTranslation();
   return (
     <View style={[styles.dayAppointmentCard, isPast && styles.dayAppointmentCardPast]}>
       <View style={styles.dayAppointmentAvatar}>
-        {appointment.animalImage ? (
-          <View style={styles.dayAppointmentAvatarImage} />
-        ) : (
-          <Ionicons name="paw" size={20} color="#BD632F" />
-        )}
-        {isUpcoming && <View style={styles.greenDot} />}
+        <PatientAvatar
+          name={appointment.animalName || appointment.patientName || t('schedule.patient')}
+          image={appointment.animalImage || appointment.patientAvatar}
+          size={44}
+        />
+        {isUpcoming && <View style={styles.greenDot}><SvgXml width={11} height={11} xml={doctorScheduleVideoSvg} /></View>}
       </View>
       <View style={styles.dayAppointmentInfo}>
         <Text style={styles.dayAppointmentName}>
-          {appointment.animalName || appointment.patientName || `Patient #${appointment.patientId}`}
+            {appointment.animalName || appointment.patientName || t('schedule.patient')}
         </Text>
         {appointment.animalSpecies && (
           <Text style={styles.dayAppointmentDetail}>
@@ -319,6 +359,7 @@ function ListView({
 }: {
   appointments: DoctorAppointment[];
 }) {
+  const { t } = useTranslation();
   const grouped = useMemo(() => {
     const map = new Map<string, DoctorAppointment[]>();
     appointments.forEach((a) => {
@@ -330,14 +371,15 @@ function ListView({
   }, [appointments]);
 
   const totalCount = appointments.length;
-  const currentMonth = new Date().getMonth();
-  const currentYear = new Date().getFullYear();
+  const firstGroupDate = grouped.length > 0 ? new Date(grouped[0][0] + 'T12:00:00') : new Date();
+  const currentMonth = firstGroupDate.getMonth();
+  const currentYear = firstGroupDate.getFullYear();
 
   if (grouped.length === 0) {
     return (
       <View style={styles.emptyContainer}>
         <Ionicons name="calendar-outline" size={48} color="#E6E1DC" />
-        <Text style={styles.emptyText}>No appointments scheduled</Text>
+        <Text style={styles.emptyText}>{t('schedule.empty.list')}</Text>
       </View>
     );
   }
@@ -345,8 +387,8 @@ function ListView({
   return (
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.listScrollContainer}>
       <View style={styles.listMonthHeader}>
-        <Text style={styles.listMonthTitle}>{MONTH_NAMES[currentMonth]} {currentYear}</Text>
-        <Text style={styles.listMonthCount}>{totalCount} Appointments</Text>
+        <Text style={styles.listMonthTitle}>{t(MONTH_NAMES[currentMonth])} {currentYear}</Text>
+        <Text style={styles.listMonthCount}>{t('schedule.appointmentCount', { count: totalCount })}</Text>
       </View>
 
       {grouped.map(([dateKey, appts]) => {
@@ -354,7 +396,7 @@ function ListView({
         return (
           <View key={dateKey} style={styles.listDateGroup}>
             <View style={styles.listDateSide}>
-              <Text style={styles.listDateDayName}>{DAY_SHORT[date.getDay()]}</Text>
+              <Text style={styles.listDateDayName}>{t(DAY_SHORT[date.getDay()])}</Text>
               <Text style={styles.listDateDayNumber}>{date.getDate()}</Text>
             </View>
             <View style={styles.listDateCards}>
@@ -370,6 +412,7 @@ function ListView({
 }
 
 function ListAppointmentCard({ appointment }: { appointment: DoctorAppointment }) {
+  const { t } = useTranslation();
   const startDate = new Date(appointment.startAt);
   const endDate = new Date(appointment.endAt);
 
@@ -387,21 +430,21 @@ function ListAppointmentCard({ appointment }: { appointment: DoctorAppointment }
       <View style={styles.listAppointmentDateBadge}>
         <Ionicons name="time-outline" size={14} color="#FFFFFF" />
         <Text style={styles.listAppointmentDateBadgeText}>
-          {DAY_SHORT[startDate.getDay()]} {MONTH_NAMES[startDate.getMonth()]} {startDate.getDate()} · {formatTimeShort(appointment.startAt)} - {formatTimeShort(appointment.endAt)}
+          {t(DAY_SHORT[startDate.getDay()])} {t(MONTH_NAMES[startDate.getMonth()])} {startDate.getDate()} · {formatTimeShort(appointment.startAt)} - {formatTimeShort(appointment.endAt)}
         </Text>
       </View>
       <View style={styles.listAppointmentCardBody}>
         <View style={styles.listAppointmentAvatar}>
-          {appointment.animalImage ? (
-            <View style={styles.listAppointmentAvatarImage} />
-          ) : (
-            <Ionicons name="paw" size={20} color="#BD632F" />
-          )}
-          <View style={styles.greenDot} />
+          <PatientAvatar
+            name={appointment.animalName || appointment.patientName || t('schedule.patient')}
+            image={appointment.animalImage || appointment.patientAvatar}
+            size={44}
+          />
+          <View style={styles.greenDot}><SvgXml width={11} height={11} xml={doctorScheduleVideoSvg} /></View>
         </View>
         <View style={styles.listAppointmentInfo}>
           <Text style={styles.listAppointmentName}>
-            {appointment.animalName || appointment.patientName || `Patient #${appointment.patientId}`}
+          {appointment.animalName || appointment.patientName || t('schedule.patient')}
           </Text>
           {appointment.animalSpecies && (
             <Text style={styles.listAppointmentDetail}>
@@ -420,8 +463,8 @@ function ListAppointmentCard({ appointment }: { appointment: DoctorAppointment }
 
 export default function ScheduleScreen() {
   const isDoctor = useRequireDoctor();
-  if (!isDoctor) return null;
   const router = useRouter();
+  const { t } = useTranslation();
   const user = useSelector((state: RootState) => state.auth.user);
 
   const [viewMode, setViewMode] = useState<ViewMode>('calendar');
@@ -431,22 +474,50 @@ export default function ScheduleScreen() {
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [showDaySheet, setShowDaySheet] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
+  const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
+  const [filterConsultation, setFilterConsultation] = useState<FilterConsultation>('all');
 
-  const { data: bookings = [], isLoading } = useGetDoctorBookingsQuery();
+  const { data: bookings = [], isLoading } = useGetDoctorBookingsQuery(undefined, {
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
+  });
+
+  const filteredBookings = useMemo(() => {
+    return bookings.filter((b) => {
+      const statusOk =
+        filterStatus === 'all' ||
+        (filterStatus === 'upcoming' && UPCOMING_STATUSES.includes(b.status)) ||
+        (filterStatus === 'completed' && b.status === 'COMPLETED') ||
+        (filterStatus === 'cancelled' && b.status === 'CANCELLED');
+      const consultationOk =
+        filterConsultation === 'all' ||
+        b.consultationType === CONSULTATION_TYPE_VALUE[filterConsultation];
+      return statusOk && consultationOk;
+    });
+  }, [bookings, filterStatus, filterConsultation]);
+
+  const activeFilterCount =
+    (filterStatus !== 'all' ? 1 : 0) + (filterConsultation !== 'all' ? 1 : 0);
+
+  const clearFilters = useCallback(() => {
+    setFilterStatus('all');
+    setFilterConsultation('all');
+  }, []);
 
   const appointmentDates = useMemo(() => {
     const dates = new Set<string>();
-    bookings.forEach((b) => {
+    filteredBookings.forEach((b) => {
       dates.add(formatDateKey(new Date(b.startAt)));
     });
     return dates;
-  }, [bookings]);
+  }, [filteredBookings]);
 
   const handleSelectDate = useCallback((date: Date) => {
     setSelectedDate(date);
     setCurrentMonth(date.getMonth());
     setCurrentYear(date.getFullYear());
     setShowDaySheet(true);
+    setShowFilter(false);
   }, []);
 
   const navigateMonth = useCallback((direction: number) => {
@@ -464,13 +535,15 @@ export default function ScheduleScreen() {
     });
   }, []);
 
+  if (!isDoctor) return null;
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+          <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Schedule</Text>
+        <Text style={styles.headerTitle}>{t('schedule.title')}</Text>
         {/* <TouchableOpacity style={styles.settingsBtn} activeOpacity={0.7}>
           <Ionicons name="settings-outline" size={20} color="#BD632F" />
         </TouchableOpacity> */}
@@ -483,7 +556,7 @@ export default function ScheduleScreen() {
           activeOpacity={0.8}
         >
           <Text style={[styles.viewToggleText, viewMode === 'calendar' && styles.viewToggleTextActive]}>
-            Full Calendar
+            {t('schedule.fullCalendar')}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -492,7 +565,7 @@ export default function ScheduleScreen() {
           activeOpacity={0.8}
         >
           <Text style={[styles.viewToggleText, viewMode === 'list' && styles.viewToggleTextActive]}>
-            List View
+            {t('schedule.listView')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -500,13 +573,19 @@ export default function ScheduleScreen() {
       {isLoading ? (
         <ActivityIndicator size="large" color="#BD632F" style={{ marginTop: 40 }} />
       ) : viewMode === 'list' ? (
-        <ListView appointments={bookings} />
+        <ListView appointments={filteredBookings} />
       ) : (
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.calendarScroll}>
           <View style={styles.filterRow}>
-            <TouchableOpacity style={styles.filterBtn} onPress={() => setShowFilter(!showFilter)} activeOpacity={0.8}>
-              <Ionicons name="options-outline" size={14} color="#1A1817" />
-              <Text style={styles.filterBtnText}>Filter</Text>
+            <TouchableOpacity
+              style={[styles.filterBtn, activeFilterCount > 0 && styles.filterBtnActive]}
+              onPress={() => setShowFilter(!showFilter)}
+              activeOpacity={0.8}
+            >
+              <SvgXml width={16} height={16} xml={doctorScheduleFilterSvg} />
+              <Text style={styles.filterBtnText}>
+                {t('schedule.filter')}{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
+              </Text>
             </TouchableOpacity>
             <View style={styles.granularityToggle}>
               <TouchableOpacity
@@ -515,7 +594,7 @@ export default function ScheduleScreen() {
                 activeOpacity={0.8}
               >
                 <Text style={[styles.granularityText, granularity === 'yearly' && styles.granularityTextActive]}>
-                  Yearly
+                  {t('schedule.yearly')}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -524,11 +603,67 @@ export default function ScheduleScreen() {
                 activeOpacity={0.8}
               >
                 <Text style={[styles.granularityText, granularity === 'monthly' && styles.granularityTextActive]}>
-                  Monthly
+                  {t('schedule.monthly')}
                 </Text>
               </TouchableOpacity>
             </View>
           </View>
+
+          {showFilter && (
+            <View style={styles.filterPanel}>
+              <View style={styles.filterPanelHeader}>
+                <Text style={styles.filterPanelTitle}>{t('schedule.filterPanelTitle')}</Text>
+                <TouchableOpacity onPress={clearFilters} activeOpacity={0.7}>
+                  <Text style={styles.clearFilterText}>{t('schedule.clear')}</Text>
+                </TouchableOpacity>
+              </View>
+
+              <Text style={styles.filterGroupLabel}>{t('schedule.statusLabel')}</Text>
+              <View style={styles.filterChipRow}>
+                {STATUS_FILTER_OPTIONS.map((opt) => (
+                  <TouchableOpacity
+                    key={opt.value}
+                    style={[styles.filterChip, filterStatus === opt.value && styles.filterChipActive]}
+                    onPress={() => setFilterStatus(opt.value)}
+                    activeOpacity={0.8}
+                  >
+                    <Text
+                      style={[
+                        styles.filterChipText,
+                        filterStatus === opt.value && styles.filterChipTextActive,
+                      ]}
+                    >
+                      {t(opt.labelKey)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <Text style={styles.filterGroupLabel}>{t('schedule.consultationTypeLabel')}</Text>
+              <View style={styles.filterChipRow}>
+                {CONSULTATION_FILTER_OPTIONS.map((opt) => (
+                  <TouchableOpacity
+                    key={opt.value}
+                    style={[
+                      styles.filterChip,
+                      filterConsultation === opt.value && styles.filterChipActive,
+                    ]}
+                    onPress={() => setFilterConsultation(opt.value)}
+                    activeOpacity={0.8}
+                  >
+                    <Text
+                      style={[
+                        styles.filterChipText,
+                        filterConsultation === opt.value && styles.filterChipTextActive,
+                      ]}
+                    >
+                      {t(opt.labelKey)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          )}
 
           {granularity === 'yearly' ? (
             <>
@@ -558,7 +693,7 @@ export default function ScheduleScreen() {
                 <TouchableOpacity onPress={() => navigateMonth(-1)} style={styles.navBtn} activeOpacity={0.7}>
                   <Ionicons name="chevron-back" size={18} color="#BD632F" />
                 </TouchableOpacity>
-                <Text style={styles.monthNavTitle}>{MONTH_NAMES[currentMonth]} {currentYear}</Text>
+                <Text style={styles.monthNavTitle}>{t(MONTH_NAMES[currentMonth])} {currentYear}</Text>
                 <TouchableOpacity onPress={() => navigateMonth(1)} style={styles.navBtn} activeOpacity={0.7}>
                   <Ionicons name="chevron-forward" size={18} color="#BD632F" />
                 </TouchableOpacity>
@@ -578,7 +713,7 @@ export default function ScheduleScreen() {
 
       <DayBottomSheet
         visible={showDaySheet}
-        appointments={bookings}
+        appointments={filteredBookings}
         selectedDate={selectedDate}
         onClose={() => setShowDaySheet(false)}
       />
@@ -645,7 +780,7 @@ const styles = StyleSheet.create({
   viewToggleText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#9C9690',
+    color: '#6F6863',
   },
   viewToggleTextActive: {
     color: '#1A1817',
@@ -676,6 +811,68 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: '#1A1817',
+  },
+  filterBtnActive: {
+    borderColor: '#BD632F',
+    backgroundColor: '#FDF2EA',
+  },
+  filterPanel: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E6E1DC',
+    padding: 14,
+    marginBottom: 16,
+  },
+  filterPanelHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  filterPanelTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1A1817',
+  },
+  clearFilterText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#BD632F',
+  },
+  filterGroupLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#7C7672',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 8,
+  },
+  filterChipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 14,
+  },
+  filterChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E6E1DC',
+    backgroundColor: '#FAF9F6',
+  },
+  filterChipActive: {
+    backgroundColor: '#BD632F',
+    borderColor: '#BD632F',
+  },
+  filterChipText: {
+    fontSize: 12.5,
+    fontWeight: '600',
+    color: '#7C7672',
+  },
+  filterChipTextActive: {
+    color: '#FFFFFF',
   },
   granularityToggle: {
     flexDirection: 'row',
@@ -795,12 +992,14 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     right: 0,
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
     backgroundColor: '#4CAF50',
     borderWidth: 2,
     borderColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   appointmentRow: {
     flexDirection: 'row',
@@ -973,12 +1172,6 @@ const styles = StyleSheet.create({
   dayAppointmentCardPast: {
     opacity: 0.6,
   },
-  dayAppointmentAvatarImage: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#E6E1DC',
-  },
   emptyDayContainer: {
     alignItems: 'center',
     paddingVertical: 40,
@@ -1101,12 +1294,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF2EB',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  listAppointmentAvatarImage: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#E6E1DC',
   },
   listAppointmentInfo: {
     flex: 1,

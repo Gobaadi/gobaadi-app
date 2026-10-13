@@ -1,61 +1,151 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   StyleSheet,
   View,
   Text,
   TextInput,
   TouchableOpacity,
-  ScrollView,
   Image,
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { useGetMyProfileQuery, useUpdateMyProfileMutation } from '@/store/usersApi';
+import { SvgXml } from 'react-native-svg';
 import * as ImagePicker from 'expo-image-picker';
+import {
+  useGetMyProfileQuery,
+  useUpdateMyProfileMutation,
+  useUploadMyPhotoMutation,
+} from '@/store/usersApi';
+import { useLocation } from '@/hooks/use-location';
+import { compressImageForUpload } from '@/utils/compress-image';
+import { apiErrorMessage } from '@/utils/api-error';
+import {
+  backButtonSvg,
+  editProfilePhotoCameraSvg,
+  editProfileNameMicrophoneSvg,
+  editProfileNumberCheckSvg,
+  editProfileLocationSvg,
+} from '@/components/icons/svg-icon-sources';
+import { useTranslation } from '@/hooks/use-translation';
 
 export default function EditProfileScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { data: profile } = useGetMyProfileQuery();
   const [updateProfile, { isLoading: isSaving }] = useUpdateMyProfileMutation();
+  const [uploadMyPhoto] = useUploadMyPhotoMutation();
+  const { location, setLocation } = useLocation();
 
   const [name, setName] = useState(profile?.name || '');
   const [phone, setPhone] = useState(profile?.phone || '');
-  const [location, setLocation] = useState('');
-  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [locationInput, setLocationInput] = useState<string | null>(null);
+  const [pickedPhotoUri, setPickedPhotoUri] = useState<string | null>(null);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [profileSynced, setProfileSynced] = useState(false);
 
-  useEffect(() => {
-    if (profile?.name) setName(profile.name);
-    if (profile?.phone) setPhone(profile.phone);
-  }, [profile]);
+  // Fill the form once, when the profile first arrives. Syncing in an effect
+  // would also wipe in-progress edits whenever a background refetch lands
+  // (e.g. the Profile tag invalidating after a photo upload).
+  if (!profileSynced && profile) {
+    setProfileSynced(true);
+    if (profile.name) setName(profile.name);
+    if (profile.phone) setPhone(profile.phone);
+  }
 
-  const handlePickImage = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission needed', 'Please grant camera roll permissions to change your profile photo.');
-      return;
+  const avatarSource = pickedPhotoUri
+    ? { uri: pickedPhotoUri }
+    : profile?.profilePhoto
+      ? { uri: profile.profilePhoto }
+      : require('@/assets/images/user_profile.webp');
+
+  const openPhotoPicker = () => {
+    Alert.alert(t('editProfile.alerts.changePhoto'), t('editProfile.alerts.chooseOption'), [
+      { text: t('editProfile.alerts.takePhoto'), onPress: () => pickPhoto('camera') },
+      { text: t('editProfile.alerts.chooseLibrary'), onPress: () => pickPhoto('library') },
+      { text: t('editProfile.alerts.cancel'), style: 'cancel' },
+    ]);
+  };
+
+  const pickPhoto = async (source: 'camera' | 'library') => {
+    try {
+      const permission =
+        source === 'camera'
+          ? await ImagePicker.requestCameraPermissionsAsync()
+          : await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert(
+          t('editProfile.alerts.permissionRequired'),
+          source === 'camera'
+            ? t('editProfile.alerts.cameraPermission')
+            : t('editProfile.alerts.libraryPermission'),
+        );
+        return;
+      }
+      const result =
+        source === 'camera'
+          ? await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.8 })
+          : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
+      if (result.canceled || !result.assets?.length) return;
+      await uploadPhoto(result.assets[0].uri);
+    } catch {
+      Alert.alert(
+        t('editProfile.alerts.photoSelectionFailed'),
+        t('editProfile.alerts.photoSelectionFailedMsg'),
+      );
     }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
-    if (!result.canceled && result.assets[0]) {
-      setProfileImage(result.assets[0].uri);
+  };
+
+  const uploadPhoto = async (uri: string) => {
+    try {
+      setIsUploadingPhoto(true);
+      setPickedPhotoUri(uri);
+      const file = await compressImageForUpload(uri, {
+        fileName: `avatar-${Date.now()}.jpg`,
+        mimeType: 'image/jpeg',
+      });
+      const formData = new FormData();
+      formData.append('file', {
+        uri: file.uri,
+        name: file.name,
+        type: file.type,
+      } as any);
+      await uploadMyPhoto(formData).unwrap();
+    } catch (err: any) {
+      setPickedPhotoUri(null);
+      Alert.alert(
+        t('editProfile.alerts.uploadFailed'),
+        err?.status === 413
+          ? t('editProfile.alerts.photoTooLarge')
+          : err?.data?.message ||
+            err?.message ||
+            t('editProfile.alerts.uploadPhotoFailed'),
+      );
+    } finally {
+      setIsUploadingPhoto(false);
     }
   };
 
   const handleSave = async () => {
-    try {
-      await updateProfile({ name, phone, location }).unwrap();
-      Alert.alert('Success', 'Profile updated successfully.');
-      router.back();
-    } catch (err) {
-      Alert.alert('Error', 'Failed to update profile. Please try again.');
+    if (!name.trim()) {
+      Alert.alert(t('editProfile.alerts.requiredField'), t('editProfile.alerts.enterName'));
+      return;
     }
+    try {
+      await updateProfile({ name: name.trim(), phone: phone.trim() }).unwrap();
+    } catch (err) {
+      Alert.alert(
+        t('editProfile.alerts.error'),
+        apiErrorMessage(err, t('editProfile.alerts.updateProfileFailed')),
+      );
+      return;
+    }
+    await setLocation((locationInput ?? '').trim() || location);
+    Alert.alert(t('editProfile.alerts.success'), t('editProfile.alerts.profileUpdated'), [
+      { text: t('editProfile.alerts.ok'), onPress: () => router.back() },
+    ]);
   };
 
   return (
@@ -67,78 +157,86 @@ export default function EditProfileScreen() {
           onPress={() => router.back()}
           activeOpacity={0.8}
         >
-          <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+          <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>Edit Profile</Text>
+        <Text style={styles.headerTitle}>{t('editProfile.header')}</Text>
 
         <View style={{ width: 42 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+      <KeyboardAwareScrollView
+        contentContainerStyle={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Profile Card Container */}
         <View style={styles.profileCard}>
-          {/* Avatar with Camera Icon Overlay */}
-          <View style={styles.avatarWrapper}>
-            <Image
-              source={profileImage ? { uri: profileImage } : require('@/assets/images/user_profile.png')}
-              style={styles.avatarImage}
-            />
-            <TouchableOpacity style={styles.cameraIconContainer} activeOpacity={0.85} onPress={handlePickImage}>
-              <Ionicons name="camera-outline" size={20} color="#BD632F" />
-            </TouchableOpacity>
-          </View>
+          {/* Avatar */}
+          <TouchableOpacity
+            style={styles.avatarWrapper}
+            onPress={openPhotoPicker}
+            disabled={isUploadingPhoto}
+            activeOpacity={0.8}
+          >
+            <Image source={avatarSource} style={styles.avatarImage} />
+            <View style={styles.cameraBadge}>
+              {isUploadingPhoto ? (
+                <ActivityIndicator size="small" color="#BD632F" />
+              ) : (
+                <SvgXml width={18} height={16} xml={editProfilePhotoCameraSvg} />
+              )}
+            </View>
+          </TouchableOpacity>
 
           {/* Form Fields */}
           <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Your name</Text>
+            <Text style={styles.fieldLabel}>{t('editProfile.nameLabel')}</Text>
             <View style={styles.inputWrapper}>
               <TextInput
                 style={styles.textInput}
                 value={name}
                 onChangeText={setName}
-                placeholder="Enter name"
+                placeholder={t('editProfile.namePlaceholder')}
                 placeholderTextColor="#A39E99"
               />
               <TouchableOpacity style={styles.inputActionBtn} activeOpacity={0.7}>
-                <Ionicons name="mic-outline" size={20} color="#BD632F" />
+                <SvgXml width={20} height={20} xml={editProfileNameMicrophoneSvg} />
               </TouchableOpacity>
             </View>
           </View>
 
           <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Mobile Number</Text>
+            <Text style={styles.fieldLabel}>{t('editProfile.phoneLabel')}</Text>
             <View style={styles.inputWrapper}>
               <TextInput
                 style={styles.textInput}
                 value={phone}
                 onChangeText={setPhone}
                 editable={true}
-                placeholder="Enter Phone"
+                placeholder={t('editProfile.phonePlaceholder')}
                 placeholderTextColor="#A39E99"
                 keyboardType="phone-pad"
               />
-              <Ionicons name="checkmark-circle" size={22} color="#4CAF50" />
+              <SvgXml width={20} height={20} xml={editProfileNumberCheckSvg} />
             </View>
           </View>
 
           <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Location (Village/District)</Text>
+            <Text style={styles.fieldLabel}>{t('editProfile.locationLabel')}</Text>
             <View style={styles.inputWrapper}>
               <TextInput
                 style={styles.textInput}
-                value={location}
-                onChangeText={setLocation}
-                placeholder="Enter location"
+                value={locationInput ?? location}
+                onChangeText={setLocationInput}
+                placeholder={t('editProfile.locationPlaceholder')}
                 placeholderTextColor="#A39E99"
               />
-              <TouchableOpacity style={styles.inputActionBtn} activeOpacity={0.7}>
-                <Ionicons name="locate-outline" size={20} color="#BD632F" />
-              </TouchableOpacity>
+              <SvgXml width={20} height={20} xml={editProfileLocationSvg} />
             </View>
           </View>
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
       {/* Save Button */}
       <View style={styles.bottomBar}>
@@ -151,7 +249,7 @@ export default function EditProfileScreen() {
           {isSaving ? (
             <ActivityIndicator size="small" color="#FFFFFF" />
           ) : (
-            <Text style={styles.saveButtonText}>Save Changes</Text>
+            <Text style={styles.saveButtonText}>{t('editProfile.saveChanges')}</Text>
           )}
         </TouchableOpacity>
       </View>
@@ -212,30 +310,25 @@ const styles = StyleSheet.create({
     position: 'relative',
     marginBottom: 28,
   },
+  cameraBadge: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: '#E6E1DC',
+  },
   avatarImage: {
     width: 140,
     height: 140,
     borderRadius: 70,
     borderWidth: 2,
     borderColor: '#E6E1DC',
-  },
-  cameraIconContainer: {
-    position: 'absolute',
-    bottom: 2,
-    right: 2,
-    backgroundColor: '#FFFFFF',
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: '#E6E1DC',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   fieldContainer: {
     width: '100%',

@@ -4,17 +4,42 @@ import { baseQueryWithReauth } from './base-query-with-reauth';
 export interface WalletBalance {
   balance: number;
   coins: number;
-  currency: string;
+  currency?: string;
 }
 
 export interface WalletTransaction {
   id: number;
-  userId: number;
-  type: string;
+  type: 'credit' | 'debit';
   amount: number;
-  coins: number;
   description: string;
   createdAt: string;
+}
+
+interface BackendWalletTransaction {
+  id: number;
+  walletId: number;
+  amount: number;
+  reason: string;
+  referenceType?: string;
+  referenceId?: string;
+  createdAt: string;
+}
+
+interface PaginatedTransactions {
+  data: BackendWalletTransaction[];
+  page: number;
+  limit: number;
+  total: number;
+}
+
+function mapTransaction(tx: BackendWalletTransaction): WalletTransaction {
+  return {
+    id: tx.id,
+    type: tx.amount >= 0 ? 'credit' : 'debit',
+    amount: Math.abs(tx.amount),
+    description: tx.reason ?? '',
+    createdAt: tx.createdAt,
+  };
 }
 
 export const walletApi = createApi({
@@ -31,6 +56,8 @@ export const walletApi = createApi({
         url: '/wallet/transactions',
         params,
       }),
+      transformResponse: (response: PaginatedTransactions) =>
+        (response?.data ?? []).map(mapTransaction),
       providesTags: ['WalletTransaction'],
     }),
     topUp: builder.mutation<any, { amount: number }>({

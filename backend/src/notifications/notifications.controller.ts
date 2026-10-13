@@ -59,6 +59,25 @@ export class NotificationsController {
     return this.notificationsService.getUnreadCount(user.sub);
   }
 
+  @Get('preferences')
+  @ApiOperation({
+    summary: 'Get notification preferences (creates default on first access)',
+  })
+  async getPreferences(
+    @CurrentUser() user: JwtPayload,
+  ): Promise<NotificationPreference> {
+    return this.notificationsService.getPreferences(user.sub);
+  }
+
+  @Put('preferences')
+  @ApiOperation({ summary: 'Update notification preferences' })
+  async updatePreferences(
+    @CurrentUser() user: JwtPayload,
+    @Body() body: Partial<NotificationPreference>,
+  ): Promise<NotificationPreference> {
+    return this.notificationsService.updatePreferences(user.sub, body);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get a single notification by ID' })
   @ApiParam({ name: 'id', example: '1' })
@@ -89,7 +108,7 @@ export class NotificationsController {
   }
 
   @Post('push-token')
-  @ApiOperation({ summary: "Register the current device's Expo push token" })
+  @ApiOperation({ summary: "Register the current device's push token" })
   @ApiResponse({ status: 201, description: 'Push token registered' })
   async registerPushToken(
     @CurrentUser() user: JwtPayload,
@@ -99,6 +118,7 @@ export class NotificationsController {
       user.sub,
       body.token,
       body.deviceId,
+      body.platform,
     );
     return { success: true };
   }
@@ -112,24 +132,5 @@ export class NotificationsController {
   ): Promise<{ success: boolean }> {
     await this.notificationsService.unregisterPushToken(user.sub, body.token);
     return { success: true };
-  }
-
-  @Get('preferences')
-  @ApiOperation({
-    summary: 'Get notification preferences (creates default on first access)',
-  })
-  async getPreferences(
-    @CurrentUser() user: JwtPayload,
-  ): Promise<NotificationPreference> {
-    return this.notificationsService.getPreferences(user.sub);
-  }
-
-  @Put('preferences')
-  @ApiOperation({ summary: 'Update notification preferences' })
-  async updatePreferences(
-    @CurrentUser() user: JwtPayload,
-    @Body() body: Partial<NotificationPreference>,
-  ): Promise<NotificationPreference> {
-    return this.notificationsService.updatePreferences(user.sub, body);
   }
 }

@@ -4,22 +4,34 @@ import {
   View,
   Text,
   TouchableOpacity,
-  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
+import { SvgXml } from 'react-native-svg';
+import {
+  openSupportEmail,
+  openSupportPhone,
+  SUPPORT_EMAIL,
+  SUPPORT_PHONE,
+} from '@/lib/contact';
+import {
+  backButtonSvg,
+  contactSupportMailSvg,
+  contactSupportPhoneSvg,
+} from '@/components/icons/svg-icon-sources';
 
 export default function ContactSupportScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+          <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Contact Support</Text>
+        <Text style={styles.headerTitle}>{t('contactSupport.title')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -28,14 +40,14 @@ export default function ContactSupportScreen() {
         <TouchableOpacity
           style={styles.contactCard}
           activeOpacity={0.8}
-          onPress={() => Linking.openURL('mailto:support@gobaadi.com')}
+          onPress={openSupportEmail}
         >
           <View style={styles.contactIcon}>
-            <Ionicons name="mail-outline" size={22} color="#BD632F" />
+            <SvgXml width={22} height={22} xml={contactSupportMailSvg} />
           </View>
           <View style={styles.contactInfo}>
-            <Text style={styles.contactLabel}>Email</Text>
-            <Text style={styles.contactValue}>support@gobaadi.com</Text>
+            <Text style={styles.contactLabel}>{t('contactSupport.email')}</Text>
+            <Text style={styles.contactValue}>{SUPPORT_EMAIL}</Text>
           </View>
         </TouchableOpacity>
 
@@ -43,14 +55,14 @@ export default function ContactSupportScreen() {
         <TouchableOpacity
           style={styles.contactCard}
           activeOpacity={0.8}
-          onPress={() => Linking.openURL('tel:+8801911418977')}
+          onPress={openSupportPhone}
         >
           <View style={styles.contactIcon}>
-            <Ionicons name="call-outline" size={22} color="#BD632F" />
+            <SvgXml width={22} height={22} xml={contactSupportPhoneSvg} />
           </View>
           <View style={styles.contactInfo}>
-            <Text style={styles.contactLabel}>Customer Service</Text>
-            <Text style={styles.contactValue}>+8801911418977</Text>
+            <Text style={styles.contactLabel}>{t('contactSupport.customerService')}</Text>
+            <Text style={styles.contactValue}>{SUPPORT_PHONE}</Text>
           </View>
         </TouchableOpacity>
       </View>

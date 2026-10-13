@@ -1,16 +1,20 @@
 {
   "expo": {
-    "name": "gobadi",
+    "name": "gobaadi",
     "slug": "gobadi",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "gobadi",
+    "scheme": "gobaadi",
     "userInterfaceStyle": "light",
     "ios": {
       "icon": "./assets/images/icon.png",
       "supportsTablet": true,
-      "bundleIdentifier": "com.champius.gobadi"
+      "bundleIdentifier": "com.champius.gobaadi",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "Microphone access is needed for audio and video calls with your doctor or farmer.",
+        "NSCameraUsageDescription": "Camera access is needed for video calls."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -18,7 +22,13 @@
         "foregroundImage": "./assets/images/icon.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.champius.gobadi"
+      "package": "com.champius.gobaadi",
+      "versionCode": 1,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.READ_MEDIA_IMAGES"
+      ]
     },
     "web": {
       "output": "static",
@@ -26,6 +36,8 @@
     },
     "plugins": [
       "expo-router",
+      "expo-sharing",
+      "expo-media-library",
       [
         "expo-splash-screen",
         {
@@ -35,10 +47,98 @@
         }
       ],
       "expo-secure-store",
-      "expo-notifications",
+      [
+        "expo-font",
+        {
+          "android": {
+            "fonts": [
+              {
+                "fontFamily": "Google Sans",
+                "fontDefinitions": [
+                  {
+                    "path": "./assets/fonts/GoogleSans-Regular.ttf",
+                    "weight": 400
+                  },
+                  {
+                    "path": "./assets/fonts/GoogleSans-Medium.ttf",
+                    "weight": 500
+                  },
+                  {
+                    "path": "./assets/fonts/GoogleSans-Bold.ttf",
+                    "weight": 700
+                  }
+                ]
+              },
+              {
+                "fontFamily": "Noto Sans Bengali",
+                "fontDefinitions": [
+                  {
+                    "path": "./assets/fonts/NotoSansBengali-Regular.ttf",
+                    "weight": 400
+                  },
+                  {
+                    "path": "./assets/fonts/NotoSansBengali-Medium.ttf",
+                    "weight": 500
+                  },
+                  {
+                    "path": "./assets/fonts/NotoSansBengali-Bold.ttf",
+                    "weight": 700
+                  }
+                ]
+              }
+            ]
+          },
+          "ios": {
+            "fonts": [
+              "./assets/fonts/GoogleSans-Regular.ttf",
+              "./assets/fonts/GoogleSans-Medium.ttf",
+              "./assets/fonts/GoogleSans-Bold.ttf",
+              "./assets/fonts/NotoSansBengali-Regular.ttf",
+              "./assets/fonts/NotoSansBengali-Medium.ttf",
+              "./assets/fonts/NotoSansBengali-Bold.ttf"
+            ]
+          }
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#BD632F",
+          "defaultChannel": "default",
+          "enableBackgroundRemoteNotifications": true
+        }
+      ],
+      "expo-task-manager",
       "expo-image",
       "expo-web-browser",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera to scan your animal"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow $(PRODUCT_NAME) to access your photos to add animal pictures.",
+          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera to take a profile photo."
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "buildArchs": [
+              "armeabi-v7a",
+              "arm64-v8a"
+            ],
+            "enableMinifyInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true
+          }
+        }
+      ],
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true,
@@ -47,9 +147,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "a4004164-d5d1-4e52-b2cd-86fff85fe566"
+        "projectId": "6ed7a045-7394-4031-b29b-291332536bb8"
       }
     },
-    "owner": "mdabusufianjidan"
+    "owner": "mdabusufian"
   }
 }

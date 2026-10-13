@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 interface Doctor {
   id: string;
@@ -20,7 +21,14 @@ interface Doctor {
   image: any;
 }
 
+function visitTypeLabelKey(value: string): string {
+  if (value === 'Online') return 'billingDetails.visitTypes.online';
+  if (value === 'Physical') return 'billingDetails.visitTypes.physical';
+  return value;
+}
+
 export default function BillingDetailsScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const params = useLocalSearchParams();
 
@@ -32,7 +40,7 @@ export default function BillingDetailsScreen() {
       location: 'Cardiology Center, USA',
       rating: 5,
       reviews: 1872,
-      image: require('@/assets/images/doctor.png'),
+      image: require('@/assets/images/doctor.webp'),
     },
     '2': {
       id: '2',
@@ -41,7 +49,7 @@ export default function BillingDetailsScreen() {
       location: "Women's Clinic, Seattle, USA",
       rating: 4.9,
       reviews: 127,
-      image: require('@/assets/images/jessica_doctor.png'),
+      image: require('@/assets/images/jessica_doctor.webp'),
     },
     '3': {
       id: '3',
@@ -50,7 +58,7 @@ export default function BillingDetailsScreen() {
       location: 'Maple Associates, NY, USA',
       rating: 4.7,
       reviews: 5223,
-      image: require('@/assets/images/michael_doctor.png'),
+      image: require('@/assets/images/michael_doctor.webp'),
     },
   };
 
@@ -58,11 +66,11 @@ export default function BillingDetailsScreen() {
   
   // Format Date value nicely
   const selectedDay = params.day ? String(params.day) : '28';
-  const selectedMonthYear = 'December 2026';
+  const selectedMonthYear = t('billingDetails.monthYear');
   const selectedTime = params.timeSlot ? String(params.timeSlot) : '09.00 AM';
   const selectedVisitType = params.visitType ? String(params.visitType) : 'Online';
 
-  const fullDateDisplay = `Mon, ${selectedDay} ${selectedMonthYear}`;
+  const fullDateDisplay = t('billingDetails.fullDate', { day: selectedDay, monthYear: selectedMonthYear });
 
   // Custom flexbox barcode generator (array of widths for stripes)
   const barcodePattern = [
@@ -88,7 +96,7 @@ export default function BillingDetailsScreen() {
 
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         <View style={styles.billCard}>
-          <Text style={styles.billTitle}>Billing Details</Text>
+          <Text style={styles.billTitle}>{t('billingDetails.title')}</Text>
           <View style={styles.divider} />
 
           {/* Doctor Info Row */}
@@ -104,58 +112,58 @@ export default function BillingDetailsScreen() {
               <View style={styles.ratingRow}>
                 <Text style={styles.starIcon}>⭐</Text>
                 <Text style={styles.ratingValue}>{doctor.rating}</Text>
-                <Text style={styles.reviewsText}>| {doctor.reviews} Reviews</Text>
+                <Text style={styles.reviewsText}>{t('billingDetails.reviews', { count: doctor.reviews })}</Text>
               </View>
             </View>
           </View>
 
           {/* Your Slot Section */}
-          <Text style={styles.sectionHeader}>Booking Reason</Text>
-          <Text style={styles.reasonText}>{params.reason || 'The symptom was extreme fever'}</Text>
+          <Text style={styles.sectionHeader}>{t('billingDetails.bookingReason')}</Text>
+          <Text style={styles.reasonText}>{params.reason || '—'}</Text>
 
           <View style={styles.divider} />
 
           {/* Your Slot Section */}
-          <Text style={styles.sectionHeader}>Your Slot</Text>
+          <Text style={styles.sectionHeader}>{t('billingDetails.yourSlot')}</Text>
           
           <View style={styles.slotDetailRow}>
-            <Text style={styles.slotLabel}>Hour</Text>
+            <Text style={styles.slotLabel}>{t('billingDetails.hour')}</Text>
             <Text style={styles.slotValue}>{selectedTime}</Text>
           </View>
           
           <View style={styles.slotDetailRow}>
-            <Text style={styles.slotLabel}>Dates</Text>
+            <Text style={styles.slotLabel}>{t('billingDetails.dates')}</Text>
             <Text style={styles.slotValue}>{fullDateDisplay}</Text>
           </View>
           
           <View style={styles.slotDetailRow}>
-            <Text style={styles.slotLabel}>Visit Type</Text>
-            <Text style={[styles.slotValue, styles.onlineText]}>{selectedVisitType}</Text>
+            <Text style={styles.slotLabel}>{t('billingDetails.visitType')}</Text>
+            <Text style={[styles.slotValue, styles.onlineText]}>{t(visitTypeLabelKey(selectedVisitType))}</Text>
           </View>
 
           <View style={styles.divider} />
 
           {/* Fees Details Section */}
-          <Text style={styles.sectionHeader}>Fees Details</Text>
+          <Text style={styles.sectionHeader}>{t('billingDetails.feesDetails')}</Text>
 
           <View style={styles.slotDetailRow}>
-            <Text style={styles.slotLabel}>Doctor's Fee</Text>
+            <Text style={styles.slotLabel}>{t('billingDetails.doctorsFee')}</Text>
             <Text style={styles.feeValue}>৳ 100</Text>
           </View>
 
           <View style={styles.slotDetailRow}>
-            <Text style={styles.slotLabel}>Apps fee</Text>
+            <Text style={styles.slotLabel}>{t('billingDetails.appsFee')}</Text>
             <Text style={styles.feeValue}>৳ 20</Text>
           </View>
 
           <View style={styles.slotDetailRow}>
-            <Text style={styles.totalLabel}>Total Fees</Text>
+            <Text style={styles.totalLabel}>{t('billingDetails.totalFees')}</Text>
             <Text style={styles.totalValue}>৳ 120</Text>
           </View>
 
           <View style={styles.slotDetailRow}>
-            <Text style={styles.slotLabel}>Status</Text>
-            <Text style={[styles.slotValue, styles.paidText]}>Paid</Text>
+            <Text style={styles.slotLabel}>{t('billingDetails.status')}</Text>
+            <Text style={[styles.slotValue, styles.paidText]}>{t('billingDetails.paid')}</Text>
           </View>
 
           {/* Custom flexbox barcode */}
@@ -186,7 +194,7 @@ export default function BillingDetailsScreen() {
           onPress={() => router.replace('/(tabs)')}
           activeOpacity={0.85}
         >
-          <Text style={styles.homeButtonText}>← Back to home</Text>
+          <Text style={styles.homeButtonText}>{t('billingDetails.backToHome')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

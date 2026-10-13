@@ -4,19 +4,19 @@ import {
   View,
   Text,
   TouchableOpacity,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
   ActivityIndicator,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Image } from 'expo-image';
 
 import { useRegisterMutation } from '@/store/authApi';
 import { PasswordField } from '@/components/password-field';
 
 export default function PasswordSetupScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const params = useLocalSearchParams<{
     name?: string;
@@ -25,7 +25,7 @@ export default function PasswordSetupScreen() {
     bvcNumber?: string;
   }>();
   
-  const doctorName = params.name || 'Doctor';
+  const doctorName = params.name || t('passwordSetup.doctorFallback');
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -37,27 +37,29 @@ export default function PasswordSetupScreen() {
     setErrorMessage('');
 
     if (!password) {
-      setErrorMessage('Password is required.');
+      setErrorMessage(t('passwordSetup.passwordRequired'));
       return;
     }
     if (password.length < 8) {
-      setErrorMessage('Password must be at least 8 characters.');
+      setErrorMessage(t('passwordSetup.passwordLength'));
       return;
     }
     if (password !== confirmPassword) {
-      setErrorMessage('Passwords do not match.');
+      setErrorMessage(t('passwordSetup.passwordMismatch'));
       return;
     }
 
     try {
-      await registerApi({
+      const payload = {
         name: params.name || '',
         identifier: params.identifier || '',
         password,
         role: params.role || 'doctor',
         bvcRegistrationNumber: params.bvcNumber,
-      }).unwrap();
-      
+      };
+      console.log('[1/8][FE password-setup.tsx] Doctor register submit →', payload);
+      await registerApi(payload).unwrap();
+      console.log('[1/8][FE password-setup.tsx] Register API success → navigating to /otp');
       router.push({
         pathname: '/otp',
         params: {
@@ -69,17 +71,18 @@ export default function PasswordSetupScreen() {
         }
       });
     } catch (err: any) {
-      setErrorMessage(err?.data?.message || 'Could not create account. Please try again.');
+      console.log('[1/8][FE password-setup.tsx] Register API FAILED →', err?.data ?? err?.message ?? err);
+      setErrorMessage(err?.data?.message || t('passwordSetup.createAccountError'));
     }
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
+      <KeyboardAwareScrollView
+        contentContainerStyle={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
-        <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
           {/* Logo */}
           <Image
             source={require('@/assets/images/splash-icon.png')}
@@ -88,18 +91,18 @@ export default function PasswordSetupScreen() {
           />
 
           {/* Welcome Text */}
-          <Text style={styles.title}>Welcome</Text>
+          <Text style={styles.title}>{t('passwordSetup.welcome')}</Text>
           <Text style={styles.doctorName}>{doctorName}</Text>
 
           {/* Password */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Password*</Text>
+            <Text style={styles.label}>{t('passwordSetup.passwordLabel')}</Text>
             <PasswordField value={password} onChangeText={setPassword} />
           </View>
 
           {/* Confirm Password */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Confirm Password*</Text>
+            <Text style={styles.label}>{t('passwordSetup.confirmLabel')}</Text>
             <PasswordField value={confirmPassword} onChangeText={setConfirmPassword} />
           </View>
 
@@ -116,11 +119,10 @@ export default function PasswordSetupScreen() {
             {isLoading ? (
               <ActivityIndicator color="#FFFFFF" />
             ) : (
-              <Text style={styles.continueButtonText}>Continue</Text>
+              <Text style={styles.continueButtonText}>{t('passwordSetup.continue')}</Text>
             )}
           </TouchableOpacity>
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }

@@ -5,14 +5,16 @@ import { Appointment } from '../appointments/appointment.entity';
 import { Animal } from '../animals/animal.entity';
 import { PrescriptionsService } from './prescriptions.service';
 import { PrescriptionsController } from './prescriptions.controller';
-import { CloudinaryModule } from '../cloudinary/cloudinary.module';
+import { S3Module } from '../s3/s3.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { DoctorsModule } from '../doctors/doctors.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Prescription, Appointment, Animal]),
-    CloudinaryModule,
+    S3Module,
     NotificationsModule,
+    DoctorsModule,
   ],
   controllers: [PrescriptionsController],
   providers: [PrescriptionsService],

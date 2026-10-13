@@ -7,11 +7,16 @@ import {
   Body,
   Query,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
   ApiBody,
+  ApiConsumes,
   ApiOperation,
   ApiParam,
   ApiQuery,
@@ -31,7 +36,11 @@ import type { JwtPayload } from '../auth/jwt-payload.interface';
 import { PaginatedResult } from '../common/paginated-result.interface';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Appointment, AppointmentStatus, ConsultationType } from '../appointments/appointment.entity';
+import {
+  Appointment,
+  AppointmentStatus,
+  ConsultationType,
+} from '../appointments/appointment.entity';
 import { DoctorTimeOff } from '../time-off/doctor-time-off.entity';
 
 @ApiTags('doctors')
@@ -88,6 +97,87 @@ export class DoctorsController {
     @Body() dto: UpdateDoctorProfileDto,
   ): Promise<Doctor> {
     return this.doctorsService.updateProfile(user.sub, dto);
+  }
+
+  @Post('me/photo')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.DOCTOR)
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiBearerAuth()
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { file: { type: 'string', format: 'binary' } },
+    },
+  })
+  @ApiOperation({ summary: 'Upload a profile photo for the current doctor' })
+  @ApiResponse({ status: 201, description: 'Photo uploaded and saved' })
+  async uploadMyPhoto(
+    @CurrentUser() user: JwtPayload,
+    @UploadedFile() file: Express.Multer.File,
+  ): Promise<Doctor> {
+    if (!file) {
+      throw new BadRequestException('A file is required');
+    }
+    return this.doctorsService.uploadPhoto(user.sub, file);
+  }
+
+  @Post('me/credential-documents')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.DOCTOR)
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiBearerAuth()
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { file: { type: 'string', format: 'binary' } },
+    },
+  })
+  @ApiOperation({
+    summary:
+      "Upload a credential document for the current doctor's profile and save it",
+  })
+  @ApiResponse({ status: 201, description: 'Document uploaded and saved' })
+  async uploadMyCredentialDocument(
+    @CurrentUser() user: JwtPayload,
+    @UploadedFile() file: Express.Multer.File,
+  ): Promise<Doctor> {
+    if (!file) {
+      throw new BadRequestException('A file is required');
+    }
+    return this.doctorsService.uploadCredentialDocument(user.sub, file);
+  }
+
+  @Patch('me/credential-documents')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.DOCTOR)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "Replace the current doctor's saved credential documents",
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        documents: {
+          type: 'array',
+          items: { type: 'string' },
+          example: ['https://bucket.s3.amazonaws.com/doctor-credentials/x.jpg'],
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 200, description: 'Credential documents updated' })
+  async updateMyCredentialDocuments(
+    @CurrentUser() user: JwtPayload,
+    @Body('documents') documents: string[],
+  ): Promise<Doctor> {
+    if (!Array.isArray(documents)) {
+      throw new BadRequestException('documents must be an array of strings');
+    }
+    return this.doctorsService.updateCredentialDocuments(user.sub, documents);
   }
 
   @Get(':id')
@@ -253,9 +343,7 @@ export class DoctorsController {
     status: 200,
     description: 'Doctor stats: patients count, consultations, experience',
   })
-  async getMyDashboardStats(
-    @CurrentUser() user: JwtPayload,
-  ) {
+  async getMyDashboardStats(@CurrentUser() user: JwtPayload) {
     const doctor = await this.doctorsService.getDoctorByUserId(user.sub);
     if (!doctor) {
       throw new ForbiddenException('No doctor profile linked to this account');
@@ -288,9 +376,21 @@ export class DoctorsController {
   @Get(':id/schedule')
   @ApiOperation({ summary: 'Get doctor schedule with optional filters' })
   @ApiParam({ name: 'id', example: '1' })
-  @ApiQuery({ name: 'date', required: false, description: 'Filter by date (YYYY-MM-DD)' })
-  @ApiQuery({ name: 'consultationType', required: false, enum: ConsultationType })
-  @ApiQuery({ name: 'status', required: false, description: 'Filter by status' })
+  @ApiQuery({
+    name: 'date',
+    required: false,
+    description: 'Filter by date (YYYY-MM-DD)',
+  })
+  @ApiQuery({
+    name: 'consultationType',
+    required: false,
+    enum: ConsultationType,
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    description: 'Filter by status',
+  })
   @ApiQuery({ name: 'month', required: false, description: 'Month (1-12)' })
   @ApiQuery({ name: 'year', required: false, description: 'Year (e.g. 2026)' })
   @ApiResponse({ status: 200, description: 'Doctor schedule' })
@@ -317,8 +417,19 @@ export class DoctorsController {
         dayEnd,
       });
     } else if (month && year) {
-      const startDate = new Date(parseInt(year, 10), parseInt(month, 10) - 1, 1);
-      const endDate = new Date(parseInt(year, 10), parseInt(month, 10), 0, 23, 59, 59);
+      const startDate = new Date(
+        parseInt(year, 10),
+        parseInt(month, 10) - 1,
+        1,
+      );
+      const endDate = new Date(
+        parseInt(year, 10),
+        parseInt(month, 10),
+        0,
+        23,
+        59,
+        59,
+      );
       qb.andWhere('a.startAt >= :startDate AND a.startAt <= :endDate', {
         startDate,
         endDate,
@@ -326,7 +437,9 @@ export class DoctorsController {
     }
 
     if (consultationType) {
-      qb.andWhere('a.consultationType = :consultationType', { consultationType });
+      qb.andWhere('a.consultationType = :consultationType', {
+        consultationType,
+      });
     }
 
     if (status) {
@@ -345,11 +458,24 @@ export class DoctorsController {
   }
 
   @Get(':id/schedule/list')
-  @ApiOperation({ summary: 'Get doctor schedule as flat list for current month (ascending)' })
+  @ApiOperation({
+    summary: 'Get doctor schedule as flat list for current month (ascending)',
+  })
   @ApiParam({ name: 'id', example: '1' })
-  @ApiQuery({ name: 'month', required: false, description: 'Month (1-12), default current' })
-  @ApiQuery({ name: 'year', required: false, description: 'Year, default current' })
-  @ApiResponse({ status: 200, description: 'Flat list of appointments sorted by date ascending' })
+  @ApiQuery({
+    name: 'month',
+    required: false,
+    description: 'Month (1-12), default current',
+  })
+  @ApiQuery({
+    name: 'year',
+    required: false,
+    description: 'Year, default current',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Flat list of appointments sorted by date ascending',
+  })
   async getDoctorScheduleList(
     @Param('id') id: string,
     @Query('month') month?: string,

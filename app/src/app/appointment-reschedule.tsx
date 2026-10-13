@@ -7,14 +7,21 @@ import {
   ScrollView,
   Image,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSelector } from 'react-redux';
+import type { RootState } from '@/store/store';
 import {
+  useGetBookingByIdQuery,
   useGetDoctorBookingsQuery,
   useRescheduleBookingMutation,
 } from '@/store/doctorPortalApi';
+import { useGetSlotsQuery } from '@/store/doctorsApi';
+import { apiErrorMessage } from '@/utils/api-error';
+import { useTranslation } from 'react-i18next';
 
 function getDaysInMonth(year: number, month: number): number {
   return new Date(year, month + 1, 0).getDate();
@@ -37,29 +44,67 @@ function isSameDay(a: Date, b: Date): boolean {
 }
 
 const MONTH_NAMES = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
+  'appointmentReschedule.months.january', 'appointmentReschedule.months.february', 'appointmentReschedule.months.march',
+  'appointmentReschedule.months.april', 'appointmentReschedule.months.may', 'appointmentReschedule.months.june',
+  'appointmentReschedule.months.july', 'appointmentReschedule.months.august', 'appointmentReschedule.months.september',
+  'appointmentReschedule.months.october', 'appointmentReschedule.months.november', 'appointmentReschedule.months.december',
 ];
-const DAY_LETTERS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-const TIME_SLOTS = [
-  '07:00 PM', '07:30 PM', '08:00 PM', '08:30 PM',
-  '09:00 PM', '09:30 PM', '10:00 PM',
-];
+const DAY_LETTERS = ['appointmentReschedule.dayShort.sun', 'appointmentReschedule.dayShort.mon', 'appointmentReschedule.dayShort.tue', 'appointmentReschedule.dayShort.wed', 'appointmentReschedule.dayShort.thu', 'appointmentReschedule.dayShort.fri', 'appointmentReschedule.dayShort.sat'];
 
 export default function AppointmentRescheduleScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { data: bookings = [] } = useGetDoctorBookingsQuery();
+  const isDoctor = useSelector((state: RootState) => state.auth.user?.role) === 'doctor';
+  const {
+    data: fetchedAppointment,
+    isLoading: idLoading,
+  } = useGetBookingByIdQuery(String(id ?? ''), { skip: !id });
+  const { data: bookings = [], isLoading: listLoading } = useGetDoctorBookingsQuery();
   const [rescheduleBooking, { isLoading }] = useRescheduleBookingMutation();
 
-  const appointment = bookings.find((b) => String(b.id) === id);
+  const appointment = fetchedAppointment ?? bookings.find((b) => String(b.id) === id);
 
-  const [selectedDate, setSelectedDate] = useState<Date | null>(
-    appointment ? new Date(appointment.startAt) : new Date()
-  );
+  const [selectedDate, setSelectedDate] = useState<Date | null>(() => {
+    // Past appointments can't be rescheduled to their old date — default to today.
+    if (appointment) {
+      const start = new Date(appointment.startAt);
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      if (start >= todayStart) return start;
+    }
+    return new Date();
+  });
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
+
+  const doctorId = appointment ? String(appointment.doctorId) : '';
+  const selectedDateStr = selectedDate ? formatDateKey(selectedDate) : '';
+  const { data: timeSlots = [], isLoading: slotsLoading } = useGetSlotsQuery(
+    { doctorId, date: selectedDateStr },
+    { skip: !doctorId || !selectedDateStr }
+  );
+
+  if (!appointment && (idLoading || listLoading)) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backBtn}
+            onPress={() => router.back()}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="arrow-back" size={20} color="#BD632F" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>{t('appointmentReschedule.title')}</Text>
+          <View style={{ width: 40 }} />
+        </View>
+        <View style={styles.emptyContainer}>
+          <ActivityIndicator size="small" color="#BD632F" />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (!appointment) {
     return (
@@ -72,24 +117,26 @@ export default function AppointmentRescheduleScreen() {
           >
             <Ionicons name="arrow-back" size={20} color="#BD632F" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Appointments Details</Text>
+          <Text style={styles.headerTitle}>{t('appointmentReschedule.title')}</Text>
           <View style={{ width: 40 }} />
         </View>
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>Appointment not found</Text>
+          <Text style={styles.emptyText}>{t('appointmentReschedule.notFound')}</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   const displayName =
-    appointment.animalName || appointment.patientName || `Patient #${appointment.patientId}`;
+    appointment.animalName || appointment.patientName || t('appointmentReschedule.patient');
 
   const year = currentMonth.getFullYear();
   const month = currentMonth.getMonth();
   const daysInMonth = getDaysInMonth(year, month);
   const firstDay = getFirstDayOfMonth(year, month);
   const blanks = Array.from({ length: firstDay }, (_, i) => i);
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
 
   const goToPreviousMonth = () => {
     const prev = new Date(year, month - 1, 1);
@@ -103,7 +150,7 @@ export default function AppointmentRescheduleScreen() {
 
   const handleReschedule = async () => {
     if (!selectedDate || !selectedTime) {
-      Alert.alert('Required', 'Please select a date and time.');
+      Alert.alert(t('appointmentReschedule.alerts.required'), t('appointmentReschedule.alerts.selectDateTime'));
       return;
     }
     try {
@@ -113,9 +160,21 @@ export default function AppointmentRescheduleScreen() {
         date: dateStr,
         time: selectedTime,
       }).unwrap();
-      router.replace('/appointments');
-    } catch {
-      Alert.alert('Error', 'Failed to reschedule appointment. Please try again.');
+      Alert.alert(t('appointmentReschedule.alerts.successTitle'), t('appointmentReschedule.alerts.rescheduled'));
+      const target = isDoctor ? '/appointments' : '/my-appointments';
+      try {
+        // Drop the details/reschedule screens from the stack so Back from the
+        // list returns to where the flow started instead of the old booking.
+        router.dismissAll();
+        router.navigate(target);
+      } catch {
+        router.replace(target);
+      }
+    } catch (err) {
+      Alert.alert(
+        t('appointmentReschedule.alerts.errorTitle'),
+        apiErrorMessage(err, t('appointmentReschedule.alerts.rescheduleFailed')),
+      );
     }
   };
 
@@ -129,7 +188,7 @@ export default function AppointmentRescheduleScreen() {
         >
           <Ionicons name="arrow-back" size={20} color="#BD632F" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Appointments Details</Text>
+        <Text style={styles.headerTitle}>{t('appointmentReschedule.title')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -148,15 +207,19 @@ export default function AppointmentRescheduleScreen() {
             )}
             <View style={styles.cardInfo}>
               <Text style={styles.cardName}>{displayName}</Text>
-              {appointment.animalSpecies && (
+              {(appointment.animalSpecies || appointment.animalBreed || appointment.animalAge) && (
                 <Text style={styles.cardDetail}>
-                  {appointment.animalSpecies}
-                  {appointment.animalAge ? ` · ${appointment.animalAge}` : ''}
-                  {appointment.animalBreed ? ` · ${appointment.animalBreed}` : ''}
+                  {[
+                    appointment.animalSpecies,
+                    appointment.animalAge,
+                    appointment.animalBreed,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
                 </Text>
               )}
-              {appointment.patientName && (
-                <Text style={styles.cardOwner}>Owner: {appointment.patientName}</Text>
+              {appointment.animalName && appointment.patientName && (
+                <Text style={styles.cardOwner}>{t('appointmentReschedule.owner', { name: appointment.patientName })}</Text>
               )}
             </View>
           </View>
@@ -178,14 +241,14 @@ export default function AppointmentRescheduleScreen() {
           </View>
         </View>
 
-        <Text style={styles.sectionTitle}>Select date</Text>
+        <Text style={styles.sectionTitle}>{t('appointmentReschedule.selectDate')}</Text>
         <View style={styles.calendarContainer}>
           <View style={styles.calendarHeader}>
             <TouchableOpacity onPress={goToPreviousMonth} activeOpacity={0.7}>
               <Ionicons name="chevron-back" size={20} color="#1A1817" />
             </TouchableOpacity>
             <Text style={styles.monthTitle}>
-              {MONTH_NAMES[month]} {year}
+              {t(MONTH_NAMES[month])} {year}
             </Text>
             <TouchableOpacity onPress={goToNextMonth} activeOpacity={0.7}>
               <Ionicons name="chevron-forward" size={20} color="#1A1817" />
@@ -194,7 +257,7 @@ export default function AppointmentRescheduleScreen() {
 
           <View style={styles.dayHeaderRow}>
             {DAY_LETTERS.map((d, i) => (
-              <Text key={i} style={styles.dayHeaderText}>{d}</Text>
+              <Text key={i} style={styles.dayHeaderText}>{t(d)}</Text>
             ))}
           </View>
 
@@ -205,14 +268,23 @@ export default function AppointmentRescheduleScreen() {
             {Array.from({ length: daysInMonth }, (_, i) => {
               const day = i + 1;
               const date = new Date(year, month, day);
+              const isPastDate = date < startOfToday;
               const isTodayDate = isSameDay(date, new Date());
               const isSelected = selectedDate && isSameDay(date, selectedDate);
 
               return (
                 <TouchableOpacity
                   key={day}
-                  style={styles.dayCell}
-                  onPress={() => setSelectedDate(date)}
+                  style={[styles.dayCell, isPastDate && styles.dayCellDisabled]}
+                  onPress={
+                    isPastDate
+                      ? undefined
+                      : () => {
+                          setSelectedDate(date);
+                          setSelectedTime(null);
+                        }
+                  }
+                  disabled={isPastDate}
                   activeOpacity={0.7}
                 >
                   <View
@@ -227,6 +299,7 @@ export default function AppointmentRescheduleScreen() {
                         styles.dayNumberText,
                         isTodayDate && !isSelected && styles.dayNumberTextToday,
                         isSelected && styles.dayNumberTextSelected,
+                        isPastDate && !isSelected && styles.dayNumberTextDisabled,
                       ]}
                     >
                       {day}
@@ -238,29 +311,35 @@ export default function AppointmentRescheduleScreen() {
           </View>
         </View>
 
-        <Text style={styles.sectionTitle}>Select time</Text>
-        <View style={styles.timeSlotsRow}>
-          {TIME_SLOTS.map((slot) => (
-            <TouchableOpacity
-              key={slot}
-              style={[
-                styles.timeSlot,
-                selectedTime === slot && styles.timeSlotActive,
-              ]}
-              onPress={() => setSelectedTime(slot)}
-              activeOpacity={0.7}
-            >
-              <Text
+        <Text style={styles.sectionTitle}>{t('appointmentReschedule.selectTime')}</Text>
+        {slotsLoading ? (
+          <ActivityIndicator size="small" color="#BD632F" style={{ marginTop: 12 }} />
+        ) : timeSlots.length === 0 ? (
+          <Text style={styles.emptyText}>{t('appointmentReschedule.noSlots')}</Text>
+        ) : (
+          <View style={styles.timeSlotsRow}>
+            {timeSlots.map((slot) => (
+              <TouchableOpacity
+                key={slot}
                 style={[
-                  styles.timeSlotText,
-                  selectedTime === slot && styles.timeSlotTextActive,
+                  styles.timeSlot,
+                  selectedTime === slot && styles.timeSlotActive,
                 ]}
+                onPress={() => setSelectedTime(slot)}
+                activeOpacity={0.7}
               >
-                {slot}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+                <Text
+                  style={[
+                    styles.timeSlotText,
+                    selectedTime === slot && styles.timeSlotTextActive,
+                  ]}
+                >
+                  {slot}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
       </ScrollView>
 
       <View style={styles.bottomContainer}>
@@ -271,7 +350,7 @@ export default function AppointmentRescheduleScreen() {
           disabled={isLoading}
         >
           <Text style={styles.rescheduleBtnText}>
-            {isLoading ? 'Rescheduling...' : 'Reschedule'}
+            {isLoading ? t('appointmentReschedule.rescheduling') : t('appointmentReschedule.reschedule')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -371,6 +450,8 @@ const styles = StyleSheet.create({
   dayNumberText: { fontSize: 14, fontWeight: '500', color: '#1A1817' },
   dayNumberTextToday: { color: '#BD632F', fontWeight: '700' },
   dayNumberTextSelected: { color: '#FFFFFF', fontWeight: '700' },
+  dayNumberTextDisabled: { color: '#C9C3BD' },
+  dayCellDisabled: { opacity: 0.5 },
   timeSlotsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',

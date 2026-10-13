@@ -10,42 +10,39 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
-import {
-  useGetMySubscriptionQuery,
-  useCancelSubscriptionMutation,
-} from '@/store/subscriptionsApi';
+import { SvgXml } from 'react-native-svg';
+import { useGetMySubscriptionQuery } from '@/store/subscriptionsApi';
 import { SUBSCRIPTION_PLANS } from '@/constants/subscription-plans';
+import {
+  backButtonSvg,
+  subscriptionDeleteSvg,
+  tintSvg,
+} from '@/components/icons/svg-icon-sources';
 
 export default function SubscriptionScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { data: mySubscription, isLoading: subLoading } = useGetMySubscriptionQuery();
-  const [cancelSubscription, { isLoading: cancelling }] = useCancelSubscriptionMutation();
 
   const handleManageBillings = () => {
-    Alert.alert('Manage Billings', 'Redirecting to payment billing management portal...');
+    Alert.alert(t('subscription.alerts.manageTitle'), t('subscription.alerts.manageMsg'));
+  };
+
+  const handlePlanPress = () => {
+    Alert.alert(
+      t('subscription.alerts.comingSoonTitle'),
+      t('subscription.alerts.comingSoonMsg'),
+      [
+        { text: t('subscription.alerts.ok'), style: 'cancel' },
+        { text: t('subscription.alerts.contactUs'), onPress: () => router.push('/help-support') },
+      ]
+    );
   };
 
   const handleCancelSubscription = () => {
-    Alert.alert(
-      'Cancel Subscriptions?',
-      'Are you sure you want to cancel your subscription? You will lose access to premium features.',
-      [
-        { text: 'Keep Plan', style: 'cancel' },
-        {
-          text: 'Confirm Cancel',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await cancelSubscription().unwrap();
-              Alert.alert('Cancelled', 'Subscription auto-renewal has been cancelled.');
-            } catch {
-              Alert.alert('Error', 'Failed to cancel subscription');
-            }
-          },
-        },
-      ]
-    );
+    router.back();
   };
 
   if (subLoading) {
@@ -53,9 +50,9 @@ export default function SubscriptionScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} activeOpacity={0.8}>
-            <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+            <SvgXml width={20} height={20} xml={backButtonSvg} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Subscription</Text>
+          <Text style={styles.headerTitle}>{t('subscription.title')}</Text>
           <View style={{ width: 42 }} />
         </View>
         <View style={styles.loadingContainer}>
@@ -69,9 +66,9 @@ export default function SubscriptionScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} activeOpacity={0.8}>
-          <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+          <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Subscription</Text>
+        <Text style={styles.headerTitle}>{t('subscription.title')}</Text>
         <View style={{ width: 42 }} />
       </View>
 
@@ -87,14 +84,19 @@ export default function SubscriptionScreen() {
             : '';
 
           return (
-            <View key={plan.id} style={styles.planCard}>
+            <TouchableOpacity
+              key={plan.id}
+              style={styles.planCard}
+              activeOpacity={0.85}
+              onPress={handlePlanPress}
+            >
               <Text style={styles.planTitle}>{plan.name}</Text>
 
               {isCurrentPlan && mySubscription ? (
                 <View style={styles.innerPlanBox}>
-                  <Text style={styles.innerLabel}>Current Plan</Text>
+                  <Text style={styles.innerLabel}>{t('subscription.currentPlan')}</Text>
                   <Text style={styles.innerPrice}>${plan.price.toFixed(2)}</Text>
-                  <Text style={styles.innerBilling}>Next Billing : {nextBillingDate}</Text>
+                  <Text style={styles.innerBilling}>{t('subscription.nextBilling', { date: nextBillingDate })}</Text>
                 </View>
               ) : (
                 <View style={styles.priceBox}>
@@ -112,28 +114,21 @@ export default function SubscriptionScreen() {
                   </View>
                 ))}
               </View>
-            </View>
+            </TouchableOpacity>
           );
         })}
 
         <TouchableOpacity style={styles.manageBtn} onPress={handleManageBillings} activeOpacity={0.85}>
-          <Text style={styles.manageBtnText}>Manage Billings</Text>
+          <Text style={styles.manageBtnText}>{t('subscription.manageBillings')}</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.cancelBtn, cancelling && { opacity: 0.5 }]}
-          onPress={handleCancelSubscription}
-          activeOpacity={0.85}
-          disabled={cancelling}
-        >
-          {cancelling ? (
-            <ActivityIndicator size="small" color="#E53935" />
-          ) : (
-            <>
-              <Ionicons name="trash-outline" size={18} color="#E53935" />
-              <Text style={styles.cancelBtnText}>Cancel Subscriptions</Text>
-            </>
-          )}
+        <TouchableOpacity style={styles.cancelBtn} onPress={handleCancelSubscription} activeOpacity={0.85}>
+          <SvgXml
+            width={18}
+            height={18}
+            xml={tintSvg(subscriptionDeleteSvg, 'white', '#E53935')}
+          />
+          <Text style={styles.cancelBtnText}>{t('subscription.cancelSubscription')}</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

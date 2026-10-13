@@ -56,7 +56,12 @@ export async function refreshAccessToken(
         return null;
       }
 
-      const user = jwtToAuthUser(data.accessToken);
+      const refreshedUser = jwtToAuthUser(data.accessToken);
+      // Keep the name from the current session if the new token doesn't carry
+      // one — otherwise a routine refresh would wipe the greeting name.
+      const user = refreshedUser
+        ? { ...refreshedUser, name: refreshedUser.name ?? getState().auth.user?.name }
+        : null;
       dispatch(
         setCredentials({ user, token: data.accessToken, refreshToken: data.refreshToken }),
       );

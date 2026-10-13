@@ -1,4 +1,4 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, Logger } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
@@ -16,44 +16,85 @@ import { RefreshTokenDto } from './dto/refresh-token.dto';
 @Throttle({ default: { limit: 10, ttl: 60000 } })
 @Controller('auth')
 export class AuthController {
+  private readonly logger = new Logger(AuthController.name);
+
   constructor(private readonly authService: AuthService) {}
 
   @Post('register')
   @ApiOperation({ summary: 'Register a new account with a password' })
   async register(@Body() body: RegisterDto) {
-    return this.authService.register(body);
+    this.logger.log(
+      `[REQ] POST /auth/register identifier=${body.identifier} name="${body.name}" role=${body.role}`,
+    );
+    const result = await this.authService.register(body);
+    this.logger.log(`[RES] POST /auth/register → ${result.message}`);
+    return result;
   }
 
   @Post('login')
   @ApiOperation({ summary: 'Log in with phone/email + password' })
   async login(@Body() body: LoginDto) {
-    return this.authService.login(body.identifier, body.password);
+    this.logger.log(`[REQ] POST /auth/login identifier=${body.identifier}`);
+    const result = await this.authService.login(body.identifier, body.password);
+    this.logger.log(
+      `[RES] POST /auth/login → OK userId=${result.user?.id} role=${result.user?.role}`,
+    );
+    return result;
   }
 
   @Post('forgot-password')
   @ApiOperation({ summary: 'Request a password reset OTP' })
   async forgotPassword(@Body() body: ForgotPasswordDto) {
-    return this.authService.forgotPassword(body.identifier);
+    this.logger.log(
+      `[REQ] POST /auth/forgot-password identifier=${body.identifier}`,
+    );
+    const result = await this.authService.forgotPassword(body.identifier);
+    this.logger.log(`[RES] POST /auth/forgot-password → ${result.message}`);
+    return result;
   }
 
   @Post('reset-password')
   @ApiOperation({ summary: 'Reset password using a verified reset token' })
   async resetPassword(@Body() body: ResetPasswordDto) {
-    return this.authService.resetPassword(body.resetToken, body.newPassword);
+    this.logger.log(
+      `[REQ] POST /auth/reset-password newPasswordLen=${body.newPassword?.length}`,
+    );
+    const result = await this.authService.resetPassword(
+      body.resetToken,
+      body.newPassword,
+    );
+    this.logger.log(`[RES] POST /auth/reset-password → ${result.message}`);
+    return result;
   }
 
   @Post('send-otp')
   @ApiOperation({ summary: 'Send an OTP code to a phone number or email' })
   @ApiResponse({ status: 201, description: 'OTP generated and sent' })
   async sendOtp(@Body() body: SendOtpDto) {
-    return this.authService.sendOtp(body.phone, body.purpose);
+    this.logger.log(
+      `[REQ] POST /auth/send-otp phone=${body.phone} purpose=${body.purpose}`,
+    );
+    const result = await this.authService.sendOtp(body.phone, body.purpose);
+    this.logger.log(`[RES] POST /auth/send-otp → ${result.message}`);
+    return result;
   }
 
   @Post('verify-otp')
   @ApiOperation({ summary: 'Verify an OTP code and receive a session token' })
   @ApiResponse({ status: 201, description: 'OTP verification result' })
   async verifyOtp(@Body() body: VerifyOtpDto) {
-    return this.authService.verifyOtp(body.phone, body.code, body.purpose);
+    this.logger.log(
+      `[REQ] POST /auth/verify-otp phone=${body.phone} code=${body.code} purpose=${body.purpose}`,
+    );
+    const result = await this.authService.verifyOtp(
+      body.phone,
+      body.code,
+      body.purpose,
+    );
+    this.logger.log(
+      `[RES] POST /auth/verify-otp → verified=${result.verified} message="${result.message}"`,
+    );
+    return result;
   }
 
   @Post('oauth/google')

@@ -7,12 +7,13 @@ export interface Language {
 export const LANGUAGES: Language[] = [
   { id: 'en', name: 'English', nativeName: 'Default' },
   { id: 'bn', name: 'Bengali', nativeName: 'বাংলা' },
-  { id: 'hi', name: 'Hindi', nativeName: 'हिन्दी' },
-  { id: 'ur', name: 'Urdu', nativeName: 'اردو' },
 ];
 
+const LANGUAGE_CODES: Record<string, string> = {
+  en: 'EN',
+  bn: 'BN',
+};
+
 export function getLanguageCode(id: string): string {
-  const lang = LANGUAGES.find((l) => l.id === id);
-  if (!lang) return 'EN';
-  return lang.name.slice(0, 2).toUpperCase();
+  return LANGUAGE_CODES[id] ?? 'EN';
 }

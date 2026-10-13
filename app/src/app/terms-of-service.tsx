@@ -8,9 +8,42 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
+import { openSupportEmail, SUPPORT_EMAIL } from '@/lib/contact';
+
+const LAST_UPDATED = 'October 1, 2026';
+
+type Section = {
+  headingKey: string;
+  bodyKey?: string;
+  bulletsKeys?: string[];
+  contact?: { labelKey: string; value: string };
+};
+
+const SECTIONS: Section[] = [
+  { headingKey: 'termsOfService.s1.heading', bodyKey: 'termsOfService.s1.body' },
+  { headingKey: 'termsOfService.s2.heading', bodyKey: 'termsOfService.s2.body' },
+  { headingKey: 'termsOfService.s3.heading', bodyKey: 'termsOfService.s3.body' },
+  { headingKey: 'termsOfService.s4.heading', bodyKey: 'termsOfService.s4.body' },
+  {
+    headingKey: 'termsOfService.s5.heading',
+    bulletsKeys: ['termsOfService.s5.bullet1', 'termsOfService.s5.bullet2'],
+  },
+  { headingKey: 'termsOfService.s6.heading', bodyKey: 'termsOfService.s6.body' },
+  { headingKey: 'termsOfService.s7.heading', bodyKey: 'termsOfService.s7.body' },
+  { headingKey: 'termsOfService.s8.heading', bodyKey: 'termsOfService.s8.body' },
+  { headingKey: 'termsOfService.s9.heading', bodyKey: 'termsOfService.s9.body' },
+  { headingKey: 'termsOfService.s10.heading', bodyKey: 'termsOfService.s10.body' },
+  {
+    headingKey: 'termsOfService.s11.heading',
+    bodyKey: 'termsOfService.s11.body',
+    contact: { labelKey: 'termsOfService.contactLabel', value: SUPPORT_EMAIL },
+  },
+];
 
 export default function TermsOfServiceScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
 
   return (
@@ -24,39 +57,40 @@ export default function TermsOfServiceScreen() {
         >
           <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Terms of Service</Text>
+        <Text style={styles.headerTitle}>{t('termsOfService.title')}</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Section 1 */}
-        <Text style={styles.sectionHeading}>1. Types of Data We Collect</Text>
-        <Text style={styles.paragraph}>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt
-          ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco
-          laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in
-          voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat
-          non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+        <Text style={styles.intro}>{t('termsOfService.intro')}</Text>
+        <Text style={styles.lastUpdated}>
+          {t('termsOfService.lastUpdated', { date: LAST_UPDATED })}
         </Text>
 
-        {/* Section 2 */}
-        <Text style={styles.sectionHeading}>2. Use of Your Personal Data</Text>
-        <Text style={styles.paragraph}>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt
-          ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco
-          laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in
-          voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat
-          non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-        </Text>
+        {SECTIONS.map((section) => (
+          <View key={section.headingKey}>
+            <Text style={styles.sectionHeading}>{t(section.headingKey)}</Text>
 
-        {/* Section 3 */}
-        <Text style={styles.sectionHeading}>3. Disclosure of Your Personal Data</Text>
-        <Text style={styles.paragraph}>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt
-          ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco
-          laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in
-          voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat
-          non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-        </Text>
+            {section.bodyKey ? <Text style={styles.paragraph}>{t(section.bodyKey)}</Text> : null}
+
+            {section.bulletsKeys?.map((bulletKey) => (
+              <View key={bulletKey} style={styles.bulletRow}>
+                <Text style={styles.bulletDot}>•</Text>
+                <Text style={styles.bulletText}>{t(bulletKey)}</Text>
+              </View>
+            ))}
+
+            {section.contact ? (
+              <View style={styles.contactRow}>
+                <Text style={styles.paragraph}>{t(section.contact.labelKey)} </Text>
+                <TouchableOpacity activeOpacity={0.7} onPress={openSupportEmail}>
+                  <Text style={styles.contactLink}>{section.contact.value}</Text>
+                </TouchableOpacity>
+              </View>
+            ) : null}
+          </View>
+        ))}
+
+        <Text style={styles.closing}>{t('termsOfService.closing')}</Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -92,6 +126,18 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 40,
   },
+  intro: {
+    fontSize: 14,
+    color: '#7C7672',
+    lineHeight: 22,
+  },
+  lastUpdated: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#9C9690',
+    marginTop: 6,
+    marginBottom: 4,
+  },
   sectionHeading: {
     fontSize: 16,
     fontWeight: '700',
@@ -103,5 +149,39 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#7C7672',
     lineHeight: 22,
+  },
+  bulletRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    marginBottom: 6,
+  },
+  bulletDot: {
+    fontSize: 14,
+    color: '#7C7672',
+    lineHeight: 22,
+  },
+  bulletText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#7C7672',
+    lineHeight: 22,
+  },
+  contactRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+  },
+  contactLink: {
+    fontSize: 14,
+    color: '#BD632F',
+    lineHeight: 22,
+    textDecorationLine: 'underline',
+  },
+  closing: {
+    fontSize: 14,
+    color: '#7C7672',
+    lineHeight: 22,
+    marginTop: 20,
   },
 });

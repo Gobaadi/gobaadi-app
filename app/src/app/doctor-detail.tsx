@@ -5,62 +5,107 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTranslation } from 'react-i18next';
+import { SvgXml } from 'react-native-svg';
+
+import {
+  backButtonSvg,
+  doctorCardLocationSvg,
+  doctorCardStarSvg,
+  doctorDetailArrowRightSvg,
+  doctorDetailAvailabilitySvg,
+  doctorDetailConfirmSlotSvg,
+  doctorNotificationSvg,
+} from '@/components/icons/svg-icon-sources';
 import { useGetDoctorByIdQuery } from '@/store/doctorsApi';
 import { useGetServicesQuery } from '@/store/servicesApi';
+import { useGetAvailabilityQuery } from '@/store/doctorPortalApi';
+import { DoctorAvatar } from '@/components/doctor-avatar';
+
+const DUMMY_AVAILABILITY = '6 AM - 9 PM';
+
+function formatTime12h(time?: string): string | null {
+  if (!time) return null;
+  const match = /^(\d{1,2}):(\d{2})$/.exec(time.trim());
+  if (!match) return null;
+  const hour = parseInt(match[1], 10);
+  const minute = match[2];
+  if (Number.isNaN(hour) || hour > 23) return null;
+  const period = hour >= 12 ? 'PM' : 'AM';
+  const hour12 = hour % 12 === 0 ? 12 : hour % 12;
+  return minute === '00' ? `${hour12} ${period}` : `${hour12}:${minute} ${period}`;
+}
 
 export default function DoctorDetailScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { id } = useLocalSearchParams();
   const doctorId = String(id || '');
 
   const { data: doctorData } = useGetDoctorByIdQuery(doctorId, { skip: !doctorId });
+  const { data: availability = [] } = useGetAvailabilityQuery(doctorId ? parseInt(doctorId, 10) : 0, {
+    skip: !doctorId,
+  });
   const { data: services = [] } = useGetServicesQuery(
     { providerType: 'doctor', providerId: doctorId ? parseInt(doctorId, 10) : undefined },
     { skip: !doctorId },
   );
+
+  const availabilityLabel = useMemo(() => {
+    const active = availability.filter((entry) => entry.isActive !== false);
+    if (active.length === 0) return DUMMY_AVAILABILITY;
+    const starts = active
+      .map((entry) => formatTime12h(entry.startTime))
+      .filter((value): value is string => Boolean(value));
+    const ends = active
+      .map((entry) => formatTime12h(entry.endTime))
+      .filter((value): value is string => Boolean(value));
+    if (starts.length === 0 || ends.length === 0) return DUMMY_AVAILABILITY;
+    const earliestStart = starts[0];
+    const latestEnd = ends[0];
+    const toMinutes = (value: string) => {
+      const match = /^(\d{1,2})(?::(\d{2}))? (AM|PM)$/.exec(value);
+      if (!match) return -1;
+      let hour = parseInt(match[1], 10) % 12;
+      if (match[3] === 'PM') hour += 12;
+      return hour * 60 + parseInt(match[2] ?? '0', 10);
+    };
+    const minStart = starts.reduce((min, cur) => (toMinutes(cur) < toMinutes(min) ? cur : min), earliestStart);
+    const maxEnd = ends.reduce((max, cur) => (toMinutes(cur) > toMinutes(max) ? cur : max), latestEnd);
+    return `${minStart} - ${maxEnd}`;
+  }, [availability]);
 
   const doctor = useMemo(() => {
     if (!doctorData) {
       return {
         id: '1',
         name: 'Dr. David Patel',
-        specialty: 'Veterinary Surgery',
+        specialty: t('doctorDetail.defaults.specialty'),
         location: 'Cardiology Center, USA',
         rating: 5,
         reviews: 1872,
-        image: require('@/assets/images/doctor.png'),
-        availability: '6 AM - 9 PM',
+        avatar: '',
+        availability: DUMMY_AVAILABILITY,
+        specializations: [] as string[],
       };
     }
     return {
       id: String(doctorData.id),
       name: doctorData.name,
       specialty: doctorData.specialty,
-      location: 'Uttar Badda, Dhaka',
+      location: doctorData.location || '',
       rating: doctorData.rating || 4.8,
       reviews: 124,
-      image: doctorData.avatar === 'jessica_doctor.png'
-        ? require('@/assets/images/jessica_doctor.png')
-        : require('@/assets/images/michael_doctor.png'),
-      availability: doctorData.avatar === 'jessica_doctor.png' ? '8 AM - 5 PM' : '6 AM - 9 PM',
+      avatar: doctorData.avatar ?? '',
+      availability: availabilityLabel,
+      specializations: doctorData.specializations ?? [],
     };
-  }, [doctorData]);
+  }, [doctorData, availabilityLabel, t]);
 
-  const specializations = [
-    'Veterinary clinical medicine',
-    'Veterinary geriatrics',
-    'Emergency and TRUMA CURE',
-    'Trained in Contrast Radiography by TANUVAS',
-    'Trained in Advance medical management of a major Dermatological Challenges in Dogs',
-    'Trained in Advance Feline Management by FCI',
-    'Trained in Canine Behaviour Management',
-    'Trained in Advance in Small Animal Renal Medicine and Renal Critical Care by TANUVAS',
-    'Trained in Pediatrics Health Management of Dogs and Cats by Dept of Vet Medicine, PGIVER, Jaipur Rajasthan',
-  ];
+  const specializations = doctor.specializations.length > 0 ? doctor.specializations.map((spec) => ({ key: spec, label: spec })) : [];
 
   return (
     <SafeAreaView style={styles.container}>
@@ -71,69 +116,101 @@ export default function DoctorDetailScreen() {
           onPress={() => router.back()}
           activeOpacity={0.8}
         >
-          <Text style={styles.buttonText}>←</Text>
+          <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>Doctor Detail</Text>
+        <Text style={styles.headerTitle}>{t('doctorDetail.title')}</Text>
 
-        <TouchableOpacity style={styles.circleButton} activeOpacity={0.8}>
-          <Text style={styles.buttonText}>🔔</Text>
+        <TouchableOpacity
+          style={styles.circleButton}
+          activeOpacity={0.8}
+          onPress={() => router.push('/notifications')}
+        >
+          <SvgXml width={20} height={20} xml={doctorNotificationSvg} />
         </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         {/* Doctor Main Card */}
         <View style={styles.doctorCard}>
-          <Image source={doctor.image} style={styles.doctorPortrait} />
+          <DoctorAvatar
+            name={doctor.name}
+            avatar={doctor.avatar}
+            size={88}
+            radius={20}
+            style={styles.doctorPortrait}
+          />
           <View style={styles.doctorDetails}>
             <Text style={styles.doctorName}>{doctor.name}</Text>
             <Text style={styles.doctorSpecialty}>{doctor.specialty}</Text>
-            <View style={styles.ratingLocationRow}>
-              <Text style={styles.locationPin}>📍</Text>
-              <Text style={styles.locationTextMeta}>{doctor.location}</Text>
-            </View>
+            {doctor.location ? (
+              <View style={styles.ratingLocationRow}>
+                <SvgXml width={11} height={11} xml={doctorCardLocationSvg} style={styles.locationPin} />
+                <Text style={styles.locationTextMeta}>{doctor.location}</Text>
+              </View>
+            ) : null}
             <View style={styles.ratingRow}>
-              <Text style={styles.starIcon}>⭐</Text>
+              <SvgXml width={11} height={11} xml={doctorCardStarSvg} style={styles.starIcon} />
               <Text style={styles.ratingValue}>{doctor.rating}</Text>
-              <Text style={styles.reviewsText}>| {doctor.reviews} Reviews</Text>
+              <Text style={styles.reviewsText}>{t('doctorDetail.reviews', { count: doctor.reviews })}</Text>
             </View>
           </View>
         </View>
 
         {/* Availability Card */}
-        <TouchableOpacity style={styles.availabilityCard} activeOpacity={0.85}>
+        <TouchableOpacity
+          style={styles.availabilityCard}
+          activeOpacity={0.85}
+          onPress={() => router.push({ pathname: '/book-slot', params: { id: doctor.id } })}
+        >
           <View style={styles.availabilityLeft}>
             <View style={styles.clockCircle}>
-              <Text style={styles.clockIcon}>🕐</Text>
+              <SvgXml width={28} height={28} xml={doctorDetailAvailabilitySvg} />
             </View>
             <View style={styles.availabilityMeta}>
-              <Text style={styles.availabilityTitle}>Availability</Text>
+              <Text style={styles.availabilityTitle}>{t('doctorDetail.availability')}</Text>
               <Text style={styles.availabilityTime}>{doctor.availability}</Text>
             </View>
           </View>
-          <Text style={styles.chevronRight}>❯</Text>
+          <SvgXml width={9} height={15} xml={doctorDetailArrowRightSvg} />
         </TouchableOpacity>
 
         {/* Specializations list */}
-        <View style={styles.specCard}>
-          <Text style={styles.specTitle}>Specializations</Text>
-          {specializations.map((spec, index) => (
-            <View key={index} style={styles.specBulletRow}>
+        {/* <View style={styles.specCard}>
+          <Text style={styles.specTitle}>{t('doctorDetail.specializationsTitle')}</Text>
+          {specializations?.map((spec) => (
+            <View key={spec.key} style={styles.specBulletRow}>
               <Text style={styles.bulletPoint}>•</Text>
-              <Text style={styles.bulletText}>{spec}</Text>
+              <Text style={styles.bulletText}>{spec.label}</Text>
             </View>
           ))}
+        </View> */}
+
+        <View style={styles.specCard}>
+          <Text style={styles.specTitle}>{t('doctorDetail.specializationsTitle')}</Text>
+          {specializations && specializations.length > 0 ? (
+            specializations.map((spec) => (
+              <View key={spec.key} style={styles.specBulletRow}>
+                <Text style={styles.bulletPoint}>•</Text>
+                <Text style={styles.bulletText}>{spec.label}</Text>
+              </View>
+            ))
+          ) : (
+            <Text style={styles.emptyText}>
+              {t('doctorDetail.noSpecializations', 'No specializations listed.')}
+            </Text>
+          )}
         </View>
 
         {/* Services offered */}
         {services.length > 0 && (
           <View style={[styles.specCard, { marginTop: 20 }]}>
-            <Text style={styles.specTitle}>Services</Text>
+            <Text style={styles.specTitle}>{t('doctorDetail.servicesTitle')}</Text>
             {services.map((service) => (
               <View key={service.id} style={styles.availabilityCard}>
                 <View style={styles.availabilityMeta}>
                   <Text style={styles.availabilityTitle}>{service.name}</Text>
-                  <Text style={styles.availabilityTime}>৳ {service.price} · {service.durationMinutes} min</Text>
+                  <Text style={styles.availabilityTime}>{t('doctorDetail.serviceMeta', { price: service.price, minutes: service.durationMinutes })}</Text>
                 </View>
               </View>
             ))}
@@ -148,7 +225,8 @@ export default function DoctorDetailScreen() {
           onPress={() => router.push({ pathname: '/book-slot', params: { id: doctor.id } })}
           activeOpacity={0.85}
         >
-          <Text style={styles.bookButtonText}>📅 Book Slot</Text>
+          <SvgXml width={20} height={20} xml={doctorDetailConfirmSlotSvg} style={styles.bookButtonIcon} />
+          <Text style={styles.bookButtonText}>{t('doctorDetail.bookSlot')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -179,11 +257,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#BD632F',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '700',
   },
   headerTitle: {
     fontSize: 20,
@@ -226,8 +299,6 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   locationPin: {
-    fontSize: 11,
-    color: '#9C9690',
     marginRight: 4,
   },
   locationTextMeta: {
@@ -239,7 +310,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   starIcon: {
-    fontSize: 11,
     marginRight: 4,
   },
   ratingValue: {
@@ -276,10 +346,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
   },
-  clockIcon: {
-    fontSize: 18,
-    color: '#BD632F',
-  },
   availabilityMeta: {
     justifyContent: 'center',
   },
@@ -293,11 +359,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#1A1817',
-  },
-  chevronRight: {
-    fontSize: 16,
-    color: '#BD632F',
-    fontWeight: '700',
   },
   specCard: {
     backgroundColor: '#FFFFFF',
@@ -330,6 +391,12 @@ const styles = StyleSheet.create({
     color: '#4C4844',
     lineHeight: 18,
   },
+  emptyText: {
+    fontSize: 14,
+    color: '#4C4844',
+    fontStyle: 'italic',
+    marginTop: 4,
+  },
   bottomBar: {
     position: 'absolute',
     bottom: 0,
@@ -345,6 +412,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#BD632F',
     height: 52,
     borderRadius: 26,
+    flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#BD632F',
@@ -352,6 +420,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 6,
     elevation: 3,
+  },
+  bookButtonIcon: {
+    marginRight: 8,
   },
   bookButtonText: {
     color: '#FFFFFF',

@@ -1,19 +1,21 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
 import { baseQueryWithReauth } from './base-query-with-reauth';
+import { doctorPortalApi } from './doctorPortalApi';
 
 export interface Consultation {
   id: number;
-  animalId: number;
+  patientId: number;
+  appointmentId: number;
   doctorId: number;
-  appointmentId?: number;
-  chiefComplaint?: string;
-  diagnosis?: string;
-  treatmentPlan?: string;
-  notes?: string;
-  status: string;
-  startedAt: string;
-  endedAt?: string;
+  type: string;
+  status: 'ONGOING' | 'COMPLETED' | string;
+  data: Record<string, any> & { startedAt?: string };
+  nextFollowUpAt?: string | null;
   createdAt: string;
+}
+
+export function consultationStartedAt(consultation: Consultation): string {
+  return consultation.data?.startedAt || consultation.createdAt;
 }
 
 export const consultationsApi = createApi({
@@ -21,44 +23,48 @@ export const consultationsApi = createApi({
   baseQuery: baseQueryWithReauth,
   tagTypes: ['Consultation'],
   endpoints: (builder) => ({
-    getByAnimal: builder.query<Consultation[], string>({
-      query: (animalId) => `/consultations/animal/${animalId}`,
-      providesTags: (_result, _error, animalId) => [{ type: 'Consultation', id: animalId }],
-    }),
     getById: builder.query<Consultation, string>({
       query: (id) => `/consultations/${id}`,
       providesTags: (_result, _error, id) => [{ type: 'Consultation', id }],
     }),
-    startConsultation: builder.mutation<Consultation, string>({
-      query: (id) => ({
-        url: `/consultations/${id}`,
-        method: 'PUT',
-        body: { status: 'IN_PROGRESS', startedAt: new Date().toISOString() },
-      }),
-      invalidatesTags: (_result, _error, id) => [{ type: 'Consultation', id }],
+    getForAppointment: builder.query<Consultation | null, string>({
+      query: (appointmentId) => `/consultations/appointment/${appointmentId}`,
+      providesTags: (_result, _error, appointmentId) => [
+        { type: 'Consultation', id: appointmentId },
+      ],
     }),
-    update: builder.mutation<Consultation, { id: string; data: Partial<Consultation> }>({
-      query: ({ id, data }) => ({
-        url: `/consultations/${id}`,
-        method: 'PUT',
-        body: data,
+    startForAppointment: builder.mutation<Consultation, string>({
+      query: (appointmentId) => ({
+        url: `/consultations/appointment/${appointmentId}`,
+        method: 'POST',
       }),
-      invalidatesTags: (_result, _error, { id }) => [{ type: 'Consultation', id }],
+      invalidatesTags: (_result, _error, appointmentId) => [
+        { type: 'Consultation', id: appointmentId },
+      ],
     }),
-    endConsultation: builder.mutation<any, string>({
+    endConsultation: builder.mutation<Consultation, string>({
       query: (id) => ({
         url: `/consultations/${id}/end`,
         method: 'POST',
       }),
-      invalidatesTags: (_result, _error, id) => [{ type: 'Consultation', id }],
+      // Invalidate every Consultation tag: the id here is the event id while
+      // getForAppointment is tagged by appointmentId, and other participants'
+      // chats must refetch too when a session ends.
+      invalidatesTags: () => [{ type: 'Consultation' }],
+      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          dispatch(doctorPortalApi.util.invalidateTags(['DoctorBookings']));
+        } catch {}
+      },
     }),
   }),
 });
 
 export const {
-  useGetByAnimalQuery,
   useGetByIdQuery,
-  useStartConsultationMutation,
-  useUpdateMutation,
+  useGetForAppointmentQuery,
+  useLazyGetForAppointmentQuery,
+  useStartForAppointmentMutation,
   useEndConsultationMutation,
 } = consultationsApi;

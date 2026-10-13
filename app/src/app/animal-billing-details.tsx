@@ -9,11 +9,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 import { useGetOrderQuery } from '@/store/ordersApi';
 
 export default function AnimalBillingDetailsScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { orderId } = useLocalSearchParams<{ orderId?: string }>();
   const { data: order } = useGetOrderQuery(orderId ?? '', { skip: !orderId });
   const item = order?.items?.[0];
@@ -35,30 +37,30 @@ export default function AnimalBillingDetailsScreen() {
 
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         <View style={styles.billCard}>
-          <Text style={styles.billTitle}>Billing Details</Text>
+          <Text style={styles.billTitle}>{t('animalBillingDetails.title')}</Text>
           <View style={styles.divider} />
 
           {/* Cow Summary Card */}
           <View style={styles.doctorRow}>
             <Image
-              source={require('@/assets/images/albino_buffalo.png')}
+              source={require('@/assets/images/albino_buffalo.webp')}
               style={styles.doctorPortrait}
             />
             <View style={styles.doctorDetails}>
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Item:</Text>
-                <Text style={styles.detailValue}>{item?.name ?? 'Loading...'}</Text>
+                <Text style={styles.detailLabel}>{t('animalBillingDetails.item')}</Text>
+                <Text style={styles.detailValue}>{item?.name ?? t('animalBillingDetails.loading')}</Text>
               </View>
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Quantity:</Text>
+                <Text style={styles.detailLabel}>{t('animalBillingDetails.quantity')}</Text>
                 <Text style={styles.detailValue}>{item?.quantity ?? '—'}</Text>
               </View>
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Order ID:</Text>
+                <Text style={styles.detailLabel}>{t('animalBillingDetails.orderId')}</Text>
                 <Text style={styles.detailValue}>{order?.id ?? '—'}</Text>
               </View>
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Status:</Text>
+                <Text style={styles.detailLabel}>{t('animalBillingDetails.status')}</Text>
                 <Text style={styles.detailValue}>{order?.status ?? '—'}</Text>
               </View>
             </View>
@@ -68,34 +70,34 @@ export default function AnimalBillingDetailsScreen() {
           <View style={styles.addressCard}>
             <View style={styles.addressHeader}>
               <Text style={styles.addressPin}>📍</Text>
-              <Text style={styles.addressType}>Delivery Address</Text>
+              <Text style={styles.addressType}>{t('animalBillingDetails.deliveryAddress')}</Text>
             </View>
             <Text style={styles.addressText}>
               {order?.deliveryAddress
                 ? `${order.deliveryAddress.addressLine}, ${order.deliveryAddress.upazila}, ${order.deliveryAddress.district}-${order.deliveryAddress.postalCode}.`
-                : 'Loading...'}
+                : t('animalBillingDetails.loading')}
             </Text>
           </View>
 
           {/* Pricing Details Section */}
           <View style={styles.slotDetailRow}>
-            <Text style={styles.slotLabel}>Subtotal</Text>
+            <Text style={styles.slotLabel}>{t('animalBillingDetails.subtotal')}</Text>
             <Text style={styles.feeValue}>৳ {order ? (order.netAmount - order.tax - order.shippingFee).toLocaleString() : '—'}</Text>
           </View>
 
           <View style={styles.slotDetailRow}>
-            <Text style={styles.slotLabel}>Tax</Text>
+            <Text style={styles.slotLabel}>{t('animalBillingDetails.tax')}</Text>
             <Text style={styles.feeValue}>৳ {order?.tax.toLocaleString() ?? '—'}</Text>
           </View>
 
           <View style={styles.slotDetailRow}>
-            <Text style={styles.slotLabel}>Delivery Charge</Text>
+            <Text style={styles.slotLabel}>{t('animalBillingDetails.deliveryCharge')}</Text>
             <Text style={styles.feeValue}>৳ {order?.shippingFee.toLocaleString() ?? '—'}</Text>
           </View>
 
           {!!order?.discountAmount && (
             <View style={styles.slotDetailRow}>
-              <Text style={styles.slotLabel}>Discount</Text>
+              <Text style={styles.slotLabel}>{t('animalBillingDetails.discount')}</Text>
               <Text style={[styles.feeValue, { color: '#E53935' }]}>- ৳ {order.discountAmount.toLocaleString()}</Text>
             </View>
           )}
@@ -103,7 +105,7 @@ export default function AnimalBillingDetailsScreen() {
           <View style={styles.divider} />
 
           <View style={styles.slotDetailRow}>
-            <Text style={styles.totalLabel}>Total Payment</Text>
+            <Text style={styles.totalLabel}>{t('animalBillingDetails.totalPayment')}</Text>
             <Text style={styles.totalValue}>৳ {order?.netAmount.toLocaleString() ?? '—'}</Text>
           </View>
 
@@ -135,7 +137,7 @@ export default function AnimalBillingDetailsScreen() {
           onPress={() => router.replace('/(tabs)')}
           activeOpacity={0.85}
         >
-          <Text style={styles.homeButtonText}>← Back to home</Text>
+          <Text style={styles.homeButtonText}>{t('animalBillingDetails.backToHome')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

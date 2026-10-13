@@ -11,19 +11,24 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
+import { SvgXml } from 'react-native-svg';
+import {
+  backButtonSvg,
+} from '@/components/icons/svg-icon-sources';
 import {
   useGetPreferencesQuery,
   useUpdatePreferencesMutation,
 } from '@/store/notificationPreferencesApi';
 import type { NotificationPreference } from '@/store/notificationPreferencesApi';
 
-type FilterTab = 'all' | 'appointments' | 'patients' | 'messages';
+type FilterTab = 'all' | 'tasks' | 'hygiene' | 'health' | 'help';
 
 interface PreferenceItem {
-  key: keyof Pick<NotificationPreference, 'appointmentReminders' | 'chatMessages' | 'followUpReminders' | 'hygieneReminders' | 'systemUpdates' | 'weatherAlerts' | 'taskReminders' | 'promotionalOffers'>;
-  title: string;
-  description: string;
+  key: keyof Pick<NotificationPreference, 'weatherAlerts' | 'vaccinationReminders' | 'taskReminders' | 'hygieneReminders' | 'systemUpdates'>;
+  titleKey: string;
+  descriptionKey: string;
   icon: string;
   iconBg: string;
   iconColor: string;
@@ -31,20 +36,18 @@ interface PreferenceItem {
 }
 
 const PREFERENCES: PreferenceItem[] = [
-  { key: 'appointmentReminders', title: 'Appointments Reminders', description: 'Get notified about upcoming appointments', icon: 'calendar', iconBg: '#FFF2EB', iconColor: '#BD632F', tab: 'appointments' },
-  { key: 'chatMessages', title: 'Patient Messages', description: 'Get notified when patients send messages', icon: 'chatbubble-ellipses', iconBg: '#FFF2EB', iconColor: '#BD632F', tab: 'patients' },
-  { key: 'followUpReminders', title: 'Follow-up Reminders', description: 'Reminders for scheduled follow-ups', icon: 'notifications', iconBg: '#E8F5E9', iconColor: '#4CAF50', tab: 'appointments' },
-  { key: 'hygieneReminders', title: 'Hygiene Reminder', description: 'Get notified about animal hygiene updates', icon: 'medical', iconBg: '#E8F5E9', iconColor: '#4CAF50', tab: 'patients' },
-  { key: 'systemUpdates', title: 'System Updates', description: 'Important updates from the platform', icon: 'volume-high', iconBg: '#F3E5F5', iconColor: '#9C27B0', tab: 'messages' },
-  { key: 'weatherAlerts', title: 'Weather Alerts', description: 'Get notified about weather changes affecting livestock', icon: 'partly-sunny', iconBg: '#E3F2FD', iconColor: '#2196F3', tab: 'all' },
-  { key: 'taskReminders', title: 'Task Reminders', description: 'Reminders for your scheduled tasks', icon: 'checkbox', iconBg: '#FFF9C4', iconColor: '#F9A825', tab: 'all' },
-  { key: 'promotionalOffers', title: 'Promotions', description: 'Get notified about offers and discounts', icon: 'pricetag', iconBg: '#FEECE2', iconColor: '#BD632F', tab: 'messages' },
+  { key: 'weatherAlerts', titleKey: 'notificationPreferences.items.weatherAlerts.title', descriptionKey: 'notificationPreferences.items.weatherAlerts.description', icon: 'cloudy', iconBg: '#E3F2FD', iconColor: '#2196F3', tab: 'health' },
+  { key: 'vaccinationReminders', titleKey: 'notificationPreferences.items.vaccinationReminders.title', descriptionKey: 'notificationPreferences.items.vaccinationReminders.description', icon: 'paw', iconBg: '#E8F5E9', iconColor: '#4CAF50', tab: 'health' },
+  { key: 'taskReminders', titleKey: 'notificationPreferences.items.taskReminders.title', descriptionKey: 'notificationPreferences.items.taskReminders.description', icon: 'clipboard', iconBg: '#E8F5E9', iconColor: '#4CAF50', tab: 'tasks' },
+  { key: 'hygieneReminders', titleKey: 'notificationPreferences.items.hygieneReminders.title', descriptionKey: 'notificationPreferences.items.hygieneReminders.description', icon: 'medkit', iconBg: '#E8F5E9', iconColor: '#4CAF50', tab: 'hygiene' },
+  { key: 'systemUpdates', titleKey: 'notificationPreferences.items.systemUpdates.title', descriptionKey: 'notificationPreferences.items.systemUpdates.description', icon: 'help-circle', iconBg: '#E8F5E9', iconColor: '#4CAF50', tab: 'help' },
 ];
 
 export default function NotificationPreferencesScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<FilterTab>('all');
-  const { data: preferences, isLoading, isError } = useGetPreferencesQuery();
+  const { data: preferences, isLoading, isError, refetch } = useGetPreferencesQuery();
   const [updatePreferences, { isLoading: isUpdating }] = useUpdatePreferencesMutation();
 
   const filteredPreferences = useMemo(() => {
@@ -58,10 +61,10 @@ export default function NotificationPreferencesScreen() {
       try {
         await updatePreferences({ [pref.key]: !preferences[pref.key] }).unwrap();
       } catch {
-        Alert.alert('Error', 'Failed to update preference');
+        Alert.alert(t('notificationPreferences.alerts.error'), t('notificationPreferences.alerts.updateFailed'));
       }
     },
-    [preferences, updatePreferences]
+    [preferences, updatePreferences, t]
   );
 
   if (isLoading) {
@@ -69,9 +72,9 @@ export default function NotificationPreferencesScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
-            <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+            <SvgXml width={20} height={20} xml={backButtonSvg} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Notifications Settings</Text>
+          <Text style={styles.headerTitle}>{t('notificationPreferences.title')}</Text>
           <View style={styles.placeholder} />
         </View>
         <View style={styles.loadingContainer}>
@@ -86,14 +89,17 @@ export default function NotificationPreferencesScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
-            <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+            <SvgXml width={20} height={20} xml={backButtonSvg} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Notifications Settings</Text>
+          <Text style={styles.headerTitle}>{t('notificationPreferences.title')}</Text>
           <View style={styles.placeholder} />
         </View>
         <View style={styles.loadingContainer}>
           <Ionicons name="cloud-offline-outline" size={48} color="#9C9690" />
-          <Text style={styles.errorText}>Failed to load preferences</Text>
+          <Text style={styles.errorText}>{t('notificationPreferences.loadError')}</Text>
+          <TouchableOpacity style={styles.retryBtn} onPress={() => refetch()} activeOpacity={0.8}>
+            <Text style={styles.retryBtnText}>{t('notificationPreferences.tryAgain')}</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -103,14 +109,14 @@ export default function NotificationPreferencesScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+          <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Notifications Settings</Text>
+        <Text style={styles.headerTitle}>{t('notificationPreferences.title')}</Text>
         <View style={styles.placeholder} />
       </View>
 
       <View style={styles.tabRow}>
-        {(['all', 'appointments', 'patients', 'messages'] as FilterTab[]).map((tab) => (
+        {(['all', 'tasks', 'hygiene', 'health', 'help'] as FilterTab[]).map((tab) => (
           <TouchableOpacity
             key={tab}
             style={[styles.tab, activeTab === tab && styles.tabActive]}
@@ -118,7 +124,7 @@ export default function NotificationPreferencesScreen() {
             activeOpacity={0.7}
           >
             <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-              {tab === 'all' ? 'All' : tab === 'appointments' ? 'Appointments' : tab === 'patients' ? 'Patients' : 'Messages'}
+              {t(`notificationPreferences.tabs.${tab}`)}
             </Text>
           </TouchableOpacity>
         ))}
@@ -132,8 +138,8 @@ export default function NotificationPreferencesScreen() {
                 <Ionicons name={pref.icon as any} size={20} color={pref.iconColor} />
               </View>
               <View style={styles.prefInfo}>
-                <Text style={styles.prefTitle}>{pref.title}</Text>
-                <Text style={styles.prefDesc}>{pref.description}</Text>
+                <Text style={styles.prefTitle}>{t(pref.titleKey)}</Text>
+                <Text style={styles.prefDesc}>{t(pref.descriptionKey)}</Text>
               </View>
             </View>
             <Switch
@@ -170,4 +176,6 @@ const styles = StyleSheet.create({
   prefDesc: { fontSize: 11, fontWeight: '500', color: '#7C7672' },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
   errorText: { fontSize: 14, fontWeight: '500', color: '#9C9690' },
+  retryBtn: { marginTop: 8, backgroundColor: '#BD632F', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 10 },
+  retryBtnText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
 });

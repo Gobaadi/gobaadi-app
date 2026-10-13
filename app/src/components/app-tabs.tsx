@@ -3,8 +3,18 @@ import { Tabs } from 'expo-router';
 import { StyleSheet, View, Text, TouchableOpacity, Dimensions } from 'react-native';
 import { useSelector } from 'react-redux';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { SvgXml } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { RootState } from '@/store/store';
+import {
+  navigationHomeSvg,
+  navigationAnimalSvg,
+  navigationDoctorSvg,
+  navigationMarketSvg,
+  navigationProfileSvg,
+  tintNavSvg,
+} from '@/components/icons/svg-icon-sources';
+import { useTranslation } from '@/hooks/use-translation';
 
 const { width } = Dimensions.get('window');
 
@@ -14,22 +24,24 @@ function TabIcon({ routeName, isFocused }: { routeName: string; isFocused: boole
   const color = isFocused ? activeColor : inactiveColor;
   const size = isFocused ? 24 : 22;
 
+  const navIcon = (svg: string) => <SvgXml width={size} height={size} xml={tintNavSvg(svg, color)} />;
+
   switch (routeName) {
     case 'index':
     case 'doctor-home':
-      return <MaterialCommunityIcons name={isFocused ? 'home' : 'home-outline'} size={size} color={color} />;
+      return navIcon(navigationHomeSvg);
     case 'animals':
-      return <MaterialCommunityIcons name="cow" size={size} color={color} />;
+      return navIcon(navigationAnimalSvg);
     case 'doctors':
-      return <MaterialCommunityIcons name="doctor" size={size} color={color} />;
+      return navIcon(navigationDoctorSvg);
     case 'market':
-      return <MaterialCommunityIcons name={isFocused ? 'storefront' : 'storefront-outline'} size={size} color={color} />;
+      return navIcon(navigationMarketSvg);
     case 'doctor-bookings':
       return <MaterialCommunityIcons name={isFocused ? 'calendar-month' : 'calendar-month-outline'} size={size} color={color} />;
     case 'doctor-messages':
       return <MaterialCommunityIcons name={isFocused ? 'message-processing' : 'message-processing-outline'} size={size} color={color} />;
     case 'profile':
-      return <Ionicons name={isFocused ? 'person' : 'person-outline'} size={size} color={color} />;
+      return navIcon(navigationProfileSvg);
     default:
       return <Ionicons name="ellipse-outline" size={size} color={color} />;
   }
@@ -39,21 +51,21 @@ function getLabel(routeName: string) {
   switch (routeName) {
     case 'index':
     case 'doctor-home':
-      return 'Home';
+      return 'tabBar.home';
     case 'animals':
-      return 'Animals';
+      return 'tabBar.animals';
     case 'doctors':
-      return 'Doctors';
+      return 'tabBar.doctors';
     case 'market':
-      return 'Market';
+      return 'tabBar.market';
     case 'doctor-bookings':
-      return 'Calendar';
+      return 'tabBar.calendar';
     case 'doctor-availability':
-      return 'Schedule';
+      return 'tabBar.schedule';
     case 'doctor-messages':
-      return 'Chat';
+      return 'tabBar.chat';
     case 'profile':
-      return 'Profile';
+      return 'tabBar.profile';
     default:
       return routeName;
   }
@@ -61,6 +73,7 @@ function getLabel(routeName: string) {
 
 function CustomTabBar({ state, descriptors, navigation }: any) {
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
 
   const visibleRoutes = state.routes.filter((route: any) => {
     const { options } = descriptors[route.key];
@@ -97,7 +110,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
             });
           };
 
-          const label = getLabel(route.name);
+          const label = t(getLabel(route.name));
 
           return (
             <View key={route.key} style={styles.tabItemContainer}>
@@ -141,10 +154,12 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
 export default function AppTabs() {
   const user = useSelector((state: RootState) => state.auth.user);
   const isDoctor = user?.role === 'doctor';
+  const { t } = useTranslation();
 
   return (
     <Tabs
       initialRouteName={isDoctor ? 'doctor-home' : 'index'}
+      backBehavior="initialRoute"
       screenOptions={{
         headerShown: false,
       }}
@@ -154,7 +169,7 @@ export default function AppTabs() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
+          title: t('tabBar.home'),
           href: isDoctor ? null : undefined,
           tabBarItemStyle: isDoctor ? { display: 'none' } : undefined,
         }}
@@ -162,7 +177,7 @@ export default function AppTabs() {
       <Tabs.Screen
         name="animals"
         options={{
-          title: 'Animals',
+          title: t('tabBar.animals'),
           href: isDoctor ? null : undefined,
           tabBarItemStyle: isDoctor ? { display: 'none' } : undefined,
         }}
@@ -170,7 +185,7 @@ export default function AppTabs() {
       <Tabs.Screen
         name="doctors"
         options={{
-          title: 'Doctors',
+          title: t('tabBar.doctors'),
           href: isDoctor ? null : undefined,
           tabBarItemStyle: isDoctor ? { display: 'none' } : undefined,
         }}
@@ -178,9 +193,9 @@ export default function AppTabs() {
       <Tabs.Screen
         name="market"
         options={{
-          title: 'Market',
-          href: isDoctor ? null : undefined,
-          tabBarItemStyle: isDoctor ? { display: 'none' } : undefined,
+          title: t('tabBar.market'),
+          href: null,
+          tabBarItemStyle: { display: 'none' },
         }}
       />
 
@@ -188,7 +203,7 @@ export default function AppTabs() {
       <Tabs.Screen
         name="doctor-home"
         options={{
-          title: 'Home',
+          title: t('tabBar.home'),
           href: isDoctor ? undefined : null,
           tabBarItemStyle: isDoctor ? undefined : { display: 'none' },
         }}
@@ -196,7 +211,7 @@ export default function AppTabs() {
       <Tabs.Screen
         name="doctor-bookings"
         options={{
-          title: 'Calendar',
+          title: t('tabBar.calendar'),
           href: isDoctor ? undefined : null,
           tabBarItemStyle: isDoctor ? undefined : { display: 'none' },
         }}
@@ -204,7 +219,7 @@ export default function AppTabs() {
       <Tabs.Screen
         name="doctor-availability"
         options={{
-          title: 'Schedule',
+          title: t('tabBar.schedule'),
           href: null,
           tabBarItemStyle: { display: 'none' },
         }}
@@ -212,7 +227,7 @@ export default function AppTabs() {
       <Tabs.Screen
         name="doctor-messages"
         options={{
-          title: 'Chat',
+          title: t('tabBar.chat'),
           href: isDoctor ? undefined : null,
           tabBarItemStyle: isDoctor ? undefined : { display: 'none' },
         }}
@@ -222,7 +237,7 @@ export default function AppTabs() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profile',
+          title: t('tabBar.profile'),
         }}
       />
     </Tabs>

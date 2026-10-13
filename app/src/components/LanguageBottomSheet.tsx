@@ -7,6 +7,8 @@ import {
   Modal,
 } from 'react-native';
 import { LANGUAGES } from '@/constants/languages';
+import { getFontFamily } from '@/constants/fonts';
+import { useTranslation } from '@/hooks/use-translation';
 
 interface LanguageBottomSheetProps {
   visible: boolean;
@@ -22,6 +24,8 @@ export default function LanguageBottomSheet({
   onSave,
 }: LanguageBottomSheetProps) {
   const [tempSelected, setTempSelected] = useState(selectedLanguage);
+  const { t } = useTranslation();
+  const fontFamily = getFontFamily(tempSelected);
 
   // Reset temp selected when sheet becomes visible
   const handleOpen = () => {
@@ -50,10 +54,8 @@ export default function LanguageBottomSheet({
           <View style={styles.sheetContainer}>
             <View style={styles.handleBar} />
 
-            <Text style={styles.title}>Select Language</Text>
-            <Text style={styles.helperText}>
-              Choose your preferred language for the interface and notifications.
-            </Text>
+            <Text style={[styles.title, { fontFamily }]}>{t('selectLanguage.title')}</Text>
+            <Text style={[styles.helperText, { fontFamily }]}>{t('selectLanguage.helper')}</Text>
 
             <View style={styles.languageList}>
               {LANGUAGES.map((lang) => {
@@ -66,10 +68,10 @@ export default function LanguageBottomSheet({
                     onPress={() => setTempSelected(lang.id)}
                   >
                     <View style={styles.languageInfo}>
-                      <Text style={[styles.languageName, isSelected && styles.languageNameActive]}>
+                      <Text style={[styles.languageName, isSelected && styles.languageNameActive, { fontFamily }]}>
                         {lang.name}
                       </Text>
-                      <Text style={[styles.languageNative, isSelected && styles.languageNativeActive]}>
+                      <Text style={[styles.languageNative, isSelected && styles.languageNativeActive, { fontFamily }]}>
                         {lang.nativeName}
                       </Text>
                     </View>
@@ -82,7 +84,7 @@ export default function LanguageBottomSheet({
             </View>
 
             <TouchableOpacity style={styles.saveBtn} activeOpacity={0.85} onPress={handleSave}>
-              <Text style={styles.saveBtnText}>Save Changes</Text>
+              <Text style={[styles.saveBtnText, { fontFamily }]}>{t('selectLanguage.save')}</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>

@@ -16,22 +16,22 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import type { JwtPayload } from '../auth/jwt-payload.interface';
+import { PaginatedResult } from '../common/paginated-result.interface';
+import { UserRole } from '../users/user.entity';
+import { Appointment, ConsultationType } from './appointment.entity';
+import type { AppointmentListFilter } from './appointments.service';
 import {
   AppointmentsService,
   AppointmentWithPatient,
 } from './appointments.service';
-import type { AppointmentListFilter } from './appointments.service';
 import { BookSlotDto } from './dto/book-slot.dto';
-import { RescheduleAppointmentDto } from './dto/reschedule-appointment.dto';
 import { CancelAppointmentDto } from './dto/cancel-appointment.dto';
-import { Appointment, ConsultationType } from './appointment.entity';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { UserRole } from '../users/user.entity';
-import type { JwtPayload } from '../auth/jwt-payload.interface';
-import { PaginatedResult } from '../common/paginated-result.interface';
+import { RescheduleAppointmentDto } from './dto/reschedule-appointment.dto';
 
 @ApiTags('appointments')
 @Controller('doctors')
@@ -166,7 +166,10 @@ export class AppointmentsController {
     required: false,
     description: 'Number of days to look back (default 2)',
   })
-  @ApiResponse({ status: 200, description: 'List of recent completed appointments' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of recent completed appointments',
+  })
   async getRecentCompleted(
     @CurrentUser() user: JwtPayload,
     @Query('days') days?: string,
@@ -184,9 +187,21 @@ export class AppointmentsController {
   @ApiOperation({
     summary: "Search/filter the current doctor's appointments",
   })
-  @ApiQuery({ name: 'search', required: false, description: 'Search by patient or animal name' })
-  @ApiQuery({ name: 'date', required: false, description: 'Filter by date (YYYY-MM-DD)' })
-  @ApiQuery({ name: 'consultationType', required: false, enum: ConsultationType })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description: 'Search by patient or animal name',
+  })
+  @ApiQuery({
+    name: 'date',
+    required: false,
+    description: 'Filter by date (YYYY-MM-DD)',
+  })
+  @ApiQuery({
+    name: 'consultationType',
+    required: false,
+    enum: ConsultationType,
+  })
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'limit', required: false })
   @ApiResponse({ status: 200, description: 'Filtered appointments' })
@@ -197,7 +212,9 @@ export class AppointmentsController {
     @Query('consultationType') consultationType?: ConsultationType,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
-  ): Promise<AppointmentWithPatient[] | PaginatedResult<AppointmentWithPatient>> {
+  ): Promise<
+    AppointmentWithPatient[] | PaginatedResult<AppointmentWithPatient>
+  > {
     return this.appointmentsService.searchDoctorAppointments(user.sub, {
       search,
       date,
@@ -285,7 +302,9 @@ export class AppointmentsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.DOCTOR)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Start a consultation for an appointment (doctor-only)' })
+  @ApiOperation({
+    summary: 'Start a consultation for an appointment (doctor-only)',
+  })
   @ApiParam({ name: 'id', example: '1' })
   @ApiResponse({ status: 200, description: 'Consultation started' })
   async startConsultation(

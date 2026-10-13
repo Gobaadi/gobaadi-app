@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,15 +17,18 @@ import { useGetAnimalByIdQuery } from '@/store/animalsApi';
 import { useGetByAnimalMedicalEventsQuery } from '@/store/medicalEventsApi';
 import { useGetByAnimalPrescriptionsQuery } from '@/store/prescriptionsApi';
 import { useGetByPatientMedicalRecordsQuery } from '@/store/medicalRecordsApi';
+import { useGetConversationsQuery, useCreateConversationMutation } from '@/store/chatApi';
+import { useGetDoctorBookingsQuery } from '@/store/doctorPortalApi';
 import type { MedicalEvent } from '@/store/medicalEventsApi';
+import { useTranslation } from 'react-i18next';
 
 const TABS = [
-  { key: 'all', label: 'All' },
-  { key: 'consults', label: 'Consults' },
-  { key: 'treatments', label: 'Treatments' },
-  { key: 'vaccination', label: 'Vaccination' },
-  { key: 'labTests', label: 'Lab Tests' },
-  { key: 'files', label: 'Files' },
+  { key: 'all', labelKey: 'patientDetails.tabs.all' },
+  { key: 'consults', labelKey: 'patientDetails.tabs.consults' },
+  { key: 'treatments', labelKey: 'patientDetails.tabs.treatments' },
+  { key: 'vaccination', labelKey: 'patientDetails.tabs.vaccination' },
+  { key: 'labTests', labelKey: 'patientDetails.tabs.labTests' },
+  { key: 'files', labelKey: 'patientDetails.tabs.files' },
 ];
 
 function formatDate(dateStr: string): string {
@@ -38,12 +42,13 @@ function formatTime(dateStr: string): string {
 }
 
 function StatusBadge({ status }: { status: string }) {
+  const { t } = useTranslation();
   const lower = status?.toLowerCase() || '';
   const isOngoing = lower === 'ongoing';
   const isCompleted = lower === 'completed';
   const bgColor = isOngoing ? '#FFF3E0' : isCompleted ? '#E8F5E9' : '#E3F2FD';
   const textColor = isOngoing ? '#E65100' : isCompleted ? '#2E7D32' : '#1565C0';
-  const label = isOngoing ? 'Ongoing' : isCompleted ? 'Completed' : status;
+  const label = isOngoing ? t('patientDetails.status.ongoing') : isCompleted ? t('patientDetails.status.completed') : status;
 
   return (
     <View style={[statusBadgeStyles.badge, { backgroundColor: bgColor }]}>
@@ -83,6 +88,7 @@ function DataFields({ data }: { data: Record<string, any> }) {
 }
 
 function AllTab({ events, prescriptions }: { events: MedicalEvent[]; prescriptions: any[] }) {
+  const { t } = useTranslation();
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const allItems = [
@@ -92,9 +98,9 @@ function AllTab({ events, prescriptions }: { events: MedicalEvent[]; prescriptio
 
   return (
     <View style={tabStyles.section}>
-      <Text style={tabStyles.sectionTitle}>Recent activities</Text>
+      <Text style={tabStyles.sectionTitle}>{t('patientDetails.allTab.title')}</Text>
       {allItems.length === 0 ? (
-        <Text style={tabStyles.emptyText}>No activities recorded yet.</Text>
+        <Text style={tabStyles.emptyText}>{t('patientDetails.allTab.empty')}</Text>
       ) : (
         allItems.map((item) => {
           const id = String(item._kind === 'prescription' ? `rx-${item.id}` : item.id);
@@ -110,10 +116,12 @@ function AllTab({ events, prescriptions }: { events: MedicalEvent[]; prescriptio
                   <Text style={tabStyles.activityDate}>{formatDate(item.createdAt)}</Text>
                   <Text style={tabStyles.activityTitle}>
                     {item._kind === 'prescription'
-                      ? `Prescription (${item.medicines?.length || 0} medicines)`
-                      : `${(item.type || 'Medical Event').replace('_', ' ')}`}
+                      ? t('patientDetails.prescriptionTitle', { count: item.medicines?.length || 0 })
+                      : `${(item.type || t('patientDetails.medicalEvent')).replace('_', ' ')}`}
                   </Text>
-                  <Text style={tabStyles.activityDoctor}>Status: {item.status || 'N/A'}</Text>
+                  <Text style={tabStyles.activityDoctor}>
+                    {t('patientDetails.statusLine', { status: item.status || 'N/A' })}
+                  </Text>
                 </View>
                 <View style={tabStyles.activityRight}>
                   <StatusBadge status={item.status || 'ONGOING'} />
@@ -130,7 +138,7 @@ function AllTab({ events, prescriptions }: { events: MedicalEvent[]; prescriptio
                   {item._kind === 'event' && item.data && <DataFields data={item.data} />}
                   {item._kind === 'prescription' && item.medicines && (
                     <View>
-                      <Text style={tabStyles.detailLabelFirst}>Medicines:</Text>
+                      <Text style={tabStyles.detailLabelFirst}>{t('patientDetails.medicines')}</Text>
                       {item.medicines.map((m: any, i: number) => (
                         <Text key={i} style={tabStyles.bulletItem}>
                           {m.name} - {m.dosage} ({m.duration})
@@ -148,14 +156,15 @@ function AllTab({ events, prescriptions }: { events: MedicalEvent[]; prescriptio
   );
 }
 
-function EventListTab({ events, title }: { events: MedicalEvent[]; title: string }) {
+function EventListTab({ events, title, emptyKey }: { events: MedicalEvent[]; title: string; emptyKey: string }) {
+  const { t } = useTranslation();
   const [expandedId, setExpandedId] = useState<string | null>(events.length > 0 ? String(events[0].id) : null);
 
   return (
     <View style={tabStyles.section}>
       <Text style={tabStyles.sectionTitle}>{title}</Text>
       {events.length === 0 ? (
-        <Text style={tabStyles.emptyText}>No {title.toLowerCase()} recorded yet.</Text>
+        <Text style={tabStyles.emptyText}>{t(emptyKey)}</Text>
       ) : (
         events.map((item) => (
           <TouchableOpacity
@@ -171,7 +180,7 @@ function EventListTab({ events, title }: { events: MedicalEvent[]; title: string
                   {item.type !== 'TREATMENT' ? ` · ${formatTime(item.createdAt)}` : ''}
                 </Text>
                 <Text style={tabStyles.activityTitle}>{title}</Text>
-                <Text style={tabStyles.activityDoctor}>Doctor #{item.doctorId}</Text>
+                <Text style={tabStyles.activityDoctor}>{t('patientDetails.doctorId', { id: item.doctorId })}</Text>
               </View>
               <View style={tabStyles.activityRight}>
                 <StatusBadge status={item.status || 'ONGOING'} />
@@ -188,7 +197,7 @@ function EventListTab({ events, title }: { events: MedicalEvent[]; title: string
                 <DataFields data={item.data} />
                 {item.nextFollowUpAt && (
                   <View style={tabStyles.followUpRow}>
-                    <Text style={tabStyles.detailLabel}>Next Follow-up:</Text>
+                    <Text style={tabStyles.detailLabel}>{t('patientDetails.nextFollowUp')}</Text>
                     <Text style={tabStyles.followUpDate}>{formatDate(item.nextFollowUpAt)}</Text>
                   </View>
                 )}
@@ -202,17 +211,20 @@ function EventListTab({ events, title }: { events: MedicalEvent[]; title: string
 }
 
 function FilesTab({ records }: { records: any[] }) {
+  const { t } = useTranslation();
   return (
     <View style={tabStyles.section}>
-      <Text style={tabStyles.sectionTitle}>Files</Text>
+      <Text style={tabStyles.sectionTitle}>{t('patientDetails.tabs.files')}</Text>
       {records.length === 0 ? (
-        <Text style={tabStyles.emptyText}>No files uploaded yet.</Text>
+        <Text style={tabStyles.emptyText}>{t('patientDetails.emptyFiles')}</Text>
       ) : (
         records.map((item) => (
           <View key={item.id} style={tabStyles.fileCard}>
             <View style={tabStyles.fileIcon}>
               <Ionicons name="document-text" size={28} color="#E53935" />
-              <Text style={tabStyles.fileType}>{item.mimeType?.split('/')[1] || 'file'}</Text>
+              <Text style={tabStyles.fileType}>
+                {item.mimeType?.split('/')[1] || t('patientDetails.fileTypeFallback')}
+              </Text>
             </View>
             <View style={tabStyles.fileInfo}>
               <Text style={tabStyles.fileName}>{item.originalFileName}</Text>
@@ -228,6 +240,7 @@ function FilesTab({ records }: { records: any[] }) {
 }
 
 export default function PatientDetailsScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const params = useLocalSearchParams<{ id: string }>();
   const isDoctor = useRequireDoctor();
@@ -236,9 +249,72 @@ export default function PatientDetailsScreen() {
   const animalId = params.id || '1';
 
   const { data: animal, isLoading: animalLoading } = useGetAnimalByIdQuery(animalId);
-  const { data: allEvents = [], isLoading: eventsLoading } = useGetByAnimalMedicalEventsQuery({ animalId });
-  const { data: prescriptions = [] } = useGetByAnimalPrescriptionsQuery(animalId);
-  const { data: records = [] } = useGetByPatientMedicalRecordsQuery(animalId);
+  const { data: eventsRes, isLoading: eventsLoading } = useGetByAnimalMedicalEventsQuery({ animalId });
+  const { data: prescriptionsRes } = useGetByAnimalPrescriptionsQuery(animalId);
+  const { data: conversationsRes } = useGetConversationsQuery();
+  const [createConversation] = useCreateConversationMutation();
+  const { data: bookingsRes } = useGetDoctorBookingsQuery();
+
+  // Every list endpoint can hand back a non-array (paginated wrapper, error
+  // body). Normalise so a bad payload degrades to an empty tab instead of
+  // white-screening the whole screen with `undefined is not a function`.
+  const bookings = Array.isArray(bookingsRes) ? bookingsRes : [];
+  const conversations = Array.isArray(conversationsRes) ? conversationsRes : [];
+
+  // Bookings/animal carry the pet owner's user id, which is what the
+  // medical-records API expects (?patientId=). The animal id is not it.
+  const ownerId =
+    bookings.find((b) => b.animalId === Number(animalId))?.patientId ??
+    animal?.userId ??
+    null;
+  const { data: recordsRes } = useGetByPatientMedicalRecordsQuery(String(ownerId ?? ''), {
+    skip: ownerId == null,
+  });
+
+  const allEvents = Array.isArray(eventsRes) ? eventsRes : [];
+  const prescriptions = Array.isArray(prescriptionsRes) ? prescriptionsRes : [];
+  const records = Array.isArray(recordsRes) ? recordsRes : [];
+
+  /**
+   * Opens the chat for this animal's owner with the real conversation id and
+   * (when an appointment exists for this animal) the appointment id, so the
+   * consultation flow works from this screen.
+   */
+  const handleStartConsultation = async () => {
+    const booking =
+      bookings
+        .filter((b) => b.animalId === Number(animalId))
+        .sort((a, b) => +new Date(b.startAt) - +new Date(a.startAt))[0] ?? null;
+    const patientId = booking?.patientId ?? animal?.userId ?? null;
+    if (!patientId) {
+      Alert.alert(t('patientDetails.alerts.error'), t('patientDetails.alerts.noOwner'));
+      return;
+    }
+    try {
+      const existing = conversations.find((c) => c.patientId === patientId);
+      let conversationId = existing?.id;
+      if (!conversationId) {
+        const created = await createConversation({ patientId }).unwrap();
+        conversationId = created.id;
+      }
+      router.push({
+        pathname: '/chat',
+        params: {
+          conversationId: String(conversationId),
+          patientName: booking?.patientName || animal?.name || t('patientDetails.patientFallback'),
+          animalImage: booking?.animalImage || animal?.image || '',
+          theirAvatar: booking?.patientAvatar,
+          animalId: String(booking?.animalId ?? animalId),
+          animalName: booking?.animalName || animal?.name,
+          ...(booking
+            ? { appointmentId: String(booking.id), appointmentTime: booking.startAt }
+            : {}),
+        },
+      });
+    } catch {
+      Alert.alert(t('patientDetails.alerts.error'), t('patientDetails.alerts.consultFailed'));
+    }
+  };
 
   const consultEvents = allEvents.filter((e) => e.type === 'CONSULTATION');
   const treatmentEvents = allEvents.filter((e) => e.type === 'TREATMENT');
@@ -263,13 +339,37 @@ export default function PatientDetailsScreen() {
       case 'all':
         return <AllTab events={allEvents} prescriptions={prescriptions} />;
       case 'consults':
-        return <EventListTab events={consultEvents} title="Consultations" />;
+        return (
+          <EventListTab
+            events={consultEvents}
+            title={t('patientDetails.titles.consultations')}
+            emptyKey="patientDetails.emptyConsultations"
+          />
+        );
       case 'treatments':
-        return <EventListTab events={treatmentEvents} title="Treatments" />;
+        return (
+          <EventListTab
+            events={treatmentEvents}
+            title={t('patientDetails.titles.treatments')}
+            emptyKey="patientDetails.emptyTreatments"
+          />
+        );
       case 'vaccination':
-        return <EventListTab events={vaccinationEvents} title="Vaccinations" />;
+        return (
+          <EventListTab
+            events={vaccinationEvents}
+            title={t('patientDetails.titles.vaccinations')}
+            emptyKey="patientDetails.emptyVaccinations"
+          />
+        );
       case 'labTests':
-        return <EventListTab events={labTestEvents} title="Lab Tests" />;
+        return (
+          <EventListTab
+            events={labTestEvents}
+            title={t('patientDetails.titles.labTests')}
+            emptyKey="patientDetails.emptyLabTests"
+          />
+        );
       case 'files':
         return <FilesTab records={records} />;
       default:
@@ -283,7 +383,7 @@ export default function PatientDetailsScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
           <Ionicons name="arrow-back" size={20} color="#BD632F" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Patient Details</Text>
+        <Text style={styles.headerTitle}>{t('patientDetails.title')}</Text>
         <View style={{ width: 44 }} />
       </View>
 
@@ -295,7 +395,9 @@ export default function PatientDetailsScreen() {
         ) : !animal ? (
           <View style={styles.loadingContainer}>
             <Ionicons name="alert-circle-outline" size={48} color="#E6E1DC" />
-            <Text style={{ fontSize: 15, color: '#9C9690', marginTop: 12 }}>Patient not found</Text>
+            <Text style={{ fontSize: 15, color: '#9C9690', marginTop: 12 }}>
+              {t('patientDetails.notFound')}
+            </Text>
           </View>
         ) : (
           <>
@@ -311,22 +413,22 @@ export default function PatientDetailsScreen() {
                 <Text style={styles.patientName}>{animal.name}</Text>
                 <View style={styles.patientInfoRow}>
                   <View style={styles.patientInfoItem}>
-                    <Text style={styles.patientInfoLabel}>Species</Text>
+                    <Text style={styles.patientInfoLabel}>{t('patientDetails.species')}</Text>
                     <Text style={styles.patientInfoValue}>{animal.breed}</Text>
                   </View>
                   <View style={styles.patientInfoItem}>
-                    <Text style={styles.patientInfoLabel}>Age</Text>
+                    <Text style={styles.patientInfoLabel}>{t('patientDetails.age')}</Text>
                     <Text style={styles.patientInfoValue}>{animal.age}</Text>
                   </View>
                   <View style={styles.patientInfoItem}>
-                    <Text style={styles.patientInfoLabel}>Weight</Text>
+                    <Text style={styles.patientInfoLabel}>{t('patientDetails.weight')}</Text>
                     <Text style={styles.patientInfoValue}>{animal.weight}</Text>
                   </View>
                 </View>
                 {animal.color && (
                   <View style={styles.patientOwnerRow}>
                     <View style={styles.patientOwnerItem}>
-                      <Text style={styles.patientInfoLabel}>Color</Text>
+                      <Text style={styles.patientInfoLabel}>{t('patientDetails.color')}</Text>
                       <Text style={styles.patientInfoValue}>{animal.color}</Text>
                     </View>
                   </View>
@@ -347,7 +449,7 @@ export default function PatientDetailsScreen() {
                   activeOpacity={0.8}
                 >
                   <Text style={[styles.tabText, activeTab === tab.key && styles.tabTextActive]}>
-                    {tab.label} ({tabCounts[tab.key] || 0})
+                    {t(tab.labelKey)} ({tabCounts[tab.key] || 0})
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -362,11 +464,9 @@ export default function PatientDetailsScreen() {
         <TouchableOpacity
           style={styles.consultBtn}
           activeOpacity={0.85}
-          onPress={() =>
-            router.push({ pathname: '/chat', params: { conversationId: animalId, fullPage: 'true' } })
-          }
+          onPress={handleStartConsultation}
         >
-          <Text style={styles.consultBtnText}>Start Consultation</Text>
+          <Text style={styles.consultBtnText}>{t('patientDetails.startConsultation')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

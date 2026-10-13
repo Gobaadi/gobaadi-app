@@ -6,20 +6,30 @@ import {
   Text,
   TouchableOpacity,
   TextInput,
-  ScrollView,
   ActivityIndicator,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
+import { SvgXml } from 'react-native-svg';
 import { useGetMyPatientsQuery } from '@/store/discountsApi';
+import { useGetDoctorBookingsQuery } from '@/store/doctorPortalApi';
+import { getLastAppointmentText } from '@/utils/last-appointment';
+import { PatientAvatar } from '@/components/patient-avatar';
+import {
+  backButtonSvg,
+  discountDetailsMessageSvg,
+  searchSvg,
+} from '@/components/icons/svg-icon-sources';
 
 type TabType = 'all' | 'discountGiven';
 
 export default function ApplyDiscountScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const isDoctor = useRequireDoctor();
-  if (!isDoctor) return null;
   const [activeTab, setActiveTab] = useState<TabType>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -27,29 +37,37 @@ export default function ApplyDiscountScreen() {
     search: searchQuery || undefined,
     discountGiven: activeTab === 'discountGiven' ? 'true' : undefined,
   });
+  const { data: bookings = [] } = useGetDoctorBookingsQuery(undefined, {
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
+  });
 
-  const filteredPatients = patients || [];
-  const discountGivenCount = patients?.filter((p) => p.discount?.isActive).length || 0;
+  if (!isDoctor) return null;
+
+  const filteredPatients = (patients || []).filter((p) => !p.ownerOnly);
+  const discountGivenCount =
+    filteredPatients.filter((p) => p.discount?.isActive).length;
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+          <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Apply Discount</Text>
+        <Text style={styles.headerTitle}>{t('applyDiscount.title')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView
+      <KeyboardAwareScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContainer}
+        keyboardShouldPersistTaps="handled"
       >
         <View style={styles.searchContainer}>
-          <Ionicons name="search-outline" size={18} color="#9C9690" />
+          <SvgXml width={18} height={18} xml={searchSvg} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search by patient or owner"
+            placeholder={t('applyDiscount.searchPlaceholder')}
             placeholderTextColor="#A39E99"
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -59,11 +77,11 @@ export default function ApplyDiscountScreen() {
         <View style={styles.infoBanner}>
           <Ionicons name="information-circle-outline" size={20} color="#BD632F" />
           <Text style={styles.infoText}>
-            Discounts apply to the patient's next appointment fee only. They pay the discounted amount when booking.
+            {t('applyDiscount.info')}
           </Text>
         </View>
 
-        <Text style={styles.sectionTitle}>Recent Patients</Text>
+        <Text style={styles.sectionTitle}>{t('applyDiscount.recentPatients')}</Text>
 
         <View style={styles.tabsRow}>
           <TouchableOpacity
@@ -72,7 +90,7 @@ export default function ApplyDiscountScreen() {
             activeOpacity={0.8}
           >
             <Text style={[styles.tabText, activeTab === 'all' && styles.tabTextActive]}>
-              All ({filteredPatients.length})
+              {t('applyDiscount.allTab', { count: filteredPatients.length })}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -81,7 +99,7 @@ export default function ApplyDiscountScreen() {
             activeOpacity={0.8}
           >
             <Text style={[styles.tabText, activeTab === 'discountGiven' && styles.tabTextActive]}>
-              Discount Given({discountGivenCount})
+              {t('applyDiscount.discountGivenTab', { count: discountGivenCount })}
             </Text>
           </TouchableOpacity>
         </View>
@@ -91,41 +109,54 @@ export default function ApplyDiscountScreen() {
             <ActivityIndicator size="large" color="#BD632F" />
           </View>
         ) : (
-          filteredPatients.map((patient) => (
-            <TouchableOpacity
-              key={patient.id}
-              style={styles.patientCard}
-              onPress={() =>
-                router.push({
-                  pathname: '/discount',
-                  params: {
-                    patientId: patient.id.toString(),
-                    patientName: patient.name,
-                    ownerName: patient.ownerName || '',
-                    existingDiscount: patient.discount?.percent?.toString() || '0',
-                  },
-                })
-              }
-              activeOpacity={0.7}
-            >
-              <View style={styles.patientAvatar}>
-                <Ionicons name="paw" size={20} color="#BD632F" />
-              </View>
-              <View style={styles.patientInfo}>
-                <Text style={styles.patientName}>{patient.name}</Text>
-                <Text style={styles.patientOwner}>Owner: {patient.ownerName || 'N/A'}</Text>
-                <Text style={styles.patientPhone}>{patient.breed}</Text>
-              </View>
-              {patient.discount?.isActive && patient.discount?.percent ? (
-                <View style={styles.discountBadge}>
-                  <Text style={styles.discountBadgeText}>{patient.discount.percent}%</Text>
+          filteredPatients.map((patient) => {
+            const lastAppointment = getLastAppointmentText(bookings, patient.id);
+            return (
+              <TouchableOpacity
+                key={patient.id}
+                style={styles.patientCard}
+                onPress={() =>
+                  router.push({
+                    pathname: '/discount',
+                    params: {
+                      patientId: patient.id.toString(),
+                      patientName: patient.name,
+                      ownerName: patient.ownerName || '',
+                      patientImage: patient.image || '',
+                      existingDiscount: patient.discount?.percent?.toString() || '0',
+                    },
+                  })
+                }
+                activeOpacity={0.7}
+              >
+                <View style={styles.patientAvatarWrap}>
+                  <PatientAvatar name={patient.name} image={patient.image} size={48} />
+                  <View style={styles.patientAvatarBadge}>
+                    <SvgXml width={18} height={18} xml={discountDetailsMessageSvg} />
+                  </View>
                 </View>
-              ) : null}
-              <Ionicons name="chevron-forward" size={18} color="#9C9690" />
-            </TouchableOpacity>
-          ))
+                <View style={styles.patientInfo}>
+                  <Text style={styles.patientName}>{patient.name}</Text>
+                  <Text style={styles.patientOwner}>
+                    {t('applyDiscount.owner', { name: patient.ownerName || 'N/A' })}
+                  </Text>
+                  {lastAppointment ? (
+                    <Text style={styles.patientPhone}>
+                      {t('applyDiscount.lastAppointment', { date: lastAppointment })}
+                    </Text>
+                  ) : null}
+                </View>
+                {patient.discount?.isActive && patient.discount?.percent ? (
+                  <View style={styles.discountBadge}>
+                    <Text style={styles.discountBadgeText}>{patient.discount.percent}%</Text>
+                  </View>
+                ) : null}
+                <Ionicons name="chevron-forward" size={18} color="#9C9690" />
+              </TouchableOpacity>
+            );
+          })
         )}
-      </ScrollView>
+        </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }
@@ -146,7 +177,7 @@ const styles = StyleSheet.create({
   backBtn: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 12,
     backgroundColor: '#BD632F',
     justifyContent: 'center',
     alignItems: 'center',
@@ -234,11 +265,20 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     gap: 12,
   },
-  patientAvatar: {
+  patientAvatarWrap: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#FFF2EB',
+  },
+  patientAvatarBadge: {
+    position: 'absolute',
+    bottom: -2,
+    left: -2,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
   },

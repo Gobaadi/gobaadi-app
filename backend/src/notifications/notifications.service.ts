@@ -112,17 +112,20 @@ export class NotificationsService {
     userId: number,
     token: string,
     deviceId?: string,
+    os?: string,
   ): Promise<PushToken> {
     const existing = await this.pushTokenRepository.findOneBy({ token });
     if (existing) {
       existing.userId = userId;
       existing.deviceId = deviceId;
+      if (os) existing.os = os;
       return this.pushTokenRepository.save(existing);
     }
     const pushToken = this.pushTokenRepository.create({
       userId,
       token,
       deviceId,
+      os,
     });
     return this.pushTokenRepository.save(pushToken);
   }
@@ -232,18 +235,24 @@ export class NotificationsService {
       pref = this.preferenceRepository.create({ userId });
     }
 
-    if (data.appointmentReminders !== undefined)
-      pref.appointmentReminders = data.appointmentReminders;
-    if (data.promotionalOffers !== undefined) pref.promotionalOffers = data.promotionalOffers;
-    if (data.chatMessages !== undefined) pref.chatMessages = data.chatMessages;
-    if (data.prescriptionUpdates !== undefined)
-      pref.prescriptionUpdates = data.prescriptionUpdates;
-    if (data.labResults !== undefined) pref.labResults = data.labResults;
-    if (data.vaccinationReminders !== undefined)
-      pref.vaccinationReminders = data.vaccinationReminders;
-    if (data.systemUpdates !== undefined) pref.systemUpdates = data.systemUpdates;
-    if (data.weatherAlerts !== undefined) pref.weatherAlerts = data.weatherAlerts;
-    if (data.taskReminders !== undefined) pref.taskReminders = data.taskReminders;
+    const BOOLEAN_KEYS = [
+      'appointmentReminders',
+      'promotionalOffers',
+      'chatMessages',
+      'prescriptionUpdates',
+      'labResults',
+      'vaccinationReminders',
+      'systemUpdates',
+      'weatherAlerts',
+      'taskReminders',
+      'followUpReminders',
+      'hygieneReminders',
+    ] as const;
+
+    for (const key of BOOLEAN_KEYS) {
+      const value = data[key];
+      if (value !== undefined) pref[key] = value;
+    }
 
     return this.preferenceRepository.save(pref);
   }

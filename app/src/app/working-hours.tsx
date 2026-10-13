@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import {
@@ -21,7 +22,7 @@ import {
   useSetAvailabilityMutation,
 } from '@/store/doctorPortalApi';
 
-const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const DAY_KEYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
 interface DaySchedule {
   day: string;
@@ -63,7 +64,7 @@ function dateToTime12(d: Date): string {
 }
 
 function buildEmptySchedule(): DaySchedule[] {
-  return DAY_NAMES.map((day, idx) => ({
+  return DAY_KEYS.map((day, idx) => ({
     day,
     dayOfWeek: idx,
     enabled: false,
@@ -74,6 +75,7 @@ function buildEmptySchedule(): DaySchedule[] {
 
 export default function WorkingHoursScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const isDoctor = useRequireDoctor();
 
   const { data: profile } = useGetMyDoctorProfileQuery();
@@ -91,7 +93,7 @@ export default function WorkingHoursScreen() {
 
   useEffect(() => {
     if (availability && availability.length > 0) {
-      const mapped: DaySchedule[] = DAY_NAMES.map((day, idx) => {
+      const mapped: DaySchedule[] = DAY_KEYS.map((day, idx) => {
         const entry = availability.find((a) => a.dayOfWeek === idx);
         if (entry) {
           return {
@@ -169,9 +171,9 @@ export default function WorkingHoursScreen() {
     try {
       await setAvailability({ doctorId, entries }).unwrap();
       setHasChanges(false);
-      Alert.alert('Saved', 'Working hours updated successfully.');
+      Alert.alert(t('workingHours.alerts.savedTitle'), t('workingHours.alerts.savedMsg'));
     } catch {
-      Alert.alert('Error', 'Failed to save working hours.');
+      Alert.alert(t('workingHours.alerts.errorTitle'), t('workingHours.alerts.saveFailedMsg'));
     }
   };
 
@@ -187,12 +189,12 @@ export default function WorkingHoursScreen() {
           <TouchableOpacity onPress={() => setSelectedDay(null)} style={styles.backBtn} activeOpacity={0.7}>
             <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>{selectedDay}</Text>
+          <Text style={styles.headerTitle}>{t(`workingHours.days.${selectedDay}`)}</Text>
           <View style={{ width: 44 }} />
         </View>
 
         <ScrollView contentContainerStyle={styles.timePickerContent}>
-          <Text style={styles.timeLabel}>Start</Text>
+          <Text style={styles.timeLabel}>{t('workingHours.start')}</Text>
           <View style={styles.timePickerRow}>
             <TouchableOpacity
               style={styles.timeBox}
@@ -219,7 +221,7 @@ export default function WorkingHoursScreen() {
             </View>
           </View>
 
-          <Text style={[styles.timeLabel, { marginTop: 32 }]}>End</Text>
+          <Text style={[styles.timeLabel, { marginTop: 32 }]}>{t('workingHours.end')}</Text>
           <View style={styles.timePickerRow}>
             <TouchableOpacity
               style={styles.timeBox}
@@ -267,7 +269,7 @@ export default function WorkingHoursScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
             <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Working hours</Text>
+          <Text style={styles.headerTitle}>{t('workingHours.title')}</Text>
           <View style={{ width: 44 }} />
         </View>
         <View style={styles.loadingContainer}>
@@ -283,7 +285,7 @@ export default function WorkingHoursScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
           <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Working hours</Text>
+        <Text style={styles.headerTitle}>{t('workingHours.title')}</Text>
         <View style={{ width: 44 }} />
       </View>
 
@@ -295,7 +297,7 @@ export default function WorkingHoursScreen() {
             onPress={() => handleDayPress(item.day)}
             activeOpacity={0.7}
           >
-            <Text style={styles.dayLabel}>{item.day}</Text>
+            <Text style={styles.dayLabel}>{t(`workingHours.days.${item.day}`)}</Text>
             <Text style={styles.timeRange}>
               {item.startTime} - {item.endTime}
             </Text>
@@ -319,7 +321,7 @@ export default function WorkingHoursScreen() {
           {saving ? (
             <ActivityIndicator size="small" color="#FFFFFF" />
           ) : (
-            <Text style={styles.saveBtnText}>Save</Text>
+            <Text style={styles.saveBtnText}>{t('workingHours.save')}</Text>
           )}
         </TouchableOpacity>
       </View>

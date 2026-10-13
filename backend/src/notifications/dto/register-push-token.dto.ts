@@ -11,4 +11,12 @@ export class RegisterPushTokenDto {
   @IsOptional()
   @IsString()
   deviceId?: string;
+
+  @ApiPropertyOptional({
+    example: 'android',
+    description: 'OS the token came from (android/ios)',
+  })
+  @IsOptional()
+  @IsString()
+  platform?: string;
 }

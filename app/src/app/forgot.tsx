@@ -5,24 +5,19 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
   ActivityIndicator,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 import { useForgotPasswordMutation } from '@/store/authApi';
-
-const BD_PHONE_REGEX = /^01[3-9]\d{8}$/;
-
-type Tab = 'phone' | 'email';
+import { isValidEmailSyntax, isAllowedEmail } from '@/utils/email';
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
-  const [tab, setTab] = useState<Tab>('phone');
-  const [phone, setPhone] = useState('');
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -30,13 +25,17 @@ export default function ForgotPasswordScreen() {
 
   const handleSendOTP = async () => {
     setErrorMessage('');
-    const identifier = tab === 'phone' ? phone : email;
+    const identifier = email.trim();
     if (!identifier) {
-      setErrorMessage(tab === 'phone' ? 'Phone number is required.' : 'Email is required.');
+      setErrorMessage(t('forgot.errors.required'));
       return;
     }
-    if (tab === 'phone' && !BD_PHONE_REGEX.test(phone)) {
-      setErrorMessage('Please enter a valid 11-digit Bangladeshi phone number (e.g., 01*********).');
+    if (!isValidEmailSyntax(identifier)) {
+      setErrorMessage(t('forgot.errors.invalidEmail'));
+      return;
+    }
+    if (!isAllowedEmail(identifier)) {
+      setErrorMessage(t('forgot.errors.emailNotAllowed'));
       return;
     }
 
@@ -47,17 +46,13 @@ export default function ForgotPasswordScreen() {
         params: { phone: identifier, purpose: 'reset' },
       });
     } catch (err: any) {
-      setErrorMessage(err?.data?.message || 'Could not send OTP. Please try again.');
+      setErrorMessage(err?.data?.message || t('forgot.errors.failed'));
     }
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
-      >
-        {/* Header with Back Button */}
+      {/* Header with Back Button */}
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.backButton}
@@ -68,75 +63,29 @@ export default function ForgotPasswordScreen() {
           </TouchableOpacity>
         </View>
 
-        <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+      <KeyboardAwareScrollView
+        contentContainerStyle={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
           {/* Title */}
-          <Text style={styles.title}>Forgot Password?</Text>
-          <Text style={styles.subtitle}>
-            {tab === 'phone'
-              ? 'Enter your phone number to get the password reset link.'
-              : 'Enter your email address to get the password reset link.'}
-          </Text>
-
-          {/* Tabs */}
-          <View style={styles.tabsContainer}>
-            <TouchableOpacity
-              style={styles.tabItem}
-              onPress={() => setTab('phone')}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.tabText, tab === 'phone' && styles.tabTextActive]}>
-                Phone Number
-              </Text>
-              {tab === 'phone' && <View style={styles.tabUnderline} />}
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.tabItem}
-              onPress={() => setTab('email')}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.tabText, tab === 'email' && styles.tabTextActive]}>
-                Email
-              </Text>
-              {tab === 'email' && <View style={styles.tabUnderline} />}
-            </TouchableOpacity>
-          </View>
+          <Text style={styles.title}>{t('forgot.title')}</Text>
+          <Text style={styles.subtitle}>{t('forgot.subtitle')}</Text>
 
           {/* Form */}
           <View style={styles.form}>
-            {tab === 'phone' ? (
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Phone Number*</Text>
-                <View style={styles.phoneInputContainer}>
-                  <View style={styles.countryCodeSelector}>
-                    <Text style={styles.flagEmoji}>🇧🇩</Text>
-                    <Text style={styles.countryCode}>+880</Text>
-                  </View>
-                  <View style={styles.phoneDivider} />
-                  <TextInput
-                    style={styles.phoneInput}
-                    value={phone}
-                    onChangeText={setPhone}
-                    placeholder="Phone number"
-                    placeholderTextColor="#A39E99"
-                    keyboardType="phone-pad"
-                    maxLength={11}
-                  />
-                </View>
-              </View>
-            ) : (
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Email</Text>
-                <TextInput
-                  style={styles.emailInput}
-                  value={email}
-                  onChangeText={setEmail}
-                  placeholder="hello@example.com"
-                  placeholderTextColor="#A39E99"
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                />
-              </View>
-            )}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>{t('forgot.emailLabel')}</Text>
+              <TextInput
+                style={styles.emailInput}
+                value={email}
+                onChangeText={setEmail}
+                placeholder="hello@example.com"
+                placeholderTextColor="#A39E99"
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            </View>
 
             {/* Error message */}
             {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
@@ -151,12 +100,11 @@ export default function ForgotPasswordScreen() {
               {isLoading ? (
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
-                <Text style={styles.sendButtonText}>Reset Password</Text>
+                <Text style={styles.sendButtonText}>{t('forgot.submit')}</Text>
               )}
             </TouchableOpacity>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }
@@ -211,30 +159,6 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     paddingHorizontal: 8,
   },
-  tabsContainer: {
-    flexDirection: 'row',
-    width: '100%',
-    marginBottom: 24,
-    gap: 24,
-  },
-  tabItem: {
-    alignItems: 'center',
-  },
-  tabText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#9C9690',
-    paddingBottom: 8,
-  },
-  tabTextActive: {
-    color: '#BD632F',
-  },
-  tabUnderline: {
-    height: 2,
-    width: '100%',
-    backgroundColor: '#BD632F',
-    borderRadius: 1,
-  },
   form: {
     width: '100%',
   },
@@ -247,41 +171,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1A1817',
     marginBottom: 8,
-  },
-  phoneInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E6E1DC',
-    borderRadius: 12,
-    height: 52,
-  },
-  countryCodeSelector: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingLeft: 16,
-    paddingRight: 8,
-  },
-  flagEmoji: {
-    fontSize: 20,
-    marginRight: 6,
-  },
-  countryCode: {
-    fontSize: 16,
-    color: '#1A1817',
-  },
-  phoneDivider: {
-    width: 1,
-    height: 24,
-    backgroundColor: '#E6E1DC',
-  },
-  phoneInput: {
-    flex: 1,
-    height: '100%',
-    paddingHorizontal: 16,
-    fontSize: 16,
-    color: '#1A1817',
   },
   emailInput: {
     backgroundColor: '#FFFFFF',

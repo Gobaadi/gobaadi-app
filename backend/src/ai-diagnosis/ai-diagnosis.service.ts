@@ -9,7 +9,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { AiDiagnosis, AiDiagnosisStatus } from './ai-diagnosis.entity';
 import { CreateAiDiagnosisDto } from './dto/create-ai-diagnosis.dto';
-import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import { S3Service } from '../s3/s3.service';
 import { DiagnosisResult } from './ai-diagnosis-analyzer.service';
 
 @Injectable()
@@ -19,7 +19,7 @@ export class AiDiagnosisService {
     private readonly aiDiagnosisRepository: Repository<AiDiagnosis>,
     @InjectQueue('ai-diagnosis-queue')
     private readonly aiDiagnosisQueue: Queue,
-    private readonly cloudinaryService: CloudinaryService,
+    private readonly s3Service: S3Service,
   ) {}
 
   async analyze(
@@ -79,8 +79,9 @@ export class AiDiagnosisService {
   }
 
   async uploadImage(file: Express.Multer.File): Promise<string> {
-    const result = await this.cloudinaryService.uploadFile(file.buffer, {
-      resourceType: 'image',
+    const result = await this.s3Service.uploadFile(file.buffer, {
+      folder: 'ai-diagnosis',
+      contentType: file.mimetype,
     });
     return result.url;
   }

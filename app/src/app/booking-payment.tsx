@@ -7,8 +7,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 export default function BookingPaymentScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const params = useLocalSearchParams();
 
@@ -24,7 +26,7 @@ export default function BookingPaymentScreen() {
           <Text style={styles.buttonText}>←</Text>
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>Booking Payment</Text>
+        <Text style={styles.headerTitle}>{t('bookingPayment.title')}</Text>
 
         <TouchableOpacity style={styles.circleButton} activeOpacity={0.8}>
           <Text style={styles.buttonText}>🔔</Text>
@@ -33,7 +35,7 @@ export default function BookingPaymentScreen() {
 
       {/* Content */}
       <View style={styles.content}>
-        <Text style={styles.sectionTitle}>Payment Method</Text>
+        <Text style={styles.sectionTitle}>{t('bookingPayment.sectionTitle')}</Text>
 
         {/* bKash select block */}
         <TouchableOpacity
@@ -46,7 +48,7 @@ export default function BookingPaymentScreen() {
             <View style={styles.bkashLogoContainer}>
               <Text style={styles.bkashLogoText}>b</Text>
             </View>
-            <Text style={styles.paymentMethodName}>bKash</Text>
+            <Text style={styles.paymentMethodName}>{t('bookingPayment.bkash')}</Text>
           </View>
           {/* Custom Check Icon */}
           <View style={styles.checkCircle}>
@@ -63,7 +65,7 @@ export default function BookingPaymentScreen() {
           activeOpacity={0.85}
         >
           <Text style={styles.payIcon}>🎟️</Text>
-          <Text style={styles.payText}>Pay Now</Text>
+          <Text style={styles.payText}>{t('bookingPayment.payNow')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

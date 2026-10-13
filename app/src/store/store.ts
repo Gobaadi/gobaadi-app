@@ -1,4 +1,5 @@
 import { configureStore } from '@reduxjs/toolkit';
+import { setupListeners } from '@reduxjs/toolkit/query';
 import authReducer, { setCredentials, setBootstrapped } from './authSlice';
 import { authApi } from './authApi';
 import { medicalRecordsApi } from './medicalRecordsApi';
@@ -96,7 +97,7 @@ export const store = configureStore({
     [videoCallApi.reducerPath]: videoCallApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware().concat(
+    getDefaultMiddleware({ immutableCheck: { warnAfter: 128 } }).concat(
       authApi.middleware,
       medicalRecordsApi.middleware,
       doctorPortalApi.middleware,
@@ -144,6 +145,7 @@ export const store = configureStore({
 });
 
 setStoreRef(store);
+setupListeners(store.dispatch);
 
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
@@ -157,7 +159,7 @@ export async function bootstrapAuth() {
   // the first request rather than forcing a fresh login here.
   const decoded = token ? decodeJwt(token) : null;
   const user: AuthUser | null = decoded
-    ? { id: decoded.sub, phone: decoded.phone, role: decoded.role }
+    ? { id: decoded.sub, phone: decoded.phone, role: decoded.role, name: decoded.name }
     : null;
   if (token && user && (refreshToken || decoded!.exp * 1000 > Date.now())) {
     store.dispatch(setCredentials({ user, token, refreshToken: refreshToken ?? undefined }));

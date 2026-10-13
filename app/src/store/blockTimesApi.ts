@@ -21,7 +21,43 @@ export interface CreateBlockTimeInput {
 
 export interface FeeEstimate {
   totalFee: number;
-  appointments: Array<{ id: number; patientName: string; fee: number }>;
+  appointments: { id: number; patientName: string; fee: number }[];
+}
+
+export interface BlockTimeConflict {
+  id: number;
+  startAt: string;
+  patientId: number;
+  price: number;
+  animalId?: number | null;
+  paymentStatus?: string;
+  animalName?: string | null;
+  ownerName?: string | null;
+}
+
+export interface BlockTimeBilling {
+  appointmentsFeeTotal: number;
+  cancellationFeesTotal: number;
+  totalFee: number;
+  cancellationFeeRate: number;
+  status: 'Pending' | 'Paid';
+}
+
+export interface BlockTimeConflictPayload {
+  statusCode: number;
+  message: string;
+  conflicts: BlockTimeConflict[];
+  estimatedWalletDeduction: number;
+  billing: BlockTimeBilling;
+}
+
+export interface CreateBlockTimeResult {
+  timeOff: BlockTime;
+  cancelledAppointments: BlockTimeConflict[];
+  refundedTotal: number;
+  cancellationFeesTotal: number;
+  walletDeduction: number;
+  billing: BlockTimeBilling;
 }
 
 export const blockTimesApi = createApi({
@@ -33,7 +69,7 @@ export const blockTimesApi = createApi({
       query: (doctorId) => `/doctors/${doctorId}/block-times`,
       providesTags: ['BlockTime'],
     }),
-    createBlockTime: builder.mutation<any, { id: number; data: CreateBlockTimeInput }>({
+    createBlockTime: builder.mutation<CreateBlockTimeResult, { id: number; data: CreateBlockTimeInput }>({
       query: ({ id, data }) => ({
         url: `/doctors/${id}/block-times`,
         method: 'POST',

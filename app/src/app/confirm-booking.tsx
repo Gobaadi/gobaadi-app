@@ -4,12 +4,23 @@ import {
   View,
   Text,
   TouchableOpacity,
-  Image,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useGetDoctorByIdQuery, useBookSlotMutation } from '@/store/doctorsApi';
+import { useTranslation } from 'react-i18next';
+import { useGetDoctorByIdQuery } from '@/store/doctorsApi';
+import { DoctorAvatar } from '@/components/doctor-avatar';
+import { SvgXml } from 'react-native-svg';
+
+import {
+  backButtonSvg,
+  confirmPaymentSvg,
+  doctorCardLocationSvg,
+  doctorCardStarSvg,
+  doctorNotificationSvg,
+} from '@/components/icons/svg-icon-sources';
 
 function pad(n: number): string {
   return String(n).padStart(2, '0');
@@ -17,6 +28,7 @@ function pad(n: number): string {
 
 export default function ConfirmBookingScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const params = useLocalSearchParams();
   const doctorId = String(params.id || '');
   const selectedDay = params.day ? String(params.day) : '28';
@@ -24,54 +36,46 @@ export default function ConfirmBookingScreen() {
   const selectedVisitType = params.visitType ? String(params.visitType) : 'Online';
   const bookingReason = params.reason ? String(params.reason) : '';
 
-  const { data: doctorData } = useGetDoctorByIdQuery(doctorId, { skip: !doctorId });
-  const [bookSlot, { isLoading }] = useBookSlotMutation();
+  const { data: doctorData, isLoading: doctorLoading } = useGetDoctorByIdQuery(doctorId, { skip: !doctorId });
 
   const doctor = useMemo(() => {
     if (!doctorData) {
       return {
         id: doctorId || '1',
-        name: 'Dr. David Patel',
-        specialty: 'Veterinary Surgery',
-        location: 'Cardiology Center, USA',
-        rating: 5,
-        reviews: 1872,
-        image: require('@/assets/images/doctor.png'),
+        name: t('confirmBooking.defaultDoctor'),
+        specialty: '',
+        location: '',
+        rating: 0,
+        reviews: 0,
+        avatar: null,
       };
     }
     return {
       id: String(doctorData.id),
       name: doctorData.name,
       specialty: doctorData.specialty,
-      location: 'Uttar Badda, Dhaka',
+      location: doctorData.location || '',
       rating: doctorData.rating || 4.8,
       reviews: 124,
-      image: doctorData.avatar === 'jessica_doctor.png'
-        ? require('@/assets/images/jessica_doctor.png')
-        : require('@/assets/images/michael_doctor.png'),
+      avatar: doctorData.avatar ?? '',
     };
-  }, [doctorData, doctorId]);
+  }, [doctorData, doctorId, t]);
 
   const today = new Date();
-  const monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December',
+  const monthKeys = [
+    'january', 'february', 'march', 'april', 'may', 'june',
+    'july', 'august', 'september', 'october', 'november', 'december',
   ];
-  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const dayKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
   const dateObj = new Date(today.getFullYear(), today.getMonth(), Number(selectedDay));
-  const fullDateDisplay = `${dayNames[dateObj.getDay()]}, ${pad(Number(selectedDay))} ${monthNames[today.getMonth()]} ${today.getFullYear()}`;
+  const fullDateDisplay = t('confirmBooking.fullDate', {
+    day: t(`confirmBooking.daysShort.${dayKeys[dateObj.getDay()]}`),
+    dayNum: pad(Number(selectedDay)),
+    month: t(`confirmBooking.months.${monthKeys[today.getMonth()]}`),
+    year: today.getFullYear(),
+  });
 
-  const handleConfirmPayment = async () => {
-    try {
-      const dateStr = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(Number(selectedDay))}`;
-      await bookSlot({
-        doctorId: doctor.id,
-        date: dateStr,
-        time: selectedTime,
-      }).unwrap();
-    } catch (err) {
-      console.log('Error booking slot:', err);
-    }
+  const handleConfirmPayment = () => {
     router.push({
       pathname: '/booking-details',
       params: {
@@ -93,13 +97,13 @@ export default function ConfirmBookingScreen() {
           onPress={() => router.back()}
           activeOpacity={0.8}
         >
-          <Text style={styles.buttonText}>←</Text>
+          <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>Confirm Booking</Text>
+        <Text style={styles.headerTitle}>{t('confirmBooking.title')}</Text>
 
         <TouchableOpacity style={styles.circleButton} activeOpacity={0.8}>
-          <Text style={styles.buttonText}>🔔</Text>
+          <SvgXml width={20} height={20} xml={doctorNotificationSvg} />
         </TouchableOpacity>
       </View>
 
@@ -108,43 +112,63 @@ export default function ConfirmBookingScreen() {
         <View style={styles.infoCard}>
           {/* Doctor Row */}
           <View style={styles.doctorRow}>
-            <Image source={doctor.image} style={styles.doctorPortrait} />
+            {doctorLoading ? (
+              <View style={[styles.doctorPortrait, styles.doctorPortraitPlaceholder]}>
+                <ActivityIndicator size="small" color="#BD632F" />
+              </View>
+            ) : (
+              <DoctorAvatar
+                name={doctor.name}
+                avatar={doctor.avatar}
+                size={72}
+                radius={16}
+                style={styles.doctorPortrait}
+              />
+            )}
             <View style={styles.doctorDetails}>
-              <Text style={styles.doctorName}>{doctor.name}</Text>
-              <Text style={styles.doctorSpecialty}>{doctor.specialty}</Text>
-              <View style={styles.ratingLocationRow}>
-                <Text style={styles.locationPin}>📍</Text>
-                <Text style={styles.locationTextMeta}>{doctor.location}</Text>
-              </View>
-              <View style={styles.ratingRow}>
-                <Text style={styles.starIcon}>⭐</Text>
-                <Text style={styles.ratingValue}>{doctor.rating}</Text>
-                <Text style={styles.reviewsText}>| {doctor.reviews} Reviews</Text>
-              </View>
+              <Text style={styles.doctorName}>
+                {doctorLoading ? t('confirmBooking.loading') : doctor.name}
+              </Text>
+              {!!doctor.specialty && (
+                <Text style={styles.doctorSpecialty}>{doctor.specialty}</Text>
+              )}
+              {!!doctor.location && (
+                <View style={styles.ratingLocationRow}>
+                  <SvgXml width={11} height={11} xml={doctorCardLocationSvg} style={styles.locationPin} />
+                  <Text style={styles.locationTextMeta}>{doctor.location}</Text>
+                </View>
+              )}
+              {!!doctorData && (
+                <View style={styles.ratingRow}>
+                  <SvgXml width={11} height={11} xml={doctorCardStarSvg} style={styles.starIcon} />
+                  <Text style={styles.ratingValue}>{doctor.rating}</Text>
+                  <Text style={styles.reviewsText}>{t('confirmBooking.reviews', { reviews: doctor.reviews })}</Text>
+                </View>
+              )}
             </View>
           </View>
 
           {/* Booking Reason */}
-          <Text style={styles.sectionHeader}>Booking Reason</Text>
-          <Text style={styles.reasonText}>{bookingReason || 'The symptom was extreme fever'}</Text>
+          <Text style={styles.sectionHeader}>{t('confirmBooking.bookingReason')}</Text>
+          <Text style={styles.reasonText}>{bookingReason || '—'}</Text>
 
           <View style={styles.divider} />
 
           {/* Your Slot */}
-          <Text style={styles.sectionHeader}>Your Slot</Text>
+          <Text style={styles.sectionHeader}>{t('confirmBooking.yourSlot')}</Text>
 
           <View style={styles.slotDetailRow}>
-            <Text style={styles.slotLabel}>Hour</Text>
+            <Text style={styles.slotLabel}>{t('confirmBooking.hour')}</Text>
             <Text style={styles.slotValue}>{selectedTime}</Text>
           </View>
 
           <View style={styles.slotDetailRow}>
-            <Text style={styles.slotLabel}>Dates</Text>
+            <Text style={styles.slotLabel}>{t('confirmBooking.dates')}</Text>
             <Text style={styles.slotValue}>{fullDateDisplay}</Text>
           </View>
 
           <View style={styles.slotDetailRow}>
-            <Text style={styles.slotLabel}>Visit Type</Text>
+            <Text style={styles.slotLabel}>{t('confirmBooking.visitType')}</Text>
             <Text style={[styles.slotValue, styles.onlineText]}>{selectedVisitType}</Text>
           </View>
         </View>
@@ -153,13 +177,12 @@ export default function ConfirmBookingScreen() {
       {/* Bottom Confirm Payment Button */}
       <View style={styles.bottomBar}>
         <TouchableOpacity
-          style={[styles.confirmButton, isLoading && { opacity: 0.6 }]}
+          style={styles.confirmButton}
           onPress={handleConfirmPayment}
-          disabled={isLoading}
           activeOpacity={0.85}
         >
-          <Text style={styles.confirmButtonIcon}>💵</Text>
-          <Text style={styles.confirmButtonText}>Confirm Payment</Text>
+          <SvgXml width={20} height={20} xml={confirmPaymentSvg} style={styles.confirmButtonIcon} />
+          <Text style={styles.confirmButtonText}>{t('confirmBooking.confirmPayment')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -186,11 +209,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#BD632F',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '700',
   },
   headerTitle: {
     fontSize: 20,
@@ -224,6 +242,11 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     marginRight: 14,
   },
+  doctorPortraitPlaceholder: {
+    backgroundColor: '#F3EFE9',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   doctorDetails: {
     flex: 1,
     justifyContent: 'center',
@@ -245,8 +268,6 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   locationPin: {
-    fontSize: 10,
-    color: '#9C9690',
     marginRight: 4,
   },
   locationTextMeta: {
@@ -258,7 +279,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   starIcon: {
-    fontSize: 10,
     marginRight: 4,
   },
   ratingValue: {
@@ -333,8 +353,6 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   confirmButtonIcon: {
-    color: '#FFFFFF',
-    fontSize: 18,
     marginRight: 8,
   },
   confirmButtonText: {

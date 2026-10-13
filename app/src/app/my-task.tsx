@@ -9,8 +9,9 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
+import { SvgXml } from 'react-native-svg';
 import {
   useGetTasksQuery,
   useToggleTaskMutation,
@@ -18,28 +19,67 @@ import {
   Task,
 } from '@/store/tasksApi';
 import { RowSkeleton } from '@/components/ui/skeleton';
+import { formatLocalDateKey, localDateKey, formatTime12h } from '@/utils/date';
+import { apiErrorMessage } from '@/utils/api-error';
+import {
+  backButtonSvg,
+  myTaskCalendarSvg,
+  myTaskBlueCalendarSvg,
+  myTaskCardCalendarSvg,
+  myTaskCheckMarkSvg,
+  myTaskDeleteMarkSvg,
+  morningFeedSvg,
+  waterSupplyCheckSvg,
+  addTaskCalendarSvg,
+  addTaskCleaningSvg,
+  addTaskVaccinationSvg,
+  addTaskHealthCheckSvg,
+} from '@/components/icons/svg-icon-sources';
 
-function todayDateKey(): string {
-  return new Date().toISOString().slice(0, 10);
+function taskBadgeSvg(title: string): string | null {
+  const lower = title.toLowerCase();
+  if (lower.includes('water')) return waterSupplyCheckSvg;
+  if (lower.includes('feed')) return morningFeedSvg;
+  if (lower.includes('clean')) return addTaskCleaningSvg;
+  if (lower.includes('vaccin')) return addTaskVaccinationSvg;
+  if (lower.includes('health')) return addTaskHealthCheckSvg;
+  return null;
 }
 
 function formatTaskTime(scheduledTime?: string): string {
   if (!scheduledTime) return '07:00 PM';
-  try {
-    return new Date(scheduledTime).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-  } catch {
-    return '07:00 PM';
-  }
+  return formatTime12h(scheduledTime) || '07:00 PM';
+}
+
+function parseEndTime(detail?: string): string {
+  if (!detail) return '—';
+  const match = detail.match(/-\s*(\d{1,2}:\d{2}\s*(?:AM|PM))/i);
+  return match ? match[1] : '—';
+}
+
+function parseInstruction(detail?: string): string {
+  if (!detail) return '';
+  const match = detail.match(/Instruction:\s*(.+)$/i);
+  return match ? match[1].trim() : '';
+}
+
+function formatTodayDate(dateKey: string): string {
+  return formatLocalDateKey(dateKey);
 }
 
 export default function MyTaskScreen() {
   const router = useRouter();
-  const { data: tasks = [], isLoading: isTasksLoading } = useGetTasksQuery(todayDateKey());
+  const { t } = useTranslation();
+  const params = useLocalSearchParams<{ date?: string | string[] }>();
+  const rawDate = Array.isArray(params.date) ? params.date[0] : params.date;
+  const listDate = rawDate && /^\d{4}-\d{2}-\d{2}$/.test(rawDate) ? rawDate : localDateKey();
+  const { data: tasks = [], isLoading: isTasksLoading } = useGetTasksQuery(listDate);
   const [toggleTaskMutation] = useToggleTaskMutation();
   const [deleteTaskMutation] = useDeleteTaskMutation();
 
   const [activeFilter, setActiveFilter] = useState<'all' | 'pending' | 'completed'>('all');
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const pendingTasks = tasks.filter((t) => !t.isDone);
   const completedTasks = tasks.filter((t) => t.isDone);
@@ -56,17 +96,21 @@ export default function MyTaskScreen() {
       await toggleTaskMutation(String(id)).unwrap();
     } catch (err) {
       console.log('Error toggling task:', err);
+      Alert.alert(t('myTask.alerts.updateFailed'), apiErrorMessage(err, t('myTask.alerts.tryAgain')));
     }
   }
 
   async function confirmDelete() {
-    if (!taskToDelete) return;
+    if (!taskToDelete || isDeleting) return;
+    setIsDeleting(true);
     try {
       await deleteTaskMutation(String(taskToDelete.id)).unwrap();
+      setTaskToDelete(null);
     } catch (err) {
       console.log('Error deleting task:', err);
+      Alert.alert(t('myTask.alerts.deleteFailed'), apiErrorMessage(err, t('myTask.alerts.tryAgain')));
     } finally {
-      setTaskToDelete(null);
+      setIsDeleting(false);
     }
   }
 
@@ -79,17 +123,17 @@ export default function MyTaskScreen() {
           onPress={() => router.back()}
           activeOpacity={0.8}
         >
-          <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+          <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>My Task</Text>
+        <Text style={styles.headerTitle}>{t('myTask.title')}</Text>
 
         <TouchableOpacity
           style={styles.headerSquareBtn}
           onPress={() => router.push('/add-task')}
           activeOpacity={0.8}
         >
-          <Ionicons name="calendar-outline" size={20} color="#FFFFFF" />
+          <SvgXml width={20} height={20} xml={myTaskCalendarSvg} />
         </TouchableOpacity>
       </View>
 
@@ -98,13 +142,13 @@ export default function MyTaskScreen() {
         <View style={styles.dateWeatherCard}>
           <View style={styles.dateWeatherLeft}>
             <View style={styles.calendarCircle}>
-              <Ionicons name="calendar-outline" size={18} color="#2B6CB0" />
+              <SvgXml width={18} height={18} xml={myTaskBlueCalendarSvg} />
             </View>
-            <Text style={styles.dateText}>Thursday, 10 Sep 2025</Text>
+            <Text style={styles.dateText}>{formatTodayDate(listDate)}</Text>
           </View>
           <View style={styles.weatherRight}>
             <Text style={styles.weatherIcon}>⛅</Text>
-            <Text style={styles.tempText}>29°C</Text>
+            <Text style={styles.tempText}>—°C</Text>
           </View>
         </View>
 
@@ -116,7 +160,7 @@ export default function MyTaskScreen() {
             activeOpacity={0.8}
           >
             <Text style={[styles.filterPillText, activeFilter === 'all' && styles.filterPillTextActive]}>
-              All Tasks ({tasks.length})
+              {t('myTask.filters.all', { count: tasks.length })}
             </Text>
           </TouchableOpacity>
 
@@ -126,7 +170,7 @@ export default function MyTaskScreen() {
             activeOpacity={0.8}
           >
             <Text style={[styles.filterPillText, activeFilter === 'pending' && styles.filterPillTextActive]}>
-              Pending ({pendingTasks.length})
+              {t('myTask.filters.pending', { count: pendingTasks.length })}
             </Text>
           </TouchableOpacity>
 
@@ -136,7 +180,7 @@ export default function MyTaskScreen() {
             activeOpacity={0.8}
           >
             <Text style={[styles.filterPillText, activeFilter === 'completed' && styles.filterPillTextActive]}>
-              Completed ({completedTasks.length})
+              {t('myTask.filters.completed', { count: completedTasks.length })}
             </Text>
           </TouchableOpacity>
         </View>
@@ -147,16 +191,16 @@ export default function MyTaskScreen() {
           onPress={() => router.push('/add-task')}
           activeOpacity={0.85}
         >
-          <Text style={styles.addMainTaskBtnText}>Add Task</Text>
+          <Text style={styles.addMainTaskBtnText}>{t('myTask.addTask')}</Text>
         </TouchableOpacity>
 
         {/* Section Title */}
         <Text style={styles.sectionTitle}>
           {activeFilter === 'all'
-            ? 'All Tasks'
+            ? t('myTask.sections.all')
             : activeFilter === 'pending'
-            ? 'Pending Tasks'
-            : 'Completed Tasks'}
+            ? t('myTask.sections.pending')
+            : t('myTask.sections.completed')}
         </Text>
 
         {/* Task Cards or Empty State */}
@@ -169,17 +213,21 @@ export default function MyTaskScreen() {
           /* Empty State Matching Screenshot 2 */
           <View style={styles.emptyCardContainer}>
             <View style={styles.emptyIconBadge}>
-              <Ionicons name="calendar-outline" size={32} color="#BD632F" />
+              <SvgXml width={48} height={48} xml={addTaskCalendarSvg} />
             </View>
-            <Text style={styles.emptyTitle}>Schedule New Task</Text>
-            <Text style={styles.emptySubtitle}>You have no Task for Today</Text>
+            <Text style={styles.emptyTitle}>{t('myTask.empty.title')}</Text>
+            <Text style={styles.emptySubtitle}>
+              {t('myTask.empty.subtitle', {
+                date: listDate === localDateKey() ? t('myTask.today') : formatLocalDateKey(listDate),
+              })}
+            </Text>
 
             <TouchableOpacity
               style={styles.emptyAddBtn}
               onPress={() => router.push('/add-task')}
               activeOpacity={0.85}
             >
-              <Text style={styles.emptyAddBtnText}>Add Task</Text>
+              <Text style={styles.emptyAddBtnText}>{t('myTask.addTask')}</Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -195,24 +243,18 @@ export default function MyTaskScreen() {
               <View style={styles.taskCardTopRow}>
                 <View style={styles.taskTitleContainer}>
                   <View style={styles.taskTypeBadge}>
-                    <Text style={styles.badgeEmoji}>
-                      {task.title.toLowerCase().includes('water')
-                        ? '💧'
-                        : task.title.toLowerCase().includes('feed')
-                        ? '🌾'
-                        : task.title.toLowerCase().includes('clean')
-                        ? '🧹'
-                        : task.title.toLowerCase().includes('vaccin')
-                        ? '💉'
-                        : '📋'}
-                    </Text>
+                    {taskBadgeSvg(task.title) ? (
+                      <SvgXml width={24} height={24} xml={taskBadgeSvg(task.title) as string} />
+                    ) : (
+                      <Text style={styles.badgeEmoji}>📋</Text>
+                    )}
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.taskCardTitle, task.isDone && styles.taskCardTitleDone]}>
                       {task.title}
                     </Text>
                     <Text style={styles.taskCardSpec}>
-                      {task.detail || 'Cow Shed'}
+                      {task.detail || t('myTask.cowShed')}
                     </Text>
                   </View>
                 </View>
@@ -220,7 +262,7 @@ export default function MyTaskScreen() {
                 {/* Right Action */}
                 {task.isDone ? (
                   <View style={styles.checkDoneCircle}>
-                    <Ionicons name="checkmark" size={16} color="#FFFFFF" />
+                    <SvgXml width={16} height={13} xml={myTaskCheckMarkSvg} />
                   </View>
                 ) : (
                   <TouchableOpacity
@@ -228,7 +270,7 @@ export default function MyTaskScreen() {
                     onPress={() => setTaskToDelete(task)}
                     activeOpacity={0.7}
                   >
-                    <Ionicons name="trash-outline" size={20} color="#E53935" />
+                    <SvgXml width={20} height={20} xml={myTaskDeleteMarkSvg} />
                   </TouchableOpacity>
                 )}
               </View>
@@ -236,22 +278,24 @@ export default function MyTaskScreen() {
               {/* Time Row */}
               <View style={styles.timeRow}>
                 <View style={styles.timeCol}>
-                  <Ionicons name="calendar-outline" size={14} color="#BD7D5B" />
-                  <Text style={styles.timeLabel}>Work Start </Text>
+                  <SvgXml width={14} height={14} xml={myTaskCardCalendarSvg} />
+                  <Text style={styles.timeLabel}>{t('myTask.workStart')} </Text>
                   <Text style={styles.timeVal}>{formatTaskTime(task.scheduledTime)}</Text>
                 </View>
                 <View style={styles.timeDividerVertical} />
                 <View style={styles.timeCol}>
-                  <Ionicons name="calendar-outline" size={14} color="#BD7D5B" />
-                  <Text style={styles.timeLabel}>Work End </Text>
-                  <Text style={styles.timeVal}>08:00 PM</Text>
+                  <SvgXml width={14} height={14} xml={myTaskCardCalendarSvg} />
+                  <Text style={styles.timeLabel}>{t('myTask.workEnd')} </Text>
+                  <Text style={styles.timeVal}>{parseEndTime(task.detail)}</Text>
                 </View>
               </View>
 
               {/* Description */}
-              <Text style={styles.taskDescription}>
-                Feed livestock according to the planned diet.
-              </Text>
+              {parseInstruction(task.detail) ? (
+                <Text style={styles.taskDescription}>
+                  {parseInstruction(task.detail)}
+                </Text>
+              ) : null}
 
               {/* Card Action Buttons for Pending Task */}
               {!task.isDone && (
@@ -261,7 +305,7 @@ export default function MyTaskScreen() {
                     onPress={() => handleToggleDone(task.id)}
                     activeOpacity={0.8}
                   >
-                    <Text style={styles.markDoneBtnText}>Mark Done</Text>
+                    <Text style={styles.markDoneBtnText}>{t('myTask.markDone')}</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
@@ -274,7 +318,7 @@ export default function MyTaskScreen() {
                     }
                     activeOpacity={0.8}
                   >
-                    <Text style={styles.editTaskBtnText}>Edit Task</Text>
+                    <Text style={styles.editTaskBtnText}>{t('myTask.editTask')}</Text>
                   </TouchableOpacity>
                 </View>
               )}
@@ -293,11 +337,11 @@ export default function MyTaskScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalBox}>
             <View style={styles.deleteModalIconCircle}>
-              <Ionicons name="trash-outline" size={28} color="#E53935" />
+              <SvgXml width={26} height={26} xml={myTaskDeleteMarkSvg} />
             </View>
-            <Text style={styles.modalTitle}>Delete Task?</Text>
+            <Text style={styles.modalTitle}>{t('myTask.deleteModal.title')}</Text>
             <Text style={styles.modalMessage}>
-              Are you really sure you want to delete &quot;{taskToDelete?.title}&quot;? This action cannot be undone.
+              {t('myTask.deleteModal.message', { title: taskToDelete?.title ?? '' })}
             </Text>
 
             <View style={styles.modalButtonsRow}>
@@ -306,15 +350,18 @@ export default function MyTaskScreen() {
                 onPress={() => setTaskToDelete(null)}
                 activeOpacity={0.8}
               >
-                <Text style={styles.modalCancelText}>Cancel</Text>
+                <Text style={styles.modalCancelText}>{t('myTask.deleteModal.cancel')}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.modalConfirmBtn}
+                style={[styles.modalConfirmBtn, isDeleting && { opacity: 0.6 }]}
                 onPress={confirmDelete}
+                disabled={isDeleting}
                 activeOpacity={0.8}
               >
-                <Text style={styles.modalConfirmText}>Yes, Delete</Text>
+                <Text style={styles.modalConfirmText}>
+                  {isDeleting ? t('myTask.deleteModal.deleting') : t('myTask.deleteModal.confirm')}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>

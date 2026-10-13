@@ -7,43 +7,50 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, Repository, SelectQueryBuilder } from 'typeorm';
+import { Animal } from '../animals/animal.entity';
+import { assertCanCall, ConsultationGateState } from '../common/call-gate';
+import { PaginatedResult } from '../common/paginated-result.interface';
+import { DiscountsService } from '../discounts/discounts.service';
+import { Doctor, DoctorsService } from '../doctors/doctors.service';
+import {
+  MedicalEvent,
+  MedicalEventStatus,
+  MedicalEventType,
+} from '../medical-events/medical-event.entity';
+import { NotificationType } from '../notifications/notification.entity';
+import { NotificationsService } from '../notifications/notifications.service';
+import { Service } from '../services/service.entity';
+import { TimeOffService } from '../time-off/time-off.service';
+import { User, UserRole } from '../users/user.entity';
+import { UsersService } from '../users/users.service';
+import { VideoCallService } from '../video-call/video-call.service';
+import { WalletService } from '../wallet/wallet.service';
 import {
   Appointment,
   AppointmentStatus,
   ConsultationType,
 } from './appointment.entity';
-import { DoctorsService, Doctor } from '../doctors/doctors.service';
-import { UserRole } from '../users/user.entity';
-import { UsersService } from '../users/users.service';
-import { Service } from '../services/service.entity';
-import { Animal } from '../animals/animal.entity';
-import { DiscountsService } from '../discounts/discounts.service';
-import { WalletService } from '../wallet/wallet.service';
-import { TimeOffService } from '../time-off/time-off.service';
+import { CancelAppointmentDto } from './dto/cancel-appointment.dto';
 import {
   addMinutes,
   parseSlotDateTime,
   subMinutes,
 } from './utils/slot-time.util';
-import { NotificationsService } from '../notifications/notifications.service';
-import { NotificationType } from '../notifications/notification.entity';
-import { CancelAppointmentDto } from './dto/cancel-appointment.dto';
-import { PaginatedResult } from '../common/paginated-result.interface';
-import {
-  MedicalEvent,
-  MedicalEventType,
-  MedicalEventStatus,
-} from '../medical-events/medical-event.entity';
-import { VideoCallService } from '../video-call/video-call.service';
-import { User } from '../users/user.entity';
+import { dhakaDayWindow } from './utils/dhaka-day-window.util';
 
 const RESCHEDULE_CANCEL_BUFFER_MS = 1 * 60 * 60 * 1000; // 1 hour
 
 export interface AppointmentWithPatient extends Appointment {
   patientName?: string;
   patientPhone?: string;
+  patientAvatar?: string;
   animalName?: string;
   animalImage?: string;
+  animalBreed?: string;
+  animalAge?: string;
+  doctorName?: string;
+  doctorSpecialty?: string;
+  doctorAvatar?: string;
 }
 
 export type AppointmentListFilter =
@@ -88,18 +95,19 @@ export class AppointmentsService {
     reasonForConsultation?: string,
     symptoms?: string[],
   ): Promise<Appointment> {
-    if (animalId) {
-      const animal = await this.animalRepository.findOneBy({
-        id: animalId,
-        userId: patientId,
-      });
-      if (!animal) {
-        throw new BadRequestException(
-          'animalId must belong to the booking user',
-        );
-      }
-    }
-
+    console.log(
+      'this is Bookappointment',
+      doctorId,
+      patientId,
+      date,
+      time,
+      clinicId,
+      serviceId,
+      animalId,
+      consultationType,
+      reasonForConsultation,
+      symptoms,
+    );
     const startAt = parseSlotDateTime(date, time);
     const appointment = await this.assertNoConflictAndBook(
       doctorId,
@@ -531,11 +539,7 @@ export class AppointmentsService {
       throw new ForbiddenException('No doctor profile linked to this account');
     }
 
-    const now = new Date();
-    const todayStart = new Date(now);
-    todayStart.setHours(0, 0, 0, 0);
-    const todayEnd = new Date(todayStart);
-    todayEnd.setDate(todayEnd.getDate() + 1);
+    const { start: todayStart, end: todayEnd } = dhakaDayWindow(new Date());
 
     const totalToday = await this.appointmentRepository
       .createQueryBuilder('a')
@@ -592,7 +596,9 @@ export class AppointmentsService {
       page?: number;
       limit?: number;
     },
-  ): Promise<AppointmentWithPatient[] | PaginatedResult<AppointmentWithPatient>> {
+  ): Promise<
+    AppointmentWithPatient[] | PaginatedResult<AppointmentWithPatient>
+  > {
     const doctor = await this.doctorsService.getDoctorByUserId(doctorUserId);
     if (!doctor) {
       throw new ForbiddenException('No doctor profile linked to this account');
@@ -707,23 +713,16 @@ export class AppointmentsService {
       requesterId,
       requesterRole,
     );
-    if (
-      appointment.consultationType !== ConsultationType.ONLINE_VIDEO &&
-      appointment.consultationType !== ConsultationType.ONLINE_VOICE &&
-      appointment.consultationType !== ConsultationType.ONLINE_CHAT
-    ) {
-      throw new BadRequestException(
-        'This appointment is not an online consultation',
-      );
-    }
-    if (
-      appointment.status !== AppointmentStatus.CONFIRMED &&
-      appointment.status !== AppointmentStatus.RESCHEDULED
-    ) {
-      throw new BadRequestException(
-        'This appointment is not in a joinable state',
-      );
-    }
+    const consultation = await this.medicalEventRepository.findOne({
+      where: { appointmentId, type: MedicalEventType.CONSULTATION },
+      order: { createdAt: 'DESC' },
+    });
+    const consultationState: ConsultationGateState = !consultation
+      ? 'none'
+      : consultation.status === MedicalEventStatus.ONGOING
+        ? 'ONGOING'
+        : 'COMPLETED';
+    assertCanCall(appointment, { consultationState });
 
     const session =
       await this.videoCallService.getOrCreateSession(appointmentId);
@@ -756,18 +755,6 @@ export class AppointmentsService {
         : [];
     const animalsById = new Map(animals.map((a) => [a.id, a]));
 
-    if (role !== UserRole.DOCTOR) {
-      return appointments.map((appointment) => ({
-        ...appointment,
-        animalName: appointment.animalId
-          ? animalsById.get(appointment.animalId)?.name
-          : undefined,
-        animalImage: appointment.animalId
-          ? animalsById.get(appointment.animalId)?.image
-          : undefined,
-      }));
-    }
-
     const distinctPatientIds = [
       ...new Set(appointments.map((a) => a.patientId)),
     ];
@@ -780,16 +767,62 @@ export class AppointmentsService {
         .map((p) => [p.id, p]),
     );
 
-    return appointments.map((appointment) => ({
-      ...appointment,
-      patientName: patientsById.get(appointment.patientId)?.name,
-      patientPhone: patientsById.get(appointment.patientId)?.phone,
+    const patientFields = (appointment: Appointment) => {
+      const patient = patientsById.get(appointment.patientId);
+      return {
+        patientName: patient?.name,
+        patientPhone: patient?.phone,
+        patientImage: patient?.profilePhoto || patient?.avatar,
+      };
+    };
+
+    const animalFields = (appointment: Appointment) => ({
       animalName: appointment.animalId
         ? animalsById.get(appointment.animalId)?.name
         : undefined,
       animalImage: appointment.animalId
         ? animalsById.get(appointment.animalId)?.image
         : undefined,
+      animalBreed: appointment.animalId
+        ? animalsById.get(appointment.animalId)?.breed
+        : undefined,
+      animalAge: appointment.animalId
+        ? animalsById.get(appointment.animalId)?.age
+        : undefined,
+    });
+
+    if (role !== UserRole.DOCTOR) {
+      const distinctDoctorIds = [
+        ...new Set(appointments.map((a) => a.doctorId)),
+      ];
+      const doctors = await Promise.all(
+        distinctDoctorIds.map((id) =>
+          this.doctorsService.getDoctorById(id).catch(() => null),
+        ),
+      );
+      const doctorsById = new Map(
+        doctors.filter(Boolean).map((d) => [d!.id, d!]),
+      );
+
+      return appointments.map((appointment) => ({
+        ...appointment,
+        ...patientFields(appointment),
+        ...animalFields(appointment),
+        doctorName: doctorsById.get(appointment.doctorId)?.name,
+        doctorSpecialty: doctorsById.get(appointment.doctorId)?.specialty,
+        doctorAvatar: doctorsById.get(appointment.doctorId)?.avatar,
+      }));
+    }
+
+    return appointments.map((appointment) => ({
+      ...appointment,
+      patientName: patientsById.get(appointment.patientId)?.name,
+      patientPhone: patientsById.get(appointment.patientId)?.phone,
+      patientAvatar:
+        patientsById.get(appointment.patientId)?.profilePhoto ||
+        patientsById.get(appointment.patientId)?.avatar ||
+        undefined,
+      ...animalFields(appointment),
     }));
   }
 
@@ -862,10 +895,10 @@ export class AppointmentsService {
   }
 
   private enforceReschedulableBuffer(appointment: Appointment): void {
-    if (
-      appointment.startAt.getTime() - Date.now() <
-      RESCHEDULE_CANCEL_BUFFER_MS
-    ) {
+    const msUntilStart = appointment.startAt.getTime() - Date.now();
+    // Only future appointments need advance notice; appointments that already
+    // started (or passed) may always be cancelled/rescheduled for cleanup.
+    if (msUntilStart > 0 && msUntilStart < RESCHEDULE_CANCEL_BUFFER_MS) {
       throw new BadRequestException(
         'Appointments can only be rescheduled or cancelled at least 1 hour in advance',
       );
