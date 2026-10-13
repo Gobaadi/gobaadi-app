@@ -16,7 +16,6 @@ import { useUpdateTaskMutation } from '@/store/tasksApi';
 import { apiErrorMessage } from '@/utils/api-error';
 import {
   backButtonSvg,
-  myTaskCalendarSvg,
   cowShedSvg,
   goatShedSvg,
   poultryShedSvg,
@@ -28,6 +27,17 @@ import {
   addTaskHealthCheckSvg,
   addTaskMicrophoneSvg,
 } from '@/components/icons/svg-icon-sources';
+import { SetTimePanel } from '@/components/ui/set-time-panel';
+import {
+  type TimeOfDay,
+  parseTime12,
+  toMinutes24,
+  fromMinutes24,
+  formatTime,
+  dateKeyFromIso,
+  dateFromDateKey,
+  snapDuration,
+} from '@/utils/time';
 import { useTranslation } from '@/hooks/use-translation';
 
 const SHEDS = [
@@ -97,14 +107,22 @@ export default function EditTaskScreen() {
   const [updateTask, { isLoading: isSubmitting }] = useUpdateTaskMutation();
 
   const parsed = parseExistingTask(params.title, params.detail);
+  const initialStart = parseTime12(parsed.start);
+  const initialEnd = parseTime12(parsed.end);
 
   const [selectedShed, setSelectedShed] = useState(parsed.shedId);
   const [selectedType, setSelectedType] = useState(parsed.typeId);
   const [customTask, setCustomTask] = useState(parsed.customName);
   const [repeat, setRepeat] = useState<'none' | 'daily' | 'weekly'>(parsed.repeat);
   const [instruction, setInstruction] = useState(parsed.instruction);
-  const [startTime, setStartTime] = useState(parsed.start);
-  const [endTime, setEndTime] = useState(parsed.end);
+  const [start, setStart] = useState<TimeOfDay>(initialStart);
+  const [durationMins, setDurationMins] = useState(() => snapDuration(initialStart, initialEnd));
+  const [selectedDate, setSelectedDate] = useState(() => dateKeyFromIso(params.scheduledTime));
+  const [dateTouched, setDateTouched] = useState(false);
+  const [timeTouched, setTimeTouched] = useState(false);
+
+  const startMinutes = toMinutes24(start);
+  const endTime = fromMinutes24(startMinutes + durationMins);
 
   async function handleUpdate() {
     if (!params.id) {
@@ -128,12 +146,17 @@ export default function EditTaskScreen() {
     const shedObj = SHEDS.find((shed) => shed.id === selectedShed);
     const title = customTask.trim() || `${typeObj?.name || 'Task'} - ${shedObj?.name || 'Farm'}`;
 
-    const detailParts = [`${shedObj?.name || 'Farm'} • ${startTime} - ${endTime}`];
+    const timeText = `${formatTime(start)} - ${formatTime(endTime)}`;
+    const detailParts = [`${shedObj?.name || 'Farm'} • ${timeText}`];
     if (repeat !== 'none') detailParts.push(`Repeat: ${repeat.charAt(0).toUpperCase() + repeat.slice(1)}`);
     if (instruction.trim()) detailParts.push(`Instruction: ${instruction.trim()}`);
 
-    // Use existing scheduledTime or current time
-    const scheduledTime = params.scheduledTime || new Date().toISOString();
+    let scheduledTime = params.scheduledTime || new Date().toISOString();
+    if (dateTouched || timeTouched) {
+      const scheduledDate = dateFromDateKey(selectedDate);
+      scheduledDate.setHours(Math.floor(startMinutes / 60), start.minute, 0, 0);
+      scheduledTime = scheduledDate.toISOString();
+    }
 
     try {
       await updateTask({
@@ -164,9 +187,7 @@ export default function EditTaskScreen() {
 
         <Text style={styles.headerTitle}>{t('editTask.header')}</Text>
 
-        <TouchableOpacity style={styles.headerSquareBtn} activeOpacity={0.8}>
-          <SvgXml width={20} height={20} xml={myTaskCalendarSvg} />
-        </TouchableOpacity>
+        <View style={styles.headerSquareSpacer} />
       </View>
 
       <KeyboardAwareScrollView
@@ -199,7 +220,7 @@ export default function EditTaskScreen() {
                   <Ionicons
                     name={isSel ? 'radio-button-on' : 'radio-button-off'}
                     size={22}
-                    color={isSel ? '#BD632F' : '#9C9690'}
+                    color={isSel ? '#BD632F' : '#7C7672'}
                   />
                 </TouchableOpacity>
               );
@@ -222,10 +243,10 @@ export default function EditTaskScreen() {
                     <Ionicons
                       name={isSel ? 'radio-button-on' : 'radio-button-off'}
                       size={18}
-                      color={isSel ? '#BD632F' : '#9C9690'}
+                      color={isSel ? '#BD632F' : '#7C7672'}
                     />
                   </View>
-                  <View style={styles.typeIconCircle}>
+                  <View style={[styles.typeIconCircle, isSel && styles.typeIconCircleSelected]}>
                     <SvgXml width={24} height={24} xml={type.icon} />
                   </View>
                   <Text style={[styles.typeName, isSel && styles.typeNameSelected]}>
@@ -256,24 +277,43 @@ export default function EditTaskScreen() {
             </TouchableOpacity>
           </View>
 
+          {/* Set Time */}
+          <SetTimePanel
+            i18nPrefix="editTask"
+            dateKey={selectedDate}
+            onDateChange={(key) => {
+              setSelectedDate(key);
+              setDateTouched(true);
+            }}
+            time={start}
+            onTimeChange={(next) => {
+              setStart(next);
+              setTimeTouched(true);
+            }}
+            durationMins={durationMins}
+            onDurationChange={setDurationMins}
+          />
+
           {/* Repeat */}
-          <Text style={styles.sectionHeading}>{t('editTask.repeat')}</Text>
-          <View style={styles.repeatRow}>
-            {(['daily', 'weekly'] as const).map((opt) => {
-              const isSel = repeat === opt;
-              return (
-                <TouchableOpacity
-                  key={opt}
-                  style={[styles.repeatChip, isSel && styles.repeatChipSelected]}
-                  onPress={() => setRepeat(isSel ? 'none' : opt)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.repeatChipText, isSel && styles.repeatChipTextSelected]}>
-                    {t(`editTask.repeatOptions.${opt}`)}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
+          <View style={styles.repeatRowCard}>
+            <Text style={styles.repeatRowLabel}>{t('editTask.repeatTask')}</Text>
+            <View style={styles.repeatChips}>
+              {(['daily', 'weekly'] as const).map((opt) => {
+                const isSel = repeat === opt;
+                return (
+                  <TouchableOpacity
+                    key={opt}
+                    style={[styles.repeatChip, isSel && styles.repeatChipSelected]}
+                    onPress={() => setRepeat(isSel ? 'none' : opt)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.repeatChipText, isSel && styles.repeatChipTextSelected]}>
+                      {t(`editTask.repeatOptions.${opt}`)}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
 
           {/* Add Instruction */}
@@ -287,27 +327,6 @@ export default function EditTaskScreen() {
             multiline
             textAlignVertical="top"
           />
-
-          {/* Set Time */}
-          <Text style={styles.sectionHeading}>{t('editTask.setTime')}</Text>
-          <View style={styles.timeInputsRow}>
-            <View style={styles.timeInputCol}>
-              <Text style={styles.timeInputLabel}>{t('editTask.workStart')}</Text>
-              <TextInput
-                style={styles.timeInputBox}
-                value={startTime}
-                onChangeText={setStartTime}
-              />
-            </View>
-            <View style={styles.timeInputCol}>
-              <Text style={styles.timeInputLabel}>{t('editTask.workEnd')}</Text>
-              <TextInput
-                style={styles.timeInputBox}
-                value={endTime}
-                onChangeText={setEndTime}
-              />
-            </View>
-          </View>
         </View>
 
         {/* Submit Button */}
@@ -318,9 +337,9 @@ export default function EditTaskScreen() {
           activeOpacity={0.85}
         >
           <Text style={styles.submitBtnText}>{t('editTask.submit')}</Text>
-          </TouchableOpacity>
-        </KeyboardAwareScrollView>
-      </SafeAreaView>
+        </TouchableOpacity>
+      </KeyboardAwareScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -354,7 +373,13 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
+  headerSquareSpacer: {
+    width: 42,
+    height: 42,
+  },
   headerTitle: {
+    flex: 1,
+    textAlign: 'center',
     fontSize: 22,
     fontWeight: '700',
     color: '#1A1817',
@@ -429,9 +454,9 @@ const styles = StyleSheet.create({
   },
   typeCard: {
     width: '31%',
-    backgroundColor: '#FAF9F6',
+    backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: '#E6E1DC',
+    borderColor: 'transparent',
     borderRadius: 16,
     paddingVertical: 14,
     paddingHorizontal: 8,
@@ -452,11 +477,14 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FAF9F6',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 8,
     marginTop: 4,
+  },
+  typeIconCircleSelected: {
+    backgroundColor: '#FFFFFF',
   },
   typeName: {
     fontSize: 12,
@@ -488,56 +516,31 @@ const styles = StyleSheet.create({
   micBtn: {
     padding: 4,
   },
-  timeInputsRow: {
+  repeatRowCard: {
     flexDirection: 'row',
-    gap: 12,
-  },
-  timeInputCol: {
-    flex: 1,
-  },
-  timeInputLabel: {
-    fontSize: 12,
-    color: '#7C7672',
-    fontWeight: '500',
-    marginBottom: 6,
-  },
-  timeInputBox: {
-    height: 44,
-    backgroundColor: '#FAF9F6',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     borderWidth: 1,
     borderColor: '#E6E1DC',
-    borderRadius: 12,
+    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginBottom: 20,
+  },
+  repeatRowLabel: {
     fontSize: 14,
     fontWeight: '700',
     color: '#1A1817',
   },
-  submitBtn: {
-    backgroundColor: '#BD632F',
-    height: 52,
-    borderRadius: 26,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#BD632F',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  submitBtnText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  repeatRow: {
+  repeatChips: {
     flexDirection: 'row',
-    gap: 10,
-    marginBottom: 20,
+    gap: 8,
   },
   repeatChip: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 18,
     borderWidth: 1,
     borderColor: '#E6E1DC',
     backgroundColor: '#FAF9F6',
@@ -557,11 +560,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   instructionTextarea: {
-    backgroundColor: '#FAF9F6',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E6E1DC',
     borderRadius: 14,
-    height: 100,
+    height: 110,
     paddingHorizontal: 14,
     paddingTop: 14,
     paddingBottom: 14,
@@ -569,5 +572,22 @@ const styles = StyleSheet.create({
     color: '#1A1817',
     marginBottom: 20,
     textAlignVertical: 'top',
+  },
+  submitBtn: {
+    backgroundColor: '#BD632F',
+    height: 52,
+    borderRadius: 26,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#BD632F',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  submitBtnText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
   },
 });

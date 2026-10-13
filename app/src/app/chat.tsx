@@ -947,8 +947,8 @@ export default function ChatScreen() {
       {showActionsMenu && (
         <>
           <TouchableOpacity style={styles.actionsMenuBackdrop} activeOpacity={1} onPress={() => setShowActionsMenu(false)} />
-          <View style={styles.actionsMenuContainer}>
-            {isViewerDoctor && (
+          {/* <View style={styles.actionsMenuContainer}> */}
+          {/* {isViewerDoctor && (
               <TouchableOpacity
                 style={styles.actionsMenuItem}
                 activeOpacity={0.7}
@@ -960,8 +960,8 @@ export default function ChatScreen() {
                 <Ionicons name="document-text-outline" size={18} color="#BD632F" />
                 <Text style={styles.actionsMenuItemText}>{t('chat.actions.sendRecommendation')}</Text>
               </TouchableOpacity>
-            )}
-            {/* <TouchableOpacity
+            )} */}
+          {/* <TouchableOpacity
               style={styles.actionsMenuItem}
               activeOpacity={0.7}
               onPress={() => {
@@ -972,7 +972,7 @@ export default function ChatScreen() {
               <Ionicons name="chatbubble-outline" size={18} color="#BD632F" />
               <Text style={styles.actionsMenuItemText}>{t('chat.actions.sendNote')}</Text>
             </TouchableOpacity> */}
-          </View>
+          {/* </View> */}
         </>
       )}
 

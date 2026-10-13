@@ -18,6 +18,8 @@ import {
   useDeleteTaskMutation,
   Task,
 } from '@/store/tasksApi';
+import { useGetWeatherQuery } from '@/store/weatherApi';
+import { useLocation } from '@/hooks/use-location';
 import { RowSkeleton } from '@/components/ui/skeleton';
 import { formatLocalDateKey, localDateKey, formatTime12h } from '@/utils/date';
 import { apiErrorMessage } from '@/utils/api-error';
@@ -44,6 +46,15 @@ function taskBadgeSvg(title: string): string | null {
   if (lower.includes('vaccin')) return addTaskVaccinationSvg;
   if (lower.includes('health')) return addTaskHealthCheckSvg;
   return null;
+}
+
+function taskBadgeBg(title: string): string {
+  return title.toLowerCase().includes('water') ? '#EAF2FF' : '#FFF2EB';
+}
+
+function parseFarm(detail?: string): string {
+  if (!detail) return '';
+  return detail.split('•')[0].trim();
 }
 
 function formatTaskTime(scheduledTime?: string): string {
@@ -76,6 +87,10 @@ export default function MyTaskScreen() {
   const { data: tasks = [], isLoading: isTasksLoading } = useGetTasksQuery(listDate);
   const [toggleTaskMutation] = useToggleTaskMutation();
   const [deleteTaskMutation] = useDeleteTaskMutation();
+
+  const { location } = useLocation();
+  const zila = location.split(',').map((part) => part.trim()).filter(Boolean).pop();
+  const { data: weather } = useGetWeatherQuery(zila);
 
   const [activeFilter, setActiveFilter] = useState<'all' | 'pending' | 'completed'>('all');
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
@@ -148,7 +163,9 @@ export default function MyTaskScreen() {
           </View>
           <View style={styles.weatherRight}>
             <Text style={styles.weatherIcon}>⛅</Text>
-            <Text style={styles.tempText}>—°C</Text>
+            <Text style={styles.tempText}>
+              {weather ? `${Math.round(weather.temperature)}°C` : '—°C'}
+            </Text>
           </View>
         </View>
 
@@ -242,7 +259,7 @@ export default function MyTaskScreen() {
               {/* Top Row */}
               <View style={styles.taskCardTopRow}>
                 <View style={styles.taskTitleContainer}>
-                  <View style={styles.taskTypeBadge}>
+                  <View style={[styles.taskTypeBadge, { backgroundColor: taskBadgeBg(task.title) }]}>
                     {taskBadgeSvg(task.title) ? (
                       <SvgXml width={24} height={24} xml={taskBadgeSvg(task.title) as string} />
                     ) : (
@@ -250,11 +267,9 @@ export default function MyTaskScreen() {
                     )}
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={[styles.taskCardTitle, task.isDone && styles.taskCardTitleDone]}>
-                      {task.title}
-                    </Text>
+                    <Text style={styles.taskCardTitle}>{task.title}</Text>
                     <Text style={styles.taskCardSpec}>
-                      {task.detail || t('myTask.cowShed')}
+                      {parseFarm(task.detail) || t('myTask.cowShed')}
                     </Text>
                   </View>
                 </View>
@@ -262,7 +277,7 @@ export default function MyTaskScreen() {
                 {/* Right Action */}
                 {task.isDone ? (
                   <View style={styles.checkDoneCircle}>
-                    <SvgXml width={16} height={13} xml={myTaskCheckMarkSvg} />
+                    <SvgXml width={18} height={15} xml={myTaskCheckMarkSvg} />
                   </View>
                 ) : (
                   <TouchableOpacity
@@ -277,16 +292,24 @@ export default function MyTaskScreen() {
 
               {/* Time Row */}
               <View style={styles.timeRow}>
-                <View style={styles.timeCol}>
-                  <SvgXml width={14} height={14} xml={myTaskCardCalendarSvg} />
-                  <Text style={styles.timeLabel}>{t('myTask.workStart')} </Text>
-                  <Text style={styles.timeVal}>{formatTaskTime(task.scheduledTime)}</Text>
+                <View style={styles.timeGroup}>
+                  <View style={styles.timeIconCircle}>
+                    <SvgXml width={16} height={16} xml={myTaskCardCalendarSvg} />
+                  </View>
+                  <View style={styles.timeTextCol}>
+                    <Text style={styles.timeLabel}>{t('myTask.workStart')}</Text>
+                    <Text style={styles.timeVal}>{formatTaskTime(task.scheduledTime)}</Text>
+                  </View>
                 </View>
                 <View style={styles.timeDividerVertical} />
-                <View style={styles.timeCol}>
-                  <SvgXml width={14} height={14} xml={myTaskCardCalendarSvg} />
-                  <Text style={styles.timeLabel}>{t('myTask.workEnd')} </Text>
-                  <Text style={styles.timeVal}>{parseEndTime(task.detail)}</Text>
+                <View style={styles.timeGroup}>
+                  <View style={styles.timeIconCircle}>
+                    <SvgXml width={16} height={16} xml={myTaskCardCalendarSvg} />
+                  </View>
+                  <View style={styles.timeTextCol}>
+                    <Text style={styles.timeLabel}>{t('myTask.workEnd')}</Text>
+                    <Text style={styles.timeVal}>{parseEndTime(task.detail)}</Text>
+                  </View>
                 </View>
               </View>
 
@@ -299,28 +322,31 @@ export default function MyTaskScreen() {
 
               {/* Card Action Buttons for Pending Task */}
               {!task.isDone && (
-                <View style={styles.cardActionsRow}>
-                  <TouchableOpacity
-                    style={styles.markDoneBtn}
-                    onPress={() => handleToggleDone(task.id)}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={styles.markDoneBtnText}>{t('myTask.markDone')}</Text>
-                  </TouchableOpacity>
+                <>
+                  <View style={styles.cardDivider} />
+                  <View style={styles.cardActionsRow}>
+                    <TouchableOpacity
+                      style={styles.markDoneBtn}
+                      onPress={() => handleToggleDone(task.id)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.markDoneBtnText}>{t('myTask.markDone')}</Text>
+                    </TouchableOpacity>
 
-                  <TouchableOpacity
-                    style={styles.editTaskBtn}
-                    onPress={() =>
-                      router.push({
-                        pathname: '/edit-task',
-                        params: { id: String(task.id), title: task.title, detail: task.detail, scheduledTime: task.scheduledTime },
-                      })
-                    }
-                    activeOpacity={0.8}
-                  >
-                    <Text style={styles.editTaskBtnText}>{t('myTask.editTask')}</Text>
-                  </TouchableOpacity>
-                </View>
+                    <TouchableOpacity
+                      style={styles.editTaskBtn}
+                      onPress={() =>
+                        router.push({
+                          pathname: '/edit-task',
+                          params: { id: String(task.id), title: task.title, detail: task.detail, scheduledTime: task.scheduledTime },
+                        })
+                      }
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.editTaskBtnText}>{t('myTask.editTask')}</Text>
+                    </TouchableOpacity>
+                  </View>
+                </>
               )}
             </View>
           ))
@@ -544,7 +570,7 @@ const styles = StyleSheet.create({
   },
   taskCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 24,
+    borderRadius: 18,
     padding: 18,
     marginBottom: 16,
     borderWidth: 1,
@@ -555,10 +581,11 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   taskCardPending: {
-    borderColor: '#FCD2C1',
+    borderColor: '#E6E1DC',
   },
   taskCardDone: {
-    borderColor: '#C8E6C9',
+    borderColor: '#BD632F',
+    borderWidth: 1.5,
   },
   taskCardTopRow: {
     flexDirection: 'row',
@@ -590,18 +617,14 @@ const styles = StyleSheet.create({
     color: '#1A1817',
     marginBottom: 2,
   },
-  taskCardTitleDone: {
-    textDecorationLine: 'line-through',
-    color: '#9C9690',
-  },
   taskCardSpec: {
     fontSize: 12,
     color: '#7C7672',
   },
   checkDoneCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: '#BD632F',
     justifyContent: 'center',
     alignItems: 'center',
@@ -610,38 +633,46 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#FFEBEE',
+    backgroundColor: '#F5F2EC',
     justifyContent: 'center',
     alignItems: 'center',
   },
   timeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FAF9F6',
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
     marginBottom: 12,
   },
-  timeCol: {
+  timeGroup: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
-    gap: 4,
+    gap: 10,
+  },
+  timeIconCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F5F2EC',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  timeTextCol: {
+    justifyContent: 'center',
   },
   timeLabel: {
     fontSize: 11,
     color: '#7C7672',
     fontWeight: '500',
+    marginBottom: 2,
   },
   timeVal: {
-    fontSize: 12,
+    fontSize: 15,
     fontWeight: '700',
     color: '#1A1817',
   },
   timeDividerVertical: {
     width: 1,
-    height: 16,
+    height: 36,
     backgroundColor: '#E6E1DC',
     marginHorizontal: 8,
   },
@@ -649,7 +680,14 @@ const styles = StyleSheet.create({
     fontSize: 12.5,
     color: '#7C7672',
     lineHeight: 18,
-    marginBottom: 16,
+    marginBottom: 0,
+  },
+  cardDivider: {
+    borderTopWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: '#E0DAD3',
+    marginTop: 12,
+    marginBottom: 12,
   },
   cardActionsRow: {
     flexDirection: 'row',
