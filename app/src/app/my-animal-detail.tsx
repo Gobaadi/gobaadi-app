@@ -17,8 +17,18 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
+import { SvgXml } from 'react-native-svg';
 import { useGetAnimalByIdQuery, useDeleteAnimalMutation } from '@/store/animalsApi';
 import { isRenderableImageUri } from '@/utils/photo-uri';
+import {
+  animalDetailShareSvg,
+  animalDetailShopCartSvg,
+  backButtonSvg,
+  doctorNotificationSvg,
+  profileEditSvg,
+  subscriptionDeleteSvg,
+  tintSvg,
+} from '@/components/icons/svg-icon-sources';
 
 const { width } = Dimensions.get('window');
 const AUTO_SCROLL_MS = 3000;
@@ -212,18 +222,15 @@ export default function MyAnimalDetailScreen() {
                 onPress={() => router.back()}
                 activeOpacity={0.8}
               >
-                <Text style={styles.buttonText}>←</Text>
+                <SvgXml width={20} height={20} xml={backButtonSvg} />
               </TouchableOpacity>
               <View style={{ flexDirection: 'row', gap: 10 }}>
-                <TouchableOpacity style={styles.circleButton} onPress={confirmDelete} activeOpacity={0.8}>
-                  <Text style={styles.buttonText}>🗑️</Text>
-                </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.circleButton}
                   onPress={() => router.push('/notifications')}
                   activeOpacity={0.8}
                 >
-                  <Text style={styles.buttonText}>🔔</Text>
+                  <SvgXml width={20} height={20} xml={doctorNotificationSvg} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -253,7 +260,10 @@ export default function MyAnimalDetailScreen() {
               activeOpacity={0.8}
               onPress={handleAddToMarketplace}
             >
-              <Text style={styles.addToMarketBtnText}>🛒 {t('myAnimalDetail.addToMarket')}</Text>
+              <View style={styles.btnRow}>
+                <SvgXml width={18} height={18} xml={animalDetailShopCartSvg} />
+                <Text style={styles.addToMarketBtnText}>{t('myAnimalDetail.addToMarket')}</Text>
+              </View>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -261,7 +271,10 @@ export default function MyAnimalDetailScreen() {
               activeOpacity={0.8}
               onPress={handleShare}
             >
-              <Text style={styles.shareDetailsBtnText}>📤 {t('myAnimalDetail.shareDetails')}</Text>
+              <View style={styles.btnRow}>
+                <SvgXml width={18} height={18} xml={animalDetailShareSvg} />
+                <Text style={styles.shareDetailsBtnText}>{t('myAnimalDetail.shareDetails')}</Text>
+              </View>
             </TouchableOpacity>
           </View>
 
@@ -276,6 +289,16 @@ export default function MyAnimalDetailScreen() {
               </View>
             ))}
           </View>
+
+          {/* Descriptions */}
+          {!!animal?.description?.trim() && (
+            <>
+              <Text style={[styles.sectionTitle, styles.descriptionSectionTitle]}>
+                {t('myAnimalDetail.descriptions')}
+              </Text>
+              <Text style={styles.descriptionText}>{animal.description}</Text>
+            </>
+          )}
         </View>
       </ScrollView>
 
@@ -286,7 +309,14 @@ export default function MyAnimalDetailScreen() {
           onPress={() => router.push({ pathname: '/add-animal', params: { id, edit: '1' } })}
           activeOpacity={0.85}
         >
-          <Text style={styles.editBtnText}>✏️ {t('myAnimalDetail.editDetails')}</Text>
+          <View style={styles.btnRow}>
+            <SvgXml
+              width={16}
+              height={16}
+              xml={tintSvg(profileEditSvg, '#171717', '#FFFFFF')}
+            />
+            <Text style={styles.editBtnText}>{t('myAnimalDetail.editDetails')}</Text>
+          </View>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -367,11 +397,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 4,
     elevation: 3,
-  },
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '700',
   },
   sheetContainer: {
     backgroundColor: '#FAF9F6',
@@ -461,6 +486,20 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#BD7D5B',
     marginBottom: 16,
+  },
+  btnRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  descriptionSectionTitle: {
+    marginTop: 24,
+  },
+  descriptionText: {
+    fontSize: 13,
+    lineHeight: 22,
+    color: '#5A5754',
   },
   gridContainer: {
     flexDirection: 'row',

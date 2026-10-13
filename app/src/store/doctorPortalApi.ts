@@ -57,6 +57,7 @@ export interface DoctorAppointment {
   symptoms?: string | string[];
   consultationType?: string;
   reasonForConsultation?: string;
+  serviceId?: number | null;
   price?: number;
   paymentStatus?: 'pending' | 'paid' | 'failed' | 'refunded';
   consultationNotes?: string;

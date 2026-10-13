@@ -30,6 +30,7 @@ import {
   languageGlobeSvg,
   notificationBellSvg,
   homeLocationSvg,
+  farmWeatherCardSvg,
 } from '@/components/icons/svg-icon-sources';
 import { RowSkeleton, SkeletonBox } from '@/components/ui/skeleton';
 import { localDateKey, formatTime12h } from '@/utils/date';
@@ -189,11 +190,7 @@ export default function HomeDashboard() {
                   : t('home.weather.titleOnly')}
               </Text>
             </View>
-            <Image
-              source={require('@/assets/images/farm_barn.webp')}
-              style={styles.barnImage}
-              contentFit="cover"
-            />
+            <SvgXml width={90} height={76} xml={farmWeatherCardSvg} style={styles.barnImage} />
           </View>
 
           {isWeatherLoading ? (
@@ -622,8 +619,7 @@ const styles = StyleSheet.create({
   },
   barnImage: {
     width: 90,
-    height: 90,
-    borderRadius: 16,
+    height: 76,
     marginTop: -10,
   },
   tempRow: {

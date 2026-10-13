@@ -304,6 +304,12 @@
       "voiceInputSoon": "ভয়েস ইনপুট শীঘ্রই আসছে।"
     },
     "banner": "গরুর শেডের জন্য পরিচ্ছন্নতার কাজ সুপারিশ করা হয়েছে",
+    "durations": {
+      "oneHour": "১ ঘণ্টা",
+      "thirtyMin": "৩০ মিনিট",
+      "threeHour": "৩ ঘণ্টা",
+      "twoHours": "২ ঘণ্টা"
+    },
     "header": "কাজ যোগ করুন",
     "instructionLabel": "নির্দেশনা যোগ করুন",
     "instructionPlaceholder": "কাজের নির্দেশনা লিখুন...",
@@ -312,6 +318,7 @@
       "daily": "প্রতিদিন",
       "weekly": "সপ্তাহিক"
     },
+    "repeatTask": "কাজটি পুনরাবৃত্তি করুন",
     "selectFarm": "খামার নির্বাচন করুন",
     "selectType": "কাজের ধরন নির্বাচন করুন",
     "setTime": "সময় নির্ধারণ করুন",
@@ -322,6 +329,8 @@
     },
     "submit": "কাজ যোগ করুন",
     "taskHeadingPlaceholder": "আপনার কাজের শিরোনাম লিখুন",
+    "today": "আজ",
+    "tomorrow": "আগামীকাল",
     "types": {
       "cleaning": "পরিষ্কার",
       "feeding": "খাদ্য প্রদান",
@@ -330,6 +339,7 @@
       "vaccination": "টিকাদান",
       "water": "পানি সরবরাহ"
     },
+    "whenToDo": "কখন করতে হবে ?",
     "workEnd": "কাজ শেষ",
     "workStart": "কাজ শুরু"
   },
@@ -1520,6 +1530,12 @@
       "voiceInputSoon": "ভয়েস ইনপুট শীঘ্রই আসছে।"
     },
     "customTaskPlaceholder": "কাস্টম কাজ",
+    "durations": {
+      "oneHour": "১ ঘণ্টা",
+      "thirtyMin": "৩০ মিনিট",
+      "threeHour": "৩ ঘণ্টা",
+      "twoHours": "২ ঘণ্টা"
+    },
     "header": "কাজ সম্পাদনা করুন",
     "instructionLabel": "নির্দেশনা যোগ করুন",
     "instructionPlaceholder": "কাজের নির্দেশনা লিখুন...",
@@ -1528,6 +1544,7 @@
       "daily": "প্রতিদিন",
       "weekly": "সপ্তাহিক"
     },
+    "repeatTask": "কাজটি পুনরাবৃত্তি করুন",
     "selectFarm": "খামার নির্বাচন করুন",
     "selectType": "কাজের ধরন নির্বাচন করুন",
     "setTime": "সময় নির্ধারণ করুন",
@@ -1537,6 +1554,8 @@
       "poultry": "মুরগির শেড"
     },
     "submit": "কাজ হালনাগাদ করুন",
+    "today": "আজ",
+    "tomorrow": "আগামীকাল",
     "types": {
       "cleaning": "পরিষ্কার",
       "feeding": "খাদ্য প্রদান",
@@ -1545,6 +1564,7 @@
       "vaccination": "টিকাদান",
       "water": "পানি সরবরাহ"
     },
+    "whenToDo": "কখন করতে হবে ?",
     "workEnd": "কাজ শেষ",
     "workStart": "কাজ শুরু"
   },
@@ -1782,6 +1802,7 @@
     "delete": "মুছুন",
     "deleteMessage": "{{name}} কি আপনার খামার থেকে সরাবেন?",
     "deleteTitle": "পশু মুছুন",
+    "descriptions": "বর্ণনা",
     "dob": "জন্ম তারিখ",
     "editDetails": "পশুর বিস্তারিত সম্পাদনা করুন",
     "gender": "লিঙ্গ",
@@ -1905,8 +1926,9 @@
       "cancelFailedMessage": "অ্যাপয়েন্টমেন্ট বাতিল করা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।",
       "cancelFailedTitle": "বাতিল করা যায়নি"
     },
-    "appointment": "অ্যাপয়েন্টমেন্ট",
     "bookedOn": "বুকিং তারিখ",
+    "consultation": "কনসালটেশন",
+    "date": "তারিখ",
     "defaultDoctor": "ডাক্তার",
     "empty": {
       "noMatch": "আপনার অনুসন্ধানের সাথে মিলে এমন কোনো অ্যাপয়েন্টমেন্ট নেই।",
@@ -1919,10 +1941,13 @@
       "upcoming": "আসন্ন"
     },
     "location": "অবস্থান",
+    "online": "অনলাইন",
     "onlineVisit": "অনলাইন পরামর্শ",
     "paid": "(পরিশোধিত)",
+    "physical": "সরাসরি",
     "physicalVisit": "সরাসরি পরামর্শ",
     "searchPlaceholder": "ডাক্তার খুঁজুন",
+    "service": "সেবা",
     "status": {
       "completed": "সম্পন্ন",
       "upcoming": "আসন্ন"

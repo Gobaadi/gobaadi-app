@@ -304,6 +304,12 @@
       "voiceInputSoon": "Voice input is coming soon."
     },
     "banner": "Hygiene Task Recommended Cow Shed",
+    "durations": {
+      "oneHour": "1 Hour",
+      "thirtyMin": "30 Min",
+      "threeHour": "3 Hour",
+      "twoHours": "2 Hours"
+    },
     "header": "Add Task",
     "instructionLabel": "Add Instruction",
     "instructionPlaceholder": "Write task instructions...",
@@ -312,6 +318,7 @@
       "daily": "Daily",
       "weekly": "Weekly"
     },
+    "repeatTask": "Repeat This Task",
     "selectFarm": "Select Farm",
     "selectType": "Select Task Type",
     "setTime": "Set Time",
@@ -322,6 +329,8 @@
     },
     "submit": "Add Task",
     "taskHeadingPlaceholder": "Enter Your Task Heading",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
     "types": {
       "cleaning": "Cleaning",
       "feeding": "Feeding",
@@ -330,6 +339,7 @@
       "vaccination": "Vaccination",
       "water": "Water Supply"
     },
+    "whenToDo": "When to do this ?",
     "workEnd": "Work End",
     "workStart": "Work Start"
   },
@@ -1520,6 +1530,12 @@
       "voiceInputSoon": "Voice input is coming soon."
     },
     "customTaskPlaceholder": "Custom Task",
+    "durations": {
+      "oneHour": "1 Hour",
+      "thirtyMin": "30 Min",
+      "threeHour": "3 Hour",
+      "twoHours": "2 Hours"
+    },
     "header": "Edit Task",
     "instructionLabel": "Add Instruction",
     "instructionPlaceholder": "Write task instructions...",
@@ -1528,6 +1544,7 @@
       "daily": "Daily",
       "weekly": "Weekly"
     },
+    "repeatTask": "Repeat This Task",
     "selectFarm": "Select Farm",
     "selectType": "Select Task Type",
     "setTime": "Set Time",
@@ -1537,6 +1554,8 @@
       "poultry": "Poultry Shed"
     },
     "submit": "Update Task",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
     "types": {
       "cleaning": "Cleaning",
       "feeding": "Feeding",
@@ -1545,6 +1564,7 @@
       "vaccination": "Vaccination",
       "water": "Water Supply"
     },
+    "whenToDo": "When to do this ?",
     "workEnd": "Work End",
     "workStart": "Work Start"
   },
@@ -1782,6 +1802,7 @@
     "delete": "Delete",
     "deleteMessage": "Remove {{name}} from your farm?",
     "deleteTitle": "Delete Animal",
+    "descriptions": "Descriptions",
     "dob": "Date Of Birth",
     "editDetails": "Edit Animal Details",
     "gender": "Gender",
@@ -1905,8 +1926,9 @@
       "cancelFailedMessage": "Failed to cancel appointment. Please try again.",
       "cancelFailedTitle": "Could not cancel"
     },
-    "appointment": "Appointment",
     "bookedOn": "Booked on",
+    "consultation": "Consultation",
+    "date": "Date",
     "defaultDoctor": "Doctor",
     "empty": {
       "noMatch": "No appointments match your search.",
@@ -1919,10 +1941,13 @@
       "upcoming": "Upcoming"
     },
     "location": "Location",
+    "online": "Online",
     "onlineVisit": "Online Visit",
     "paid": "(Paid)",
+    "physical": "Physical",
     "physicalVisit": "Physical Visit",
     "searchPlaceholder": "Search doctor",
+    "service": "Service",
     "status": {
       "completed": "Completed",
       "upcoming": "Upcoming"
