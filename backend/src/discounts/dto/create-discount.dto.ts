@@ -15,8 +15,8 @@ export class CreateDiscountDto {
   @ApiProperty({ example: 'SAVE20' })
   @IsString()
   @IsNotEmpty()
-  @Matches(/^[a-zA-Z0-9]{1,10}$/, {
-    message: 'Code must be alphanumeric, max 10 characters',
+  @Matches(/^[\p{L}\p{N}]{1,10}$/u, {
+    message: 'Code must be letters or numbers, max 10 characters',
   })
   code: string;
 

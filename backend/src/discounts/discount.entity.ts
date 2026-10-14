@@ -12,7 +12,7 @@ export class Discount {
   @PrimaryGeneratedColumn()
   id: number;
 
-  /** Promo code - alphanumeric, max 10 chars, case-sensitive */
+  /** Promo code - letters/numbers (any script), max 10 chars, case-insensitive */
   @Index({ unique: true })
   @Column({ length: 10 })
   code: string;

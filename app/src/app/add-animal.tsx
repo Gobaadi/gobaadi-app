@@ -323,7 +323,7 @@ export default function AddAnimalScreen() {
         Alert.alert(t('addAnimal.alerts.requiredTitle'), t('addAnimal.validation.nameRequired'));
         return;
       }
-      const nameRegex = /^[a-zA-Z0-9\s.,'-]+$/;
+      const nameRegex = /^[\p{L}\p{N}\s.,'-]+$/u;
       if (name.trim() && !nameRegex.test(name.trim())) {
         Alert.alert(t('addAnimal.alerts.invalidInputTitle'), t('addAnimal.validation.nameInvalid'));
         return;
