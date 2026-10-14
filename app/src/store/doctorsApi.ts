@@ -12,6 +12,7 @@ export interface DoctorSummary {
   bio: string;
   specializations?: string[];
   location?: string;
+  reviewCount?: number;
 }
 
 export const doctorsApi = createApi({

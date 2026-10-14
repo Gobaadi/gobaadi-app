@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   Dimensions,
   Share,
-  TextInput,
   Alert,
   ImageBackground,
   StatusBar,
@@ -19,7 +18,7 @@ import { useGetAnimalsQuery } from '@/store/animalsApi';
 import { useGetTasksQuery, useToggleTaskMutation } from '@/store/tasksApi';
 import { useGetDoctorBookingsQuery } from '@/store/doctorPortalApi';
 import { useGetWeatherQuery } from '@/store/weatherApi';
-import { useGetMyReferralQuery, useClaimReferralMutation } from '@/store/referralsApi';
+import { useGetMyReferralQuery } from '@/store/referralsApi';
 import { useLanguage } from '@/hooks/use-language';
 import { useLocation } from '@/hooks/use-location';
 import { useTranslation } from '@/hooks/use-translation';
@@ -31,6 +30,8 @@ import {
   notificationBellSvg,
   homeLocationSvg,
   farmWeatherCardSvg,
+  farmerHomeArrowDownSvg,
+  farmerHomeReferFriendSvg,
 } from '@/components/icons/svg-icon-sources';
 import { RowSkeleton, SkeletonBox } from '@/components/ui/skeleton';
 import { localDateKey, formatTime12h } from '@/utils/date';
@@ -74,16 +75,12 @@ export default function HomeDashboard() {
   const zila = location.split(',').map((part) => part.trim()).filter(Boolean).pop();
   const { data: weather, isLoading: isWeatherLoading } = useGetWeatherQuery(zila);
   const { data: referral } = useGetMyReferralQuery();
-  const [claimReferral, { isLoading: isClaiming }] = useClaimReferralMutation();
   const { language, languageCode, setLanguage } = useLanguage();
   const { t } = useTranslation();
   const [showLangSheet, setShowLangSheet] = useState(false);
 
   const [toggleTaskMutation] = useToggleTaskMutation();
   const visibleTasks = tasks.filter((task) => !task.isDone);
-
-  const [showClaimInput, setShowClaimInput] = useState(false);
-  const [claimCode, setClaimCode] = useState('');
 
   const animals = (allAnimals || []).slice(0, 3);
 
@@ -104,27 +101,6 @@ export default function HomeDashboard() {
       });
     } catch (err) {
       console.log('Error sharing referral:', err);
-    }
-  }
-
-  async function handleClaimReferral() {
-    const code = claimCode.trim();
-    if (!code) {
-      Alert.alert(t('home.referral.alerts.enterCodeTitle'), t('home.referral.alerts.enterCodeMsg'));
-      return;
-    }
-    if (!/^[A-Z0-9]{4,12}$/.test(code)) {
-      Alert.alert(t('home.referral.alerts.invalidCodeTitle'), t('home.referral.alerts.invalidCodeMsg'));
-      return;
-    }
-    try {
-      await claimReferral(code).unwrap();
-      setClaimCode('');
-      setShowClaimInput(false);
-      Alert.alert(t('home.referral.alerts.successTitle'), t('home.referral.alerts.successMsg'));
-    } catch (err) {
-      console.log('Error claiming referral:', err);
-      Alert.alert(t('home.referral.alerts.claimFailTitle'), t('home.referral.alerts.claimFailMsg'));
     }
   }
 
@@ -156,7 +132,7 @@ export default function HomeDashboard() {
               <Text style={styles.greetingTitle}>{t('home.greeting')}</Text>
               <TouchableOpacity style={styles.dateSelector} activeOpacity={0.7} onPress={() => router.push('/schedule')}>
                 <Text style={styles.dateText}>{formatFullDate(language === 'bn' ? 'bn-BD' : 'en-US')}</Text>
-                <Text style={styles.dropdownArrow}>∨</Text>
+                <SvgXml width={12} height={7} xml={farmerHomeArrowDownSvg} />
               </TouchableOpacity>
             </View>
             <View style={styles.headerRightControls}>
@@ -165,7 +141,7 @@ export default function HomeDashboard() {
                 activeOpacity={0.8}
                 onPress={() => setShowLangSheet(true)}
               >
-                <SvgXml width={16} height={16} xml={languageGlobeSvg} />
+                <SvgXml width={24} height={24} xml={languageGlobeSvg} />
                 <Text style={styles.langTextHeader}>{languageCode}</Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -173,7 +149,7 @@ export default function HomeDashboard() {
                 onPress={() => router.push('/notifications')}
                 activeOpacity={0.8}
               >
-                <SvgXml width={20} height={20} xml={notificationBellSvg} />
+                <SvgXml width={24} height={24} xml={notificationBellSvg} />
               </TouchableOpacity>
             </View>
           </ImageBackground>
@@ -183,7 +159,7 @@ export default function HomeDashboard() {
         <View style={styles.weatherCard}>
           <View style={styles.weatherCardHeader}>
             <View style={styles.weatherLocationRow}>
-              <SvgXml width={16} height={16} xml={homeLocationSvg} />
+              <SvgXml width={20} height={20} xml={homeLocationSvg} />
               <Text style={styles.weatherLocation}>
                 {weather?.location
                   ? t('home.weather.title', { place: weather.location })
@@ -451,44 +427,11 @@ export default function HomeDashboard() {
                 ? t('home.referral.earned', { amount: referral.totalEarned, count: referral.referralCount })
                 : t('home.referral.perReferral')}
             </Text>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              <TouchableOpacity style={styles.referBtn} activeOpacity={0.8} onPress={shareReferral}>
-                <Text style={styles.referBtnText}>{t('home.referral.referNow')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.referBtn}
-                activeOpacity={0.8}
-                onPress={() => setShowClaimInput((v) => !v)}
-              >
-                <Text style={styles.referBtnText}>{t('home.referral.haveCode')}</Text>
-              </TouchableOpacity>
-            </View>
-            {showClaimInput ? (
-              <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
-                <TextInput
-                  style={styles.claimInput}
-                  placeholder={t('home.referral.enterCode')}
-                  placeholderTextColor="#A39E99"
-                  value={claimCode}
-                  onChangeText={setClaimCode}
-                  autoCapitalize="characters"
-                />
-                <TouchableOpacity
-                  style={[styles.referBtn, isClaiming && { opacity: 0.6 }]}
-                  activeOpacity={0.8}
-                  onPress={handleClaimReferral}
-                  disabled={isClaiming}
-                >
-                  <Text style={styles.referBtnText}>{t('home.referral.claim')}</Text>
-                </TouchableOpacity>
-              </View>
-            ) : null}
+            <TouchableOpacity style={styles.referBtn} activeOpacity={0.8} onPress={shareReferral}>
+              <Text style={styles.referBtnText}>{t('home.referral.referNow')}</Text>
+            </TouchableOpacity>
           </View>
-          <Image
-            source={require('@/assets/images/referral_badge.png')}
-            style={styles.referImage}
-            contentFit="contain"
-          />
+          <SvgXml width={80} height={75} xml={farmerHomeReferFriendSvg} />
         </View>
 
       </KeyboardAwareScrollView>
@@ -562,20 +505,18 @@ const styles = StyleSheet.create({
   langBadgeHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 18,
     paddingHorizontal: 12,
     height: 38,
     gap: 6,
   },
   langTextHeader: {
-    fontSize: 13,
+    fontSize: 18,
     fontWeight: '700',
     color: '#FFFFFF',
   },
   notifBtnWhite: {
-    width: 38,
-    height: 38,
+    width: 40,
+    height: 40,
     borderRadius: 12,
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
@@ -924,41 +865,26 @@ const styles = StyleSheet.create({
     flex: 1.5,
   },
   referTitle: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
     color: '#1A1817',
     marginBottom: 4,
   },
   referSub: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#7C7672',
     marginBottom: 12,
   },
   referBtn: {
     backgroundColor: '#FFF0EA',
     borderRadius: 10,
-    paddingHorizontal: 14,
+    paddingHorizontal: 20,
     paddingVertical: 8,
     alignSelf: 'flex-start',
   },
   referBtnText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
     color: '#BD632F',
-  },
-  claimInput: {
-    flex: 1,
-    backgroundColor: '#FAF9F6',
-    borderWidth: 1,
-    borderColor: '#E6E1DC',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    height: 36,
-    fontSize: 12,
-    color: '#1A1817',
-  },
-  referImage: {
-    width: 80,
-    height: 80,
   },
 });

@@ -64,7 +64,10 @@ export class DoctorsController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('specialty') specialty?: string,
-  ): Promise<Doctor[] | PaginatedResult<Doctor>> {
+  ): Promise<
+    | (Doctor & { reviewCount: number })[]
+    | PaginatedResult<Doctor & { reviewCount: number }>
+  > {
     return this.doctorsService.getDoctors(
       page ? parseInt(page, 10) : undefined,
       limit ? parseInt(limit, 10) : undefined,
@@ -184,7 +187,9 @@ export class DoctorsController {
   @ApiOperation({ summary: 'Get a doctor by id' })
   @ApiParam({ name: 'id', example: '1' })
   @ApiResponse({ status: 200, description: 'The doctor' })
-  async getDoctorById(@Param('id') id: string): Promise<Doctor> {
+  async getDoctorById(
+    @Param('id') id: string,
+  ): Promise<Doctor & { reviewCount: number }> {
     return this.doctorsService.getDoctorById(id);
   }
 

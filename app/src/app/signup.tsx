@@ -147,7 +147,7 @@ export default function SignUpScreen() {
         name: name.trim(),
         identifier,
         password,
-        role: role || 'farmer',
+        role: 'user',
         bvcRegistrationNumber: undefined,
       };
       console.log('[1/8][FE signup.tsx] Register submit →', payload);
@@ -254,7 +254,7 @@ export default function SignUpScreen() {
             <Text style={styles.label}>{t('signup.roleLabel')}</Text>
             <TouchableOpacity style={styles.dropdownSelector} activeOpacity={0.7} onPress={openRoleDropdown}>
               <Text style={[styles.dropdownValue, !role && styles.placeholderText]}>
-                {role === 'doctor' ? t('signup.roleDoctor') : role === 'farmer' ? t('signup.roleUser') : t('signup.roleSelect')}
+                {role === 'doctor' ? t('signup.roleDoctor') : role === 'farmer' ? t('signup.roleFarmer') : t('signup.roleSelect')}
               </Text>
               <Text style={styles.dropdownArrow}>▼</Text>
             </TouchableOpacity>
@@ -426,7 +426,7 @@ export default function SignUpScreen() {
                     setModalVisible(false);
                   }}
                 >
-                  <Text style={styles.modalItemText}>{item === 'doctor' ? t('signup.roleDoctor') : t('signup.roleUser')}</Text>
+                  <Text style={styles.modalItemText}>{item === 'doctor' ? t('signup.roleDoctor') : t('signup.roleFarmer')}</Text>
                 </TouchableOpacity>
               )}
             />

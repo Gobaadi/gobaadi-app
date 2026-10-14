@@ -52,9 +52,9 @@ export default function BookingDetailsScreen() {
       id: String(doctorData.id),
       name: doctorData.name,
       specialty: doctorData.specialty,
-      location: t('bookingDetails.defaults.city'),
-      rating: doctorData.rating || 4.8,
-      reviews: 124,
+      location: doctorData.location || '',
+      rating: doctorData.rating,
+      reviews: doctorData.reviewCount ?? 0,
       avatar: doctorData.avatar ?? '',
     };
   }, [doctorData, doctorId, t]);
@@ -101,14 +101,18 @@ export default function BookingDetailsScreen() {
             <View style={styles.doctorDetails}>
               <Text style={styles.doctorName}>{doctor.name}</Text>
               <Text style={styles.doctorSpecialty}>{doctor.specialty}</Text>
-              <View style={styles.ratingLocationRow}>
-                <SvgXml width={11} height={11} xml={doctorCardLocationSvg} style={styles.locationPin} />
-                <Text style={styles.locationTextMeta}>{doctor.location}</Text>
-              </View>
+              {doctor.location ? (
+                <View style={styles.ratingLocationRow}>
+                  <SvgXml width={11} height={11} xml={doctorCardLocationSvg} style={styles.locationPin} />
+                  <Text style={styles.locationTextMeta}>{doctor.location}</Text>
+                </View>
+              ) : null}
               <View style={styles.ratingRow}>
                 <SvgXml width={11} height={11} xml={doctorCardStarSvg} style={styles.starIcon} />
                 <Text style={styles.ratingValue}>{doctor.rating}</Text>
-                <Text style={styles.reviewsText}>{t('bookingDetails.reviews', { count: doctor.reviews })}</Text>
+                {doctor.reviews > 0 && (
+                  <Text style={styles.reviewsText}>{t('bookingDetails.reviews', { count: doctor.reviews })}</Text>
+                )}
               </View>
             </View>
           </View>

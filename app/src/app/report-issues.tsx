@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -223,26 +224,53 @@ export default function ReportIssuesScreen() {
           />
         </View>
 
-        {/* Attachment Upload */}
-        <View style={styles.uploadCard}>
-          <View style={styles.uploadIconCircle}>
-            <SvgXml width={22} height={22} xml={reportIssuesCameraSvg} />
+        {/* Attachment Upload / Preview */}
+        {!attachment ? (
+          <View style={styles.uploadCard}>
+            <View style={styles.uploadIconCircle}>
+              <SvgXml width={22} height={22} xml={reportIssuesCameraSvg} />
+            </View>
+            <Text style={styles.uploadTitle}>{t('reportIssues.dragDrop')}</Text>
+            <Text style={styles.uploadSubtitle}>{t('reportIssues.uploadHint')}</Text>
+            <View style={styles.uploadDivider} />
+            <TouchableOpacity
+              style={styles.browseBtn}
+              onPress={handleBrowseFile}
+              activeOpacity={0.8}
+              disabled={isLoading}
+            >
+              <SvgXml width={20} height={20} xml={reportIssuesAddSvg} />
+              <Text style={styles.browseBtnText}>{t('reportIssues.browseFile')}</Text>
+            </TouchableOpacity>
           </View>
-          <Text style={styles.uploadTitle}>{t('reportIssues.dragDrop')}</Text>
-          <Text style={styles.uploadSubtitle}>{t('reportIssues.uploadHint')}</Text>
-          <View style={styles.uploadDivider} />
-          <TouchableOpacity
-            style={styles.browseBtn}
-            onPress={handleBrowseFile}
-            activeOpacity={0.8}
-            disabled={isLoading}
-          >
-            <SvgXml width={20} height={20} xml={reportIssuesAddSvg} />
-            <Text style={styles.browseBtnText}>{t('reportIssues.browseFile')}</Text>
-          </TouchableOpacity>
-        </View>
-
-        {attachment && (
+        ) : isImageAttachment(attachment.name, attachment.mimeType) ? (
+          <View style={styles.previewCard}>
+            <Image source={{ uri: attachment.uri }} style={styles.previewImage} />
+            <View style={styles.previewInfo}>
+              <Ionicons name="image-outline" size={18} color="#BD632F" />
+              <Text style={styles.selectedFileName} numberOfLines={1}>
+                {attachment.name}
+              </Text>
+              <TouchableOpacity
+                onPress={() => setAttachment(null)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                activeOpacity={0.7}
+                disabled={isLoading}
+              >
+                <Ionicons name="close-circle" size={20} color="#9C9690" />
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity
+              style={styles.changeFileBtn}
+              onPress={handleBrowseFile}
+              activeOpacity={0.8}
+              disabled={isLoading}
+            >
+              <SvgXml width={18} height={18} xml={reportIssuesAddSvg} />
+              <Text style={styles.changeFileBtnText}>{t('reportIssues.browseFile')}</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
           <View style={styles.selectedFileRow}>
             <Ionicons name="document-attach-outline" size={18} color="#BD632F" />
             <Text style={styles.selectedFileName} numberOfLines={1}>
@@ -422,6 +450,45 @@ const styles = StyleSheet.create({
     borderColor: '#DCE5F0',
   },
   browseBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1A1817',
+  },
+  previewCard: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E6E1DC',
+    borderRadius: 18,
+    padding: 12,
+    marginBottom: 12,
+  },
+  previewImage: {
+    width: '100%',
+    height: 180,
+    borderRadius: 12,
+    resizeMode: 'cover',
+    backgroundColor: '#F5F2EC',
+    marginBottom: 10,
+  },
+  previewInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 10,
+  },
+  changeFileBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    alignSelf: 'stretch',
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: '#EEF3F9',
+    borderWidth: 1,
+    borderColor: '#DCE5F0',
+  },
+  changeFileBtnText: {
     fontSize: 14,
     fontWeight: '700',
     color: '#1A1817',

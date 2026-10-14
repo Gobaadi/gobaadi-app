@@ -120,8 +120,8 @@ export default function EditProfileScreen() {
         err?.status === 413
           ? t('editProfile.alerts.photoTooLarge')
           : err?.data?.message ||
-            err?.message ||
-            t('editProfile.alerts.uploadPhotoFailed'),
+          err?.message ||
+          t('editProfile.alerts.uploadPhotoFailed'),
       );
     } finally {
       setIsUploadingPhoto(false);
@@ -184,7 +184,7 @@ export default function EditProfileScreen() {
               {isUploadingPhoto ? (
                 <ActivityIndicator size="small" color="#BD632F" />
               ) : (
-                <SvgXml width={18} height={16} xml={editProfilePhotoCameraSvg} />
+                <SvgXml width={28} height={28} xml={editProfilePhotoCameraSvg} />
               )}
             </View>
           </TouchableOpacity>
@@ -314,9 +314,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 2,
     right: 2,
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 48,
+    height: 48,
+    borderRadius: 48,
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',

@@ -33,8 +33,8 @@ export default function ConfirmPayScreen() {
       name: doctorData.name,
       specialty: doctorData.specialty,
       location: doctorData.location || '',
-      rating: doctorData.rating || 4.8,
-      reviews: 124,
+      rating: doctorData.rating,
+      reviews: doctorData.reviewCount ?? 0,
       avatar: doctorData.avatar ?? '',
     }
     : {
@@ -109,7 +109,9 @@ export default function ConfirmPayScreen() {
                 <View style={styles.ratingRow}>
                   <Text style={styles.starIcon}>⭐</Text>
                   <Text style={styles.ratingValue}>{doctor.rating}</Text>
-                  <Text style={styles.reviewsText}>{t('confirmPay.reviews', { count: doctor.reviews })}</Text>
+                  {doctor.reviews > 0 && (
+                    <Text style={styles.reviewsText}>{t('confirmPay.reviews', { count: doctor.reviews })}</Text>
+                  )}
                 </View>
               )}
             </View>

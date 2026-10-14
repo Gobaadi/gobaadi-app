@@ -11,6 +11,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
+import { SvgXml } from 'react-native-svg';
+import { backButtonSvg } from '@/components/icons/svg-icon-sources';
 import { useGetFaqsQuery } from '@/store/faqsApi';
 
 type FaqTab = 'general' | 'doctor' | 'photo';
@@ -27,8 +29,27 @@ const TAB_LABELS: Record<FaqTab, string> = {
   photo: 'faqs.tabs.photo',
 };
 
-export default function FAQsScreen() {
+function FaqHeader() {
   const router = useRouter();
+  const { t } = useTranslation();
+
+  return (
+    <View style={styles.header}>
+      <View style={styles.headerLeft}>
+        <TouchableOpacity
+          style={styles.headerSquareBtn}
+          onPress={() => router.back()}
+          activeOpacity={0.8}
+        >
+          <SvgXml width={20} height={20} xml={backButtonSvg} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>{t('faqs.title')}</Text>
+      </View>
+    </View>
+  );
+}
+
+export default function FAQsScreen() {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<FaqTab>('general');
   const [expandedId, setExpandedId] = useState<number | null>(null);
@@ -41,13 +62,7 @@ export default function FAQsScreen() {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
-            <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>{t('faqs.title')}</Text>
-          <View style={{ width: 40 }} />
-        </View>
+        <FaqHeader />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#BD632F" />
         </View>
@@ -58,13 +73,7 @@ export default function FAQsScreen() {
   if (isError) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
-            <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>{t('faqs.title')}</Text>
-          <View style={{ width: 40 }} />
-        </View>
+        <FaqHeader />
         <View style={styles.loadingContainer}>
           <Ionicons name="cloud-offline-outline" size={48} color="#9C9690" />
           <Text style={styles.errorText}>{t('faqs.loadError')}</Text>
@@ -77,13 +86,7 @@ export default function FAQsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>{t('faqs.title')}</Text>
-        <View style={{ width: 40 }} />
-      </View>
+      <FaqHeader />
 
       <View style={styles.tabRow}>
         {(['general', 'doctor', 'photo'] as FaqTab[]).map((tab) => (
@@ -120,7 +123,7 @@ export default function FAQsScreen() {
               <Ionicons
                 name={expandedId === item.id ? 'chevron-up' : 'chevron-down'}
                 size={20}
-                color="#7C7672"
+                color="#4A4540"
               />
             </View>
             {expandedId === item.id && (
@@ -135,19 +138,57 @@ export default function FAQsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FAF9F6' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 4, paddingBottom: 12 },
-  backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#BD632F', justifyContent: 'center', alignItems: 'center' },
-  headerTitle: { fontSize: 20, fontWeight: '800', color: '#1A1817' },
-  tabRow: { flexDirection: 'row', paddingHorizontal: 20, gap: 8, marginBottom: 16 },
-  tab: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20 },
-  tabActive: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#BD632F' },
-  tabText: { fontSize: 12, fontWeight: '600', color: '#9C9690' },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 24,
+    paddingTop: 12,
+    marginBottom: 16,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  headerSquareBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: '#BD632F',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#BD632F',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  headerTitle: { fontSize: 22, fontWeight: '700', color: '#1A1817' },
+  tabRow: { flexDirection: 'row', paddingHorizontal: 24, gap: 10, marginBottom: 20 },
+  tab: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E6E1DC',
+  },
+  tabActive: { backgroundColor: '#FFFFFF', borderColor: '#BD632F' },
+  tabText: { fontSize: 13, fontWeight: '600', color: '#9C9690' },
   tabTextActive: { color: '#BD632F' },
-  scrollContainer: { paddingHorizontal: 20, paddingBottom: 40 },
-  faqCard: { backgroundColor: '#FFFFFF', borderRadius: 14, borderWidth: 1, borderColor: '#E6E1DC', padding: 16, marginBottom: 10 },
+  scrollContainer: { paddingHorizontal: 24, paddingBottom: 40 },
+  faqCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E6E1DC',
+    padding: 18,
+    marginBottom: 12,
+  },
   faqHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  faqQuestion: { fontSize: 14, fontWeight: '700', color: '#1A1817', flex: 1, marginRight: 8 },
-  faqAnswer: { fontSize: 13, fontWeight: '500', color: '#7C7672', lineHeight: 19, marginTop: 10 },
+  faqQuestion: { fontSize: 15, fontWeight: '700', color: '#1A1817', flex: 1, marginRight: 8 },
+  faqAnswer: { fontSize: 14, fontWeight: '500', color: '#7C7672', lineHeight: 20, marginTop: 12 },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
   errorText: { fontSize: 14, fontWeight: '500', color: '#9C9690' },
   emptyContainer: { alignItems: 'center', paddingVertical: 60, gap: 12 },

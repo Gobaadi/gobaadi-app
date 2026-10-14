@@ -97,8 +97,8 @@ export default function DoctorDetailScreen() {
       name: doctorData.name,
       specialty: doctorData.specialty,
       location: doctorData.location || '',
-      rating: doctorData.rating || 4.8,
-      reviews: 124,
+      rating: doctorData.rating,
+      reviews: doctorData.reviewCount ?? 0,
       avatar: doctorData.avatar ?? '',
       availability: availabilityLabel,
       specializations: doctorData.specializations ?? [],
@@ -152,7 +152,9 @@ export default function DoctorDetailScreen() {
             <View style={styles.ratingRow}>
               <SvgXml width={11} height={11} xml={doctorCardStarSvg} style={styles.starIcon} />
               <Text style={styles.ratingValue}>{doctor.rating}</Text>
-              <Text style={styles.reviewsText}>{t('doctorDetail.reviews', { count: doctor.reviews })}</Text>
+              {doctor.reviews > 0 && (
+                <Text style={styles.reviewsText}>{t('doctorDetail.reviews', { count: doctor.reviews })}</Text>
+              )}
             </View>
           </View>
         </View>
@@ -253,7 +255,7 @@ const styles = StyleSheet.create({
   circleButton: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: 12,
     backgroundColor: '#BD632F',
     justifyContent: 'center',
     alignItems: 'center',

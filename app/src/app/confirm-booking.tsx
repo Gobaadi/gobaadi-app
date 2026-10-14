@@ -55,8 +55,8 @@ export default function ConfirmBookingScreen() {
       name: doctorData.name,
       specialty: doctorData.specialty,
       location: doctorData.location || '',
-      rating: doctorData.rating || 4.8,
-      reviews: 124,
+      rating: doctorData.rating,
+      reviews: doctorData.reviewCount ?? 0,
       avatar: doctorData.avatar ?? '',
     };
   }, [doctorData, doctorId, t]);
@@ -142,7 +142,9 @@ export default function ConfirmBookingScreen() {
                 <View style={styles.ratingRow}>
                   <SvgXml width={11} height={11} xml={doctorCardStarSvg} style={styles.starIcon} />
                   <Text style={styles.ratingValue}>{doctor.rating}</Text>
-                  <Text style={styles.reviewsText}>{t('confirmBooking.reviews', { reviews: doctor.reviews })}</Text>
+                  {doctor.reviews > 0 && (
+                    <Text style={styles.reviewsText}>{t('confirmBooking.reviews', { reviews: doctor.reviews })}</Text>
+                  )}
                 </View>
               )}
             </View>
