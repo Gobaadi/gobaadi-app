@@ -18,6 +18,8 @@ import { useGetMyProfileQuery } from '@/store/usersApi';
 import { useGetMyDoctorProfileQuery, useGetDashboardStatsQuery } from '@/store/doctorPortalApi';
 import { useGetAnimalsQuery } from '@/store/animalsApi';
 import { useGetBalanceQuery } from '@/store/walletApi';
+import { useGetMySubscriptionQuery } from '@/store/subscriptionsApi';
+import { SUBSCRIPTION_PLANS } from '@/constants/subscription-plans';
 import type { RootState, AppDispatch } from '@/store/store';
 import { DoctorAvatar } from '@/components/doctor-avatar';
 import {
@@ -51,6 +53,18 @@ export default function ProfileScreen() {
 
   // Wallet data
   const { data: walletBalance } = useGetBalanceQuery();
+
+  // Subscription data (farmer only)
+  const { data: mySubscription } = useGetMySubscriptionQuery(undefined, { skip: isDoctor });
+  const activePlan = SUBSCRIPTION_PLANS.find((p) => p.id === mySubscription?.planId);
+  const planPrice = activePlan ? `$${activePlan.price.toFixed(2)}` : '$00.00';
+  const nextBillingDate = mySubscription?.endDate
+    ? new Date(mySubscription.endDate).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      })
+    : '';
 
   const uniquePatients = dashboardStats?.totalPatients ?? 0;
   const completedConsultations = dashboardStats?.totalConsultations ?? 0;
@@ -302,7 +316,8 @@ export default function ProfileScreen() {
             </View>
 
             {/* Subscription Section */}
-            <Text style={styles.sectionTitle}>{t('profile.subscription.section')}</Text>
+            <Text style={styles.subscriptionSectionTitle}>{t('profile.subscription.section')}</Text>
+            <View style={styles.subscriptionDashedDivider} />
 
             {/* Current Plan Card */}
             <TouchableOpacity
@@ -312,9 +327,9 @@ export default function ProfileScreen() {
             >
               <View style={styles.planLeft}>
                 <Text style={styles.planTitle}>{t('profile.subscription.currentPlan')}</Text>
-                <Text style={styles.planPrice}>$00.00</Text>
+                <Text style={styles.planPrice}>{planPrice}</Text>
                 <Text style={styles.planBilling}>
-                  {t('profile.subscription.nextBilling')}<Text style={styles.planBillingBold}>-</Text>
+                  {t('profile.subscription.nextBilling')}{nextBillingDate}
                 </Text>
               </View>
               <SvgXml width={10} height={20} xml={profileArrowRightSvg} />
@@ -580,6 +595,20 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     marginTop: 4,
   },
+  subscriptionSectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#BD632F',
+    marginBottom: 8,
+    marginTop: 4,
+  },
+  subscriptionDashedDivider: {
+    height: 1,
+    borderStyle: 'dashed',
+    borderWidth: 1,
+    borderColor: '#E8E1D8',
+    marginBottom: 12,
+  },
   walletCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -738,10 +767,6 @@ const styles = StyleSheet.create({
   planBilling: {
     fontSize: 12,
     color: '#7C7672',
-  },
-  planBillingBold: {
-    fontWeight: '600',
-    color: '#3D3835',
   },
 
   /* Menu Items */

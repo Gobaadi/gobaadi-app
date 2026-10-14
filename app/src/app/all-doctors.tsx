@@ -72,8 +72,8 @@ export default function AllDoctorsScreen() {
         name: d.name,
         specialty: d.specialty,
         location: d.location || '',
-        rating: d.rating || 4.8,
-        reviews: 124,
+        rating: d.rating,
+        reviews: d.reviewCount ?? 0,
         avatar: d.avatar ?? '',
       }));
 
@@ -244,7 +244,9 @@ export default function AllDoctorsScreen() {
                 <View style={styles.ratingRow}>
                   <SvgXml width={12} height={12} xml={doctorCardStarSvg} style={styles.starIcon} />
                   <Text style={styles.ratingValue}>{doc.rating}</Text>
-                  <Text style={styles.reviewsText}>{t('allDoctors.reviews', { count: doc.reviews })}</Text>
+                  {doc.reviews > 0 && (
+                    <Text style={styles.reviewsText}>{t('allDoctors.reviews', { count: doc.reviews })}</Text>
+                  )}
                 </View>
               </View>
             </View>

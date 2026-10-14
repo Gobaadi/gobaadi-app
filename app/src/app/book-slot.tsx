@@ -97,8 +97,8 @@ export default function BookSlotScreen() {
       name: doctorData.name,
       specialty: doctorData.specialty,
       location: doctorData.location || '',
-      rating: doctorData.rating || 4.8,
-      reviews: 124,
+      rating: doctorData.rating,
+      reviews: doctorData.reviewCount ?? 0,
       avatar: doctorData.avatar ?? '',
     };
   }, [doctorData]);
@@ -191,7 +191,7 @@ export default function BookSlotScreen() {
         <Text style={styles.headerTitle}>{isReschedule ? t('bookSlot.reschedule') : t('bookSlot.title')}</Text>
 
         <TouchableOpacity style={styles.circleButton} activeOpacity={0.8}>
-          <SvgXml width={20} height={20} xml={doctorNotificationSvg} />
+          <SvgXml width={24} height={24} xml={doctorNotificationSvg} />
         </TouchableOpacity>
       </View>
 
@@ -242,7 +242,9 @@ export default function BookSlotScreen() {
                 <View style={styles.ratingRow}>
                   <SvgXml width={11} height={11} xml={doctorCardStarSvg} style={styles.starIcon} />
                   <Text style={styles.ratingValue}>{doctor.rating}</Text>
-                  <Text style={styles.reviewsText}>{t('bookSlot.reviews', { count: doctor.reviews })}</Text>
+                  {doctor.reviews > 0 && (
+                    <Text style={styles.reviewsText}>{t('bookSlot.reviews', { count: doctor.reviews })}</Text>
+                  )}
                 </View>
               </View>
             </View>
@@ -532,7 +534,7 @@ const styles = StyleSheet.create({
   circleButton: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: 12,
     backgroundColor: '#BD632F',
     justifyContent: 'center',
     alignItems: 'center',

@@ -328,7 +328,7 @@
       "poultry": "Poultry Shed"
     },
     "submit": "Add Task",
-    "taskHeadingPlaceholder": "Enter Your Task Heading",
+    "taskHeadingPlaceholder": "Custom task",
     "today": "Today",
     "tomorrow": "Tomorrow",
     "types": {
@@ -439,8 +439,8 @@
       "specialty": "Specialty",
       "title": "Filter Doctors"
     },
-    "reviews_one": "| {{count}} Review",
-    "reviews_other": "| {{count}} Reviews",
+    "reviews_one": "| {{count, number}} Review",
+    "reviews_other": "| {{count, number}} Reviews",
     "searchPlaceholder": "Search doctor",
     "specialties": {
       "all": "All",
@@ -899,7 +899,7 @@
     "reasonPlaceholder": "Description of symptoms",
     "required": "(Required)",
     "reschedule": "Reschedule",
-    "reviews": "| {{count}} Reviews",
+    "reviews": "| {{count, number}} Reviews",
     "selectAnimal": "Select Animal",
     "selectDate": "Select Date",
     "selectPet": "Select Pet",
@@ -960,7 +960,7 @@
       "october": "October",
       "september": "September"
     },
-    "reviews": "| {{count}} Reviews",
+    "reviews": "| {{count, number}} Reviews",
     "title": "Booking Details",
     "visitType": "Visit Type",
     "yourSlot": "Your Slot"
@@ -1139,7 +1139,7 @@
       "october": "October",
       "september": "September"
     },
-    "reviews": "| {{reviews}} Reviews",
+    "reviews": "| {{reviews, number}} Reviews",
     "title": "Confirm Booking",
     "visitType": "Visit Type",
     "yourSlot": "Your Slot"
@@ -1156,7 +1156,7 @@
     "hour": "Hour",
     "loading": "Loading…",
     "monthYear": "December 2026",
-    "reviews": "| {{count}} Reviews",
+    "reviews": "| {{count, number}} Reviews",
     "title": "Confirm and Pay",
     "totalFees": "Total Fees",
     "visitType": "Visit Type",
@@ -1295,7 +1295,7 @@
     "defaults": {
       "specialty": "Veterinary Surgery"
     },
-    "reviews": "| {{count}} Reviews",
+    "reviews": "| {{count, number}} Reviews",
     "serviceMeta": "৳ {{price}} · {{minutes}} min",
     "servicesTitle": "Services",
     "specializations": {
@@ -1475,8 +1475,8 @@
     },
     "locationLabel": "Location",
     "myTreatment": "My Treatment",
-    "reviews_one": "{{count}} Review",
-    "reviews_other": "{{count}} Reviews",
+    "reviews_one": "{{count, number}} Review",
+    "reviews_other": "{{count, number}} Reviews",
     "searchPlaceholder": "Search doctors...",
     "sections": {
       "categories": "Categories",
@@ -1644,7 +1644,7 @@
       "earned": "You've earned Tk {{amount}} from {{count}} referrals",
       "enterCode": "Enter code",
       "haveCode": "Have a code?",
-      "perReferral": "Earn Tk 100 For Every Referral",
+      "perReferral": "Earn Up to Tk 1000 For Every Referral",
       "referNow": "Refer Now",
       "shareMsg": "Join me on Gobadi! Use my referral code {{code}} to sign up: {{link}}",
       "title": "Refer to Your Friend and Earn"
@@ -2630,9 +2630,9 @@
     "emailPlaceholder": "Enter your email",
     "errors": {
       "bvcRequired": "BVC Registration Number is required for doctors.",
-    "createFailed": "Could not create account. Please try again.",
-    "emailNotAllowed": "Please use an email from a supported provider (Gmail, Yahoo, Hotmail, Outlook, etc.).",
-    "emailRequired": "Email is required.",
+      "createFailed": "Could not create account. Please try again.",
+      "emailNotAllowed": "Please use an email from a supported provider (Gmail, Yahoo, Hotmail, Outlook, etc.).",
+      "emailRequired": "Email is required.",
       "invalidEmail": "Please enter a valid email address.",
       "invalidPhone": "Please enter a valid 11-digit Bangladeshi phone number (e.g., 01712345678).",
       "nameRequired": "Name is required.",
@@ -2652,7 +2652,7 @@
     "roleDoctor": "Doctor",
     "roleLabel": "Role*",
     "roleSelect": "Select your role",
-    "roleUser": "User",
+    "roleFarmer": "Farmer",
     "signIn": "Sign In",
     "submitDoctor": "Continue",
     "submitUser": "Sign Up",

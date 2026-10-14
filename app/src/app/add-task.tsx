@@ -133,15 +133,17 @@ export default function AddTaskScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.headerSquareBtn}
-          onPress={() => router.back()}
-          activeOpacity={0.8}
-        >
-          <SvgXml width={20} height={20} xml={backButtonSvg} />
-        </TouchableOpacity>
+        <View style={styles.headerLeft}>
+          <TouchableOpacity
+            style={styles.headerSquareBtn}
+            onPress={() => router.back()}
+            activeOpacity={0.8}
+          >
+            <SvgXml width={20} height={20} xml={backButtonSvg} />
+          </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>{t('addTask.header')}</Text>
+          <Text style={styles.headerTitle}>{t('addTask.header')}</Text>
+        </View>
 
         <TouchableOpacity
           style={styles.headerSquareBtn}
@@ -321,6 +323,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 12,
     marginBottom: 20,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
   headerSquareBtn: {
     width: 42,

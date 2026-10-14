@@ -9,6 +9,7 @@ import { ILike, IsNull, Repository } from 'typeorm';
 import { Doctor } from './doctor.entity';
 import { Availability } from './availability.entity';
 import { User } from '../users/user.entity';
+import { Review, ReviewTargetType } from '../reviews/review.entity';
 import { PaginatedResult } from '../common/paginated-result.interface';
 import { MeilisearchService } from '../meilisearch/meilisearch.service';
 import { S3Service } from '../s3/s3.service';
@@ -35,18 +36,53 @@ export class DoctorsService {
     private readonly availabilityRepository: Repository<Availability>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(Review)
+    private readonly reviewRepository: Repository<Review>,
     private readonly meilisearchService: MeilisearchService,
     private readonly s3Service: S3Service,
   ) {}
+
+  /**
+   * Counts approved reviews per doctor in a single grouped query and
+   * returns a Map keyed by doctor id. Doctors with no reviews are
+   * absent from the map.
+   */
+  private async getReviewCounts(
+    doctorIds: number[],
+  ): Promise<Map<number, number>> {
+    if (doctorIds.length === 0) {
+      return new Map();
+    }
+    const rows: Array<{ targetId: string; count: string }> = await this.reviewRepository
+      .createQueryBuilder('review')
+      .select('review.targetId', 'targetId')
+      .addSelect('COUNT(*)', 'count')
+      .where('review.targetType = :targetType', {
+        targetType: ReviewTargetType.DOCTOR,
+      })
+      .andWhere('review.isApproved = true')
+      .andWhere('review.targetId IN (:...doctorIds)', {
+        doctorIds: doctorIds.map(String),
+      })
+      .groupBy('review.targetId')
+      .getRawMany();
+    const counts = new Map<number, number>();
+    for (const row of rows) {
+      counts.set(parseInt(row.targetId, 10), parseInt(row.count, 10));
+    }
+    return counts;
+  }
 
   async getDoctors(
     page?: number,
     limit?: number,
     specialty?: string,
-  ): Promise<Doctor[] | PaginatedResult<Doctor>> {
+  ): Promise<(Doctor & { reviewCount: number })[] | PaginatedResult<Doctor & { reviewCount: number }>> {
     const where = specialty ? { specialty: ILike(`%${specialty}%`) } : {};
     if (!page && !limit) {
-      return this.doctorRepository.find({ where, order: { id: 'ASC' } });
+      const doctors = await this.doctorRepository.find({ where, order: { id: 'ASC' } });
+      const counts = await this.getReviewCounts(doctors.map((d) => d.id));
+      return doctors.map((d) => ({ ...d, reviewCount: counts.get(d.id) ?? 0 }));
     }
     const currentPage = page && page > 0 ? page : 1;
     const pageSize = limit && limit > 0 ? limit : 20;
@@ -56,7 +92,13 @@ export class DoctorsService {
       skip: (currentPage - 1) * pageSize,
       take: pageSize,
     });
-    return { data, page: currentPage, limit: pageSize, total };
+    const counts = await this.getReviewCounts(data.map((d) => d.id));
+    return {
+      data: data.map((d) => ({ ...d, reviewCount: counts.get(d.id) ?? 0 })),
+      page: currentPage,
+      limit: pageSize,
+      total,
+    };
   }
 
   async search(q: string, specialty?: string): Promise<Doctor[]> {
@@ -80,14 +122,17 @@ export class DoctorsService {
     });
   }
 
-  async getDoctorById(id: string | number): Promise<Doctor> {
+  async getDoctorById(
+    id: string | number,
+  ): Promise<Doctor & { reviewCount: number }> {
     const doctor = await this.doctorRepository.findOneBy({
       id: typeof id === 'string' ? parseInt(id, 10) : id,
     });
     if (!doctor) {
       throw new NotFoundException('Doctor not found');
     }
-    return doctor;
+    const counts = await this.getReviewCounts([doctor.id]);
+    return { ...doctor, reviewCount: counts.get(doctor.id) ?? 0 };
   }
 
   async getDoctorByUserId(userId: number): Promise<Doctor | null> {

@@ -103,7 +103,9 @@ export default function DoctorsScreen() {
   }, [appointments]);
 
   // Carousel layout: one slide per upcoming appointment, AI banner last.
+  // With no appointments, the AI card renders as a standalone hero card instead.
   const treatmentCount = upcomingTreatments.length;
+  const isSliderMode = treatmentCount > 0;
   const slideCount = treatmentCount + 1;
   const effectiveSlide =
     activeSlide >= 0 && activeSlide < slideCount ? activeSlide : 0;
@@ -216,7 +218,8 @@ export default function DoctorsScreen() {
   );
 
   // One dot per slide (each upcoming appointment + the AI banner).
-  const renderDots = () => {
+  // 'light' dots sit on the orange appointment card; 'dark' on the white AI card.
+  const renderDots = (variant: 'light' | 'dark' = 'light') => {
     if (slideCount <= 1) return null;
     return (
       <View style={styles.slideDots}>
@@ -231,7 +234,13 @@ export default function DoctorsScreen() {
             <View
               style={[
                 styles.slideDot,
-                i === effectiveSlide ? styles.slideDotActive : styles.slideDotInactive,
+                i === effectiveSlide
+                  ? variant === 'dark'
+                    ? styles.slideDotActiveDark
+                    : styles.slideDotActive
+                  : variant === 'dark'
+                    ? styles.slideDotInactiveDark
+                    : styles.slideDotInactive,
               ]}
             />
           </TouchableOpacity>
@@ -275,8 +284,8 @@ export default function DoctorsScreen() {
         name: d.name,
         specialty: d.specialty,
         location: d.location || '',
-        rating: d.rating || 4.8,
-        reviews: 124,
+        rating: d.rating,
+        reviews: d.reviewCount ?? 0,
         avatar: d.avatar ?? '',
       }));
   }, [doctors, debouncedSearch, activeCategory, location]);
@@ -298,7 +307,7 @@ export default function DoctorsScreen() {
               activeOpacity={0.8}
               onPress={() => router.push('/select-language')}
             >
-              <SvgXml width={20} height={20} xml={tintSvg(languageGlobeSvg, 'white', '#BD632F')} />
+              <SvgXml width={24} height={24} xml={tintSvg(languageGlobeSvg, 'white', '#BD632F')} />
               <Text style={styles.langText}>{languageCode}</Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -320,9 +329,9 @@ export default function DoctorsScreen() {
               activeOpacity={0.7}
               onPress={() => setLocationSheetOpen(true)}
             >
-              <SvgXml width={15} height={17} xml={locationPinSvg} style={{ marginRight: 6 }} />
+              <SvgXml width={19} height={20} xml={locationPinSvg} style={{ marginRight: 6 }} />
               <Text style={styles.locationText}>{location}</Text>
-              <SvgXml width={12} height={12} xml={locationChevronSvg} />
+              <SvgXml width={14} height={14} xml={locationChevronSvg} />
             </TouchableOpacity>
           </View>
 
@@ -430,14 +439,17 @@ export default function DoctorsScreen() {
               )}
 
               {effectiveSlide === treatmentCount && (
-                /* Slide: Analyze with AI */
+                /* Slide: Analyze with AI — last carousel slide, or standalone hero when no appointments */
                 <TouchableOpacity
                   key="ai-banner"
                   style={styles.aiCard}
                   activeOpacity={0.95}
-                  disabled={slideCount <= 1}
                   onPress={() => {
-                    if (slideCount > 1) setActiveSlide(0);
+                    if (isSliderMode) {
+                      setActiveSlide(0);
+                    } else {
+                      router.push('/ai-scan');
+                    }
                   }}
                 >
                   <View style={styles.aiCardContent}>
@@ -459,8 +471,8 @@ export default function DoctorsScreen() {
                     <Image source={require('@/assets/images/analyzewithai.webp')} style={styles.aiCowImage} />
                   </View>
 
-                  {/* Dots */}
-                  {renderDots()}
+                  {/* Dots (dark — this card has a white background) */}
+                  {renderDots('dark')}
                 </TouchableOpacity>
               )}
             </View>
@@ -551,7 +563,9 @@ export default function DoctorsScreen() {
                 <View style={styles.ratingRow}>
                   <SvgXml width={12} height={12} xml={doctorCardStarSvg} style={{ marginRight: 4 }} />
                   <Text style={styles.ratingValue}>{doc.rating}</Text>
-                  <Text style={styles.reviewsText}>| {t('doctors.reviews', { count: doc.reviews })}</Text>
+                  {doc.reviews > 0 && (
+                    <Text style={styles.reviewsText}>| {t('doctors.reviews', { count: doc.reviews })}</Text>
+                  )}
                 </View>
 
                 <View style={styles.doctorCardButtons}>
@@ -670,9 +684,8 @@ const styles = StyleSheet.create({
   langBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
     height: 40,
-    gap: 6,
+    gap: 8,
   },
   langGlobe: {
     fontSize: 14,
@@ -709,7 +722,7 @@ const styles = StyleSheet.create({
   locationLabel: {
     fontSize: 11,
     color: '#9C9690',
-    marginBottom: 2,
+    marginBottom: 6,
   },
   locationSelector: {
     flexDirection: 'row',
@@ -879,6 +892,13 @@ const styles = StyleSheet.create({
   slideDotInactive: {
     backgroundColor: 'rgba(255, 255, 255, 0.4)',
   },
+  slideDotActiveDark: {
+    backgroundColor: '#1A1817',
+    width: 14,
+  },
+  slideDotInactiveDark: {
+    backgroundColor: 'rgba(26, 24, 23, 0.2)',
+  },
   aiCard: {
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
@@ -903,12 +923,12 @@ const styles = StyleSheet.create({
   aiCardTitle: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#BD632F',
+    color: '#C0612B',
     marginBottom: 10,
   },
   aiCardSubtitle: {
     fontSize: 14,
-    color: '#7C7672',
+    color: '#171717',
     lineHeight: 20,
     marginBottom: 10,
   },

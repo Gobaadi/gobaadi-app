@@ -99,77 +99,77 @@ export default function AiScanScreen() {
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
-        <View style={styles.header}>
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.circleButton}
+          onPress={() => router.back()}
+          activeOpacity={0.8}
+        >
+          <SvgXml width={20} height={20} xml={backButtonSvg} />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.circleButton} activeOpacity={0.8}>
+          <SvgXml width={20} height={20} xml={doctorNotificationSvg} />
+        </TouchableOpacity>
+      </View>
+
+      <KeyboardAwareScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        {imageUri ? (
+          <Image source={{ uri: imageUri }} style={styles.previewImage} resizeMode="cover" />
+        ) : (
+          <View style={styles.iconCircle}>
+            <SvgXml width={52} height={52} xml={aiScanBigCameraSvg} />
+          </View>
+        )}
+
+        <Text style={styles.title}>{t('aiScan.title')}</Text>
+
+        <Text style={styles.subtitle}>{t('aiScan.subtitle')}</Text>
+
+        {imageUri ? (
+          <TextInput
+            style={styles.symptomsInput}
+            placeholder={t('aiScan.symptomsPlaceholder')}
+            placeholderTextColor="#A39E99"
+            value={symptomsText}
+            onChangeText={setSymptomsText}
+            multiline
+          />
+        ) : null}
+
+        {imageUri ? (
           <TouchableOpacity
-            style={styles.circleButton}
-            onPress={() => router.back()}
-            activeOpacity={0.8}
+            style={styles.scanButton}
+            onPress={handleAnalyze}
+            activeOpacity={0.85}
+            disabled={isUploading}
           >
-            <SvgXml width={20} height={20} xml={backButtonSvg} />
+            <Text style={styles.scanButtonText}>{isUploading ? t('aiScan.uploading') : t('aiScan.analyzeNow')}</Text>
           </TouchableOpacity>
-
-          <TouchableOpacity style={styles.circleButton} activeOpacity={0.8}>
-            <SvgXml width={20} height={20} xml={doctorNotificationSvg} />
+        ) : (
+          <TouchableOpacity
+            style={styles.scanButton}
+            onPress={() => router.push('/ai-hold')}
+            activeOpacity={0.85}
+          >
+            <SvgXml width={18} height={18} xml={aiScanCameraSvg} style={styles.scanButtonIcon} />
+            <Text style={styles.scanButtonText}>{t('aiScan.startScan')}</Text>
           </TouchableOpacity>
-        </View>
+        )}
 
-        <KeyboardAwareScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          {imageUri ? (
-            <Image source={{ uri: imageUri }} style={styles.previewImage} resizeMode="cover" />
-          ) : (
-            <View style={styles.iconCircle}>
-              <SvgXml width={52} height={52} xml={aiScanBigCameraSvg} />
-            </View>
-          )}
+        {!imageUri && (
+          <TouchableOpacity style={styles.uploadButton} activeOpacity={0.8} onPress={pickFromGallery}>
+            <SvgXml width={18} height={18} xml={aiScanUploadSvg} style={styles.uploadButtonIcon} />
+            <Text style={styles.uploadButtonText}>{t('aiScan.uploadFromGallery')}</Text>
+          </TouchableOpacity>
+        )}
 
-          <Text style={styles.title}>{t('aiScan.title')}</Text>
-
-          <Text style={styles.subtitle}>{t('aiScan.subtitle')}</Text>
-
-          {imageUri ? (
-            <TextInput
-              style={styles.symptomsInput}
-              placeholder={t('aiScan.symptomsPlaceholder')}
-              placeholderTextColor="#A39E99"
-              value={symptomsText}
-              onChangeText={setSymptomsText}
-              multiline
-            />
-          ) : null}
-
-          {imageUri ? (
-            <TouchableOpacity
-              style={styles.scanButton}
-              onPress={handleAnalyze}
-              activeOpacity={0.85}
-              disabled={isUploading}
-            >
-              <Text style={styles.scanButtonText}>{isUploading ? t('aiScan.uploading') : t('aiScan.analyzeNow')}</Text>
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
-              style={styles.scanButton}
-              onPress={() => router.push('/ai-hold')}
-              activeOpacity={0.85}
-            >
-              <SvgXml width={18} height={18} xml={aiScanCameraSvg} style={styles.scanButtonIcon} />
-              <Text style={styles.scanButtonText}>{t('aiScan.startScan')}</Text>
-            </TouchableOpacity>
-          )}
-
-          {!imageUri && (
-            <TouchableOpacity style={styles.uploadButton} activeOpacity={0.8} onPress={pickFromGallery}>
-              <SvgXml width={18} height={18} xml={aiScanUploadSvg} style={styles.uploadButtonIcon} />
-              <Text style={styles.uploadButtonText}>{t('aiScan.uploadFromGallery')}</Text>
-            </TouchableOpacity>
-          )}
-
-          {imageUri && (
-            <TouchableOpacity style={styles.uploadButton} activeOpacity={0.8} onPress={() => setImageUri(null)}>
-              <Text style={styles.uploadButtonText}>{t('aiScan.retake')}</Text>
-            </TouchableOpacity>
-          )}
-        </KeyboardAwareScrollView>
+        {imageUri && (
+          <TouchableOpacity style={styles.uploadButton} activeOpacity={0.8} onPress={() => setImageUri(null)}>
+            <Text style={styles.uploadButtonText}>{t('aiScan.retake')}</Text>
+          </TouchableOpacity>
+        )}
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }
@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
   circleButton: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: 12,
     backgroundColor: '#BD632F',
     justifyContent: 'center',
     alignItems: 'center',

@@ -177,17 +177,17 @@ export default function EditTaskScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.headerSquareBtn}
-          onPress={() => router.back()}
-          activeOpacity={0.8}
-        >
-          <SvgXml width={20} height={20} xml={backButtonSvg} />
-        </TouchableOpacity>
+        <View style={styles.headerLeft}>
+          <TouchableOpacity
+            style={styles.headerSquareBtn}
+            onPress={() => router.back()}
+            activeOpacity={0.8}
+          >
+            <SvgXml width={20} height={20} xml={backButtonSvg} />
+          </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>{t('editTask.header')}</Text>
-
-        <View style={styles.headerSquareSpacer} />
+          <Text style={styles.headerTitle}>{t('editTask.header')}</Text>
+        </View>
       </View>
 
       <KeyboardAwareScrollView
@@ -354,11 +354,15 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingTop: 12,
     marginBottom: 20,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
   headerSquareBtn: {
     width: 42,
@@ -373,13 +377,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  headerSquareSpacer: {
-    width: 42,
-    height: 42,
-  },
   headerTitle: {
-    flex: 1,
-    textAlign: 'center',
     fontSize: 22,
     fontWeight: '700',
     color: '#1A1817',

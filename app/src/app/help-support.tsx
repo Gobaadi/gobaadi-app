@@ -28,7 +28,7 @@ export default function HelpSupportScreen() {
     { id: 'faqs', titleKey: 'helpSupport.faqs.title', subtitleKey: 'helpSupport.faqs.subtitle', icon: 'help-circle-outline' as const, svg: helpSupportFaqsSvg, route: '/faqs' },
     { id: 'contact', titleKey: 'helpSupport.contact.title', subtitleKey: 'helpSupport.contact.subtitle', icon: 'chatbubble-ellipses-outline' as const, svg: helpSupportContactSupportSvg, route: '/contact-support' },
     { id: 'report', titleKey: 'helpSupport.report.title', subtitleKey: 'helpSupport.report.subtitle', icon: 'flag-outline' as const, svg: helpSupportReportIssuesSvg, route: '/report-issues' },
-    { id: 'my-reports', titleKey: 'helpSupport.myReports.title', subtitleKey: 'helpSupport.myReports.subtitle', icon: 'document-text-outline' as const, svg: null, route: '/my-reports' },
+    // { id: 'my-reports', titleKey: 'helpSupport.myReports.title', subtitleKey: 'helpSupport.myReports.subtitle', icon: 'document-text-outline' as const, svg: null, route: '/my-reports' },
   ];
 
   return (
@@ -73,7 +73,7 @@ export default function HelpSupportScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FAF9F6' },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 4, paddingBottom: 12 },
-  backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#BD632F', justifyContent: 'center', alignItems: 'center' },
+  backBtn: { width: 40, height: 40, borderRadius: 8, backgroundColor: '#BD632F', justifyContent: 'center', alignItems: 'center' },
   headerTitle: { fontSize: 20, fontWeight: '800', color: '#1A1817' },
   scrollContainer: { paddingHorizontal: 20, paddingBottom: 40 },
   menuCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FFFFFF', borderRadius: 16, borderWidth: 1, borderColor: '#E6E1DC', padding: 16, marginBottom: 12 },

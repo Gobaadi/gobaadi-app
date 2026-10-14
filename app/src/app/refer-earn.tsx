@@ -11,8 +11,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { SvgXml } from 'react-native-svg';
 import { useGetMyReferralQuery } from '@/store/referralsApi';
 import { useTranslation } from 'react-i18next';
+import { referAndEarnSvg } from '@/components/icons/svg-icon-sources';
 
 export default function ReferEarnScreen() {
   const { t } = useTranslation();
@@ -78,35 +80,16 @@ export default function ReferEarnScreen() {
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         <View style={styles.mainCard}>
           <Text style={styles.cardHeading}>{t('referEarn.heading')}</Text>
+          <Text style={styles.rewardAmount}>{t('referEarn.rewardAmount')}</Text>
           <Text style={styles.rewardSubtitle}>{t('referEarn.subtitle')}</Text>
 
-          <View style={styles.illustrationCircle}>
-            <Text style={styles.farmerEmoji}>👨‍🌾</Text>
+          <View style={styles.illustrationContainer}>
+            <SvgXml width={100} height={104} xml={referAndEarnSvg} />
           </View>
 
           <View style={styles.codeBox}>
             <Text style={styles.codeLabel}>{t('referEarn.codeLabel')}</Text>
-            <Text style={styles.codeValue}>{referralInfo?.referralCode || t('referEarn.codeFallback')}</Text>
-          </View>
-
-          <View style={styles.dashedDivider} />
-
-          {/* Stats */}
-          <View style={styles.statsRow}>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{referralInfo?.referralCount ?? 0}</Text>
-              <Text style={styles.statLabel}>{t('referEarn.referrals')}</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>${referralInfo?.totalEarned ?? 0}</Text>
-              <Text style={styles.statLabel}>{t('referEarn.totalEarned')}</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>${referralInfo?.pendingAmount ?? 0}</Text>
-              <Text style={styles.statLabel}>{t('referEarn.pending')}</Text>
-            </View>
+            <Text style={styles.codeValue}>{`#${referralInfo?.referralCode || t('referEarn.codeFallback')}`}</Text>
           </View>
 
           <View style={styles.dashedDivider} />
@@ -156,19 +139,14 @@ const styles = StyleSheet.create({
   backBtn: { width: 42, height: 42, borderRadius: 12, backgroundColor: '#BD632F', justifyContent: 'center', alignItems: 'center' },
   headerTitle: { fontSize: 22, fontWeight: '700', color: '#1A1817' },
   mainCard: { backgroundColor: '#FFFFFF', borderRadius: 24, borderWidth: 1, borderColor: '#E6E1DC', padding: 24, alignItems: 'center', marginBottom: 24 },
-  cardHeading: { fontSize: 18, fontWeight: '700', color: '#1A1817', marginBottom: 8 },
+  cardHeading: { fontSize: 18, fontWeight: '700', color: '#1A1817', marginBottom: 4 },
+  rewardAmount: { fontSize: 32, fontWeight: '800', color: '#1A1817', marginBottom: 4 },
   rewardSubtitle: { fontSize: 13, color: '#7C7672', marginBottom: 20 },
-  illustrationCircle: { width: 110, height: 110, borderRadius: 55, backgroundColor: '#687834', justifyContent: 'center', alignItems: 'center', marginBottom: 24 },
-  farmerEmoji: { fontSize: 54 },
+  illustrationContainer: { marginBottom: 24 },
   codeBox: { width: '100%', backgroundColor: '#FFF2EB', borderRadius: 16, paddingVertical: 14, alignItems: 'center', marginBottom: 20 },
   codeLabel: { fontSize: 12, color: '#7C7672', fontWeight: '500', marginBottom: 4 },
   codeValue: { fontSize: 22, fontWeight: '800', color: '#1A1817', letterSpacing: 1 },
   dashedDivider: { width: '100%', height: 1, borderWidth: 1, borderColor: '#E6E1DC', borderStyle: 'dashed', marginBottom: 20 },
-  statsRow: { flexDirection: 'row', justifyContent: 'space-around', width: '100%', marginBottom: 20 },
-  statItem: { alignItems: 'center', flex: 1 },
-  statValue: { fontSize: 18, fontWeight: '800', color: '#BD632F', marginBottom: 4 },
-  statLabel: { fontSize: 11, fontWeight: '500', color: '#9C9690' },
-  statDivider: { width: 1, backgroundColor: '#E6E1DC', marginVertical: 4 },
   stepsList: { width: '100%', gap: 16 },
   stepItem: { flexDirection: 'row', alignItems: 'flex-start' },
   stepBadge: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#BD632F', justifyContent: 'center', alignItems: 'center', marginRight: 12, marginTop: 2 },
