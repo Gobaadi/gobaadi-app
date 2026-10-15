@@ -46,6 +46,7 @@
       "doctor": "Doctor"
     },
     "doctorName": "Dr. {{name}}",
+    "emailLabel": "Email Address : ",
     "phoneLabel": "Phone Number : ",
     "statusTitle": "Application Status",
     "steps": {
@@ -554,7 +555,7 @@
     "cancelling": "Cancelling...",
     "notFound": "Appointment not found",
     "noteOptional": "Note (Optional)",
-    "owner": "Owner: {{name}}",
+    "ownerLabel": "Owner",
     "patient": "Patient",
     "reasons": {
       "emergency": "Emergency",
@@ -567,7 +568,7 @@
     "cancelledLabel": "Cancelled Appointment",
     "goHome": "Go Home",
     "headerTitle": "Appointment cancelled",
-    "owner": "Owner: {{name}}",
+    "ownerLabel": "Owner",
     "patient": "Patient",
     "subtitle": "This appointment has been cancelled.\nThe owner has been notified.",
     "title": "Appointment Cancelled",
@@ -582,11 +583,9 @@
       "voice": "Online - Voice"
     },
     "consultationType": "Consultation Type",
-    "doctor": "Doctor",
-    "doctorLabel": "DOCTOR",
-    "fee": "Fee",
+    "join": "Join",
     "notFound": "Appointment not found",
-    "owner": "Owner: {{name}}",
+    "ownerLabel": "Owner",
     "patient": "Patient",
     "payment": {
       "failed": "Failed",
@@ -666,13 +665,13 @@
     },
     "noSlots": "No available slots for this date",
     "notFound": "Appointment not found",
-    "owner": "Owner: {{name}}",
+    "ownerLabel": "Owner",
     "patient": "Patient",
     "reschedule": "Reschedule",
     "rescheduling": "Rescheduling...",
     "selectDate": "Select date",
     "selectTime": "Select time",
-    "title": "Reschedule Appointment"
+    "title": "Appointments Details"
   },
   "appointments": {
     "dates": {
@@ -1035,7 +1034,7 @@
       "startFailed": "Failed to start consultation. Please try again."
     },
     "consultation": {
-      "endedDesc": "Your consultation with {{name}} has ended.",
+      "endedDesc": "You are now in consultation with {{name}}",
       "endedTitle": "Consultation ended!",
       "maxDuration": "•  Max Duration: 30 min",
       "remainingTime": "•  Remaining time: {{time}}",
@@ -1064,7 +1063,8 @@
     },
     "upcoming": {
       "join": "Join",
-      "owner": "Owner   {{name}}"
+      "ownerLabel": "Owner",
+      "startsIn": "Starts in {{minutes}} min"
     },
     "viewer": {
       "closeImage": "Close image",
@@ -1183,7 +1183,7 @@
     "sendPrescription": "Send Prescription",
     "startTime": "•  Start time: {{time}}",
     "subtitle": "Your consultation with {{name}} has ended.",
-    "summaryDesc": "You were in consultation with {{name}}",
+    "summaryDesc": "You are now in consultation with {{name}}",
     "title": "Consultation Ended"
   },
   "contactSupport": {
@@ -2077,16 +2077,25 @@
     "verifiedDetail": "{{phone}} · Verified",
     "verify": "Verify"
   },
+  "passwordRules": {
+    "heading": "Password must contain:",
+    "lowercase": "At least one lowercase letter (a-z)",
+    "minLength": "At least 8 characters",
+    "notMet": "Password must include:",
+    "number": "At least one number (0-9)",
+    "symbol": "At least one special character (e.g. !@#$)",
+    "uppercase": "At least one uppercase letter (A-Z)"
+  },
   "passwordSetup": {
     "confirmLabel": "Confirm Password*",
     "continue": "Continue",
     "createAccountError": "Could not create account. Please try again.",
+    "createPassword": "Create Password",
     "doctorFallback": "Doctor",
     "passwordLabel": "Password*",
     "passwordLength": "Password must be at least 8 characters.",
     "passwordMismatch": "Passwords do not match.",
-    "passwordRequired": "Password is required.",
-    "welcome": "Welcome"
+    "passwordRequired": "Password is required."
   },
   "patientDetails": {
     "age": "Age",
@@ -2174,17 +2183,33 @@
     "instructions": "Instructions",
     "instructionsPlaceholder": "Add instructions for the farmer...",
     "medicationName": "Medication Name*",
-    "namePlaceholder": "Type medication name",
+    "namePlaceholder": "Med name",
     "noSummary": "No Summary yet",
     "noteLabel": "Medication note (optional)",
     "quantity": "Quantity",
+    "searchNoResults": "No medications found",
+    "selectPlaceholder": "Select",
     "send": "Send Prescription",
     "summary": "Summary: {{summary}}",
     "title": "Prescription",
+    "frequencies": {
+      "asNeeded": "As needed",
+      "once": "Once daily",
+      "q12h": "Every 12 hours",
+      "q8h": "Every 8 hours",
+      "thrice": "Thrice daily",
+      "twice": "Twice daily"
+    },
     "units": {
+      "bottle": "bottle",
+      "capsule": "capsule",
       "days": "days",
+      "injection": "injection",
       "ml": "ml",
-      "vial": "vial"
+      "sachet": "sachet",
+      "tablet": "tablet",
+      "vial": "vial",
+      "weeks": "weeks"
     }
   },
   "privacyPolicy": {

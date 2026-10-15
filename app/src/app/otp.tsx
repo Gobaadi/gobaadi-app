@@ -14,6 +14,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
 import { useVerifyOtpMutation, useSendOtpMutation } from '@/store/authApi';
+import { RegistrationBackground } from '@/components/registration-background';
 
 export default function OTPScreen() {
   const { t } = useTranslation();
@@ -135,6 +136,7 @@ export default function OTPScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <RegistrationBackground />
       {/* Header with Back Button */}
         <View style={styles.header}>
           <TouchableOpacity
@@ -211,21 +213,23 @@ export default function OTPScreen() {
 
           {/* Error message */}
           {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
-
-          {/* Verify Button */}
-          <TouchableOpacity
-            style={[styles.verifyButton, isVerifying && styles.verifyButtonDisabled]}
-            activeOpacity={0.8}
-            onPress={handleVerify}
-            disabled={isVerifying}
-          >
-            {isVerifying ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <Text style={styles.verifyButtonText}>{t('otp.verify')}</Text>
-            )}
-          </TouchableOpacity>
       </KeyboardAwareScrollView>
+
+      {/* Verify Button - pinned near bottom of screen */}
+      <View style={styles.bottomBar}>
+        <TouchableOpacity
+          style={[styles.verifyButton, isVerifying && styles.verifyButtonDisabled]}
+          activeOpacity={0.8}
+          onPress={handleVerify}
+          disabled={isVerifying}
+        >
+          {isVerifying ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <Text style={styles.verifyButtonText}>{t('otp.verify')}</Text>
+          )}
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 }
@@ -263,7 +267,12 @@ const styles = StyleSheet.create({
   scrollContainer: {
     alignItems: 'center',
     paddingHorizontal: 24,
-    paddingBottom: 40,
+    paddingBottom: 24,
+    flexGrow: 1,
+  },
+  bottomBar: {
+    paddingHorizontal: 24,
+    paddingBottom: 32,
   },
   title: {
     fontSize: 28,

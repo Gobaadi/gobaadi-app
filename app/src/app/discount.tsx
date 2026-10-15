@@ -23,6 +23,7 @@ import {
 import { useGetDashboardStatsQuery, useGetDoctorBookingsQuery } from '@/store/doctorPortalApi';
 import { getLastAppointmentText } from '@/utils/last-appointment';
 import { PatientAvatar } from '@/components/patient-avatar';
+import { RegistrationBackground } from '@/components/registration-background';
 import {
   backButtonSvg,
   discountDetailsCallSvg,
@@ -145,12 +146,12 @@ export default function DiscountScreen() {
   if (discountLoading) {
     return (
       <SafeAreaView style={styles.container}>
+        <RegistrationBackground />
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
             <SvgXml width={20} height={20} xml={backButtonSvg} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{t('discount.title')}</Text>
-          <View style={{ width: 44 }} />
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#BD632F" />
@@ -161,12 +162,12 @@ export default function DiscountScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <RegistrationBackground />
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
           <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('discount.title')}</Text>
-        <View style={{ width: 44 }} />
       </View>
 
       <KeyboardAwareScrollView
@@ -314,10 +315,10 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingTop: 4,
     paddingBottom: 12,
+    gap: 12,
   },
   backBtn: {
     width: 44,
@@ -328,7 +329,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '800',
     color: '#1A1817',
   },
@@ -443,7 +444,7 @@ const styles = StyleSheet.create({
   quickDiscountBtn: {
     flex: 1,
     paddingVertical: 14,
-    borderRadius: 20,
+    borderRadius: 14,
     borderWidth: 1.5,
     borderColor: '#E6E1DC',
     backgroundColor: '#FFFFFF',
@@ -505,7 +506,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#FAF9F6',
+    backgroundColor: 'transparent',
     paddingHorizontal: 20,
     paddingVertical: 16,
     paddingBottom: 30,

@@ -15,6 +15,8 @@ import { useSelector } from 'react-redux';
 import type { RootState } from '@/store/store';
 import { useGetBookingByIdQuery, useGetDoctorBookingsQuery } from '@/store/doctorPortalApi';
 import { appointmentCancelCalendarSvg } from '@/components/icons/svg-icon-sources';
+import { formatAnimalDetails } from '@/utils/appointment';
+import { RegistrationBackground } from '@/components/registration-background';
 
 export default function AppointmentCancelledScreen() {
   const { t } = useTranslation();
@@ -30,9 +32,11 @@ export default function AppointmentCancelledScreen() {
   const displayName = appointment
     ? appointment.animalName || appointment.patientName || t('appointmentCancelled.patient')
     : t('appointmentCancelled.unknown');
+  const animalDetails = appointment ? formatAnimalDetails(appointment) : null;
 
   return (
     <SafeAreaView style={styles.container}>
+      <RegistrationBackground />
       <View style={styles.header}>
         <Text style={styles.headerTitle}>{t('appointmentCancelled.headerTitle')}</Text>
       </View>
@@ -62,19 +66,14 @@ export default function AppointmentCancelledScreen() {
               )}
               <View style={styles.cardInfo}>
                 <Text style={styles.cardName}>{displayName}</Text>
-                {(appointment.animalSpecies || appointment.animalBreed || appointment.animalAge) && (
-                  <Text style={styles.cardDetail}>
-                    {[
-                      appointment.animalSpecies,
-                      appointment.animalAge,
-                      appointment.animalBreed,
-                    ]
-                      .filter(Boolean)
-                      .join(' · ')}
-                  </Text>
+                {animalDetails && (
+                  <Text style={styles.cardDetail}>{animalDetails}</Text>
                 )}
-                {appointment.animalName && appointment.patientName && (
-                  <Text style={styles.cardOwner}>{t('appointmentCancelled.owner', { name: appointment.patientName })}</Text>
+                {appointment.patientName && (
+                  <View style={styles.ownerBlock}>
+                    <Text style={styles.ownerLabel}>{t('appointmentCancelled.ownerLabel')}</Text>
+                    <Text style={styles.ownerName}>{appointment.patientName}</Text>
+                  </View>
                 )}
               </View>
             </View>
@@ -151,7 +150,9 @@ const styles = StyleSheet.create({
   cardInfo: { flex: 1, justifyContent: 'center' },
   cardName: { fontSize: 15, fontWeight: '700', color: '#1A1817', marginBottom: 2 },
   cardDetail: { fontSize: 13, fontWeight: '500', color: '#7C7672', marginBottom: 2 },
-  cardOwner: { fontSize: 13, fontWeight: '500', color: '#7C7672' },
+  ownerBlock: { marginTop: 2 },
+  ownerLabel: { fontSize: 12, fontWeight: '600', color: '#BD632F', marginBottom: 2 },
+  ownerName: { fontSize: 13, fontWeight: '600', color: '#1A1817' },
   bottomContainer: { paddingHorizontal: 20, paddingVertical: 16 },
   homeBtn: {
     backgroundColor: '#BD632F',

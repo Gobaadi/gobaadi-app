@@ -17,6 +17,7 @@ import {
   useRemoveDiscountMutation,
 } from '@/store/discountsApi';
 import { PatientAvatar } from '@/components/patient-avatar';
+import { RegistrationBackground } from '@/components/registration-background';
 import { backButtonSvg, removeDiscountDeleteSvg, discountDetailsMessageSvg } from '@/components/icons/svg-icon-sources';
 
 export default function RemoveDiscountScreen() {
@@ -59,12 +60,12 @@ export default function RemoveDiscountScreen() {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container}>
+        <RegistrationBackground />
         <View style={styles.header}>
           <TouchableOpacity onPress={handleCancel} style={styles.backBtn} activeOpacity={0.7}>
             <SvgXml width={20} height={20} xml={backButtonSvg} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{t('removeDiscount.title')}</Text>
-          <View style={{ width: 44 }} />
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#BD632F" />
@@ -75,12 +76,12 @@ export default function RemoveDiscountScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <RegistrationBackground />
       <View style={styles.header}>
         <TouchableOpacity onPress={handleCancel} style={styles.backBtn} activeOpacity={0.7}>
           <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('removeDiscount.title')}</Text>
-        <View style={{ width: 44 }} />
       </View>
 
       <View style={styles.patientCard}>
@@ -98,7 +99,7 @@ export default function RemoveDiscountScreen() {
 
       <View style={styles.body}>
         <View style={styles.deleteCircle}>
-          <SvgXml width={84} height={84} xml={removeDiscountDeleteSvg} />
+          <SvgXml width={72} height={72} xml={removeDiscountDeleteSvg} />
         </View>
         <Text style={styles.bodyTitle}>{t('removeDiscount.bodyTitle')}</Text>
         <Text style={styles.bodyText}>
@@ -135,10 +136,10 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingTop: 4,
     paddingBottom: 12,
+    gap: 12,
   },
   backBtn: {
     width: 44,
@@ -149,7 +150,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '800',
     color: '#1A1817',
   },
@@ -202,9 +203,9 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   deleteCircle: {
-    width: 180,
-    height: 180,
-    borderRadius: 90,
+    width: 150,
+    height: 150,
+    borderRadius: 75,
     backgroundColor: '#FBE9E7',
     justifyContent: 'center',
     alignItems: 'center',

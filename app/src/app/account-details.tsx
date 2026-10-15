@@ -11,6 +11,8 @@ import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import type { RootState } from '@/store/store';
 import { Image } from 'expo-image';
+import { RegistrationBackground } from '@/components/registration-background';
+import { isValidEmailSyntax } from '@/utils/email';
 
 function formatPhone(raw: string): string {
   // +8801717897845 → +01717-897845
@@ -40,7 +42,15 @@ export default function AccountDetailsScreen() {
 
   const doctorName = params.name || t('accountDetails.defaults.doctor');
   const bvcNumber = params.bvcNumber || '';
-  const phoneDisplay = params.phone ? formatPhone(params.phone) : '';
+
+  // Registration can be phone- or email-based; the identifier is passed
+  // through the `phone` param. Show the matching label and raw value.
+  const identifier = params.phone || '';
+  const isEmail = isValidEmailSyntax(identifier);
+  const identifierLabel = isEmail
+    ? t('accountDetails.emailLabel')
+    : t('accountDetails.phoneLabel');
+  const identifierDisplay = isEmail ? identifier : formatPhone(identifier);
 
   const steps = [
     { labelKey: 'accountDetails.steps.submitApplication', completed: true },
@@ -50,6 +60,7 @@ export default function AccountDetailsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <RegistrationBackground />
       {/* Main Content */}
       <View style={styles.content}>
         {/* GOBAADI Logo */}
@@ -71,8 +82,8 @@ export default function AccountDetailsScreen() {
           </View>
 
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>{t('accountDetails.phoneLabel')}</Text>
-            <Text style={styles.detailValue}>{phoneDisplay}</Text>
+            <Text style={styles.detailLabel}>{identifierLabel}</Text>
+            <Text style={styles.detailValue}>{identifierDisplay}</Text>
           </View>
 
           {/* Application Status */}
@@ -166,11 +177,13 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#9C9690',
     fontWeight: '500',
+    flexShrink: 0,
   },
   detailValue: {
     fontSize: 13,
     color: '#1A1817',
     fontWeight: '600',
+    flexShrink: 1,
   },
   statusTitle: {
     fontSize: 15,

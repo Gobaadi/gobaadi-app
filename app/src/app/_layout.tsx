@@ -129,7 +129,13 @@ function RootNavigator() {
         {/* <Stack.Screen name="payment-success" /> */}
         {/* <Stack.Screen name="billing-details" /> */}
         <Stack.Screen name="chat" />
-        <Stack.Screen name="send-prescription" />
+        <Stack.Screen
+          name="send-prescription"
+          options={{
+            presentation: 'transparentModal',
+            animation: 'slide_from_bottom',
+          }}
+        />
         <Stack.Screen name="video-call" />
         <Stack.Screen name="my-treatment" />
         <Stack.Screen name="checkout" />

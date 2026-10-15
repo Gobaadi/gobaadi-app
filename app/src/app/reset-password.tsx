@@ -13,6 +13,8 @@ import { useTranslation } from 'react-i18next';
 
 import { useResetPasswordMutation } from '@/store/authApi';
 import { PasswordField } from '@/components/password-field';
+import { PasswordRequirements } from '@/components/password-requirements';
+import { getUnmetPasswordRules, PASSWORD_RULE_I18N_KEYS } from '@/utils/password';
 
 export default function ResetPasswordScreen() {
   const router = useRouter();
@@ -29,8 +31,13 @@ export default function ResetPasswordScreen() {
   const handleResetPassword = async () => {
     setErrorMessage('');
 
-    if (password.length < 8) {
-      setErrorMessage(t('resetPassword.errors.tooShort'));
+    const unmetRules = getUnmetPasswordRules(password);
+    if (unmetRules.length > 0) {
+      setErrorMessage(
+        `${t('passwordRules.notMet')} ${unmetRules
+          .map((rule) => t(PASSWORD_RULE_I18N_KEYS[rule]))
+          .join(', ')}`,
+      );
       return;
     }
     if (password !== confirmPassword) {
@@ -74,6 +81,7 @@ export default function ResetPasswordScreen() {
             <View style={styles.inputGroup}>
               <Text style={styles.label}>{t('resetPassword.labels.password')}</Text>
               <PasswordField value={password} onChangeText={setPassword} />
+              <PasswordRequirements value={password} />
             </View>
 
             {/* Confirm Password */}

@@ -9,6 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Image } from 'expo-image';
+import { RegistrationBackground } from '@/components/registration-background';
 
 export default function DoctorRegistrationSuccessScreen() {
   const { t } = useTranslation();
@@ -21,6 +22,7 @@ export default function DoctorRegistrationSuccessScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <RegistrationBackground />
       {/* Main Content */}
       <View style={styles.content}>
         {/* GOBAADI Logo */}

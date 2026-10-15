@@ -20,6 +20,9 @@ import { useSocialAuth } from '@/hooks/use-social-auth';
 import { apiErrorMessage } from '@/utils/api-error';
 import { isValidEmailSyntax, isAllowedEmail } from '@/utils/email';
 import { useTranslation } from '@/hooks/use-translation';
+import { RegistrationBackground } from '@/components/registration-background';
+import { PasswordRequirements } from '@/components/password-requirements';
+import { getUnmetPasswordRules, PASSWORD_RULE_I18N_KEYS } from '@/utils/password';
 
 const BD_PHONE_REGEX = /^01[3-9]\d{8}$/;
 
@@ -119,8 +122,13 @@ export default function SignUpScreen() {
         setErrorMessage(t('signup.errors.passwordRequired'));
         return;
       }
-      if (password.length < 8) {
-        setErrorMessage(t('signup.errors.passwordTooShort'));
+      const unmetRules = getUnmetPasswordRules(password);
+      if (unmetRules.length > 0) {
+        setErrorMessage(
+          `${t('passwordRules.notMet')} ${unmetRules
+            .map((rule) => t(PASSWORD_RULE_I18N_KEYS[rule]))
+            .join(', ')}`,
+        );
         return;
       }
       if (password !== confirmPassword) {
@@ -163,6 +171,7 @@ export default function SignUpScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <RegistrationBackground />
       <KeyboardAwareScrollView
         contentContainerStyle={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
@@ -278,6 +287,7 @@ export default function SignUpScreen() {
                     <Ionicons name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color="#A39E99" />
                   </TouchableOpacity>
                 </View>
+                <PasswordRequirements value={password} />
               </View>
 
               <View style={styles.inputGroup}>

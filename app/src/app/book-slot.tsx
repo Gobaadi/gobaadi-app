@@ -350,35 +350,6 @@ export default function BookSlotScreen() {
               textAlignVertical="top"
             />
 
-            {/* Animal Selection */}
-            {!isReschedule && myAnimals.length > 0 && (
-              <>
-                <Text style={styles.sectionTitle}>{t('bookSlot.selectAnimal')}</Text>
-                <View style={styles.animalChipsRow}>
-                  {myAnimals.map((animal) => {
-                    const isSelected = animal.id === effectiveAnimalId;
-                    return (
-                      <TouchableOpacity
-                        key={animal.id}
-                        style={[styles.animalChip, isSelected && styles.animalChipSelected]}
-                        onPress={() => setSelectedAnimalId(animal.id)}
-                        activeOpacity={0.7}
-                      >
-                        <Text
-                          style={[
-                            styles.animalChipText,
-                            isSelected && styles.animalChipTextSelected,
-                          ]}
-                        >
-                          {animal.name}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </>
-            )}
-
             {/* Date Selection */}
             <Text style={styles.sectionTitle}>{t('bookSlot.selectDate')}</Text>
 

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import PrescriptionForm, { PrescriptionFormData } from '@/components/PrescriptionForm';
 import { useSendPrescription } from '@/hooks/use-send-prescription';
@@ -14,6 +14,7 @@ export default function SendPrescriptionScreen() {
   useRequireDoctor();
   const { t } = useTranslation();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{
     appointmentId?: string;
     conversationId?: string;
@@ -65,44 +66,68 @@ export default function SendPrescriptionScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.backBtn}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle} numberOfLines={1}>
-          {params.patientName || t('sendPrescription.patient')}
-        </Text>
-        <View style={{ width: 40 }} />
-      </View>
+    <View style={styles.root}>
+      {/* Dimmed backdrop: tap to dismiss (blocked while a send is in flight). */}
+      <TouchableOpacity
+        style={styles.backdrop}
+        activeOpacity={1}
+        disabled={sending}
+        onPress={() => !sending && router.back()}
+      />
 
-      <PrescriptionForm onSend={handleSend} sending={sending} />
-    </SafeAreaView>
+      <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+        <View style={styles.grabber} />
+        <View style={styles.titleRow}>
+          <Text style={styles.title}>{t('prescription.title')}</Text>
+          <TouchableOpacity
+            style={styles.closeBtn}
+            onPress={() => !sending && router.back()}
+            disabled={sending}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="close" size={20} color="#1A1817" />
+          </TouchableOpacity>
+        </View>
+
+        <PrescriptionForm onSend={handleSend} sending={sending} />
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAF9F6' },
-  header: {
+  root: { flex: 1, justifyContent: 'flex-end' },
+  backdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+  },
+  sheet: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    height: '92%',
+    overflow: 'hidden',
+  },
+  grabber: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#E0D8D0',
+    alignSelf: 'center',
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingTop: 4,
-    paddingBottom: 12,
-    backgroundColor: '#BD632F',
+    paddingVertical: 6,
   },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerTitle: { fontSize: 18, fontWeight: '800', color: '#FFFFFF', flex: 1, textAlign: 'center' },
+  title: { fontSize: 20, fontWeight: '800', color: '#1A1817' },
+  closeBtn: { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
 });

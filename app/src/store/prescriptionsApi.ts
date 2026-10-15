@@ -3,8 +3,10 @@ import { baseQueryWithReauth } from './base-query-with-reauth';
 
 export interface Medicine {
   name: string;
-  dosage: string;
-  duration: string;
+  dosage?: string;
+  quantity?: string;
+  frequency?: string;
+  duration?: string;
   notes?: string;
 }
 
