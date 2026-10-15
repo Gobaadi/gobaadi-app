@@ -60,6 +60,8 @@ const QUICK_TILES = [
   { id: 'discount', labelKey: 'doctorHome.tiles.discount', icon: doctorHomeApplyDiscountSvg, route: '/apply-discount' },
 ];
 
+const QUICK_TILE_ROWS = [QUICK_TILES.slice(0, 2), QUICK_TILES.slice(2, 4)];
+
 export default function DoctorHomeScreen() {
   const router = useRouter();
   const { t } = useTranslation();
@@ -143,7 +145,7 @@ export default function DoctorHomeScreen() {
             resizeMode="cover"
           >
             <View style={styles.headerTop}>
-              <View>
+              <View style={styles.headerTopLeft}>
                 <Text style={styles.greetingText}>{getGreeting(t)}</Text>
                 <Text style={styles.doctorName}>{doctorDisplayName}</Text>
               </View>
@@ -176,12 +178,14 @@ export default function DoctorHomeScreen() {
           {/* Ongoing Patient Cards - Overlapping the header */}
           <View style={styles.patientsContainer}>
             {isLoading ? (
-              <View style={styles.patientCard}>
+              <View style={[styles.patientCard, styles.patientCardLoading]}>
                 <ActivityIndicator size="small" color="#BD632F" />
               </View>
             ) : ongoingPatients.length === 0 ? (
               <View style={styles.emptyPatientCard}>
-                <Ionicons name="person-outline" size={32} color="#E6E1DC" />
+                <View style={styles.emptyPatientIconCircle}>
+                  <Ionicons name="person-outline" size={28} color="#BD632F" />
+                </View>
                 <Text style={styles.emptyPatientText}>{t('doctorHome.emptyPatients')}</Text>
               </View>
             ) : (
@@ -197,25 +201,25 @@ export default function DoctorHomeScreen() {
                     </Text>
                   </View>
 
-                  <View style={styles.patientAvatar}>
-                    <PatientAvatar
-                      name={b.patientName}
-                      image={b.patientAvatar}
-                      size={50}
-                    />
-                  </View>
+                  <PatientAvatar
+                    name={b.patientName}
+                    image={b.patientAvatar}
+                    size={48}
+                  />
 
                   <View style={styles.patientInfo}>
-                    <Text style={styles.patientName}>{b.patientName || b.animalName || t('doctorHome.fallback.patient')}</Text>
+                    <Text style={styles.patientName} numberOfLines={1} ellipsizeMode="tail">
+                      {b.patientName || b.animalName || t('doctorHome.fallback.patient')}
+                    </Text>
                     {b.reasonForConsultation || b.patientPhone ? (
-                      <Text style={styles.patientDetail}>
+                      <Text style={styles.patientDetail} numberOfLines={1} ellipsizeMode="tail">
                         {b.reasonForConsultation || b.patientPhone}
                       </Text>
                     ) : null}
                   </View>
 
-                  <TouchableOpacity style={styles.chatBtn} activeOpacity={0.8} onPress={() => openPatientChat(b)}>
-                    <SvgXml width={26} height={24} xml={doctorHomeAppointmentMessageSquareSvg} />
+                  <TouchableOpacity style={styles.chatBtn} activeOpacity={0.7} onPress={() => openPatientChat(b)}>
+                    <SvgXml width={22} height={22} xml={doctorHomeAppointmentMessageSquareSvg} />
                   </TouchableOpacity>
                 </View>
               ))
@@ -263,18 +267,22 @@ export default function DoctorHomeScreen() {
 
           {/* Quick Access Tiles */}
           <View style={styles.tilesGrid}>
-            {QUICK_TILES.map((tile) => (
-              <TouchableOpacity
-                key={tile.id}
-                style={styles.tile}
-                onPress={() => router.push(tile.route as any)}
-                activeOpacity={0.85}
-              >
-                <View style={styles.tileIconCircle}>
-                  <SvgXml width={40} height={40} xml={tile.icon} />
-                </View>
-                <Text style={styles.tileLabel}>{t(tile.labelKey)}</Text>
-              </TouchableOpacity>
+            {QUICK_TILE_ROWS.map((row, rowIndex) => (
+              <View key={rowIndex} style={styles.tilesRow}>
+                {row.map((tile) => (
+                  <TouchableOpacity
+                    key={tile.id}
+                    style={styles.tile}
+                    onPress={() => router.push(tile.route as any)}
+                    activeOpacity={0.85}
+                  >
+                    <View style={styles.tileIconCircle}>
+                      <SvgXml width={40} height={40} xml={tile.icon} />
+                    </View>
+                    <Text style={styles.tileLabel}>{t(tile.labelKey)}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
             ))}
           </View>
         </View>
@@ -286,16 +294,16 @@ export default function DoctorHomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9F9F9',
+    backgroundColor: '#FAF9F6',
   },
   scrollContainer: {
-    paddingBottom: 110,
+    paddingBottom: 120,
   },
   headerBannerWrapper: {
     backgroundColor: '#BD632F',
   },
   headerBanner: {
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
     paddingBottom: 70, // Extra padding to allow card overlap
   },
   headerTop: {
@@ -303,6 +311,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: 24,
+  },
+  headerTopLeft: {
+    flex: 1,
+    minWidth: 0,
+    paddingRight: 12,
   },
   greetingText: {
     fontSize: 28,
@@ -318,6 +331,7 @@ const styles = StyleSheet.create({
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexShrink: 0,
     gap: 12,
   },
   langPill: {
@@ -328,7 +342,7 @@ const styles = StyleSheet.create({
     borderColor: '#FFFFFF',
     borderRadius: 20,
     paddingHorizontal: 10,
-    height: 36,
+    height: 40,
     gap: 6,
   },
   langPillText: {
@@ -355,85 +369,97 @@ const styles = StyleSheet.create({
     marginTop: -45, // Pulls the content up to overlap the header
   },
   patientsContainer: {
-    marginBottom: 16,
+    gap: 12,
+    marginBottom: 24,
   },
   patientCard: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 12,
     backgroundColor: '#FFFFFF',
     borderRadius: 24,
+    borderWidth: 1,
+    borderColor: '#F0EAE1',
     paddingHorizontal: 16,
-    paddingVertical: 18,
-    marginBottom: 10,
+    paddingVertical: 14,
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  patientCardLoading: {
+    justifyContent: 'center',
+    minHeight: 76,
   },
   patientTimeCol: {
     alignItems: 'center',
-    width: 45,
+    width: 44,
   },
   patientTimeText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
     color: '#1A1817',
+    letterSpacing: 0.2,
   },
   timeDivider: {
     height: 12,
-    borderLeftWidth: 1.5,
-    borderColor: '#D4D4D4',
+    borderLeftWidth: 1,
+    borderColor: '#E6E1DC',
     borderStyle: 'dashed',
     marginVertical: 4,
   },
-  patientAvatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#EAEAEA',
-    marginLeft: 12,
-    marginRight: 14,
-    overflow: 'hidden',
-  },
   patientInfo: {
     flex: 1,
+    gap: 3,
     justifyContent: 'center',
   },
   patientName: {
     fontSize: 15,
     fontWeight: '700',
     color: '#1A1817',
-    marginBottom: 4,
   },
   patientDetail: {
     fontSize: 13,
-    color: '#8A92A6',
+    color: '#7C7672',
     fontWeight: '500',
   },
   chatBtn: {
     width: 40,
     height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FFF6F0',
     justifyContent: 'center',
     alignItems: 'center',
   },
   emptyPatientCard: {
+    alignItems: 'center',
     backgroundColor: '#FFFFFF',
     borderRadius: 24,
-    padding: 24,
-    alignItems: 'center',
-    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#F0EAE1',
+    paddingVertical: 28,
+    paddingHorizontal: 24,
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  emptyPatientIconCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#FFF6F0',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   emptyPatientText: {
     fontSize: 14,
     color: '#9C9690',
     fontWeight: '500',
-    marginTop: 8,
+    marginTop: 10,
+    textAlign: 'center',
   },
   consultsCard: {
     flexDirection: 'row',
@@ -441,16 +467,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
     borderRadius: 24,
-    paddingHorizontal: 24,
+    borderWidth: 1,
+    borderColor: '#F0EAE1',
+    paddingHorizontal: 20,
     paddingVertical: 20,
     marginBottom: 24,
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
+    elevation: 2,
   },
   consultsLeft: {
+    flex: 1,
+    minWidth: 0,
+    paddingRight: 12,
     gap: 6,
   },
   consultsTitle: {
@@ -464,7 +495,7 @@ const styles = StyleSheet.create({
   },
   consultsSubtitle: {
     fontSize: 14,
-    color: '#8A92A6',
+    color: '#7C7672',
     fontWeight: '500',
   },
   consultsSubtitleDark: {
@@ -474,6 +505,7 @@ const styles = StyleSheet.create({
   pendingCircle: {
     width: 68,
     height: 68,
+    flexShrink: 0,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -493,26 +525,31 @@ const styles = StyleSheet.create({
   },
   pendingLabel: {
     fontSize: 10,
-    color: '#8A92A6',
+    color: '#7C7672',
     fontWeight: '600',
     marginTop: -2,
   },
   tilesGrid: {
+    gap: 16,
+  },
+  tilesRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
     gap: 16,
   },
   tile: {
-    width: '40%',
+    flex: 1,
+    minWidth: 0,
+    paddingHorizontal: 8,
     backgroundColor: '#FFFFFF',
     borderRadius: 24,
+    borderWidth: 1,
+    borderColor: '#F0EAE1',
     paddingVertical: 24,
     alignItems: 'center',
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
     elevation: 2,
   },
   tileIconCircle: {
@@ -528,6 +565,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#1A1817',
+    textAlign: 'center',
   },
 });
 

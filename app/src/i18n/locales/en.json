@@ -708,6 +708,12 @@
     "liveChat": "Live Chat",
     "minsLeft": "{{mins}} mins left",
     "owner": "Owner: {{name}}",
+    "ownerLabel": "Owner",
+    "pill": {
+      "cancelled": "Cancelled",
+      "completed": "Completed",
+      "rescheduled": "Rescheduled"
+    },
     "searchPlaceholder": "Search patient",
     "sections": {
       "inProgress": "Still in Progress",
@@ -2190,7 +2196,7 @@
     "searchNoResults": "No medications found",
     "selectPlaceholder": "Select",
     "send": "Send Prescription",
-    "summary": "Summary: {{summary}}",
+    "summaryTitle": "SUMMARY",
     "title": "Prescription",
     "frequencies": {
       "asNeeded": "As needed",

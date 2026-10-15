@@ -708,6 +708,12 @@
     "liveChat": "লাইভ চ্যাট",
     "minsLeft": "{{mins}} মিনিট বাকি",
     "owner": "মালিক: {{name}}",
+    "ownerLabel": "মালিক",
+    "pill": {
+      "cancelled": "বাতিল",
+      "completed": "সম্পন্ন",
+      "rescheduled": "পুনর্নির্ধারিত"
+    },
     "searchPlaceholder": "রোগী খুঁজুন",
     "sections": {
       "inProgress": "এখনো চলছে",
@@ -2190,7 +2196,7 @@
     "searchNoResults": "কোনো ওষুধ পাওয়া যায়নি",
     "selectPlaceholder": "নির্বাচন করুন",
     "send": "প্রেসক্রিপশন পাঠান",
-    "summary": "সারাংশ: {{summary}}",
+    "summaryTitle": "সারাংশ",
     "title": "প্রেসক্রিপশন",
     "frequencies": {
       "asNeeded": "প্রয়োজন অনুযায়ী",
