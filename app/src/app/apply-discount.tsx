@@ -18,6 +18,7 @@ import { useGetMyPatientsQuery } from '@/store/discountsApi';
 import { useGetDoctorBookingsQuery } from '@/store/doctorPortalApi';
 import { getLastAppointmentText } from '@/utils/last-appointment';
 import { PatientAvatar } from '@/components/patient-avatar';
+import { RegistrationBackground } from '@/components/registration-background';
 import {
   backButtonSvg,
   discountDetailsMessageSvg,
@@ -50,12 +51,12 @@ export default function ApplyDiscountScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <RegistrationBackground />
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
           <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('applyDiscount.title')}</Text>
-        <View style={{ width: 40 }} />
       </View>
 
       <KeyboardAwareScrollView
@@ -169,10 +170,10 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingTop: 4,
     paddingBottom: 12,
+    gap: 12,
   },
   backBtn: {
     width: 40,
@@ -224,19 +225,19 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
     color: '#1A1817',
     marginBottom: 12,
   },
   tabsRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 12,
     marginBottom: 16,
   },
   tab: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
     borderRadius: 20,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
@@ -247,7 +248,7 @@ const styles = StyleSheet.create({
     borderColor: '#BD632F',
   },
   tabText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
     color: '#7C7672',
   },
@@ -262,7 +263,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E6E1DC',
     padding: 14,
-    marginBottom: 10,
+    marginBottom: 12,
     gap: 12,
   },
   patientAvatarWrap: {

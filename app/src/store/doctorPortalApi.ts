@@ -53,6 +53,7 @@ export interface DoctorAppointment {
   animalSpecies?: string;
   animalBreed?: string;
   animalAge?: string;
+  animalWeight?: string;
   animalImage?: string;
   symptoms?: string | string[];
   consultationType?: string;

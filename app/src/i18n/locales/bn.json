@@ -46,6 +46,7 @@
       "doctor": "ডাক্তার"
     },
     "doctorName": "ডা. {{name}}",
+    "emailLabel": "ইমেইল অ্যাড্রেস : ",
     "phoneLabel": "ফোন নম্বর : ",
     "statusTitle": "আবেদনের অবস্থা",
     "steps": {
@@ -554,7 +555,7 @@
     "cancelling": "বাতিল করা হচ্ছে...",
     "notFound": "অ্যাপয়েন্টমেন্ট পাওয়া যায়নি",
     "noteOptional": "নোট (ঐচ্ছিক)",
-    "owner": "মালিক: {{name}}",
+    "ownerLabel": "মালিক",
     "patient": "রোগী",
     "reasons": {
       "emergency": "জরুরি",
@@ -567,7 +568,7 @@
     "cancelledLabel": "বাতিল অ্যাপয়েন্টমেন্ট",
     "goHome": "হোমে যান",
     "headerTitle": "অ্যাপয়েন্টমেন্ট বাতিল হয়েছে",
-    "owner": "মালিক: {{name}}",
+    "ownerLabel": "মালিক",
     "patient": "রোগী",
     "subtitle": "এই অ্যাপয়েন্টমেন্টটি বাতিল করা হয়েছে।\nমালিককে জানানো হয়েছে।",
     "title": "অ্যাপয়েন্টমেন্ট বাতিল",
@@ -582,11 +583,9 @@
       "voice": "অনলাইন - ভয়েস"
     },
     "consultationType": "পরামর্শের ধরন",
-    "doctor": "ডাক্তার",
-    "doctorLabel": "ডাক্তার",
-    "fee": "ফি",
+    "join": "যোগ দিন",
     "notFound": "অ্যাপয়েন্টমেন্ট পাওয়া যায়নি",
-    "owner": "মালিক: {{name}}",
+    "ownerLabel": "মালিক",
     "patient": "রোগী",
     "payment": {
       "failed": "ব্যর্থ",
@@ -666,13 +665,13 @@
     },
     "noSlots": "এই তারিখে কোনো স্লট নেই",
     "notFound": "অ্যাপয়েন্টমেন্ট পাওয়া যায়নি",
-    "owner": "মালিক: {{name}}",
+    "ownerLabel": "মালিক",
     "patient": "রোগী",
     "reschedule": "পুনর্নির্ধারণ করুন",
     "rescheduling": "পুনর্নির্ধারণ করা হচ্ছে...",
     "selectDate": "তারিখ নির্বাচন করুন",
     "selectTime": "সময় নির্বাচন করুন",
-    "title": "অ্যাপয়েন্টমেন্ট পুনর্নির্ধারণ করুন"
+    "title": "অ্যাপয়েন্টমেন্টের বিবরণ"
   },
   "appointments": {
     "dates": {
@@ -1035,7 +1034,7 @@
       "startFailed": "পরামর্শ শুরু করা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।"
     },
     "consultation": {
-      "endedDesc": "আপনার {{name}}-এর সাথে পরামর্শ শেষ হয়েছে।",
+      "endedDesc": "আপনি এখন {{name}}-এর সাথে পরামর্শে আছেন",
       "endedTitle": "পরামর্শ শেষ!",
       "maxDuration": "•  সর্বোচ্চ সময়: 30 মিনিট",
       "remainingTime": "•  বাকি থাকা সময়: {{time}}",
@@ -1064,7 +1063,8 @@
     },
     "upcoming": {
       "join": "যোগ দিন",
-      "owner": "মালিক   {{name}}"
+      "ownerLabel": "মালিক",
+      "startsIn": "শুরু হবে {{minutes}} মিনিট পরে"
     },
     "viewer": {
       "closeImage": "ছবি বন্ধ করুন",
@@ -1183,7 +1183,7 @@
     "sendPrescription": "প্রেসক্রিপশন পাঠান",
     "startTime": "•  শুরুর সময়: {{time}}",
     "subtitle": "আপনার {{name}}-এর সাথে পরামর্শ শেষ হয়েছে।",
-    "summaryDesc": "আপনি ছিলেন {{name}}-এর সাথে পরামর্শে",
+    "summaryDesc": "আপনি এখন {{name}}-এর সাথে পরামর্শে আছেন",
     "title": "পরামর্শ শেষ হয়েছে"
   },
   "contactSupport": {
@@ -2077,16 +2077,25 @@
     "verifiedDetail": "{{phone}} · যাচাইকৃত",
     "verify": "যাচাই করুন"
   },
+  "passwordRules": {
+    "heading": "পাসওয়ার্ডে অবশ্যই থাকতে হবে:",
+    "lowercase": "অন্তত একটি ছোট হাতের অক্ষর (a-z)",
+    "minLength": "অন্তত ৮ অক্ষর",
+    "notMet": "পাসওয়ার্ডে থাকা উচিত:",
+    "number": "অন্তত একটি সংখ্যা (0-9)",
+    "symbol": "অন্তত একটি বিশেষ চিহ্ন (যেমন !@#$)",
+    "uppercase": "অন্তত একটি বড় হাতের অক্ষর (A-Z)"
+  },
   "passwordSetup": {
     "confirmLabel": "পাসওয়ার্ড নিশ্চিত করুন*",
     "continue": "এগিয়ে যান",
     "createAccountError": "অ্যাকাউন্ট তৈরি করা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।",
+    "createPassword": "পাসওয়ার্ড তৈরি করুন",
     "doctorFallback": "ডাক্তার",
     "passwordLabel": "পাসওয়ার্ড*",
-    "passwordLength": "পাসওয়ার্ড কমপক্ষে 8 অক্ষরের হতে হবে।",
+    "passwordLength": "পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে।",
     "passwordMismatch": "পাসওয়ার্ড দুটি মিলছে না।",
-    "passwordRequired": "পাসওয়ার্ড আবশ্যক।",
-    "welcome": "স্বাগতম"
+    "passwordRequired": "পাসওয়ার্ড আবশ্যক।"
   },
   "patientDetails": {
     "age": "বয়স",
@@ -2178,13 +2187,29 @@
     "noSummary": "এখনো কোনো সারাংশ নেই",
     "noteLabel": "ওষুধের নোট (ঐচ্ছিক)",
     "quantity": "পরিমাণ",
+    "searchNoResults": "কোনো ওষুধ পাওয়া যায়নি",
+    "selectPlaceholder": "নির্বাচন করুন",
     "send": "প্রেসক্রিপশন পাঠান",
     "summary": "সারাংশ: {{summary}}",
     "title": "প্রেসক্রিপশন",
+    "frequencies": {
+      "asNeeded": "প্রয়োজন অনুযায়ী",
+      "once": "দিনে একবার",
+      "q12h": "প্রতি ১২ ঘণ্টা অন্তর",
+      "q8h": "প্রতি ৮ ঘণ্টা অন্তর",
+      "thrice": "দিনে তিনবার",
+      "twice": "দিনে দুইবার"
+    },
     "units": {
+      "bottle": "বোতল",
+      "capsule": "ক্যাপসুল",
       "days": "দিন",
+      "injection": "ইনজেকশন",
       "ml": "মিলি",
-      "vial": "ভায়াল"
+      "sachet": "সাঁচ",
+      "tablet": "ট্যাবলেট",
+      "vial": "ভায়াল",
+      "weeks": "সপ্তাহ"
     }
   },
   "privacyPolicy": {

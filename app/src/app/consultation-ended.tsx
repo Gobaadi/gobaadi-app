@@ -2,8 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { SvgXml } from 'react-native-svg';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
+import { bgPatternSvg } from '@/components/icons/svg-icon-sources';
 import {
   useGetForAppointmentQuery,
   consultationStartedAt,
@@ -91,18 +93,25 @@ export default function ConsultationEndedScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <View style={styles.bgPattern} pointerEvents="none">
+        <SvgXml width="100%" height="100%" xml={bgPatternSvg} />
+      </View>
+
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
           <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{t('consultationEnded.title')}</Text>
-        <View style={{ width: 40 }} />
+        <Text style={styles.headerTitle} numberOfLines={1}>
+          {t('consultationEnded.title')}
+        </Text>
       </View>
 
       <View style={styles.content}>
         <View style={styles.iconContainer}>
-          <View style={styles.checkCircle}>
-            <Ionicons name="checkmark" size={48} color="#FFFFFF" />
+          <View style={styles.checkHalo}>
+            <View style={styles.checkCircle}>
+              <Ionicons name="checkmark" size={44} color="#FFFFFF" />
+            </View>
           </View>
         </View>
         <Text style={styles.title}>{t('consultationEnded.heading')}</Text>
@@ -172,27 +181,35 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FAF9F6',
   },
+  bgPattern: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 12,
     paddingHorizontal: 20,
     paddingTop: 4,
-    paddingBottom: 12,
-    backgroundColor: '#BD632F',
+    paddingBottom: 10,
+    backgroundColor: 'transparent',
   },
   backBtn: {
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: '#BD632F',
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 18,
+    flex: 1,
+    fontSize: 20,
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: '#1A1817',
   },
   content: {
     flex: 1,
@@ -202,6 +219,14 @@ const styles = StyleSheet.create({
   iconContainer: {
     alignItems: 'center',
     marginBottom: 20,
+  },
+  checkHalo: {
+    width: 104,
+    height: 104,
+    borderRadius: 52,
+    backgroundColor: '#EAF5E4',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   checkCircle: {
     width: 80,
@@ -224,20 +249,21 @@ const styles = StyleSheet.create({
     color: '#7C7672',
     textAlign: 'center',
     marginBottom: 24,
+    lineHeight: 20,
   },
   summaryCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: '#E6E1DC',
     padding: 16,
     marginBottom: 16,
   },
   summaryTitle: {
-    fontSize: 15,
-    fontWeight: '800',
+    fontSize: 16,
+    fontWeight: '700',
     color: '#1A1817',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   summaryDesc: {
     fontSize: 13,
@@ -259,16 +285,16 @@ const styles = StyleSheet.create({
   },
   nextStepCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: '#E6E1DC',
     padding: 16,
   },
   nextStepTitle: {
-    fontSize: 15,
-    fontWeight: '800',
+    fontSize: 16,
+    fontWeight: '700',
     color: '#1A1817',
-    marginBottom: 8,
+    marginBottom: 10,
   },
   nextStepOption: {
     flexDirection: 'row',
@@ -303,8 +329,8 @@ const styles = StyleSheet.create({
   },
   primaryBtn: {
     backgroundColor: '#BD632F',
-    borderRadius: 18,
-    paddingVertical: 18,
+    borderRadius: 14,
+    paddingVertical: 16,
     alignItems: 'center',
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 4 },
@@ -319,8 +345,8 @@ const styles = StyleSheet.create({
   },
   secondaryBtn: {
     backgroundColor: '#B7B2AC',
-    borderRadius: 18,
-    paddingVertical: 16,
+    borderRadius: 14,
+    paddingVertical: 15,
     alignItems: 'center',
   },
   secondaryBtnText: {

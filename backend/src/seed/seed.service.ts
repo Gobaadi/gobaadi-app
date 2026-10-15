@@ -39,6 +39,7 @@ import {
 } from '../notifications/notification.entity';
 import { AiDiagnosis } from '../ai-diagnosis/ai-diagnosis.entity';
 import { Faq } from '../faqs/faq.entity';
+import { Medicine } from '../medicines/medicine.entity';
 
 export const SEED_PASSWORD = 'Password123!';
 
@@ -98,6 +99,8 @@ export class SeedService implements OnModuleInit {
     private readonly adminRepository: Repository<Admin>,
     @InjectRepository(Faq)
     private readonly faqRepository: Repository<Faq>,
+    @InjectRepository(Medicine)
+    private readonly medicineRepository: Repository<Medicine>,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -105,6 +108,11 @@ export class SeedService implements OnModuleInit {
       await this.seedFaqs();
     } catch (err) {
       this.logger.error('Failed to seed FAQs', err);
+    }
+    try {
+      await this.seedMedicines();
+    } catch (err) {
+      this.logger.error('Failed to seed medicines', err);
     }
     try {
       await this.seedAdmins();
@@ -876,5 +884,110 @@ export class SeedService implements OnModuleInit {
     }
 
     this.logger.log(`Seeded ${faqs.length} FAQs across 3 categories.`);
+  }
+
+  async seedMedicines(): Promise<void> {
+    const medicines: Array<{ name: string; type: string; sortOrder: number }> =
+      [
+        {
+          name: 'Enrofloxacin 10% Injection',
+          type: 'Antibiotic',
+          sortOrder: 1,
+        },
+        { name: 'Amoxicillin 15% Injection', type: 'Antibiotic', sortOrder: 2 },
+        {
+          name: 'Oxytetracycline 20% Injection',
+          type: 'Antibiotic',
+          sortOrder: 3,
+        },
+        {
+          name: 'Tylosin Tartrate Injection',
+          type: 'Antibiotic',
+          sortOrder: 4,
+        },
+        { name: 'Ceftriaxone Injection', type: 'Antibiotic', sortOrder: 5 },
+        {
+          name: 'Penicillin-Streptomycin Injection',
+          type: 'Antibiotic',
+          sortOrder: 6,
+        },
+        {
+          name: 'Sulphachloropyridazine Premix',
+          type: 'Antibiotic',
+          sortOrder: 7,
+        },
+        { name: 'Neomycin Oral Solution', type: 'Antibiotic', sortOrder: 8 },
+        {
+          name: 'Ivermectin 1% Injection',
+          type: 'Antiparasitic',
+          sortOrder: 9,
+        },
+        { name: 'Albendazole Tablet', type: 'Antiparasitic', sortOrder: 10 },
+        {
+          name: 'Fenbendazole Oral Suspension',
+          type: 'Antiparasitic',
+          sortOrder: 11,
+        },
+        { name: 'Praziquantel Tablet', type: 'Antiparasitic', sortOrder: 12 },
+        {
+          name: 'Levamisole Oral Solution',
+          type: 'Antiparasitic',
+          sortOrder: 13,
+        },
+        { name: 'Closantel Suspension', type: 'Antiparasitic', sortOrder: 14 },
+        {
+          name: 'Meloxicam Injection',
+          type: 'Anti-inflammatory',
+          sortOrder: 15,
+        },
+        {
+          name: 'Flunixin Meglumine Injection',
+          type: 'Anti-inflammatory',
+          sortOrder: 16,
+        },
+        {
+          name: 'Diclofenac Sodium Injection',
+          type: 'Anti-inflammatory',
+          sortOrder: 17,
+        },
+        { name: 'Prednisolone Tablet', type: 'Corticosteroid', sortOrder: 18 },
+        {
+          name: 'Chlorpheniramine Maleate Injection',
+          type: 'Antihistamine',
+          sortOrder: 19,
+        },
+        { name: 'Vitamin ADE Injection', type: 'Vitamin', sortOrder: 20 },
+        { name: 'Vitamin B-Complex Injection', type: 'Vitamin', sortOrder: 21 },
+        {
+          name: 'Calcium Borogluconate Injection',
+          type: 'Supplement',
+          sortOrder: 22,
+        },
+        {
+          name: 'Selenium + Vitamin E Injection',
+          type: 'Supplement',
+          sortOrder: 23,
+        },
+        { name: 'Nystatin Ointment', type: 'Antifungal', sortOrder: 24 },
+        { name: 'Griseofulvin Tablet', type: 'Antifungal', sortOrder: 25 },
+        {
+          name: 'Antipyretic Paracetamol Suspension',
+          type: 'Antipyretic',
+          sortOrder: 26,
+        },
+      ];
+
+    if ((await this.medicineRepository.count()) > 0) {
+      this.logger.log('Medicines already seeded, skipping.');
+      return;
+    }
+
+    for (const medicine of medicines) {
+      await this.medicineRepository.save(
+        this.medicineRepository.create(medicine),
+      );
+    }
+
+    this.logger.log(`Seeded ${medicines.length} medicines.`);
   }
 }

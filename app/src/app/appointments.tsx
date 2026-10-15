@@ -23,8 +23,8 @@ import {
   appointmentsFilterSvg,
   appointmentsSearchSvg,
   appointmentsConsultationCardChatSvg,
-  tintSvg,
 } from '@/components/icons/svg-icon-sources';
+import { RegistrationBackground } from '@/components/registration-background';
 
 type Tab = 'today' | 'previous';
 
@@ -381,13 +381,14 @@ export default function AppointmentsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <RegistrationBackground />
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backBtn}
           onPress={() => router.back()}
           activeOpacity={0.7}
         >
-          <SvgXml width={20} height={20} xml={tintSvg(backButtonSvg, 'white', '#BD632F')} />
+          <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('appointments.title')}</Text>
         <TouchableOpacity
@@ -582,7 +583,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 12,
-    backgroundColor: '#FFF2EB',
+    backgroundColor: '#BD632F',
     justifyContent: 'center',
     alignItems: 'center',
   },

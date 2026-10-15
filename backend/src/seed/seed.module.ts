@@ -28,6 +28,7 @@ import { Review } from '../reviews/review.entity';
 import { Notification } from '../notifications/notification.entity';
 import { AiDiagnosis } from '../ai-diagnosis/ai-diagnosis.entity';
 import { Faq } from '../faqs/faq.entity';
+import { Medicine } from '../medicines/medicine.entity';
 
 @Module({
   imports: [
@@ -58,6 +59,7 @@ import { Faq } from '../faqs/faq.entity';
       Notification,
       AiDiagnosis,
       Faq,
+      Medicine,
     ]),
   ],
   providers: [SeedService],

@@ -21,7 +21,7 @@ import { useSelector } from 'react-redux';
 import type { RootState } from '@/store/store';
 import { Ionicons } from '@expo/vector-icons';
 import { SvgXml } from 'react-native-svg';
-import { backButtonSvg, chatPhoneSvg, chatVideoSvg } from '@/components/icons/svg-icon-sources';
+import { backButtonSvg, chatPhoneSvg, chatVideoSvg, bgPatternSvg } from '@/components/icons/svg-icon-sources';
 import * as ImagePicker from 'expo-image-picker';
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
@@ -136,6 +136,13 @@ function formatTimeRemaining(seconds: number): string {
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
+/** Whole minutes from now until the given appointment start (Figma "Starts in 20 min"). */
+function minutesUntilStart(value: string): number {
+  const ts = new Date(value).getTime();
+  if (Number.isNaN(ts)) return 0;
+  return Math.round((ts - Date.now()) / 60000);
 }
 
 function ReadTicks({ status, light }: { status?: ChatMessage['status']; light?: boolean }) {
@@ -331,6 +338,8 @@ export default function ChatScreen() {
   const appointmentTime =
     params.appointmentTime || appointmentInfo?.startAt || '';
   const animalName = params.animalName || appointmentInfo?.animalName || '';
+  // Figma's "Starts in 20 min" hint on the upcoming-session card.
+  const startsInMinutes = useMemo(() => minutesUntilStart(appointmentTime), [appointmentTime]);
 
   // Dynamic Join card: only when a real upcoming appointment exists —
   // completed/cancelled ones (or chats opened without appointment context)
@@ -415,6 +424,10 @@ export default function ChatScreen() {
     !consultationFinished &&
     appointmentCallStatusOk &&
     (consultationState === 'active' || !!appointmentInfo);
+  // Doctor, session not started yet and an appointment to run it against:
+  // this is the state where Figma swaps the composer for Start Consultation.
+  const showStartConsultation =
+    isViewerDoctor && consultationState === 'idle' && !!appointmentId;
 
   useEffect(() => {
     return () => {
@@ -571,7 +584,20 @@ export default function ChatScreen() {
       // Preserve any in-flight optimistic bubbles (temp-* IDs) that haven't
       // been confirmed by the server yet — they will be replaced once the
       // mutation resolves and writes the real server ID into localMessages.
-      const optimistic = prev.filter((m) => m.id.startsWith('temp-'));
+      // Drop the ones the server has ALREADY echoed back under a real ID,
+      // otherwise the same message renders twice (temp + server copy).
+      const confirmedByText = (opt: ChatMessageUI) =>
+        [...serverMap.values()].some(
+          (srv) =>
+            srv.sender === opt.sender &&
+            srv.text === opt.text &&
+            Math.abs(
+              new Date(srv.createdAt).getTime() - new Date(opt.createdAt).getTime(),
+            ) <= 30_000,
+        );
+      const optimistic = prev.filter(
+        (m) => m.id.startsWith('temp-') && !confirmedByText(m),
+      );
 
       // Merge: server messages first (sorted by id), then any pending optimistic ones.
       const merged = [...serverMap.values()].sort(
@@ -803,10 +829,14 @@ export default function ChatScreen() {
     try {
       const saved = await sendMessage({ text, conversationId }).unwrap();
       // Replace the optimistic bubble with the server copy so the double-tick
-      // status updates patch the same id (avoids temp/real duplicates).
-      setLocalMessages((prev) =>
-        prev.map((m) => (m.id === optimistic.id ? toUIMessage(saved) : m)),
-      );
+      // status updates patch the same id (avoids temp/real duplicates). If a
+      // refetch already inserted the server copy, just drop the temp entry.
+      setLocalMessages((prev) => {
+        const rest = prev.filter((m) => m.id !== optimistic.id);
+        return rest.some((m) => m.id === String(saved.id))
+          ? rest
+          : [...rest, toUIMessage(saved)];
+      });
     } catch {
       setLocalMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
       Alert.alert(t('chat.alerts.error'), t('chat.alerts.messageFailed'));
@@ -908,6 +938,10 @@ export default function ChatScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Figma backdrop: faint blob watermark behind the whole conversation. */}
+      <View style={styles.bgPattern} pointerEvents="none">
+        <SvgXml width="100%" height="100%" xml={bgPatternSvg} />
+      </View>
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
@@ -918,26 +952,22 @@ export default function ChatScreen() {
           </Text>
         </View>
         <View style={styles.headerActions}>
-          {isViewerDoctor && !!appointmentId && canCall && (
-            <>
-              <TouchableOpacity
-                style={[styles.headerActionBtn, startingCall && styles.headerActionBtnDisabled]}
-                activeOpacity={0.7}
-                disabled={startingCall}
-                onPress={() => handleCallPress('audio')}
-              >
-                <SvgXml width={20} height={20} xml={chatPhoneSvg} />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.headerActionBtn, startingCall && styles.headerActionBtnDisabled]}
-                activeOpacity={0.7}
-                disabled={startingCall}
-                onPress={() => handleCallPress('video')}
-              >
-                <SvgXml width={22} height={18} xml={chatVideoSvg} />
-              </TouchableOpacity>
-            </>
-          )}
+          <TouchableOpacity
+            style={[styles.headerActionBtn, startingCall && styles.headerActionBtnDisabled]}
+            activeOpacity={0.7}
+            disabled={startingCall}
+            onPress={() => handleCallPress('audio')}
+          >
+            <SvgXml width={20} height={20} xml={chatPhoneSvg} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.headerActionBtn, startingCall && styles.headerActionBtnDisabled]}
+            activeOpacity={0.7}
+            disabled={startingCall}
+            onPress={() => handleCallPress('video')}
+          >
+            <SvgXml width={22} height={18} xml={chatVideoSvg} />
+          </TouchableOpacity>
           <TouchableOpacity style={styles.headerActionBtn} activeOpacity={0.7} onPress={() => setShowActionsMenu((prev) => !prev)}>
             <Ionicons name="ellipsis-vertical" size={18} color="#141B34" />
           </TouchableOpacity>
@@ -995,8 +1025,18 @@ export default function ChatScreen() {
                   : t('chat.date.today')}
               </Text>
               <Text style={styles.upcomingBannerName}>{animalName || patientName}</Text>
-              {!!animalName && (
-                <Text style={styles.upcomingBannerOwner}>{t('chat.upcoming.owner', { name: patientName })}</Text>
+              {!!patientName && (
+                <View style={styles.upcomingBannerMetaRow}>
+                  {startsInMinutes > 0 && (
+                    <Text style={styles.upcomingBannerStartsIn}>
+                      {t('chat.upcoming.startsIn', { minutes: startsInMinutes })}
+                    </Text>
+                  )}
+                  <View style={styles.upcomingBannerOwnerBlock}>
+                    <Text style={styles.upcomingBannerOwnerLabel}>{t('chat.upcoming.ownerLabel')}</Text>
+                    <Text style={styles.upcomingBannerOwner}>{patientName}</Text>
+                  </View>
+                </View>
               )}
             </View>
           </View>
@@ -1028,35 +1068,40 @@ export default function ChatScreen() {
       )}
 
       {isViewerDoctor &&
-        (consultationState === 'ended' || consultationState === 'prescription_sent') && (
+        (consultationState === 'ended' || consultationState === 'prescription_sent') &&
+        !prescriptionAlreadySent && (
           <View style={styles.consultationBanner}>
             <Text style={styles.consultationBannerEndedTitle}>{t('chat.consultation.endedTitle')}</Text>
             <Text style={styles.consultationBannerDesc}>{t('chat.consultation.endedDesc', { name: patientName })}</Text>
             <Text style={styles.consultationBannerBullet}>{t('chat.consultation.startTime', { time: activeConsultation ? formatDhakaClock(consultationStartedAt(activeConsultation)) : '' })}</Text>
             <Text style={styles.consultationBannerBullet}>{t('chat.consultation.maxDuration')}</Text>
             <Text style={styles.consultationBannerRemaining}>{t('chat.consultation.remainingTime', { time: formatTimeRemaining(remainingTime) })}</Text>
+            <View style={styles.nextStepBox}>
+              <Text style={styles.nextStepBoxTitle}>{t('chat.nextStep.title')}</Text>
+              <View style={styles.nextStepInlineOption}>
+                <View style={styles.radioOuter}>
+                  <View style={styles.radioInner} />
+                </View>
+                <Text style={styles.nextStepInlineText}>{t('chat.nextStep.option')}</Text>
+              </View>
+              {consultationState === 'ended' && (
+                <TouchableOpacity style={styles.sendPrescriptionInlineBtn} onPress={openSendPrescription} activeOpacity={0.85}>
+                  <Text style={styles.sendPrescriptionInlineBtnText}>{t('chat.actions.sendPrescription')}</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
         )}
 
       {isViewerDoctor &&
-        (consultationState === 'ended' || consultationState === 'prescription_sent') && (
+        (consultationState === 'ended' || consultationState === 'prescription_sent') &&
+        prescriptionAlreadySent && (
           <View style={styles.nextStepInline}>
             <Text style={styles.nextStepInlineTitle}>{t('chat.nextStep.title')}</Text>
             <View style={styles.nextStepInlineOption}>
-              {prescriptionAlreadySent ? (
-                <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
-              ) : (
-                <View style={styles.radioOuter}>
-                  <View style={styles.radioInner} />
-                </View>
-              )}
+              <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
               <Text style={styles.nextStepInlineText}>{t('chat.nextStep.option')}</Text>
             </View>
-            {consultationState === 'ended' && !prescriptionAlreadySent && (
-              <TouchableOpacity style={styles.sendPrescriptionInlineBtn} onPress={openSendPrescription} activeOpacity={0.85}>
-                <Text style={styles.sendPrescriptionInlineBtnText}>{t('chat.actions.sendPrescription')}</Text>
-              </TouchableOpacity>
-            )}
           </View>
         )}
 
@@ -1103,7 +1148,7 @@ export default function ChatScreen() {
         </View>
       )}
 
-      {isViewerDoctor && consultationState === 'idle' && !!appointmentId && (
+      {showStartConsultation && (
         <View style={styles.startConsultationContainer}>
           <TouchableOpacity style={styles.startConsultationBtn} onPress={handleStartConsultation} activeOpacity={0.85} disabled={starting}>
             {starting ? (
@@ -1115,7 +1160,10 @@ export default function ChatScreen() {
         </View>
       )}
 
-      {(!!conversationId || consultationState !== 'idle') && (
+      {/* Pre-consultation the Start Consultation button IS the bottom control
+          (Figma) — the composer only appears once the session is running or
+          the doctor has no appointment context. */}
+      {(!!conversationId || consultationState !== 'idle') && !showStartConsultation && (
         <KeyboardAvoidingView behavior="padding">
           <View style={styles.inputBar}>
             <TextInput
@@ -1235,35 +1283,42 @@ export default function ChatScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FAF9F6' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 4, paddingBottom: 12, backgroundColor: '#FAF9F6' },
-  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, minWidth: 0, marginRight: 8 },
+  bgPattern: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 4, paddingBottom: 10, backgroundColor: 'transparent' },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1, minWidth: 0, marginRight: 8 },
   backBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: '#BD632F', justifyContent: 'center', alignItems: 'center' },
-  headerTitle: { fontSize: 18, fontWeight: '800', color: '#1A1817', flexShrink: 1 },
-  headerActions: { flexDirection: 'row', gap: 4 },
+  headerTitle: { fontSize: 20, fontWeight: '800', color: '#1A1817', flexShrink: 1 },
+  headerActions: { flexDirection: 'row', gap: 8 },
   headerActionBtn: { width: 36, height: 36, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
   headerActionBtnDisabled: { opacity: 0.4 },
-  upcomingBanner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#E6D5C3', marginHorizontal: 20, borderRadius: 14, padding: 12, marginBottom: 12 },
-  upcomingBannerLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  upcomingBannerAvatar: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFF2EB', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
-  upcomingBannerAvatarImage: { width: 44, height: 44, borderRadius: 12 },
-  upcomingBannerTime: { fontSize: 11, fontWeight: '600', color: '#BD632F' },
-  upcomingBannerName: { fontSize: 15, fontWeight: '800', color: '#1A1817' },
-  upcomingBannerOwner: { fontSize: 11, fontWeight: '500', color: '#7C7672', marginTop: 2 },
-  upcomingBannerJoin: { backgroundColor: '#BD632F', borderRadius: 14, paddingHorizontal: 16, paddingVertical: 8 },
+  upcomingBanner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E6E1DC', marginHorizontal: 20, borderRadius: 14, padding: 14, marginBottom: 12, gap: 12 },
+  upcomingBannerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  upcomingBannerAvatar: { width: 56, height: 56, borderRadius: 14, backgroundColor: '#FFF2EB', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
+  upcomingBannerAvatarImage: { width: 56, height: 56, borderRadius: 14 },
+  upcomingBannerTime: { fontSize: 12, fontWeight: '600', color: '#BD632F', marginBottom: 2 },
+  upcomingBannerName: { fontSize: 16, fontWeight: '700', color: '#1A1817' },
+  upcomingBannerMetaRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 16, marginTop: 4 },
+  upcomingBannerStartsIn: { fontSize: 12, fontWeight: '600', color: '#BD632F' },
+  upcomingBannerOwnerBlock: { flexShrink: 1 },
+  upcomingBannerOwnerLabel: { fontSize: 12, fontWeight: '600', color: '#BD632F' },
+  upcomingBannerOwner: { fontSize: 13, fontWeight: '600', color: '#1A1817' },
+  upcomingBannerJoin: { backgroundColor: '#BD632F', borderRadius: 12, paddingHorizontal: 18, paddingVertical: 8 },
   upcomingBannerJoinText: { color: '#FFFFFF', fontSize: 13, fontWeight: '700' },
-  consultationBanner: { backgroundColor: '#FFFFFF', marginHorizontal: 20, borderRadius: 14, borderWidth: 1, borderColor: '#E6E1DC', padding: 14, marginBottom: 12 },
-  consultationBannerTitle: { fontSize: 15, fontWeight: '800', color: '#1A1817', marginBottom: 4 },
-  consultationBannerEndedTitle: { fontSize: 15, fontWeight: '800', color: '#E53935', marginBottom: 4 },
-  consultationBannerDesc: { fontSize: 13, fontWeight: '500', color: '#7C7672', marginBottom: 8 },
-  consultationBannerBullet: { fontSize: 13, fontWeight: '500', color: '#1A1817', lineHeight: 20 },
-  consultationBannerRemaining: { fontSize: 13, fontWeight: '600', color: '#BD632F', lineHeight: 20 },
-  endConsultationBtn: { backgroundColor: '#E6E1DC', borderRadius: 14, paddingVertical: 10, alignItems: 'center', marginTop: 12 },
+  consultationBanner: { backgroundColor: '#FFFFFF', marginHorizontal: 20, borderRadius: 16, borderWidth: 1, borderColor: '#E6E1DC', padding: 16, marginBottom: 16 },
+  consultationBannerTitle: { fontSize: 16, fontWeight: '700', color: '#1A1817', marginBottom: 6 },
+  consultationBannerEndedTitle: { fontSize: 16, fontWeight: '700', color: '#4CAF50', marginBottom: 6 },
+  consultationBannerDesc: { fontSize: 13, fontWeight: '500', color: '#7C7672', marginBottom: 10, lineHeight: 18 },
+  consultationBannerBullet: { fontSize: 13, fontWeight: '500', color: '#1A1817', lineHeight: 22 },
+  consultationBannerRemaining: { fontSize: 13, fontWeight: '700', color: '#BD632F', lineHeight: 22 },
+  endConsultationBtn: { backgroundColor: '#E6E1DC', borderRadius: 12, paddingVertical: 12, alignItems: 'center', marginTop: 14 },
   endConsultationBtnText: { color: '#1A1817', fontSize: 14, fontWeight: '700' },
-  nextStepInline: { backgroundColor: '#FFFFFF', marginHorizontal: 20, borderRadius: 14, borderWidth: 1, borderColor: '#E6E1DC', padding: 14, marginBottom: 12 },
-  nextStepInlineTitle: { fontSize: 15, fontWeight: '800', color: '#1A1817', marginBottom: 8 },
+  nextStepBox: { backgroundColor: '#FFFFFF', borderRadius: 12, borderWidth: 1, borderColor: '#E6E1DC', padding: 12, marginTop: 14 },
+  nextStepBoxTitle: { fontSize: 15, fontWeight: '700', color: '#1A1817', marginBottom: 8 },
+  nextStepInline: { backgroundColor: '#FFFFFF', marginHorizontal: 20, borderRadius: 16, borderWidth: 1, borderColor: '#E6E1DC', padding: 16, marginBottom: 16 },
+  nextStepInlineTitle: { fontSize: 16, fontWeight: '700', color: '#1A1817', marginBottom: 10 },
   nextStepInlineOption: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  nextStepInlineText: { fontSize: 13, fontWeight: '500', color: '#7C7672', flex: 1 },
-  sendPrescriptionInlineBtn: { backgroundColor: '#BD632F', borderRadius: 14, paddingVertical: 12, alignItems: 'center', marginTop: 12 },
+  nextStepInlineText: { fontSize: 13, fontWeight: '500', color: '#7C7672', flex: 1, lineHeight: 18 },
+  sendPrescriptionInlineBtn: { backgroundColor: '#BD632F', borderRadius: 12, paddingVertical: 13, alignItems: 'center', marginTop: 12 },
   sendPrescriptionInlineBtnText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
   radioOuter: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: '#E6E1DC', justifyContent: 'center', alignItems: 'center' },
   radioInner: { width: 10, height: 10, borderRadius: 5, backgroundColor: 'transparent' },
@@ -1277,25 +1332,25 @@ const styles = StyleSheet.create({
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-end' },
   metaRowPrescription: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   patientAvatarImage: { width: 32, height: 32, borderRadius: 16 },
-  theirsBubble: { backgroundColor: '#FFFFFF', borderRadius: 18, borderBottomLeftRadius: 4, borderWidth: 1, borderColor: '#F0EAE1', paddingHorizontal: 14, paddingVertical: 10, maxWidth: '100%' },
-  theirsBubbleText: { fontSize: 14, fontWeight: '500', color: '#BD632F', lineHeight: 19 },
-  theirsTimeText: { fontSize: 10, fontWeight: '500', color: 'rgba(189, 99, 47, 0.6)', marginTop: 4, alignSelf: 'flex-end' },
-  mineBubble: { backgroundColor: '#BD632F', borderRadius: 18, borderBottomRightRadius: 4, paddingHorizontal: 14, paddingVertical: 10, maxWidth: '100%' },
-  mineBubbleText: { fontSize: 14, fontWeight: '500', color: '#FFFFFF', lineHeight: 19 },
+  theirsBubble: { backgroundColor: '#FFF2EB', borderRadius: 16, borderBottomLeftRadius: 4, borderWidth: 1, borderColor: '#F5E4DA', paddingHorizontal: 14, paddingVertical: 10, maxWidth: '100%' },
+  theirsBubbleText: { fontSize: 14, fontWeight: '500', color: '#1A1817', lineHeight: 20 },
+  theirsTimeText: { fontSize: 10, fontWeight: '500', color: '#9C9690', marginTop: 4, alignSelf: 'flex-end' },
+  mineBubble: { backgroundColor: '#BD632F', borderRadius: 16, borderBottomRightRadius: 4, paddingHorizontal: 14, paddingVertical: 10, maxWidth: '100%' },
+  mineBubbleText: { fontSize: 14, fontWeight: '500', color: '#FFFFFF', lineHeight: 20 },
   mineTimeText: { fontSize: 10, fontWeight: '500', color: 'rgba(255,255,255,0.7)', marginTop: 4, alignSelf: 'flex-end' },
   imageBubble: {
     backgroundColor: '#FFF2EB',
-    borderRadius: 18,
+    borderRadius: 16,
     borderBottomRightRadius: 4,
     overflow: 'hidden',
     maxWidth: '100%',
   },
   imageBubbleLeft: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 18,
+    borderRadius: 16,
     borderBottomLeftRadius: 4,
     borderWidth: 1,
-    borderColor: '#F0EAE1',
+    borderColor: '#F5E4DA',
     overflow: 'hidden',
     maxWidth: '100%',
   },
@@ -1320,8 +1375,8 @@ const styles = StyleSheet.create({
   imageCaptionMine: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#FFFFFF',
-    lineHeight: 19,
+    color: '#1A1817',
+    lineHeight: 20,
     paddingHorizontal: 12,
     paddingTop: 8,
   },
@@ -1362,7 +1417,7 @@ const styles = StyleSheet.create({
   plusBtn: { width: 32, height: 32, borderRadius: 16, borderWidth: 1.5, borderColor: '#BD632F', justifyContent: 'center', alignItems: 'center' },
   micBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#BD632F', justifyContent: 'center', alignItems: 'center' },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  actionsMenuBackdrop: { ...StyleSheet.absoluteFill, zIndex: 100 },
+  actionsMenuBackdrop: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, zIndex: 100 },
   actionsMenuContainer: {
     position: 'absolute',
     top: 56,

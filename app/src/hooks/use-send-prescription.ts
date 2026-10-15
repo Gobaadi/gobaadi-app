@@ -8,6 +8,7 @@ import {
   useSendAttachmentMessageMutation,
 } from '@/store/chatApi';
 import { sendPrescriptionPdf, savePdfToTempFile } from '@/lib/pdf-service';
+import { FREQUENCY_LABELS } from '@/components/PrescriptionForm';
 
 export interface PrescriptionFormMedication {
   id?: string;
@@ -75,12 +76,30 @@ export function useSendPrescription() {
         throw new Error('Missing appointment information.');
       }
 
-      const medicines = medications.map((m) => ({
-        name: m.name,
-        dosage: `${m.dosage} ${m.dosageUnit} ${m.frequency}`,
-        duration: `${m.duration} ${m.durationUnit}`,
-        notes: instructions || undefined,
-      }));
+      const medicines = medications
+        .filter((m) => m.name.trim())
+        .map((m) => {
+          const notes = [instructions, note]
+            .map((s) => s.trim())
+            .filter(Boolean)
+            .join('\n');
+          return {
+            name: m.name.trim(),
+            ...(m.dosage
+              ? { dosage: `${m.dosage} ${m.dosageUnit}` }
+              : {}),
+            ...(m.quantity
+              ? { quantity: `${m.quantity} ${m.quantityUnit}` }
+              : {}),
+            ...(m.frequency
+              ? { frequency: FREQUENCY_LABELS[m.frequency] ?? m.frequency }
+              : {}),
+            ...(m.duration
+              ? { duration: `${m.duration} ${m.durationUnit}` }
+              : {}),
+            ...(notes ? { notes } : {}),
+          };
+        });
 
       const prescription = await createPrescription({
         appointmentId: parseInt(appointmentId, 10),
@@ -94,11 +113,18 @@ export function useSendPrescription() {
       let pdfSizeKB = 0;
       let emailSent = false;
 
+      const pdfMedications = medications.map((m) => ({
+        ...m,
+        frequency: m.frequency
+          ? FREQUENCY_LABELS[m.frequency] ?? m.frequency
+          : m.frequency,
+      }));
+
       try {
         const pdfResult = await sendPrescriptionPdf({
           patientName,
           userEmail: userEmail || '',
-          medications,
+          medications: pdfMedications,
           instructions,
           note,
         });

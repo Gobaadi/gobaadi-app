@@ -16,7 +16,9 @@ import {
   useGetBookingByIdQuery,
   useGetDoctorBookingsQuery,
 } from '@/store/doctorPortalApi';
-import { DoctorAvatar } from '@/components/doctor-avatar';
+import { formatAnimalDetails } from '@/utils/appointment';
+
+const ONLINE_CONSULTATION_TYPES = ['online_video', 'online_voice', 'online_chat'];
 
 function formatTimeRange(start: string, end: string): string {
   const s = new Date(start);
@@ -151,6 +153,30 @@ export default function AppointmentDetailsScreen() {
   const reason = (appointment.reasonForConsultation ?? '').trim();
   const symptoms = formatSymptoms(appointment.symptoms);
   const payment = paymentStatusStyle(appointment.paymentStatus);
+  const animalDetails = formatAnimalDetails(appointment);
+  const canJoin =
+    ONLINE_CONSULTATION_TYPES.includes(appointment.consultationType ?? '') &&
+    (appointment.status === 'CONFIRMED' || appointment.status === 'RESCHEDULED');
+
+  const handleJoin = () => {
+    if (appointment.consultationType === 'online_chat') {
+      router.push({
+        pathname: '/chat',
+        params: { appointmentId: String(appointment.id) },
+      });
+      return;
+    }
+    router.push({
+      pathname: '/video-call',
+      params: {
+        appointmentId: String(appointment.id),
+        callType: appointment.consultationType === 'online_voice' ? 'audio' : 'video',
+        patientName: appointment.patientName ?? '',
+        animalImage: appointment.animalImage ?? '',
+        animalId: appointment.animalId != null ? String(appointment.animalId) : '',
+      },
+    });
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -193,40 +219,14 @@ export default function AppointmentDetailsScreen() {
             )}
             <View style={styles.cardInfo}>
               <Text style={styles.cardName}>{displayName}</Text>
-              {(appointment.animalSpecies || appointment.animalBreed || appointment.animalAge) && (
-                <Text style={styles.cardDetail}>
-                  {[
-                    appointment.animalSpecies,
-                    appointment.animalAge,
-                    appointment.animalBreed,
-                  ]
-                    .filter(Boolean)
-                    .join(' · ')}
-                </Text>
+              {animalDetails && (
+                <Text style={styles.cardDetail}>{animalDetails}</Text>
               )}
-              {appointment.animalName && appointment.patientName && (
-                <Text style={styles.cardOwner}>{t('appointmentDetails.owner', { name: appointment.patientName })}</Text>
-              )}
-            </View>
-          </View>
-
-          <View style={styles.divider} />
-
-          <View style={styles.cardRow}>
-            <DoctorAvatar
-              name={appointment.doctorName || t('appointmentDetails.doctor')}
-              avatar={appointment.doctorAvatar}
-              size={56}
-              radius={28}
-              style={styles.doctorAvatar}
-            />
-            <View style={styles.cardInfo}>
-              <Text style={styles.cardLabel}>{t('appointmentDetails.doctorLabel')}</Text>
-              <Text style={styles.cardName}>
-                {appointment.doctorName || t('appointmentDetails.doctor')}
-              </Text>
-              {appointment.doctorSpecialty && (
-                <Text style={styles.cardDetail}>{appointment.doctorSpecialty}</Text>
+              {appointment.patientName && (
+                <View style={styles.ownerBlock}>
+                  <Text style={styles.ownerLabel}>{t('appointmentDetails.ownerLabel')}</Text>
+                  <Text style={styles.ownerName}>{appointment.patientName}</Text>
+                </View>
               )}
             </View>
           </View>
@@ -235,8 +235,19 @@ export default function AppointmentDetailsScreen() {
 
           {consultationType && (
             <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>{t('appointmentDetails.consultationType')}</Text>
-              <Text style={styles.detailValue}>{t(consultationType)}</Text>
+              <View style={styles.consultationInfo}>
+                <Text style={styles.detailLabel}>{t('appointmentDetails.consultationType')}</Text>
+                <Text style={styles.consultationValue}>{t(consultationType)}</Text>
+              </View>
+              {canJoin && (
+                <TouchableOpacity
+                  style={styles.joinBtn}
+                  onPress={handleJoin}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.joinBtnText}>{t('appointmentDetails.join')}</Text>
+                </TouchableOpacity>
+              )}
             </View>
           )}
 
@@ -267,18 +278,6 @@ export default function AppointmentDetailsScreen() {
               {t(payment.labelKey)}
             </Text>
           </View>
-
-          {appointment.price != null && (
-            <>
-              <View style={styles.divider} />
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>{t('appointmentDetails.fee')}</Text>
-                <Text style={styles.detailValue}>
-                  ৳ {appointment.price.toLocaleString()}
-                </Text>
-              </View>
-            </>
-          )}
         </View>
       </ScrollView>
 
@@ -360,19 +359,24 @@ const styles = StyleSheet.create({
   },
   cardInfo: { flex: 1, justifyContent: 'center' },
   cardName: { fontSize: 16, fontWeight: '700', color: '#1A1817', marginBottom: 2 },
-  doctorAvatar: { width: 56, height: 56, borderRadius: 28 },
-  cardLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#9C9690',
-    marginBottom: 2,
-  },
   cardDetail: { fontSize: 13, fontWeight: '500', color: '#7C7672', marginBottom: 2 },
-  cardOwner: { fontSize: 13, fontWeight: '500', color: '#7C7672' },
+  ownerBlock: { marginTop: 2 },
+  ownerLabel: { fontSize: 12, fontWeight: '600', color: '#BD632F', marginBottom: 2 },
+  ownerName: { fontSize: 13, fontWeight: '600', color: '#1A1817' },
   divider: { height: 1, backgroundColor: '#F0EAE1', marginVertical: 12 },
   detailRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingVertical: 2 },
   detailLabel: { fontSize: 14, fontWeight: '500', color: '#9C9690', flex: 1 },
   detailValue: { fontSize: 14, fontWeight: '600', color: '#1A1817', flex: 1, textAlign: 'right' },
+  consultationInfo: { flex: 1 },
+  consultationValue: { fontSize: 14, fontWeight: '700', color: '#1A1817', marginTop: 2 },
+  joinBtn: {
+    backgroundColor: '#BD632F',
+    borderRadius: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    marginLeft: 12,
+  },
+  joinBtnText: { fontSize: 13, fontWeight: '700', color: '#FFFFFF' },
   emptyContainer: { alignItems: 'center', marginTop: 60, gap: 12 },
   emptyText: { fontSize: 15, fontWeight: '500', color: '#9C9690' },
   bottomContainer: {

@@ -48,6 +48,7 @@ export interface AppointmentWithPatient extends Appointment {
   animalImage?: string;
   animalBreed?: string;
   animalAge?: string;
+  animalWeight?: string;
   doctorName?: string;
   doctorSpecialty?: string;
   doctorAvatar?: string;
@@ -788,6 +789,9 @@ export class AppointmentsService {
         : undefined,
       animalAge: appointment.animalId
         ? animalsById.get(appointment.animalId)?.age
+        : undefined,
+      animalWeight: appointment.animalId
+        ? animalsById.get(appointment.animalId)?.weight
         : undefined,
     });
 

@@ -31,6 +31,7 @@ import { discountsApi } from './discountsApi';
 import { blockTimesApi } from './blockTimesApi';
 import { calendarApi } from './calendarApi';
 import { prescriptionsApi } from './prescriptionsApi';
+import { medicinesApi } from './medicinesApi';
 import { vaccinationsApi } from './vaccinationsApi';
 import { labTestsApi } from './labTestsApi';
 import { consultationsApi } from './consultationsApi';
@@ -82,6 +83,7 @@ export const store = configureStore({
     [blockTimesApi.reducerPath]: blockTimesApi.reducer,
     [calendarApi.reducerPath]: calendarApi.reducer,
     [prescriptionsApi.reducerPath]: prescriptionsApi.reducer,
+    [medicinesApi.reducerPath]: medicinesApi.reducer,
     [vaccinationsApi.reducerPath]: vaccinationsApi.reducer,
     [labTestsApi.reducerPath]: labTestsApi.reducer,
     [consultationsApi.reducerPath]: consultationsApi.reducer,
@@ -128,6 +130,7 @@ export const store = configureStore({
       blockTimesApi.middleware,
       calendarApi.middleware,
       prescriptionsApi.middleware,
+      medicinesApi.middleware,
       vaccinationsApi.middleware,
       labTestsApi.middleware,
       consultationsApi.middleware,

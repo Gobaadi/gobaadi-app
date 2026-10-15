@@ -57,6 +57,7 @@ import { VideoCallModule } from './video-call/video-call.module';
 import { AiModule } from './ai/ai.module';
 import { PatientsModule } from './patients/patients.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { MedicinesModule } from './medicines/medicines.module';
 
 @Module({
   imports: [
@@ -144,6 +145,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
     AiModule,
     PatientsModule,
     DashboardModule,
+    MedicinesModule,
   ],
   controllers: [AppController, HealthController],
   providers: [

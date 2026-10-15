@@ -14,6 +14,9 @@ import { Image } from 'expo-image';
 
 import { useRegisterMutation } from '@/store/authApi';
 import { PasswordField } from '@/components/password-field';
+import { PasswordRequirements } from '@/components/password-requirements';
+import { RegistrationBackground } from '@/components/registration-background';
+import { getUnmetPasswordRules, PASSWORD_RULE_I18N_KEYS } from '@/utils/password';
 
 export default function PasswordSetupScreen() {
   const { t } = useTranslation();
@@ -25,7 +28,12 @@ export default function PasswordSetupScreen() {
     bvcNumber?: string;
   }>();
   
-  const doctorName = params.name || t('passwordSetup.doctorFallback');
+  const rawName = params.name?.trim();
+  const doctorName = rawName
+    ? /^dr\.?\s/i.test(rawName)
+      ? rawName
+      : `Dr. ${rawName}`
+    : t('passwordSetup.doctorFallback');
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -40,8 +48,13 @@ export default function PasswordSetupScreen() {
       setErrorMessage(t('passwordSetup.passwordRequired'));
       return;
     }
-    if (password.length < 8) {
-      setErrorMessage(t('passwordSetup.passwordLength'));
+    const unmetRules = getUnmetPasswordRules(password);
+    if (unmetRules.length > 0) {
+      setErrorMessage(
+        `${t('passwordRules.notMet')} ${unmetRules
+          .map((rule) => t(PASSWORD_RULE_I18N_KEYS[rule]))
+          .join(', ')}`,
+      );
       return;
     }
     if (password !== confirmPassword) {
@@ -78,6 +91,7 @@ export default function PasswordSetupScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <RegistrationBackground />
       <KeyboardAwareScrollView
         contentContainerStyle={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
@@ -90,14 +104,15 @@ export default function PasswordSetupScreen() {
             contentFit="contain"
           />
 
-          {/* Welcome Text */}
-          <Text style={styles.title}>{t('passwordSetup.welcome')}</Text>
+          {/* Title */}
+          <Text style={styles.title}>{t('passwordSetup.createPassword')}</Text>
           <Text style={styles.doctorName}>{doctorName}</Text>
 
           {/* Password */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>{t('passwordSetup.passwordLabel')}</Text>
             <PasswordField value={password} onChangeText={setPassword} />
+            <PasswordRequirements value={password} />
           </View>
 
           {/* Confirm Password */}
@@ -108,21 +123,23 @@ export default function PasswordSetupScreen() {
 
           {/* Error message */}
           {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
-
-          {/* Continue Button */}
-          <TouchableOpacity
-            style={[styles.continueButton, isLoading && styles.continueButtonDisabled]}
-            activeOpacity={0.8}
-            onPress={handleContinue}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <Text style={styles.continueButtonText}>{t('passwordSetup.continue')}</Text>
-            )}
-          </TouchableOpacity>
       </KeyboardAwareScrollView>
+
+      {/* Continue Button - pinned near bottom of screen */}
+      <View style={styles.bottomBar}>
+        <TouchableOpacity
+          style={[styles.continueButton, isLoading && styles.continueButtonDisabled]}
+          activeOpacity={0.8}
+          onPress={handleContinue}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <Text style={styles.continueButtonText}>{t('passwordSetup.continue')}</Text>
+          )}
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 }
@@ -136,8 +153,12 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: 24,
     paddingTop: 40,
-    paddingBottom: 40,
+    paddingBottom: 24,
     alignItems: 'center',
+  },
+  bottomBar: {
+    paddingHorizontal: 24,
+    paddingBottom: 32,
   },
   logo: {
     width: 120,
@@ -147,13 +168,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '800',
-    color: '#1A1817',
+    color: '#BD632F',
     marginBottom: 8,
   },
   doctorName: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#BD632F',
+    fontWeight: '700',
+    color: '#1A1817',
     marginBottom: 40,
   },
   inputGroup: {
