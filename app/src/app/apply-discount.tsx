@@ -131,7 +131,7 @@ export default function ApplyDiscountScreen() {
                 activeOpacity={0.7}
               >
                 <View style={styles.patientAvatarWrap}>
-                  <PatientAvatar name={patient.name} image={patient.image} size={48} />
+                  <PatientAvatar name={patient.name} image={patient.image} size={48} radius={14} />
                   <View style={styles.patientAvatarBadge}>
                     <SvgXml width={18} height={18} xml={discountDetailsMessageSvg} />
                   </View>
@@ -176,15 +176,17 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   backBtn: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     borderRadius: 12,
     backgroundColor: '#BD632F',
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 20,
+    flex: 1,
+    minWidth: 0,
+    fontSize: 24,
     fontWeight: '800',
     color: '#1A1817',
   },
@@ -269,7 +271,7 @@ const styles = StyleSheet.create({
   patientAvatarWrap: {
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: 14,
   },
   patientAvatarBadge: {
     position: 'absolute',
@@ -287,7 +289,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   patientName: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '700',
     color: '#1A1817',
   },
@@ -305,7 +307,7 @@ const styles = StyleSheet.create({
   },
   discountBadge: {
     backgroundColor: '#FFF2EB',
-    borderRadius: 8,
+    borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },

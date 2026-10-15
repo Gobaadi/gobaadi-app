@@ -92,6 +92,50 @@ function createEmptyMedication(): MedicationEntry {
   };
 }
 
+function MedSummaryCard({ med, t }: { med: MedicationEntry; t: T }) {
+  if (!getMedicationSummary(med, t)) return null;
+  const cells: { label: string; value: string }[] = [
+    {
+      label: t('prescription.dosage'),
+      value: `${med.dosage} ${t(`prescription.units.${med.dosageUnit}`)}`,
+    },
+    { label: t('prescription.frequency'), value: translateFrequency(med.frequency, t) },
+    {
+      label: t('prescription.duration'),
+      value: `${med.duration} ${t(`prescription.units.${med.durationUnit}`)}`,
+    },
+  ];
+  return (
+    <View style={styles.summaryCard}>
+      <View style={styles.summaryHeader}>
+        <Ionicons name="medkit-outline" size={14} color="#BD632F" />
+        <Text style={styles.summaryHeaderLabel}>{t('prescription.summaryTitle')}</Text>
+      </View>
+      <View style={styles.summaryRow}>
+        {cells.map((cell) => (
+          <View key={cell.label} style={styles.summaryCell}>
+            <Text style={styles.summaryCellLabel} numberOfLines={1}>
+              {cell.label}
+            </Text>
+            <Text style={styles.summaryCellValue} numberOfLines={1}>
+              {cell.value}
+            </Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+function SummaryEmptyCard() {
+  const { t } = useTranslation();
+  return (
+    <View style={styles.summaryEmptyCard}>
+      <Text style={styles.noSummary}>{t('prescription.noSummary')}</Text>
+    </View>
+  );
+}
+
 interface PickerConfig {
   title: string;
   labelKind: 'unit' | 'frequency';
@@ -300,7 +344,7 @@ export default function PrescriptionForm({ onSend, sending }: PrescriptionFormPr
                   placeholderTextColor="#A39E99"
                   value={med.name}
                   onFocus={() => {
-                    if (!med.type) {
+                    if (med.name.trim()) {
                       setActiveSearchId(med.id);
                       runSearch(med.id, med.name);
                     }
@@ -469,29 +513,21 @@ export default function PrescriptionForm({ onSend, sending }: PrescriptionFormPr
                     </View>
 
                     {getMedicationSummary(med, t) ? (
-                      <Text style={styles.medSummary}>
-                        {t('prescription.summary', { summary: getMedicationSummary(med, t) })}
-                      </Text>
+                      <MedSummaryCard med={med} t={t} />
                     ) : (
-                      <Text style={styles.noSummary}>{t('prescription.noSummary')}</Text>
+                      <SummaryEmptyCard />
                     )}
                   </View>
                 )}
               </View>
 
-              {!med.isExpanded && med.name && getMedicationSummary(med, t) && (
-                <Text style={styles.medCollapsedSummary}>
-                  {t('prescription.summary', { summary: getMedicationSummary(med, t) })}
-                </Text>
-              )}
+              {!med.isExpanded && med.name && <MedSummaryCard med={med} t={t} />}
             </View>
           );
         })}
 
         {medications.length > 0 &&
-          !medications.some((m) => m.isExpanded && m.name) && (
-            <Text style={styles.noSummaryCenter}>{t('prescription.noSummary')}</Text>
-          )}
+          !medications.some((m) => m.isExpanded && m.name) && <SummaryEmptyCard />}
 
         <TouchableOpacity
           style={styles.addMedBtn}
@@ -620,7 +656,20 @@ const styles = StyleSheet.create({
   medNameInput: { backgroundColor: 'transparent', paddingHorizontal: 0, height: 44, fontSize: 14, fontWeight: '600', color: '#1A1817' },
   medTypeText: { fontSize: 13, fontWeight: '500', color: '#7C7672', marginTop: -4, marginBottom: 4 },
 
-  suggestionsBox: { backgroundColor: '#FFFFFF', borderRadius: 12, borderWidth: 1, borderColor: '#E6E1DC', marginTop: 6, overflow: 'hidden' },
+  suggestionsBox: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E6E1DC',
+    marginTop: 6,
+    overflow: 'hidden',
+    zIndex: 10,
+    elevation: 8,
+    shadowColor: '#1A1817',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+  },
   suggestionsScroll: { maxHeight: 190 },
   suggestionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#F0EBE5' },
   suggestionTextBlock: { flex: 1, marginRight: 10 },
@@ -649,10 +698,35 @@ const styles = StyleSheet.create({
   quantityRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
   quantityInput: { flex: 1 },
   quantityUnit: { fontSize: 13, fontWeight: '500', color: '#7C7672' },
-  medSummary: { fontSize: 13, fontWeight: '600', color: '#BD632F', marginTop: 4 },
-  noSummary: { fontSize: 13, fontWeight: '500', color: '#D1CCC7', marginTop: 4, textAlign: 'center' },
-  noSummaryCenter: { fontSize: 13, fontWeight: '500', color: '#D1CCC7', textAlign: 'center', marginVertical: 8 },
-  medCollapsedSummary: { fontSize: 13, fontWeight: '600', color: '#BD632F', marginTop: 8, marginLeft: 4 },
+  summaryCard: {
+    backgroundColor: '#FFF8F4',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#F5E1D3',
+    padding: 12,
+    marginTop: 12,
+  },
+  summaryHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 },
+  summaryHeaderLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#BD632F',
+    letterSpacing: 0.6,
+  },
+  summaryRow: { flexDirection: 'row', gap: 8 },
+  summaryCell: { flex: 1 },
+  summaryCellLabel: { fontSize: 10, fontWeight: '600', color: '#9C9690', marginBottom: 2 },
+  summaryCellValue: { fontSize: 13, fontWeight: '700', color: '#1A1817' },
+  summaryEmptyCard: {
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E6E1DC',
+    borderStyle: 'dashed',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginTop: 12,
+  },
+  noSummary: { fontSize: 13, fontWeight: '500', color: '#D1CCC7', textAlign: 'center' },
 
   addMedBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFF', borderRadius: 14, borderWidth: 1.5, borderColor: '#BD632F', paddingVertical: 12, gap: 6, marginTop: 8, marginBottom: 20 },
   addMedBtnText: { fontSize: 14, fontWeight: '600', color: '#BD632F' },

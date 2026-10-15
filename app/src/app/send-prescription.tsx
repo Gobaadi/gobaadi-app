@@ -111,6 +111,11 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     height: '92%',
     overflow: 'hidden',
+    shadowColor: '#1A1817',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    elevation: 16,
   },
   grabber: {
     width: 40,

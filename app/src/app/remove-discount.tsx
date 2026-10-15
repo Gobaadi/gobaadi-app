@@ -86,7 +86,7 @@ export default function RemoveDiscountScreen() {
 
       <View style={styles.patientCard}>
         <View style={styles.patientAvatarWrap}>
-          <PatientAvatar name={patientName} image={patientImage} size={48} />
+          <PatientAvatar name={patientName} image={patientImage} size={48} radius={14} />
           <View style={styles.patientAvatarBadge}>
             <SvgXml width={18} height={18} xml={discountDetailsMessageSvg} />
           </View>
@@ -99,7 +99,7 @@ export default function RemoveDiscountScreen() {
 
       <View style={styles.body}>
         <View style={styles.deleteCircle}>
-          <SvgXml width={72} height={72} xml={removeDiscountDeleteSvg} />
+          <SvgXml width={84} height={84} xml={removeDiscountDeleteSvg} />
         </View>
         <Text style={styles.bodyTitle}>{t('removeDiscount.bodyTitle')}</Text>
         <Text style={styles.bodyText}>
@@ -150,7 +150,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 20,
+    flex: 1,
+    minWidth: 0,
+    fontSize: 24,
     fontWeight: '800',
     color: '#1A1817',
   },
@@ -167,7 +169,7 @@ const styles = StyleSheet.create({
   patientAvatarWrap: {
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: 14,
   },
   patientAvatarBadge: {
     position: 'absolute',
@@ -203,9 +205,9 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   deleteCircle: {
-    width: 150,
-    height: 150,
-    borderRadius: 75,
+    width: 180,
+    height: 180,
+    borderRadius: 90,
     backgroundColor: '#FBE9E7',
     justifyContent: 'center',
     alignItems: 'center',
