@@ -126,6 +126,29 @@ export class DoctorsController {
     return this.doctorsService.uploadPhoto(user.sub, file);
   }
 
+  @Post('me/experience-certificates')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.DOCTOR)
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiBearerAuth()
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { file: { type: 'string', format: 'binary' } },
+    },
+  })
+  @ApiOperation({ summary: 'Upload an experience certificate file' })
+  @ApiResponse({ status: 201, description: 'Certificate uploaded' })
+  async uploadExperienceCertificate(
+    @UploadedFile() file: Express.Multer.File,
+  ): Promise<{ url: string }> {
+    if (!file) {
+      throw new BadRequestException('A file is required');
+    }
+    return this.doctorsService.uploadExperienceCertificate(file);
+  }
+
   @Post('me/credential-documents')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.DOCTOR)
@@ -319,6 +342,8 @@ export class DoctorsController {
               organization: { type: 'string' },
               duration: { type: 'string' },
               description: { type: 'string' },
+              endDate: { type: 'string' },
+              isCurrent: { type: 'boolean' },
             },
           },
         },
@@ -334,6 +359,8 @@ export class DoctorsController {
       organization: string;
       duration: string;
       description?: string;
+      endDate?: string;
+      isCurrent?: boolean;
     }>,
   ): Promise<Doctor> {
     return this.doctorsService.updateExperiences(user.sub, experiences);
