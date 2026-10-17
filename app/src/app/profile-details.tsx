@@ -276,7 +276,7 @@ export default function ProfileDetailsScreen() {
               <Text style={styles.doctorSpecialty}>{doctorProfile?.specialty}</Text>
               <View style={styles.ratingRow}>
                 <SvgXml width={14} height={14} xml={doctorProfileCardStarSvg} />
-                <Text style={styles.ratingText}>{doctorProfile?.rating} ({t('profileDetails.reviews', { count: doctorBookings?.length ?? 0 })})</Text>
+                <Text style={styles.ratingText}>{doctorProfile?.rating} ({t('profileDetails.reviews', { count: reviews.length })})</Text>
               </View>
               <Text style={[styles.doctorLocation, !doctorProfile?.specialty && styles.noDataText]}>
                 {doctorProfile?.specialty || t('profileDetails.noLocationAdded')}
@@ -354,6 +354,63 @@ export default function ProfileDetailsScreen() {
             <Text style={[styles.aboutText, !doctorProfile?.bio && styles.noDataText]}>
               {doctorProfile?.bio || t('profileDetails.noData')}
             </Text>
+
+            {/* Patient Reviews */}
+            <View style={[styles.sectionHeader, { marginTop: 20 }]}>
+              <Text style={styles.sectionTitle}>{t('profileDetails.sections.patientReviews')}</Text>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() =>
+                  router.push({
+                    pathname: '/all-reviews',
+                    params: {
+                      doctorId: String(doctorProfile?.id),
+                      doctorName: doctorProfile?.name ?? '',
+                    },
+                  })
+                }
+              >
+                <Text style={styles.seeAllText}>{t('profileDetails.actions.seeAll')}</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.reviewsRatingRow}>
+              <Ionicons name="star" size={18} color="#F59E0B" />
+              <Text style={styles.reviewsScore}>{doctorProfile?.rating ?? '0.0'}</Text>
+              <Text style={styles.reviewsCount}>({t('profileDetails.reviewsCount', { count: reviews.length })})</Text>
+            </View>
+
+            {reviews.length > 0 ? (
+              reviews.map((review) => (
+                <View key={review.id} style={styles.reviewCard}>
+                  <View style={styles.reviewHeader}>
+                    <View style={styles.reviewAvatar}>
+                      {review.user?.avatar ? (
+                        <Image source={{ uri: review.user.avatar }} style={{ width: 32, height: 32, borderRadius: 16 }} />
+                      ) : (
+                        <Ionicons name="person-outline" size={16} color="#9C9690" />
+                      )}
+                    </View>
+                    <View style={styles.reviewInfo}>
+                      <Text style={styles.reviewName}>{review.user?.name || t('profileDetails.reviewer.anonymous')}</Text>
+                      <View style={styles.reviewStars}>
+                        {Array.from({ length: review.rating }).map((_, si) => (
+                          <Ionicons key={si} name="star" size={12} color="#F59E0B" />
+                        ))}
+                      </View>
+                    </View>
+                    <Text style={styles.reviewTime}>
+                      {new Date(review.createdAt).toLocaleDateString()}
+                    </Text>
+                  </View>
+                  <Text style={styles.reviewText}>{review.text}</Text>
+                </View>
+              ))
+            ) : (
+              <View style={styles.reviewCard}>
+                <Text style={styles.reviewText}>{t('profileDetails.empty.reviews')}</Text>
+              </View>
+            )}
           </View>
         )}
 
@@ -488,62 +545,6 @@ export default function ProfileDetailsScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* Patient Reviews */}
-            <View style={[styles.sectionHeader, { marginTop: 20 }]}>
-              <Text style={styles.sectionTitle}>{t('profileDetails.sections.patientReviews')}</Text>
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={() =>
-                  router.push({
-                    pathname: '/all-reviews',
-                    params: {
-                      doctorId: String(doctorProfile?.id),
-                      doctorName: doctorProfile?.name ?? '',
-                    },
-                  })
-                }
-              >
-                <Text style={styles.seeAllText}>{t('profileDetails.actions.seeAll')}</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.reviewsRatingRow}>
-              <Ionicons name="star" size={18} color="#F59E0B" />
-              <Text style={styles.reviewsScore}>{doctorProfile?.rating ?? '0.0'}</Text>
-              <Text style={styles.reviewsCount}>({t('profileDetails.reviewsCount', { count: reviews.length })})</Text>
-            </View>
-
-            {reviews.length > 0 ? (
-              reviews.map((review) => (
-                <View key={review.id} style={styles.reviewCard}>
-                  <View style={styles.reviewHeader}>
-                    <View style={styles.reviewAvatar}>
-                      {review.user?.avatar ? (
-                        <Image source={{ uri: review.user.avatar }} style={{ width: 32, height: 32, borderRadius: 16 }} />
-                      ) : (
-                        <Ionicons name="person-outline" size={16} color="#9C9690" />
-                      )}
-                    </View>
-                    <View style={styles.reviewInfo}>
-                      <Text style={styles.reviewName}>{review.user?.name || t('profileDetails.reviewer.anonymous')}</Text>
-                      <View style={styles.reviewStars}>
-                        {Array.from({ length: review.rating }).map((_, si) => (
-                          <Ionicons key={si} name="star" size={12} color="#F59E0B" />
-                        ))}
-                      </View>
-                    </View>
-                    <Text style={styles.reviewTime}>
-                      {new Date(review.createdAt).toLocaleDateString()}
-                    </Text>
-                  </View>
-                  <Text style={styles.reviewText}>{review.text}</Text>
-                </View>
-              ))
-            ) : (
-              <View style={styles.reviewCard}>
-                <Text style={styles.reviewText}>{t('profileDetails.empty.reviews')}</Text>
-              </View>
-            )}
           </View>
         )}
 

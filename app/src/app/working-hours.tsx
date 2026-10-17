@@ -161,6 +161,20 @@ export default function WorkingHoursScreen() {
 
   const handleSaveAll = async () => {
     if (!doctorId) return;
+    // Same-day windows must be chronological — reject end <= start before
+    // hitting the API (backend re-validates).
+    const invalidDay = schedule.find(
+      (s) => s.enabled && time12to24(s.endTime) <= time12to24(s.startTime),
+    );
+    if (invalidDay) {
+      Alert.alert(
+        t('workingHours.alerts.invalidRangeTitle'),
+        t('workingHours.alerts.invalidRange', {
+          day: t(`workingHours.days.${invalidDay.day}`),
+        }),
+      );
+      return;
+    }
     const entries = schedule
       .filter((s) => s.enabled)
       .map((s) => ({

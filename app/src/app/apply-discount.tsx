@@ -34,9 +34,14 @@ export default function ApplyDiscountScreen() {
   const [activeTab, setActiveTab] = useState<TabType>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const { data: patients, isLoading } = useGetMyPatientsQuery({
+  // Two independent cached queries: each tab badge must always reflect its
+  // OWN total, not whichever filtered list the active tab last fetched.
+  const { data: allPatients, isLoading } = useGetMyPatientsQuery({
     search: searchQuery || undefined,
-    discountGiven: activeTab === 'discountGiven' ? 'true' : undefined,
+  });
+  const { data: discountPatients } = useGetMyPatientsQuery({
+    search: searchQuery || undefined,
+    discountGiven: 'true',
   });
   const { data: bookings = [] } = useGetDoctorBookingsQuery(undefined, {
     refetchOnFocus: true,
@@ -45,9 +50,13 @@ export default function ApplyDiscountScreen() {
 
   if (!isDoctor) return null;
 
-  const filteredPatients = (patients || []).filter((p) => !p.ownerOnly);
-  const discountGivenCount =
-    filteredPatients.filter((p) => p.discount?.isActive).length;
+  const allCount = (allPatients || []).filter((p) => !p.ownerOnly).length;
+  const discountGivenCount = (discountPatients || []).filter(
+    (p) => !p.ownerOnly,
+  ).length;
+  const filteredPatients = (
+    (activeTab === 'discountGiven' ? discountPatients : allPatients) || []
+  ).filter((p) => !p.ownerOnly);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -91,7 +100,7 @@ export default function ApplyDiscountScreen() {
             activeOpacity={0.8}
           >
             <Text style={[styles.tabText, activeTab === 'all' && styles.tabTextActive]}>
-              {t('applyDiscount.allTab', { count: filteredPatients.length })}
+              {t('applyDiscount.allTab', { count: allCount })}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -147,7 +156,10 @@ export default function ApplyDiscountScreen() {
                     </Text>
                   ) : null}
                 </View>
-                {patient.discount?.isActive && patient.discount?.percent ? (
+                {/* Backend PatientDiscount rows carry no isActive flag — discount
+                    presence + percent is the source of truth (same rule the
+                    server uses for discountGiven=true). */}
+                {patient.discount?.percent ? (
                   <View style={styles.discountBadge}>
                     <Text style={styles.discountBadgeText}>{patient.discount.percent}%</Text>
                   </View>

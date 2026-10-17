@@ -39,7 +39,10 @@ const CONSULTATION_OPTIONS: { value: Exclude<ConsultationFilter, null>; labelKey
 export default function AppointmentFilterScreen() {
   const router = useRouter();
   const { t } = useTranslation();
-  const [selectedDate, setSelectedDate] = useState<DateFilter>('today');
+  // No date filter by default — preselecting 'today' made a plain Apply (or
+  // the Clear button, which also reset to 'today') silently re-enable the
+  // Today filter, which emptied the Previous tab even after "clearing".
+  const [selectedDate, setSelectedDate] = useState<DateFilter>(null);
   const [selectedStatus, setSelectedStatus] = useState<StatusFilter>('all');
   const [selectedConsultation, setSelectedConsultation] = useState<ConsultationFilter>('all');
 
@@ -55,7 +58,7 @@ export default function AppointmentFilterScreen() {
   };
 
   const handleClear = () => {
-    setSelectedDate('today');
+    setSelectedDate(null);
     setSelectedStatus('all');
     setSelectedConsultation('all');
   };

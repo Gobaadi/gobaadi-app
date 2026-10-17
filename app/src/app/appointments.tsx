@@ -271,7 +271,7 @@ export default function AppointmentsScreen() {
   const { data: bookings = [] } = useGetDoctorBookingsQuery({
     filter: apiFilter,
     consultationType: apiConsultationType,
-    search: debouncedSearch || undefined,
+    search: debouncedSearch.trim() || undefined,
   });
 
   const filteredBookings = useMemo(() => {
@@ -312,7 +312,13 @@ export default function AppointmentsScreen() {
 
     filteredBookings.forEach((b) => {
       const start = new Date(b.startAt);
-      if (start >= new Date(now.getFullYear(), now.getMonth(), now.getDate())) {
+      // Completed and cancelled sessions are history — including ones
+      // scheduled today — so the Today tab stays an active queue only
+      // (Next Consults / In Progress) and Previous surfaces the rest
+      // (same-day completions and cancellations too).
+      if (b.status === 'COMPLETED' || b.status === 'CANCELLED') {
+        previous.push(b);
+      } else if (start >= new Date(now.getFullYear(), now.getMonth(), now.getDate())) {
         today.push(b);
       } else {
         previous.push(b);
