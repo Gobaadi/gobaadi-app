@@ -600,7 +600,7 @@
       "cancelled": "Cancelled",
       "completed": "Completed",
       "rescheduled": "Rescheduled",
-      "upcoming": "Upcoming"
+      "confirmed": "Confirmed"
     },
     "symptoms": "Symptoms",
     "title": "Appointment Details"
@@ -638,6 +638,8 @@
       "rescheduleFailed": "Failed to reschedule appointment. Please try again.",
       "rescheduled": "Appointment rescheduled successfully.",
       "selectDateTime": "Please select a date and time.",
+      "sameSlotTitle": "Same time slot",
+      "sameSlot": "Please select a different date or time to reschedule.",
       "successTitle": "Success"
     },
     "dayShort": {
@@ -2401,6 +2403,9 @@
       "description": "Description",
       "district": "District",
       "duration": "Duration",
+      "endDate": "End Date",
+      "currentlyWorking": "Currently Working Here",
+      "certificate": "Certificate",
       "instituteName": "Institute Name",
       "location": "Practice Location",
       "name": "Your Name",
@@ -2409,6 +2414,15 @@
       "upazilaVillage": "Upazila / Village",
       "yearsExperience": "Years of Experience"
     },
+    "certUpload": {
+      "upload": "Upload certificate",
+      "uploading": "Uploading…",
+      "uploaded": "Certificate uploaded",
+      "remove": "Remove certificate",
+      "errorTitle": "Upload failed",
+      "failed": "Could not upload the certificate. Please try again."
+    },
+    "present": "Present",
     "noSpecialty": "No specialty",
     "photo": {
       "cameraPermission": "Camera access is required to take a profile photo.",
@@ -2433,6 +2447,7 @@
       "description": "Describe your role and achievements...",
       "district": "e.g. Narayanganj",
       "duration": "e.g. Jan 2020 - Present",
+      "endDate": "MM/YYYY",
       "experience": "e.g. 5 Years",
       "instituteName": "e.g. City Vet Clinic",
       "licenseNumber": "Enter license number...",
@@ -2836,6 +2851,8 @@
   "workingHours": {
     "alerts": {
       "errorTitle": "Error",
+      "invalidRangeTitle": "Invalid time range",
+      "invalidRange": "For {{day}}, the end time must be after the start time. Please adjust the shift hours.",
       "saveFailedMsg": "Failed to save working hours.",
       "savedMsg": "Working hours updated successfully.",
       "savedTitle": "Saved"

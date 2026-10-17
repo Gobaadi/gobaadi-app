@@ -20,6 +20,7 @@ import {
 import { Doctor } from '../doctors/doctor.entity';
 import { User } from '../users/user.entity';
 import { ChatGateway } from '../chat/chat.gateway';
+import { CALL_GRACE_PERIOD_MS } from '../common/call-gate';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/notification.entity';
 
@@ -94,12 +95,17 @@ export class RemindersProcessor extends WorkerHost {
    *    (safety net when a client dies instead of ending the call cleanly).
    */
   private async completePastSessions(): Promise<void> {
+    // Keep appointments joinable for the full call-gate grace window (+30 min
+    // after endAt) before auto-completing — the gate allows joins inside that
+    // window, and completing earlier makes late joins fail with
+    // "not in a joinable state".
+    const completionCutoff = new Date(Date.now() - CALL_GRACE_PERIOD_MS);
     // TypeORM's raw .query() returns [rows, rowCount] for UPDATE/DELETE on Postgres.
     const completedRaw: unknown = await this.appointmentRepository.query(
       `UPDATE appointments a
             SET status = 'COMPLETED'
           WHERE a.status IN ('CONFIRMED', 'RESCHEDULED')
-            AND a."endAt" < now()
+            AND a."endAt" < :cutoff
             AND NOT EXISTS (
               SELECT 1 FROM medical_events m
               WHERE m."appointmentId" = a.id
@@ -107,6 +113,7 @@ export class RemindersProcessor extends WorkerHost {
                 AND m.status = 'ONGOING'
             )
           RETURNING a.id`,
+      { cutoff: completionCutoff },
     );
     const completedAppointments: { id: number }[] =
       Array.isArray(completedRaw) && Array.isArray(completedRaw[0])

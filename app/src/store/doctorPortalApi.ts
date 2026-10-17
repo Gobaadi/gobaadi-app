@@ -32,6 +32,9 @@ export interface DoctorExperience {
   organization: string;
   duration: string;
   description?: string;
+  endDate?: string;
+  isCurrent?: boolean;
+  certificateUrl?: string;
 }
 
 export type AppointmentStatus =
@@ -277,6 +280,13 @@ export const doctorPortalApi = createApi({
       }),
       invalidatesTags: ['Dashboard', 'DoctorProfile'],
     }),
+    uploadExperienceCertificate: builder.mutation<{ url: string }, FormData>({
+      query: (formData) => ({
+        url: '/doctors/me/experience-certificates',
+        method: 'POST',
+        body: formData,
+      }),
+    }),
     uploadCredentialDocument: builder.mutation<DoctorProfile, FormData>({
       query: (formData) => ({
         url: '/doctors/me/credential-documents',
@@ -338,6 +348,7 @@ export const {
   useUpdateExperiencesMutation,
   useUpdateProfileMutation,
   useUploadCredentialDocumentMutation,
+  useUploadExperienceCertificateMutation,
   useUploadMyPhotoMutation,
   useUpdateCredentialDocumentsMutation,
   useGetAvailabilityQuery,

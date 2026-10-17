@@ -16,6 +16,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '@/store/authApi';
 import { useGetMyProfileQuery } from '@/store/usersApi';
 import { useGetMyDoctorProfileQuery, useGetDashboardStatsQuery } from '@/store/doctorPortalApi';
+import { useGetReviewsQuery } from '@/store/reviewsApi';
 import { useGetAnimalsQuery } from '@/store/animalsApi';
 import { useGetBalanceQuery } from '@/store/walletApi';
 import { useGetMySubscriptionQuery } from '@/store/subscriptionsApi';
@@ -50,6 +51,10 @@ export default function ProfileScreen() {
   // Doctor data
   const { data: doctorProfile } = useGetMyDoctorProfileQuery(undefined, { skip: !isDoctor });
   const { data: dashboardStats } = useGetDashboardStatsQuery(undefined, { skip: !isDoctor });
+  const { data: doctorReviews = [] } = useGetReviewsQuery(
+    { targetType: 'doctor', targetId: doctorProfile?.id ??0 },
+    { skip: !isDoctor || !doctorProfile?.id },
+  );
 
   // Wallet data
   const { data: walletBalance } = useGetBalanceQuery();
@@ -127,7 +132,7 @@ export default function ProfileScreen() {
                   <View style={styles.ratingRow}>
                     <Ionicons name="star" size={14} color="#F59E0B" />
                     <Text style={styles.ratingScore}>{doctorProfile?.rating ?? '4.8'}</Text>
-                    <Text style={styles.ratingCount}>{t('profile.doctor.reviews', { count: completedConsultations })}</Text>
+                    <Text style={styles.ratingCount}>{t('profile.doctor.reviews', { count: doctorReviews.length })}</Text>
                   </View>
                 </View>
               </View>

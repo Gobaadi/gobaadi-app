@@ -5,7 +5,13 @@ import {
   ConsultationType,
 } from '../appointments/appointment.entity';
 
-const CALL_GRACE_PERIOD_MS = 30 * 60 * 1000; // 30 minutes before/after slot
+/**
+ * 30 minutes before/after the slot. Exported so the session-completion sweep
+ * honors the same window — otherwise it auto-completes appointments right
+ * after endAt and late joins fail with "not in a joinable state" even though
+ * this gate still allows them.
+ */
+export const CALL_GRACE_PERIOD_MS = 30 * 60 * 1000;
 
 /** Status of the appointment's CONSULTATION medical event, if any. */
 export type ConsultationGateState = 'none' | 'ONGOING' | 'COMPLETED';

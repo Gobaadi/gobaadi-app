@@ -15,6 +15,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useGetConversationsQuery, useCreateConversationMutation } from '@/store/chatApi';
 import { useConversationListSocket } from '@/hooks/use-chat-socket';
+import { useCallSignalingContext } from '@/components/IncomingCallProvider';
 import {
   useGetDoctorBookingsQuery,
   type DoctorAppointment,
@@ -64,6 +65,7 @@ function formatAppointmentTime(iso?: string): string {
 export default function DoctorMessagesScreen() {
   const router = useRouter();
   const { t } = useTranslation();
+  const { ringCall } = useCallSignalingContext();
   const isDoctor = useRequireDoctor();
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -229,6 +231,28 @@ export default function DoctorMessagesScreen() {
 
   const handleJoinAppointment = useCallback(
     async (appointment: DoctorAppointment) => {
+      // Online video/voice appointments must start the call session — opening
+      // the text chat here silently swallowed the video consultation.
+      if (
+        appointment.consultationType === 'online_video' ||
+        appointment.consultationType === 'online_voice'
+      ) {
+        const callType =
+          appointment.consultationType === 'online_voice' ? 'audio' : 'video';
+        ringCall(Number(appointment.id), callType);
+        router.push({
+          pathname: '/video-call',
+          params: {
+            appointmentId: String(appointment.id),
+            callType,
+            patientName: appointment.patientName ?? '',
+            animalImage: appointment.animalImage ?? '',
+            animalId:
+              appointment.animalId != null ? String(appointment.animalId) : '',
+          },
+        });
+        return;
+      }
       setCreatingId(Number(appointment.patientId));
       try {
         const result = await createConversation({ patientId: Number(appointment.patientId) }).unwrap();
@@ -249,7 +273,7 @@ export default function DoctorMessagesScreen() {
       } catch {}
       setCreatingId(null);
     },
-    [createConversation, router, t]
+    [createConversation, router, t, ringCall]
   );
 
   if (!isDoctor) return null;
@@ -333,7 +357,11 @@ export default function DoctorMessagesScreen() {
                     />
                   )}
                 </View>
-                <TouchableOpacity style={styles.joinBtn} activeOpacity={0.85}>
+                <TouchableOpacity
+                  style={styles.joinBtn}
+                  activeOpacity={0.85}
+                  onPress={() => handleJoinAppointment(nextAppointment)}
+                >
                   <Text style={styles.joinBtnText}>{t('doctorMessages.join')}</Text>
                 </TouchableOpacity>
               </View>

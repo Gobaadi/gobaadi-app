@@ -16,7 +16,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useRegisterMutation } from '@/store/authApi';
-import { useSocialAuth } from '@/hooks/use-social-auth';
+// import { useSocialAuth } from '@/hooks/use-social-auth'; // social login disabled
 import { apiErrorMessage } from '@/utils/api-error';
 import { isValidEmailSyntax, isAllowedEmail } from '@/utils/email';
 import { useTranslation } from '@/hooks/use-translation';
@@ -53,9 +53,10 @@ export default function SignUpScreen() {
   }>({ title: '', options: [], onSelect: () => { } });
 
   const [register, { isLoading }] = useRegisterMutation();
-  const { withGoogle, withFacebook, isLoading: isSocialLoading, error: socialError } = useSocialAuth(
-    () => router.replace('/(tabs)'),
-  );
+  // social login disabled
+  // const { withGoogle, withFacebook, isLoading: isSocialLoading, error: socialError } = useSocialAuth(
+  //   () => router.replace('/(tabs)'),
+  // );
 
   const openRoleDropdown = () => {
     setModalData({
@@ -361,17 +362,15 @@ export default function SignUpScreen() {
             )}
           </TouchableOpacity>
 
-          {/* Divider */}
+          {/* Divider + social login hidden — no social auth access
           <View style={styles.dividerContainer}>
             <View style={styles.dividerLine} />
             <Text style={styles.dividerText}>{t('signup.divider')}</Text>
             <View style={styles.dividerLine} />
           </View>
 
-          {/* Social login error */}
           {socialError ? <Text style={styles.errorText}>{socialError}</Text> : null}
 
-          {/* Social Logins */}
           <View style={styles.socialButtonsContainer}>
             <TouchableOpacity
               style={styles.socialButton}
@@ -398,6 +397,7 @@ export default function SignUpScreen() {
               />
             </TouchableOpacity>
           </View>
+          */}
 
           {/* Footer */}
           <View style={styles.footerContainer}>

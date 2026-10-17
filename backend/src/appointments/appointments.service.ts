@@ -261,6 +261,15 @@ export class AppointmentsService {
 
     this.applyListFilter(qb, opts.filter);
 
+    // Reschedule is cancel+rebook: the superseded appointment stays CANCELLED
+    // with its ORIGINAL time. Keep those husks (and ordinary cancellations)
+    // out of the doctor's default "All" view — they remain reachable through
+    // the explicit 'cancelled' filter. Patient lists are untouched: the
+    // my-appointments Past tab intentionally surfaces cancelled bookings.
+    if (role === UserRole.DOCTOR && !opts.filter) {
+      qb.andWhere("a.status != 'CANCELLED'");
+    }
+
     if (opts.consultationType) {
       qb.andWhere('a.consultationType = :consultationType', {
         consultationType: opts.consultationType,
@@ -268,13 +277,8 @@ export class AppointmentsService {
     }
 
     if (opts.search) {
-      const matchingAnimals = await this.animalRepository
-        .createQueryBuilder('an')
-        .select('an.id')
-        .where('an.name ILIKE :search', { search: `%${opts.search}%` })
-        .getMany();
-      const ids = matchingAnimals.map((a) => a.id);
-      if (ids.length === 0) {
+      const hasMatch = await this.applyNameSearchFilter(qb, opts.search);
+      if (!hasMatch) {
         return opts.page || opts.limit
           ? {
               data: [],
@@ -284,7 +288,6 @@ export class AppointmentsService {
             }
           : [];
       }
-      qb.andWhere('a.animalId IN (:...ids)', { ids });
     }
 
     qb.orderBy('a.startAt', 'DESC');
@@ -328,6 +331,16 @@ export class AppointmentsService {
     this.enforceReschedulableBuffer(appointment);
 
     const newStartAt = parseSlotDateTime(date, time);
+
+    // No-op reschedule: same slot would cancel + rebook the identical time
+    // (the conflict check excludes the appointment itself), producing a fake
+    // "rescheduled" success + patient notification with nothing actually moved.
+    if (newStartAt.getTime() === appointment.startAt.getTime()) {
+      throw new BadRequestException(
+        'Please select a different date or time to reschedule',
+      );
+    }
+
     const rebooked = await this.assertNoConflictAndBook(
       appointment.doctorId,
       appointment.patientId,
@@ -625,37 +638,9 @@ export class AppointmentsService {
     }
 
     if (opts.search) {
-      const matchingAnimals = await this.animalRepository
-        .createQueryBuilder('an')
-        .select('an.id')
-        .where('an.name ILIKE :search', { search: `%${opts.search}%` })
-        .getMany();
-      const animalIds = matchingAnimals.map((a) => a.id);
-
-      const userRepo = this.dataSource.getRepository(User);
-      const matchingUsers = await userRepo
-        .createQueryBuilder('u')
-        .select('u.id')
-        .where('u.name ILIKE :search', { search: `%${opts.search}%` })
-        .getMany();
-      const userIds = matchingUsers.map((u) => u.id);
-
-      if (animalIds.length === 0 && userIds.length === 0) {
+      const hasMatch = await this.applyNameSearchFilter(qb, opts.search);
+      if (!hasMatch) {
         return this.emptyResult(opts.page, opts.limit);
-      }
-
-      const conditions: string[] = [];
-      const params: Record<string, unknown> = {};
-      if (animalIds.length > 0) {
-        conditions.push('a.animalId IN (:...animalIds)');
-        params.animalIds = animalIds;
-      }
-      if (userIds.length > 0) {
-        conditions.push('a.patientId IN (:...userIds)');
-        params.userIds = userIds;
-      }
-      if (conditions.length > 0) {
-        qb.andWhere(`(${conditions.join(' OR ')})`, params);
       }
     }
 
@@ -828,6 +813,54 @@ export class AppointmentsService {
         undefined,
       ...animalFields(appointment),
     }));
+  }
+
+  /**
+   * Matches appointments whose animal name OR patient (user) name contains
+   * the given text (case-insensitive). Returns false when nothing matches.
+   */
+  private async applyNameSearchFilter(
+    qb: SelectQueryBuilder<Appointment>,
+    rawSearch: string,
+  ): Promise<boolean> {
+    // Trim before matching: ' kalu ' must behave like 'kalu'. A whitespace-only
+    // term filters nothing (returns true) instead of matching zero rows.
+    const search = rawSearch.trim();
+    if (!search) {
+      return true;
+    }
+
+    const matchingAnimals = await this.animalRepository
+      .createQueryBuilder('an')
+      .select('an.id')
+      .where('an.name ILIKE :search', { search: `%${search}%` })
+      .getMany();
+    const animalIds = matchingAnimals.map((a) => a.id);
+
+    const matchingUsers = await this.dataSource
+      .getRepository(User)
+      .createQueryBuilder('u')
+      .select('u.id')
+      .where('u.name ILIKE :search', { search: `%${search}%` })
+      .getMany();
+    const userIds = matchingUsers.map((u) => u.id);
+
+    if (animalIds.length === 0 && userIds.length === 0) {
+      return false;
+    }
+
+    const conditions: string[] = [];
+    const params: Record<string, unknown> = {};
+    if (animalIds.length > 0) {
+      conditions.push('a.animalId IN (:...animalIds)');
+      params.animalIds = animalIds;
+    }
+    if (userIds.length > 0) {
+      conditions.push('a.patientId IN (:...userIds)');
+      params.userIds = userIds;
+    }
+    qb.andWhere(`(${conditions.join(' OR ')})`, params);
+    return true;
   }
 
   private applyListFilter(

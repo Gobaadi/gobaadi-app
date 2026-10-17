@@ -174,10 +174,26 @@ export class DoctorsService {
     });
   }
 
+  /**
+   * Same-day availability windows must be chronological: end after start
+   * (HH:mm zero-padded 24h strings, lexicographic compare is numeric-safe).
+   * Guards both weekly entries and date overrides that reuse these fields.
+   */
+  private assertValidTimeWindow(startTime: string, endTime: string): void {
+    if (endTime <= startTime) {
+      throw new BadRequestException(
+        'endTime must be after startTime for the same-day window',
+      );
+    }
+  }
+
   async setAvailability(
     doctorId: number,
     entries: AvailabilityEntry[],
   ): Promise<Availability[]> {
+    for (const entry of entries) {
+      this.assertValidTimeWindow(entry.startTime, entry.endTime);
+    }
     await this.availabilityRepository.delete({ doctorId });
     const created = entries.map((entry) =>
       this.availabilityRepository.create({
@@ -219,6 +235,9 @@ export class DoctorsService {
     if (dto.isAvailable !== undefined) existing.isAvailable = dto.isAvailable;
     if (dto.overrideSlots !== undefined)
       existing.overrideSlots = dto.overrideSlots;
+
+    // Validate the effective merged window (partial updates included).
+    this.assertValidTimeWindow(existing.startTime, existing.endTime);
 
     return this.availabilityRepository.save(existing);
   }
@@ -360,6 +379,16 @@ export class DoctorsService {
     return this.doctorRepository.save(doctor);
   }
 
+  async uploadExperienceCertificate(
+    file: Express.Multer.File,
+  ): Promise<{ url: string }> {
+    const result = await this.s3Service.uploadFile(file.buffer, {
+      folder: 'experience-certificates',
+      contentType: file.mimetype,
+    });
+    return { url: result.url };
+  }
+
   async uploadCredentialDocument(
     doctorUserId: number,
     file: Express.Multer.File,
@@ -402,6 +431,8 @@ export class DoctorsService {
       organization: string;
       duration: string;
       description?: string;
+      endDate?: string;
+      isCurrent?: boolean;
     }>,
   ): Promise<Doctor> {
     const doctor = await this.doctorRepository.findOneBy({

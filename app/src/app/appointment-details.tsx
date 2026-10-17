@@ -16,6 +16,7 @@ import {
   useGetBookingByIdQuery,
   useGetDoctorBookingsQuery,
 } from '@/store/doctorPortalApi';
+import { useCallSignalingContext } from '@/components/IncomingCallProvider';
 import { formatAnimalDetails } from '@/utils/appointment';
 
 const ONLINE_CONSULTATION_TYPES = ['online_video', 'online_voice', 'online_chat'];
@@ -39,7 +40,7 @@ function formatDate(dateStr: string): string {
 function getStatusStyle(status: string) {
   switch (status) {
     case 'CONFIRMED':
-      return { bg: '#E8F5E9', text: '#2E7D32', labelKey: 'appointmentDetails.status.upcoming' };
+      return { bg: '#E8F5E9', text: '#2E7D32', labelKey: 'appointmentDetails.status.confirmed' };
     case 'COMPLETED':
       return { bg: '#E3F2FD', text: '#1565C0', labelKey: 'appointmentDetails.status.completed' };
     case 'CANCELLED':
@@ -95,6 +96,7 @@ export default function AppointmentDetailsScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { ringCall } = useCallSignalingContext();
   const {
     data: fetchedAppointment,
     isLoading: idLoading,
@@ -166,11 +168,15 @@ export default function AppointmentDetailsScreen() {
       });
       return;
     }
+    const callType = appointment.consultationType === 'online_voice' ? 'audio' : 'video';
+    // Ring the patient first — without the callStarted signal they never get
+    // the incoming-call prompt and the session stalls on "waiting participant".
+    ringCall(Number(appointment.id), callType);
     router.push({
       pathname: '/video-call',
       params: {
         appointmentId: String(appointment.id),
-        callType: appointment.consultationType === 'online_voice' ? 'audio' : 'video',
+        callType,
         patientName: appointment.patientName ?? '',
         animalImage: appointment.animalImage ?? '',
         animalId: appointment.animalId != null ? String(appointment.animalId) : '',

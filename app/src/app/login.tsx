@@ -5,7 +5,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  Image,
+  // Image, // social login hidden
   ActivityIndicator,
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
@@ -15,7 +15,7 @@ import { useRouter } from 'expo-router';
 
 import { API_URL } from '@/constants/api';
 import { useLoginMutation } from '@/store/authApi';
-import { useSocialAuth } from '@/hooks/use-social-auth';
+// import { useSocialAuth } from '@/hooks/use-social-auth'; // social login disabled
 import { PasswordField } from '@/components/password-field';
 import { IdentifierTabs, IdentifierMode } from '@/components/identifier-tabs';
 import { store } from '@/store/store';
@@ -46,7 +46,8 @@ export default function LoginScreen() {
       router.replace('/(tabs)');
     }
   };
-  const { withGoogle, withFacebook, isLoading: isSocialLoading, error: socialError } = useSocialAuth(goToTabs);
+  // social login disabled
+  // const { withGoogle, withFacebook, isLoading: isSocialLoading, error: socialError } = useSocialAuth(goToTabs);
 
   const handleLogin = async () => {
     setErrorMessage('');
@@ -173,17 +174,15 @@ export default function LoginScreen() {
               )}
             </TouchableOpacity>
 
-            {/* Divider */}
+            {/* Divider + social login hidden — no social auth access
             <View style={styles.dividerContainer}>
               <View style={styles.dividerLine} />
               <Text style={styles.dividerText}>{t('login.divider')}</Text>
               <View style={styles.dividerLine} />
             </View>
 
-            {/* Social login error */}
             {socialError ? <Text style={styles.errorText}>{socialError}</Text> : null}
 
-            {/* Social Logins */}
             <View style={styles.socialButtonsContainer}>
               <TouchableOpacity
                 style={styles.socialButton}
@@ -210,6 +209,7 @@ export default function LoginScreen() {
                 />
               </TouchableOpacity>
             </View>
+            */}
 
             {/* Footer */}
             <View style={styles.footerContainer}>

@@ -12,8 +12,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useSelector } from 'react-redux';
-import type { RootState } from '@/store/store';
 import {
   useGetBookingByIdQuery,
   useGetDoctorBookingsQuery,
@@ -57,7 +55,6 @@ export default function AppointmentRescheduleScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const isDoctor = useSelector((state: RootState) => state.auth.user?.role) === 'doctor';
   const {
     data: fetchedAppointment,
     isLoading: idLoading,
@@ -141,6 +138,20 @@ export default function AppointmentRescheduleScreen() {
   const startOfToday = new Date();
   startOfToday.setHours(0, 0, 0, 0);
 
+  // Same visible slot as the current booking → not a reschedule. Compared in
+  // the same formats the screen already uses (device calendar day + the
+  // server-formatted 'hh:mm AM/PM' slot labels).
+  const isSameSlot =
+    !!selectedDate &&
+    !!selectedTime &&
+    formatDateKey(selectedDate) ===
+      formatDateKey(new Date(appointment.startAt)) &&
+    new Date(appointment.startAt).toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    }) === selectedTime;
+
   const goToPreviousMonth = () => {
     const prev = new Date(year, month - 1, 1);
     setCurrentMonth(prev);
@@ -156,22 +167,33 @@ export default function AppointmentRescheduleScreen() {
       Alert.alert(t('appointmentReschedule.alerts.required'), t('appointmentReschedule.alerts.selectDateTime'));
       return;
     }
+    if (isSameSlot) {
+      Alert.alert(
+        t('appointmentReschedule.alerts.sameSlotTitle'),
+        t('appointmentReschedule.alerts.sameSlot'),
+      );
+      return;
+    }
     try {
       const dateStr = formatDateKey(selectedDate);
-      await rescheduleBooking({
+      // Reschedule is cancel+rebook server-side: the response is the NEW
+      // appointment (new id, new time). Navigate to its details so the user
+      // sees the persisted slot instead of the list (which may still hold the
+      // cancelled original row until refetch).
+      const updated = await rescheduleBooking({
         id: String(appointment.id),
         date: dateStr,
         time: selectedTime,
       }).unwrap();
       Alert.alert(t('appointmentReschedule.alerts.successTitle'), t('appointmentReschedule.alerts.rescheduled'));
-      const target = isDoctor ? '/appointments' : '/my-appointments';
+      const detailsPath = `/appointment-details?id=${updated.id}`;
       try {
         // Drop the details/reschedule screens from the stack so Back from the
-        // list returns to where the flow started instead of the old booking.
+        // details screen returns to where the flow started instead of the old booking.
         router.dismissAll();
-        router.navigate(target);
+        router.navigate(detailsPath);
       } catch {
-        router.replace(target);
+        router.replace(detailsPath);
       }
     } catch (err) {
       Alert.alert(
@@ -343,10 +365,10 @@ export default function AppointmentRescheduleScreen() {
 
       <View style={styles.bottomContainer}>
         <TouchableOpacity
-          style={[styles.rescheduleBtn, isLoading && styles.rescheduleBtnDisabled]}
+          style={[styles.rescheduleBtn, (isLoading || isSameSlot) && styles.rescheduleBtnDisabled]}
           onPress={handleReschedule}
           activeOpacity={0.8}
-          disabled={isLoading}
+          disabled={isLoading || isSameSlot}
         >
           <Text style={styles.rescheduleBtnText}>
             {isLoading ? t('appointmentReschedule.rescheduling') : t('appointmentReschedule.reschedule')}

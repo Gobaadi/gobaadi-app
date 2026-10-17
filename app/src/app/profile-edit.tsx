@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
 import {
   useGetMyDoctorProfileQuery,
   useGetDoctorBookingsQuery,
@@ -23,6 +24,7 @@ import {
   useUpdateQualificationsMutation,
   useUpdateSpecializationsMutation,
   useUploadMyPhotoMutation,
+  useUploadExperienceCertificateMutation,
   type DoctorExperience,
 } from '@/store/doctorPortalApi';
 import { useGetMyProfileQuery } from '@/store/usersApi';
@@ -99,6 +101,11 @@ export default function ProfileEditScreen() {
   const [expInstitute, setExpInstitute] = useState('');
   const [expDuration, setExpDuration] = useState('');
   const [expDescription, setExpDescription] = useState('');
+  const [expEndDate, setExpEndDate] = useState('');
+  const [expIsCurrent, setExpIsCurrent] = useState(false);
+  const [expCertificateUrl, setExpCertificateUrl] = useState('');
+  const [expCertificateName, setExpCertificateName] = useState('');
+  const [uploadingCert, setUploadingCert] = useState(false);
 
   // Qualifications
   const [qualifications, setQualifications] = useState<string[]>([]);
@@ -115,6 +122,7 @@ export default function ProfileEditScreen() {
 
   // Profile photo
   const [uploadMyPhoto] = useUploadMyPhotoMutation();
+  const [uploadExperienceCertificate] = useUploadExperienceCertificateMutation();
   const [pickedPhotoUri, setPickedPhotoUri] = useState<string | null>(null);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
@@ -274,6 +282,11 @@ export default function ProfileEditScreen() {
     setExpInstitute('');
     setExpDuration('');
     setExpDescription('');
+    setExpEndDate('');
+    setExpIsCurrent(false);
+    setExpCertificateUrl('');
+    setExpCertificateName('');
+    setUploadingCert(false);
     setEditingExpIndex(null);
     setExpError('');
   };
@@ -288,6 +301,9 @@ export default function ProfileEditScreen() {
       organization: expInstitute.trim(),
       duration: expDuration.trim(),
       description: expDescription.trim() || undefined,
+      endDate: expIsCurrent ? undefined : expEndDate.trim() || undefined,
+      isCurrent: expIsCurrent || undefined,
+      certificateUrl: expCertificateUrl || undefined,
     };
     if (editingExpIndex !== null) {
       setExperiences((prev) => prev.map((exp, i) => (i === editingExpIndex ? entry : exp)));
@@ -303,8 +319,42 @@ export default function ProfileEditScreen() {
     setExpInstitute(exp.organization || '');
     setExpDuration(exp.duration || '');
     setExpDescription(exp.description || '');
+    setExpEndDate(exp.endDate || '');
+    setExpIsCurrent(!!exp.isCurrent);
+    setExpCertificateUrl(exp.certificateUrl || '');
+    setExpCertificateName(exp.certificateUrl ? exp.certificateUrl.split('/').pop() || '' : '');
     setEditingExpIndex(index);
     setExpError('');
+  };
+
+  const handlePickCertificate = async () => {
+    if (uploadingCert) return;
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['application/pdf', 'image/*'],
+        copyToCacheDirectory: true,
+        multiple: false,
+      });
+      if (result.canceled || !result.assets?.length) return;
+      const file = result.assets[0];
+      const formData = new FormData();
+      formData.append('file', {
+        uri: file.uri,
+        name: file.name,
+        type: file.mimeType || 'application/octet-stream',
+      } as unknown as Blob);
+      setUploadingCert(true);
+      const uploaded = await uploadExperienceCertificate(formData).unwrap();
+      setExpCertificateUrl(uploaded.url);
+      setExpCertificateName(file.name);
+    } catch {
+      Alert.alert(
+        t('profileEdit.certUpload.errorTitle'),
+        t('profileEdit.certUpload.failed'),
+      );
+    } finally {
+      setUploadingCert(false);
+    }
   };
 
   const removeExperience = (index: number) => {
@@ -611,8 +661,13 @@ export default function ProfileEditScreen() {
                     <Ionicons name="briefcase-outline" size={18} color="#BD632F" />
                     <View style={{ flex: 1 }}>
                       <Text style={styles.existingItemTitle}>{exp.title}</Text>
-                      <Text style={styles.existingItemSubtitle}>{exp.organization} · {exp.duration}</Text>
+                      <Text style={styles.existingItemSubtitle}>
+                        {exp.organization} · {exp.isCurrent && !exp.duration ? t('profileEdit.present') : exp.duration}
+                      </Text>
                     </View>
+                    {exp.certificateUrl ? (
+                      <Ionicons name="document-attach-outline" size={18} color="#BD632F" />
+                    ) : null}
                     <TouchableOpacity
                       onPress={() => editExperience(i)}
                       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -650,6 +705,73 @@ export default function ProfileEditScreen() {
             <View style={styles.inputRow}>
               <TextInput style={styles.input} value={expDuration} onChangeText={setExpDuration} placeholder={t('profileEdit.placeholders.duration')} placeholderTextColor="#A39E99" />
             </View>
+
+            <Text style={styles.fieldLabel}>{t('profileEdit.fields.endDate')}</Text>
+            <View style={styles.inputRow}>
+              <TextInput
+                style={[styles.input, expIsCurrent && styles.inputDisabled]}
+                value={expIsCurrent ? t('profileEdit.present') : expEndDate}
+                onChangeText={setExpEndDate}
+                editable={!expIsCurrent}
+                placeholder={t('profileEdit.placeholders.endDate')}
+                placeholderTextColor="#A39E99"
+              />
+            </View>
+
+            <TouchableOpacity
+              style={styles.checkboxRow}
+              onPress={() => setExpIsCurrent((v) => !v)}
+              activeOpacity={0.7}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: expIsCurrent }}
+            >
+              <Ionicons
+                name={expIsCurrent ? 'checkbox' : 'square-outline'}
+                size={22}
+                color={expIsCurrent ? '#BD632F' : '#7C7672'}
+              />
+              <Text style={styles.checkboxLabel}>{t('profileEdit.fields.currentlyWorking')}</Text>
+            </TouchableOpacity>
+
+            <Text style={styles.fieldLabel}>{t('profileEdit.fields.certificate')}</Text>
+            {expCertificateUrl ? (
+              <View style={styles.certRow}>
+                <Ionicons name="document-attach-outline" size={20} color="#BD632F" />
+                <Text style={styles.certName} numberOfLines={1}>
+                  {expCertificateName || t('profileEdit.certUpload.uploaded')}
+                </Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    setExpCertificateUrl('');
+                    setExpCertificateName('');
+                  }}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  activeOpacity={0.7}
+                  accessibilityLabel={t('profileEdit.certUpload.remove')}
+                >
+                  <Ionicons name="close-circle" size={20} color="#E53935" />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={[styles.certRow, uploadingCert && styles.certRowDisabled]}
+                onPress={handlePickCertificate}
+                disabled={uploadingCert}
+                activeOpacity={0.7}
+                accessibilityLabel={t('profileEdit.certUpload.upload')}
+              >
+                {uploadingCert ? (
+                  <ActivityIndicator size="small" color="#BD632F" />
+                ) : (
+                  <Ionicons name="cloud-upload-outline" size={20} color="#7C7672" />
+                )}
+                <Text style={styles.certUploadText}>
+                  {uploadingCert
+                    ? t('profileEdit.certUpload.uploading')
+                    : t('profileEdit.certUpload.upload')}
+                </Text>
+              </TouchableOpacity>
+            )}
 
             <Text style={[styles.fieldLabel, { marginTop: 12 }]}>{t('profileEdit.fields.description')}</Text>
             <TextInput
@@ -889,6 +1011,24 @@ const styles = StyleSheet.create({
   fieldLabel: { fontSize: 12, fontWeight: '500', color: '#9C9690', marginBottom: 6, marginTop: 4 },
   inputRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 12, borderWidth: 1, borderColor: '#E6E1DC', paddingHorizontal: 14, height: 48, marginBottom: 10, gap: 8 },
   input: { flex: 1, fontSize: 14, fontWeight: '600', color: '#1A1817', height: '100%' },
+  inputDisabled: { color: '#9C9690' },
+  checkboxRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, marginBottom: 10 },
+  checkboxLabel: { fontSize: 14, fontWeight: '600', color: '#1A1817' },
+  certRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E6E1DC',
+    paddingHorizontal: 14,
+    height: 48,
+    marginBottom: 10,
+  },
+  certRowDisabled: { opacity: 0.7 },
+  certName: { flex: 1, fontSize: 13, fontWeight: '600', color: '#1A1817' },
+  certUploadText: { flex: 1, fontSize: 14, fontWeight: '600', color: '#7C7672' },
   textarea: { backgroundColor: '#FFFFFF', borderRadius: 14, borderWidth: 1, borderColor: '#E6E1DC', padding: 14, minHeight: 120, fontSize: 13, fontWeight: '500', color: '#1A1817', lineHeight: 19, marginBottom: 10 },
 
   // Existing items
