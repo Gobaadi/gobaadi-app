@@ -10,6 +10,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
+import { RegistrationBackground } from '@/components/registration-background';
 
 type DateFilter = 'today' | 'tomorrow' | 'this_week' | null;
 type StatusFilter = 'all' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED' | null;
@@ -65,6 +66,7 @@ export default function AppointmentFilterScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <RegistrationBackground />
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backBtn}

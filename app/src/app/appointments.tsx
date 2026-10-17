@@ -66,6 +66,25 @@ const CONSULTATION_TYPE_MAP: Record<string, string> = {
   physical: 'physical',
 };
 
+const CONSULTATION_TYPE_LABEL_KEYS: Record<string, string> = {
+  online_video: 'appointments.filters.type.video',
+  online_voice: 'appointments.filters.type.voice',
+  online_chat: 'appointments.filters.type.chat',
+  physical: 'appointments.filters.type.physical',
+};
+
+const STATUS_PILL_LABEL_KEYS: Record<string, string> = {
+  COMPLETED: 'appointments.pill.completed',
+  CANCELLED: 'appointments.pill.cancelled',
+  RESCHEDULED: 'appointments.pill.rescheduled',
+  CONFIRMED: 'appointments.filters.status.upcoming',
+};
+
+const STATUS_PILL_TONES: Record<string, { bg: string; color: string }> = {
+  COMPLETED: { bg: '#E7F6EC', color: '#2E7D32' },
+  CANCELLED: { bg: '#FDECEA', color: '#D64545' },
+};
+
 function isSameDay(a: Date, b: Date): boolean {
   return (
     a.getFullYear() === b.getFullYear() &&
@@ -117,9 +136,10 @@ function formatMinutesRemaining(start: string, t: Translate): string {
 interface AppointmentCardProps {
   appointment: DoctorAppointment;
   onPress: () => void;
+  variant?: 'today' | 'previous';
 }
 
-function AppointmentCard({ appointment, onPress }: AppointmentCardProps) {
+function AppointmentCard({ appointment, onPress, variant = 'today' }: AppointmentCardProps) {
   const { t } = useTranslation();
   const now = new Date();
   const startAt = new Date(appointment.startAt);
@@ -131,6 +151,78 @@ function AppointmentCard({ appointment, onPress }: AppointmentCardProps) {
 
   const displayName =
     appointment.animalName || appointment.patientName || t('appointments.fallback.patient');
+
+  if (variant === 'previous') {
+    const typeLabelKey = appointment.consultationType
+      ? CONSULTATION_TYPE_LABEL_KEYS[appointment.consultationType]
+      : undefined;
+    const typeLabel = typeLabelKey ? t(typeLabelKey) : t('appointments.liveChat');
+    const pillLabelKey = STATUS_PILL_LABEL_KEYS[appointment.status];
+    const pillTone = STATUS_PILL_TONES[appointment.status] ?? {
+      bg: '#FFF2EB',
+      color: '#BD632F',
+    };
+
+    return (
+      <TouchableOpacity
+        style={[styles.card, styles.cardPrevious]}
+        activeOpacity={0.7}
+        onPress={onPress}
+      >
+        <View style={styles.cardImageContainer}>
+          {appointment.animalImage ? (
+            <Image source={{ uri: appointment.animalImage }} style={styles.cardImage} />
+          ) : (
+            <View style={[styles.cardImage, styles.cardImagePlaceholder]}>
+              <Ionicons name="paw" size={22} color="#BD632F" />
+            </View>
+          )}
+          <View style={styles.cardImageOverlay}>
+            <SvgXml width={22} height={22} xml={appointmentsConsultationCardChatSvg} />
+          </View>
+        </View>
+
+        <View style={styles.cardContent}>
+          <View style={styles.cardTopRow}>
+            <Text style={styles.cardType}>{typeLabel}</Text>
+            <View
+              style={[
+                styles.statusPill,
+                { backgroundColor: pillTone.bg },
+              ]}
+            >
+              <Text style={[styles.statusPillText, { color: pillTone.color }]}>
+                {pillLabelKey
+                  ? t(pillLabelKey)
+                  : appointment.status}
+              </Text>
+            </View>
+          </View>
+
+          <Text style={styles.cardName}>{displayName}</Text>
+
+          {appointment.animalSpecies && (
+            <Text style={styles.cardSpecies}>
+              {appointment.animalSpecies}
+              {appointment.animalAge ? ` · ${appointment.animalAge}` : ''}
+              {appointment.animalBreed ? ` · ${appointment.animalBreed}` : ''}
+            </Text>
+          )}
+
+          {appointment.patientName && (
+            <View style={styles.ownerRow}>
+              <Text style={styles.ownerLabel}>{t('appointments.ownerLabel')}</Text>
+              <Text style={styles.ownerName}>{appointment.patientName}</Text>
+            </View>
+          )}
+
+          <Text style={styles.cardTime}>
+            {formatTimeRange(appointment.startAt, appointment.endAt)}
+          </Text>
+        </View>
+      </TouchableOpacity>
+    );
+  }
 
   return (
     <TouchableOpacity style={styles.card} activeOpacity={0.7} onPress={onPress}>
@@ -537,13 +629,21 @@ export default function AppointmentsScreen() {
         ) : (
           <>
             {groupedPrevious.length > 0 ? (
-              groupedPrevious.map((group) => (
+              groupedPrevious.map((group, groupIndex) => (
                 <View key={group.label}>
-                  <Text style={styles.sectionTitle}>{group.label}</Text>
+                  <Text
+                    style={[
+                      styles.dateHeader,
+                      groupIndex === 0 && styles.dateHeaderFirst,
+                    ]}
+                  >
+                    {group.label}
+                  </Text>
                   {group.data.map((appt) => (
                     <AppointmentCard
                       key={appt.id}
                       appointment={appt}
+                      variant="previous"
                       onPress={() => handleAppointmentPress(appt)}
                     />
                   ))}
@@ -653,6 +753,14 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     marginTop: 8,
   },
+  dateHeader: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1A1817',
+    marginTop: 16,
+    marginBottom: 10,
+  },
+  dateHeaderFirst: { marginTop: 4 },
   card: {
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
@@ -663,6 +771,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     gap: 12,
   },
+  cardPrevious: { borderRadius: 16 },
   cardImageContainer: { position: 'relative' },
   cardImage: { width: 56, height: 56, borderRadius: 14 },
   cardImagePlaceholder: {
@@ -682,6 +791,16 @@ const styles = StyleSheet.create({
   cardStatus: { fontSize: 13, fontWeight: '600' },
   statusInProgress: { color: '#4CAF50' },
   statusUpcoming: { color: '#BD632F' },
+  statusPill: {
+    marginLeft: 'auto',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  statusPillText: { fontSize: 11, fontWeight: '700' },
+  ownerRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 },
+  ownerLabel: { fontSize: 12, fontWeight: '600', color: '#BD632F' },
+  ownerName: { fontSize: 13, fontWeight: '600', color: '#1A1817' },
   timeRemaining: {
     fontSize: 12,
     fontWeight: '500',

@@ -151,7 +151,7 @@ export default function DiscountScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
             <SvgXml width={20} height={20} xml={backButtonSvg} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>{t('discount.title')}</Text>
+          <Text style={styles.headerTitle} numberOfLines={1}>{t('discount.title')}</Text>
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#BD632F" />
@@ -167,7 +167,7 @@ export default function DiscountScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
           <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{t('discount.title')}</Text>
+        <Text style={styles.headerTitle} numberOfLines={1}>{t('discount.title')}</Text>
       </View>
 
       <KeyboardAwareScrollView
@@ -177,7 +177,7 @@ export default function DiscountScreen() {
       >
         <View style={styles.patientCard}>
           <View style={styles.patientAvatarWrap}>
-            <PatientAvatar name={patientName} image={patientImage} size={56} />
+            <PatientAvatar name={patientName} image={patientImage} size={56} radius={14} />
             <View style={styles.patientAvatarBadge}>
               <SvgXml width={20} height={20} xml={discountDetailsMessageSvg} />
             </View>
@@ -199,7 +199,7 @@ export default function DiscountScreen() {
         {lastAppointmentText ? (
           <Text style={styles.lastAppointment}>{t('discount.lastAppointment', { time: lastAppointmentText })}</Text>
         ) : (
-          <View style={{ height: 20 }} />
+          <View style={styles.placeholderSpacer} />
         )}
 
         <View style={styles.priceCard}>
@@ -329,7 +329,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 20,
+    flex: 1,
+    minWidth: 0,
+    fontSize: 24,
     fontWeight: '800',
     color: '#1A1817',
   },
@@ -340,13 +342,13 @@ const styles = StyleSheet.create({
   patientCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
     gap: 12,
+    marginBottom: 8,
   },
   patientAvatarWrap: {
     width: 56,
     height: 56,
-    borderRadius: 28,
+    borderRadius: 14,
   },
   patientAvatarBadge: {
     position: 'absolute',
@@ -389,6 +391,9 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#7C7672',
     marginBottom: 20,
+  },
+  placeholderSpacer: {
+    height: 20,
   },
   priceCard: {
     backgroundColor: '#FFFFFF',
@@ -446,7 +451,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 14,
     borderWidth: 1.5,
-    borderColor: '#E6E1DC',
+    borderColor: '#BD632F',
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
   },
@@ -457,7 +462,7 @@ const styles = StyleSheet.create({
   quickDiscountText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#7C7672',
+    color: '#BD632F',
   },
   quickDiscountTextActive: {
     color: '#FFFFFF',
@@ -470,7 +475,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E6E1DC',
     overflow: 'hidden',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   customInput: {
     flex: 1,
@@ -484,14 +489,13 @@ const styles = StyleSheet.create({
     height: 52,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 6,
   },
   infoBanner: {
     flexDirection: 'row',
     backgroundColor: '#FFF2EB',
     borderRadius: 12,
     padding: 14,
-    marginBottom: 8,
+    marginBottom: 16,
     gap: 10,
   },
   infoText: {
@@ -506,7 +510,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'transparent',
+    backgroundColor: '#FAF9F6',
     paddingHorizontal: 20,
     paddingVertical: 16,
     paddingBottom: 30,

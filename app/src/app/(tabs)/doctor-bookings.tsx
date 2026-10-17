@@ -197,11 +197,6 @@ function WeeklyView({
   return (
     <View>
       <View style={styles.weekStrip}>
-        <View style={styles.weekDayHeader}>
-          {DAY_KEYS.map((d, i) => (
-            <Text key={i} style={styles.weekDayLabel}>{t(`doctorBookings.dayShort.${d}`)}</Text>
-          ))}
-        </View>
         <View style={styles.weekDateRow}>
           {weekDates.map((date, i) => {
             const isSelected = isSameDay(date, selectedDate);
@@ -218,6 +213,15 @@ function WeeklyView({
                 onPress={() => onSelectDate(date)}
                 activeOpacity={0.7}
               >
+                <Text
+                  style={[
+                    styles.weekDateLetter,
+                    isSelected && styles.weekDateLetterSelected,
+                    isBlocked && !isSelected && styles.weekDateLetterBlocked,
+                  ]}
+                >
+                  {DAY_LETTERS[date.getDay()]}
+                </Text>
                 <Text
                   style={[
                     styles.weekDateNumber,
@@ -516,9 +520,9 @@ const styles = StyleSheet.create({
   monthNavigation: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
   navBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#FFF2EB', justifyContent: 'center', alignItems: 'center' },
   monthTitle: { fontSize: 16, fontWeight: '700', color: '#1A1817' },
-  dayHeaderRow: { flexDirection: 'row', marginBottom: 8 },
+  dayHeaderRow: { flexDirection: 'row', paddingBottom: 8, borderBottomWidth: 1.5, borderBottomColor: '#BD632F' },
   dayHeaderText: { flex: 1, textAlign: 'center', fontSize: 13, fontWeight: '600', color: '#BD632F' },
-  daysGrid: { flexDirection: 'row', flexWrap: 'wrap' },
+  daysGrid: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 8 },
   dayCell: { width: `${100 / 7}%`, alignItems: 'center', paddingVertical: 4 },
   dayNumber: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
   dayNumberHasAppointment: {
@@ -537,13 +541,14 @@ const styles = StyleSheet.create({
   statNumber: { fontSize: 22, fontWeight: '800', color: '#1A1817' },
   statLabel: { fontSize: 12, fontWeight: '500', color: '#9C9690', marginTop: 4 },
   statDivider: { width: 1, backgroundColor: '#E6E1DC' },
-  weekStrip: { backgroundColor: '#FFFFFF', borderRadius: 24, padding: 16, marginTop: 8, marginBottom: 20, shadowColor: '#000000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 3 },
-  weekDayHeader: { flexDirection: 'row', marginBottom: 8 },
-  weekDayLabel: { flex: 1, textAlign: 'center', fontSize: 12, fontWeight: '600', color: '#9C9690' },
-  weekDateRow: { flexDirection: 'row' },
-  weekDateCell: { flex: 1, alignItems: 'center', paddingVertical: 6 },
-  weekDateCellSelected: { backgroundColor: '#BD632F', borderRadius: 20 },
-  weekDateCellBlocked: { backgroundColor: '#F0EAE1', borderRadius: 20 },
+  weekStrip: { marginTop: 4, marginBottom: 20 },
+  weekDateRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 4 },
+  weekDateCell: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 6, paddingHorizontal: 4, borderRadius: 20 },
+  weekDateCellSelected: { backgroundColor: '#BD632F' },
+  weekDateCellBlocked: { backgroundColor: '#F0EAE1' },
+  weekDateLetter: { fontSize: 11, fontWeight: '600', color: '#9C9690', marginBottom: 2 },
+  weekDateLetterSelected: { color: '#FFFFFF' },
+  weekDateLetterBlocked: { color: '#9C9690' },
   weekDateNumber: { fontSize: 14, fontWeight: '600', color: '#1A1817' },
   weekDateNumberSelected: { color: '#FFFFFF', fontWeight: '700' },
   weekDateNumberToday: { color: '#BD632F', fontWeight: '700' },

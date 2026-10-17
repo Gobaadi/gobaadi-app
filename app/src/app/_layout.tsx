@@ -182,6 +182,7 @@ function RootNavigator() {
         <Stack.Screen name="discount" />
         <Stack.Screen name="remove-discount" />
         <Stack.Screen name="schedule" />
+        <Stack.Screen name="daily-schedule" />
         <Stack.Screen name="calendar-settings" />
         <Stack.Screen name="working-hours" />
         <Stack.Screen name="block-time-off" />
