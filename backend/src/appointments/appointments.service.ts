@@ -190,24 +190,33 @@ export class AppointmentsService {
       return [];
     }
 
+    // Appointments are stored as true UTC instants; the slot grid for the
+    // requested Dhaka calendar day spans Dhaka midnight to midnight (+06:00).
+    const dhakaMidnight = new Date(`${dateStr}T00:00:00+06:00`);
+    const dhakaDayEnd = new Date(dhakaMidnight.getTime() + 24 * 60 * 60 * 1000);
     const existing = await this.appointmentRepository
       .createQueryBuilder('a')
       .where('a.doctorId = :doctorId', { doctorId })
       .andWhere("a.status != 'CANCELLED'")
       .andWhere('a.startAt >= :dayStart AND a.startAt < :dayEnd', {
-        dayStart: targetDate,
-        dayEnd: addMinutes(targetDate, 24 * 60),
+        dayStart: dhakaMidnight,
+        dayEnd: dhakaDayEnd,
       })
       .getMany();
 
+    const timeAsInstant = (wall: string, hhmm: string[]): Date => {
+      const [h, m] = hhmm.map(Number);
+      return new Date(
+        `${wall}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00+06:00`,
+      );
+    };
+
     const slots: string[] = [];
     for (const window of windows) {
-      const [startH, startM] = window.startTime.split(':').map(Number);
-      const [endH, endM] = window.endTime.split(':').map(Number);
-      let cursor = new Date(targetDate);
-      cursor.setHours(startH, startM, 0, 0);
-      const windowEnd = new Date(targetDate);
-      windowEnd.setHours(endH, endM, 0, 0);
+      const [startH, startM] = window.startTime.split(':');
+      const [endH, endM] = window.endTime.split(':');
+      let cursor = timeAsInstant(dateStr, [startH, startM]);
+      const windowEnd = timeAsInstant(dateStr, [endH, endM]);
 
       while (addMinutes(cursor, window.slotDurationMinutes) <= windowEnd) {
         const slotStart = new Date(cursor);
@@ -221,6 +230,7 @@ export class AppointmentsService {
         if (!overlaps) {
           slots.push(
             slotStart.toLocaleTimeString('en-US', {
+              timeZone: 'Asia/Dhaka',
               hour: '2-digit',
               minute: '2-digit',
               hour12: true,
