@@ -8,7 +8,8 @@ import {
 } from 'typeorm';
 
 export enum UserRole {
-  USER = 'user',
+  /** Farm-owner account (rebranded from legacy 'user'). */
+  USER = 'farm_owner',
   DOCTOR = 'doctor',
   CLINIC = 'clinic',
   ADMIN = 'admin',
