@@ -539,6 +539,7 @@
     "info": "Discounts apply to the patient’s next appointment fee only. They pay the discounted amount when booking.",
     "lastAppointment": "Last appointment: {{date}}",
     "owner": "Owner: {{name}}",
+    "ownerLabel": "Owner",
     "recentPatients": "Recent Patients",
     "searchPlaceholder": "Search by patient or owner",
     "title": "Apply Discount"
@@ -603,7 +604,7 @@
       "confirmed": "Confirmed"
     },
     "symptoms": "Symptoms",
-    "title": "Appointment Details"
+    "title": "Appointments Details"
   },
   "appointmentFilter": {
     "apply": "Apply",
@@ -843,6 +844,7 @@
     "required": "(Required)",
     "selectDate": "Select date",
     "title": "Block time off",
+    "pleaseNote": "Please note",
     "warning": {
       "description_one": "Blocking this time will cancel {{count}} appointment. Their booking amounts will be refunded, and applicable cancellation fees will be deducted from your wallet.",
       "description_other": "Blocking this time will cancel {{count}} appointments. Their booking amounts will be refunded, and applicable cancellation fees will be deducted from your wallet.",
@@ -925,7 +927,9 @@
       "thu": "THU",
       "tue": "TUE",
       "wed": "WED"
-    }
+    },
+    "symptomsLabel": "Symptoms",
+    "symptomsPlaceholder": "e.g. Fever, loss of appetite"
   },
   "bookingBkashNumber": {
     "payNow": "Pay Now",
@@ -2515,6 +2519,7 @@
       "patient": "Patient"
     },
     "owner": "Owner: {{name}}",
+    "ownerLabel": "Owner",
     "removeBtn": "Remove discount",
     "title": "Remove Discount"
   },
@@ -2698,7 +2703,7 @@
     "roleDoctor": "Doctor",
     "roleLabel": "Role*",
     "roleSelect": "Select your role",
-    "roleFarmer": "Farmer",
+    "roleFarmer": "Farm Owner",
     "signIn": "Sign In",
     "submitDoctor": "Continue",
     "submitUser": "Sign Up",

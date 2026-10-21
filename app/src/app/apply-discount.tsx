@@ -147,9 +147,15 @@ export default function ApplyDiscountScreen() {
                 </View>
                 <View style={styles.patientInfo}>
                   <Text style={styles.patientName}>{patient.name}</Text>
-                  <Text style={styles.patientOwner}>
-                    {t('applyDiscount.owner', { name: patient.ownerName || 'N/A' })}
-                  </Text>
+                  <View style={styles.patientOwner}>
+                    <Text style={styles.patientOwnerLabel}>
+                      {t('applyDiscount.ownerLabel')}
+                      {': '}
+                    </Text>
+                    <Text style={styles.patientOwnerName}>
+                      {patient.ownerName || 'N/A'}
+                    </Text>
+                  </View>
                   {lastAppointment ? (
                     <Text style={styles.patientPhone}>
                       {t('applyDiscount.lastAppointment', { date: lastAppointment })}
@@ -198,8 +204,8 @@ const styles = StyleSheet.create({
   headerTitle: {
     flex: 1,
     minWidth: 0,
-    fontSize: 24,
-    fontWeight: '800',
+    fontSize: 20,
+    fontWeight: '700',
     color: '#1A1817',
   },
   scrollContainer: {
@@ -225,11 +231,11 @@ const styles = StyleSheet.create({
   },
   infoBanner: {
     flexDirection: 'row',
-    backgroundColor: '#FFF2EB',
+    backgroundColor: '#FDECEA',
     borderRadius: 12,
-    padding: 14,
+    padding: 12,
     marginBottom: 20,
-    gap: 10,
+    gap: 8,
   },
   infoText: {
     flex: 1,
@@ -306,10 +312,18 @@ const styles = StyleSheet.create({
     color: '#1A1817',
   },
   patientOwner: {
+    flexDirection: 'row',
+    marginTop: 2,
+  },
+  patientOwnerLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#BD632F',
+  },
+  patientOwnerName: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#7C7672',
-    marginTop: 2,
+    color: '#1A1817',
   },
   patientPhone: {
     fontSize: 12,
@@ -318,13 +332,13 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   discountBadge: {
-    backgroundColor: '#FFF2EB',
-    borderRadius: 10,
+    backgroundColor: '#FDEDE2',
+    borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
   discountBadgeText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
     color: '#BD632F',
   },

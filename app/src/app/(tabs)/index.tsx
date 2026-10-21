@@ -23,6 +23,7 @@ import { useLanguage } from '@/hooks/use-language';
 import { useLocation } from '@/hooks/use-location';
 import { useTranslation } from '@/hooks/use-translation';
 import LanguageBottomSheet from '@/components/LanguageBottomSheet';
+import { getLanguageLabel } from '@/constants/languages';
 import Svg, { Path, SvgXml } from 'react-native-svg';
 import { EmptyState } from '@/components/ui/empty-state';
 import {
@@ -75,7 +76,7 @@ export default function HomeDashboard() {
   const zila = location.split(',').map((part) => part.trim()).filter(Boolean).pop();
   const { data: weather, isLoading: isWeatherLoading } = useGetWeatherQuery(zila);
   const { data: referral } = useGetMyReferralQuery();
-  const { language, languageCode, setLanguage } = useLanguage();
+  const { language, setLanguage } = useLanguage();
   const { t } = useTranslation();
   const [showLangSheet, setShowLangSheet] = useState(false);
 
@@ -142,7 +143,7 @@ export default function HomeDashboard() {
                 onPress={() => setShowLangSheet(true)}
               >
                 <SvgXml width={24} height={24} xml={languageGlobeSvg} />
-                <Text style={styles.langTextHeader}>{languageCode}</Text>
+                <Text style={[styles.langTextHeader, { fontSize: 14 }]}>{getLanguageLabel(language)}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.notifBtnWhite}

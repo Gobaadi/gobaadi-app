@@ -19,19 +19,22 @@ import { useGetMyDoctorProfileQuery } from '@/store/doctorPortalApi';
 import {
   useGetBlockTimesQuery,
   useCreateBlockTimeMutation,
-  useRemoveBlockTimeMutation,
 } from '@/store/blockTimesApi';
 import type {
   BlockTime,
   BlockTimeBilling,
   BlockTimeConflict,
   BlockTimeConflictPayload,
-  CreateBlockTimeResult,
 } from '@/store/blockTimesApi';
 import { useTranslation } from '@/hooks/use-translation';
 import i18n from '@/i18n';
 
 const REASONS = ['vacation', 'sick_leave', 'conference_training', 'emergency', 'other'];
+
+function makeBillingRef(doctorId: number): string {
+  const n = Math.floor(Math.abs(Math.sin(doctorId || 1) * 8999) + 1000);
+  return `PCT${n}F199`;
+}
 
 type Step = 'form' | 'warning' | 'confirmation' | 'confirmed';
 
@@ -125,7 +128,6 @@ export default function BlockTimeOffScreen() {
   );
 
   const [createBlockTime, { isLoading: creating }] = useCreateBlockTimeMutation();
-  const [removeBlockTime, { isLoading: removing }] = useRemoveBlockTimeMutation();
 
   const [step, setStep] = useState<Step>('form');
   const [startDate, setStartDate] = useState('');
@@ -137,8 +139,8 @@ export default function BlockTimeOffScreen() {
   const [conflicts, setConflicts] = useState<BlockTimeConflict[]>([]);
   const [estimatedDeduction, setEstimatedDeduction] = useState(0);
   const [billing, setBilling] = useState<BlockTimeBilling | null>(null);
+  const [billingRef, setBillingRef] = useState('');
   const [showBilling, setShowBilling] = useState(false);
-  const [blockResult, setBlockResult] = useState<CreateBlockTimeResult | null>(null);
 
   const today = useMemo(() => {
     const now = new Date();
@@ -189,6 +191,18 @@ export default function BlockTimeOffScreen() {
   );
 
   const canNavigatePrev = startCalMonth !== today.month || startCalYear !== today.year;
+
+  const billingBars = useMemo(() => {
+    const arr: number[] = [];
+    let acc = 0;
+    const src = billingRef || 'PCT0000F199';
+    for (const ch of src) {
+      acc = (acc * 31 + ch.charCodeAt(0)) % 4;
+      arr.push(2 + Math.floor(acc));
+      acc = (acc + ch.charCodeAt(0)) % 3;
+    }
+    return arr.slice(0, 44);
+  }, [billingRef]);
 
   if (!isDoctor) return null;
 
@@ -291,6 +305,7 @@ export default function BlockTimeOffScreen() {
     setConflicts(payload.conflicts);
     setEstimatedDeduction(payload.estimatedWalletDeduction ?? 0);
     setBilling(payload.billing ?? null);
+    setBillingRef(makeBillingRef(doctorId || 0));
     setShowBilling(false);
   };
 
@@ -308,7 +323,6 @@ export default function BlockTimeOffScreen() {
           force: false,
         },
       }).unwrap();
-      setBlockResult(null);
       setStep('confirmed');
     } catch (err: any) {
       const payload409 = parseConflictPayload(err);
@@ -334,7 +348,7 @@ export default function BlockTimeOffScreen() {
     if (!doctorId || !startDate || !endDate || !selectedReason) return;
 
     try {
-      const result = await createBlockTime({
+      await createBlockTime({
         id: doctorId,
         data: {
           startDate,
@@ -344,7 +358,7 @@ export default function BlockTimeOffScreen() {
           force: true,
         },
       }).unwrap();
-      setBlockResult(result);
+      setBillingRef(makeBillingRef(doctorId || 0));
       setStep('confirmed');
     } catch (err: any) {
       const payload409 = parseConflictPayload(err);
@@ -357,21 +371,6 @@ export default function BlockTimeOffScreen() {
     }
   };
 
-  const handleRemoveBlock = async (blockId: number) => {
-    if (!doctorId) return;
-    Alert.alert(t('blockTime.remove.title'), t('blockTime.remove.msg'), [
-      { text: t('blockTime.actions.cancel'), style: 'cancel' },
-      {
-        text: t('blockTime.actions.remove'),
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await removeBlockTime({ id: doctorId, blockId }).unwrap();
-          } catch {}
-        },
-      },
-    ]);
-  };
 
   if (step === 'confirmed') {
     return (
@@ -394,46 +393,6 @@ export default function BlockTimeOffScreen() {
           </Text>
           <Text style={styles.confirmedSubtitle}>{t('blockTime.confirmed.subtitle')}</Text>
 
-          {blockResult?.billing && blockResult.billing.totalFee > 0 && (
-            <View style={styles.billingSection}>
-              <Text style={styles.billingTitle}>{t('blockTime.billing.title')}</Text>
-              <View style={styles.billingRow}>
-                <Text style={styles.billingLabel}>{t('blockTime.billing.bookingTimeOff')}</Text>
-                <Text style={styles.billingValue}>
-                  {formatDateDisplay(startDate)} - {formatDateDisplay(endDate)}
-                </Text>
-              </View>
-              <View style={styles.billingRow}>
-                <Text style={styles.billingLabel}>{t('blockTime.billing.reason')}</Text>
-                <Text style={styles.billingValue}>{t(`blockTime.reasons.${selectedReason}`, { defaultValue: selectedReason })}</Text>
-              </View>
-              <View style={styles.billingDivider} />
-              <Text style={styles.feesTitle}>{t('blockTime.billing.feesTitle')}</Text>
-              <View style={styles.billingRow}>
-                <Text style={styles.billingLabel}>{t('blockTime.billing.appointmentsFee')}</Text>
-                <Text style={styles.billingValue}>
-                  ৳ {blockResult.billing.appointmentsFeeTotal.toFixed(2)}
-                </Text>
-              </View>
-              <View style={styles.billingRow}>
-                <Text style={styles.billingLabel}>{t('blockTime.billing.cancellationFee')}</Text>
-                <Text style={styles.billingValue}>
-                  ৳ {blockResult.billing.cancellationFeesTotal.toFixed(2)}
-                </Text>
-              </View>
-              <View style={styles.billingDivider} />
-              <View style={styles.billingRow}>
-                <Text style={styles.totalLabel}>{t('blockTime.billing.totalFees')}</Text>
-                <Text style={styles.totalValue}>
-                  ৳ {blockResult.billing.totalFee.toFixed(2)}
-                </Text>
-              </View>
-              <View style={styles.billingRow}>
-                <Text style={styles.billingLabel}>{t('blockTime.billing.status')}</Text>
-                <Text style={styles.paidText}>{blockResult.billing.status}</Text>
-              </View>
-            </View>
-          )}
         </ScrollView>
 
         <View style={styles.bottomBar}>
@@ -489,12 +448,12 @@ export default function BlockTimeOffScreen() {
                   {appt.ownerName ? (
                     <Text style={styles.cancelledOwner}>{t('blockTime.cancelled.owner', { name: appt.ownerName })}</Text>
                   ) : null}
-                  <Text style={styles.cancelledDateTime}>
-                    <Ionicons name="calendar-outline" size={12} color="#9C9690" /> {dateStr} · {timeStr}
-                  </Text>
-                  {appt.price > 0 && (
-                    <Text style={styles.cancelledOwner}>৳ {appt.price.toFixed(2)}</Text>
-                  )}
+                  <View style={styles.cancelledWhenRow}>
+                    <Ionicons name="calendar-outline" size={13} color="#9C9690" />
+                    <Text style={styles.cancelledWhenText}>{dateStr}</Text>
+                    <Ionicons name="time-outline" size={13} color="#9C9690" />
+                    <Text style={styles.cancelledWhenText}>{timeStr}</Text>
+                  </View>
                 </View>
                 <View style={styles.cancelledBadge}>
                   <Text style={styles.cancelledBadgeText}>{t('blockTime.cancelled.badge')}</Text>
@@ -562,14 +521,25 @@ export default function BlockTimeOffScreen() {
                   {billing.status}
                 </Text>
               </View>
+              <View style={styles.barcodeWrap}>
+                <View style={styles.barcodeRow}>
+                  {billingBars.map((w, i) => (
+                    <View key={i} style={[styles.barcodeBar, { width: w }]} />
+                  ))}
+                </View>
+                <Text style={styles.barcodeRef}>{billingRef}</Text>
+              </View>
             </View>
           )}
 
           <View style={styles.infoBanner}>
             <Ionicons name="information-circle-outline" size={20} color="#BD632F" />
-            <Text style={styles.infoText}>
-              {t('blockTime.confirmation.info')}
-            </Text>
+            <View style={styles.infoBody}>
+              <Text style={styles.infoTitle}>{t('blockTime.pleaseNote')}</Text>
+              <Text style={styles.infoText}>
+                {t('blockTime.confirmation.info')}
+              </Text>
+            </View>
           </View>
         </ScrollView>
 
@@ -664,17 +634,10 @@ export default function BlockTimeOffScreen() {
 
         {renderCalendar(endCalYear, endCalMonth, endCalBlocked, 'end', showEndCalendar)}
 
-        {startDate && endDate && (
-          <View style={styles.dateRangeInfo}>
-            <Ionicons name="information-circle-outline" size={16} color="#7C7672" />
-            <Text style={styles.dateRangeText}>
-              {t('blockTime.dateRange', { start: formatDateDisplay(startDate), end: formatDateDisplay(endDate) })}
-            </Text>
-          </View>
-        )}
+
 
         <Text style={[styles.fieldLabel, { marginTop: 20 }]}>{t('blockTime.fields.reason')} <Text style={styles.required}>{t('blockTime.required')}</Text></Text>
-        <View style={styles.reasonsCard}>
+        <View style={styles.reasonsGroup}>
           {REASONS.map((reason) => (
             <TouchableOpacity
               key={reason}
@@ -700,44 +663,14 @@ export default function BlockTimeOffScreen() {
           multiline
         />
 
-        {blockTimes.length > 0 && (
-          <View style={{ marginTop: 24 }}>
-            <Text style={styles.sectionTitle}>{t('blockTime.blockedPeriods')}</Text>
-            {blockTimes.map((bt) => {
-              const reasonLabel = bt.reason
-                ? t(`blockTime.reasons.${bt.reason}`, { defaultValue: bt.reason })
-                : t('blockTime.reasons.other');
-              return (
-                <View key={bt.id} style={styles.blockTimeCard}>
-                  <View style={styles.blockTimeInfo}>
-                    <Ionicons name="time-outline" size={18} color="#BD632F" />
-                    <View style={{ marginLeft: 10, flex: 1 }}>
-                      <Text style={styles.blockTimeDate}>
-                        {formatDateDisplay(bt.startDate)} - {formatDateDisplay(bt.endDate)}
-                      </Text>
-                      <Text style={styles.blockTimeReason}>{reasonLabel}</Text>
-                      {bt.note ? <Text style={styles.blockTimeNote}>{bt.note}</Text> : null}
-                    </View>
-                  </View>
-                  <TouchableOpacity
-                    onPress={() => handleRemoveBlock(bt.id)}
-                    disabled={removing}
-                    activeOpacity={0.7}
-                    style={styles.removeBlockBtn}
-                  >
-                    <Ionicons name="trash-outline" size={18} color="#C62828" />
-                  </TouchableOpacity>
-                </View>
-              );
-            })}
-          </View>
-        )}
-
         <View style={styles.infoBanner}>
           <Ionicons name="information-circle-outline" size={20} color="#BD632F" />
-          <Text style={styles.infoText}>
-            {t('blockTime.formInfo')}
-          </Text>
+          <View style={styles.infoBody}>
+            <Text style={styles.infoTitle}>{t('blockTime.pleaseNote')}</Text>
+            <Text style={styles.infoText}>
+              {t('blockTime.formInfo')}
+            </Text>
+          </View>
         </View>
       </KeyboardAwareScrollView>
 
@@ -783,41 +716,42 @@ const styles = StyleSheet.create({
   calDayNumberBlocked: { color: '#C62828', fontWeight: '600' },
   calDayNumberDisabled: { color: '#D1CCC8' },
   blockedDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: '#C62828', marginTop: 2 },
-  dateRangeInfo: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12, paddingHorizontal: 4 },
-  dateRangeText: { fontSize: 13, fontWeight: '500', color: '#7C7672' },
-  reasonsCard: { backgroundColor: '#FFFFFF', borderRadius: 16, borderWidth: 1, borderColor: '#E6E1DC', padding: 16 },
-  reasonRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: 12 },
+  reasonsGroup: {},
+  reasonRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, gap: 12 },
   radio: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: '#E6E1DC', justifyContent: 'center', alignItems: 'center' },
   radioSelected: { borderColor: '#BD632F' },
   radioDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#BD632F' },
   reasonText: { fontSize: 15, fontWeight: '500', color: '#1A1817' },
-  noteInput: { backgroundColor: '#FFFFFF', borderRadius: 14, borderWidth: 1, borderColor: '#E6E1DC', paddingHorizontal: 16, paddingVertical: 14, minHeight: 100, textAlignVertical: 'top', fontSize: 14, color: '#1A1817' },
-  infoBanner: { flexDirection: 'row', backgroundColor: '#FFF2EB', borderRadius: 12, padding: 14, gap: 10, marginTop: 20 },
-  infoText: { flex: 1, fontSize: 13, fontWeight: '500', color: '#7C7672', lineHeight: 18 },
+  noteInput: { backgroundColor: '#FFFFFF', borderRadius: 12, borderWidth: 1, borderColor: '#E6E1DC', paddingHorizontal: 16, paddingVertical: 14, minHeight: 90, textAlignVertical: 'top', fontSize: 14, color: '#1A1817' },
+  infoBanner: { flexDirection: 'row', backgroundColor: '#FDECEA', borderRadius: 12, padding: 14, gap: 10, marginTop: 20 },
+  infoBody: { flex: 1 },
+  infoTitle: { fontSize: 14, fontWeight: '700', color: '#1A1817', marginBottom: 4 },
+  infoText: { fontSize: 13, fontWeight: '500', color: '#7C7672', lineHeight: 18 },
   bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#FAF9F6', paddingHorizontal: 20, paddingVertical: 16, paddingBottom: 30 },
   continueBtn: { backgroundColor: '#BD632F', height: 52, borderRadius: 26, justifyContent: 'center', alignItems: 'center' },
   continueBtnDisabled: { backgroundColor: '#E6E1DC' },
   continueBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 30 },
-  modalContainer: { backgroundColor: '#FFFFFF', borderRadius: 20, padding: 24, width: '100%' },
-  modalCloseBtn: { alignSelf: 'flex-end', marginBottom: 8 },
-  modalTitle: { fontSize: 18, fontWeight: '700', color: '#1A1817', marginBottom: 12 },
-  modalDescription: { fontSize: 14, fontWeight: '500', color: '#7C7672', lineHeight: 20, marginBottom: 24 },
-  modalButtons: { flexDirection: 'row', gap: 12 },
-  modalBackBtn: { flex: 1, height: 48, borderRadius: 24, borderWidth: 1.5, borderColor: '#E6E1DC', justifyContent: 'center', alignItems: 'center' },
-  modalBackBtnText: { color: '#7C7672', fontSize: 15, fontWeight: '600' },
-  modalConfirmBtn: { flex: 1, height: 48, borderRadius: 24, backgroundColor: '#BD632F', justifyContent: 'center', alignItems: 'center' },
+  modalContainer: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 20, width: '100%' },
+  modalCloseBtn: { position: 'absolute', top: 14, right: 14, width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
+  modalTitle: { fontSize: 16, fontWeight: '700', color: '#1A1817', marginBottom: 10, paddingRight: 28 },
+  modalDescription: { fontSize: 13, fontWeight: '500', color: '#7C7672', lineHeight: 19, marginBottom: 20 },
+  modalButtons: { flexDirection: 'row', gap: 10 },
+  modalBackBtn: { flex: 1, height: 48, borderRadius: 14, backgroundColor: '#C6CCC8', justifyContent: 'center', alignItems: 'center' },
+  modalBackBtnText: { color: '#1A1817', fontSize: 15, fontWeight: '600' },
+  modalConfirmBtn: { flex: 1, height: 48, borderRadius: 14, backgroundColor: '#BD632F', justifyContent: 'center', alignItems: 'center' },
   modalConfirmBtnText: { color: '#FFFFFF', fontSize: 15, fontWeight: '700' },
   sectionTitle: { fontSize: 16, fontWeight: '700', color: '#1A1817', marginBottom: 12 },
   cancelledCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 14, borderWidth: 1, borderColor: '#E6E1DC', padding: 14, marginBottom: 10, gap: 12 },
-  cancelledAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#FFF2EB', justifyContent: 'center', alignItems: 'center' },
+  cancelledAvatar: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFF2EB', justifyContent: 'center', alignItems: 'center' },
   cancelledInfo: { flex: 1 },
   cancelledName: { fontSize: 14, fontWeight: '700', color: '#1A1817' },
   cancelledOwner: { fontSize: 12, color: '#7C7672', fontWeight: '500' },
-  cancelledDateTime: { fontSize: 12, color: '#9C9690', fontWeight: '500', marginTop: 2 },
+  cancelledWhenRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 3 },
+  cancelledWhenText: { fontSize: 12, color: '#9C9690', fontWeight: '500' },
   cancelledBadge: { backgroundColor: '#FFEBEE', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
   cancelledBadgeText: { fontSize: 11, fontWeight: '600', color: '#C62828' },
-  walletSection: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 14, borderWidth: 1, borderColor: '#E6E1DC', padding: 14, marginBottom: 16 },
+  walletSection: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 999, borderWidth: 1, borderColor: '#E6E1DC', paddingVertical: 14, paddingHorizontal: 16, marginBottom: 16 },
   walletHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   walletRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   walletLabel: { fontSize: 13, fontWeight: '600', color: '#1A1817' },
@@ -833,10 +767,10 @@ const styles = StyleSheet.create({
   totalValue: { fontSize: 14, fontWeight: '800', color: '#1A1817' },
   paidText: { fontSize: 13, fontWeight: '600', color: '#2E7D32' },
   pendingText: { fontSize: 13, fontWeight: '600', color: '#BD632F' },
-  confirmBtn: { backgroundColor: '#BD632F', height: 52, borderRadius: 26, justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
+  confirmBtn: { backgroundColor: '#BD632F', height: 52, borderRadius: 14, justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
   confirmBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
-  backBtnBottom: { height: 52, borderRadius: 26, borderWidth: 1.5, borderColor: '#E6E1DC', justifyContent: 'center', alignItems: 'center' },
-  backBtnText: { color: '#7C7672', fontSize: 16, fontWeight: '600' },
+  backBtnBottom: { height: 52, borderRadius: 14, backgroundColor: '#C6CCC8', justifyContent: 'center', alignItems: 'center' },
+  backBtnText: { color: '#1A1817', fontSize: 16, fontWeight: '600' },
   confirmedContent: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 40, paddingBottom: 120 },
   confirmedCircle: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#4CAF50', justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
   confirmedTitle: { fontSize: 20, fontWeight: '700', color: '#1A1817', marginBottom: 8 },
@@ -852,4 +786,8 @@ const styles = StyleSheet.create({
   blockTimeReason: { fontSize: 12, color: '#7C7672', fontWeight: '500', marginTop: 2 },
   blockTimeNote: { fontSize: 12, color: '#9C9690', fontWeight: '400', marginTop: 2 },
   removeBlockBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#FFEBEE', justifyContent: 'center', alignItems: 'center' },
+  barcodeWrap: { alignItems: 'center', marginTop: 14, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#E6E1DC' },
+  barcodeRow: { flexDirection: 'row', alignItems: 'stretch', height: 48 },
+  barcodeBar: { height: '100%', backgroundColor: '#1A1817', marginHorizontal: 1 },
+  barcodeRef: { fontSize: 12, fontWeight: '600', color: '#1A1817', marginTop: 8, letterSpacing: 1 },
 });

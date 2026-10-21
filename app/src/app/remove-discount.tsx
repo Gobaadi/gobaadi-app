@@ -93,13 +93,16 @@ export default function RemoveDiscountScreen() {
         </View>
         <View style={styles.patientInfo}>
           <Text style={styles.patientName}>{patientName}</Text>
-          <Text style={styles.patientOwner}>{t('removeDiscount.owner', { name: ownerName })}</Text>
+          <View style={styles.patientOwner}>
+            <Text style={styles.patientOwnerLabel}>{t('removeDiscount.ownerLabel')}</Text>
+            <Text style={styles.patientOwnerName}>: {ownerName}</Text>
+          </View>
         </View>
       </View>
 
       <View style={styles.body}>
         <View style={styles.deleteCircle}>
-          <SvgXml width={84} height={84} xml={removeDiscountDeleteSvg} />
+          <SvgXml width={72} height={72} xml={removeDiscountDeleteSvg} />
         </View>
         <Text style={styles.bodyTitle}>{t('removeDiscount.bodyTitle')}</Text>
         <Text style={styles.bodyText}>
@@ -152,8 +155,8 @@ const styles = StyleSheet.create({
   headerTitle: {
     flex: 1,
     minWidth: 0,
-    fontSize: 24,
-    fontWeight: '800',
+    fontSize: 20,
+    fontWeight: '700',
     color: '#1A1817',
   },
   patientCard: {
@@ -192,32 +195,41 @@ const styles = StyleSheet.create({
     color: '#1A1817',
   },
   patientOwner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
+  },
+  patientOwnerLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#BD632F',
+  },
+  patientOwnerName: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#7C7672',
-    marginTop: 2,
+    color: '#1A1817',
   },
   body: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 32,
-    paddingBottom: 40,
+    paddingBottom: 20,
   },
   deleteCircle: {
-    width: 180,
-    height: 180,
-    borderRadius: 90,
+    width: 160,
+    height: 160,
+    borderRadius: 80,
     backgroundColor: '#FBE9E7',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 24,
   },
   bodyTitle: {
-    fontSize: 18,
-    fontWeight: '800',
+    fontSize: 17,
+    fontWeight: '700',
     color: '#1A1817',
-    marginBottom: 10,
+    marginBottom: 8,
     textAlign: 'center',
   },
   bodyText: {
@@ -229,9 +241,9 @@ const styles = StyleSheet.create({
   },
   bottomBar: {
     paddingHorizontal: 20,
-    paddingTop: 16,
+    paddingTop: 12,
     paddingBottom: 30,
-    gap: 12,
+    gap: 10,
   },
   removeBtn: {
     height: 52,

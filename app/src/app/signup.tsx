@@ -31,7 +31,9 @@ export default function SignUpScreen() {
   const { t } = useTranslation();
 
   const [name, setName] = useState('');
-  const [authMethod, setAuthMethod] = useState<'phone' | 'email'>('phone');
+  // Phone registration hidden — email-only flow
+  // const [authMethod, setAuthMethod] = useState<'phone' | 'email'>('phone');
+  const [authMethod, setAuthMethod] = useState<'phone' | 'email'>('email');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<'doctor' | 'farmer' | ''>('');
@@ -156,13 +158,13 @@ export default function SignUpScreen() {
         name: name.trim(),
         identifier,
         password,
-        role: 'user',
+        role: 'farm_owner',
         bvcRegistrationNumber: undefined,
       };
       console.log('[1/8][FE signup.tsx] Register submit →', payload);
       await register(payload).unwrap();
       console.log('[1/8][FE signup.tsx] Register API success → navigating to /otp');
-      router.push({ pathname: '/otp', params: { phone: identifier, purpose: 'verify', role: role || 'user' } });
+      router.push({ pathname: '/otp', params: { phone: identifier, purpose: 'verify', role: role || 'farm_owner' } });
     } catch (err: any) {
       console.log('[1/8][FE signup.tsx] Register API FAILED →', err?.data ?? err?.message ?? err);
       setErrorMessage(apiErrorMessage(err, t('signup.errors.createFailed')));
@@ -190,7 +192,7 @@ export default function SignUpScreen() {
         {/* Heading */}
         <Text style={styles.title}>{t('signup.title')}</Text>
 
-        {/* Toggle Phone/Email */}
+        {/* Toggle Phone/Email — phone hidden, email-only flow
         <View style={styles.toggleContainer}>
           <TouchableOpacity
             style={[styles.toggleButton, authMethod === 'phone' && styles.toggleButtonActive]}
@@ -207,6 +209,7 @@ export default function SignUpScreen() {
             <Text style={[styles.toggleText, authMethod === 'email' && styles.toggleTextActive]}>{t('common.identifierTabs.email')}</Text>
           </TouchableOpacity>
         </View>
+        */}
 
         {/* Form Fields */}
         <View style={styles.form}>
@@ -222,7 +225,7 @@ export default function SignUpScreen() {
             />
           </View>
 
-          {/* Phone Number or Email */}
+          {/* Phone Number — phone login/registration hidden, email-only flow
           {authMethod === 'phone' ? (
             <View style={styles.inputGroup}>
               <Text style={styles.label}>{t('signup.phoneLabel')}</Text>
@@ -258,6 +261,20 @@ export default function SignUpScreen() {
               />
             </View>
           )}
+          */}
+          {/* Email */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>{t('signup.emailLabel')}</Text>
+            <TextInput
+              style={styles.input}
+              value={email}
+              onChangeText={setEmail}
+              placeholder={t('signup.emailPlaceholder')}
+              placeholderTextColor="#A39E99"
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+          </View>
 
           {/* Role */}
           <View style={styles.inputGroup}>

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import {
   StyleSheet,
   View,
@@ -18,6 +18,7 @@ import {
 } from '@/store/doctorPortalApi';
 import { PatientAvatar } from '@/components/patient-avatar';
 import { formatAnimalDetails } from '@/utils/appointment';
+import ScheduleWeekStrip from '@/components/schedule-week-strip';
 import { backButtonSvg, doctorScheduleVideoSvg, bgPatternSvg } from '@/components/icons/svg-icon-sources';
 
 const MONTH_NAMES = [
@@ -52,6 +53,10 @@ function formatClock(hour: number, minute: number): string {
   return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
 }
 
+function formatDateKey(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
 function parseDateParam(value?: string): Date {
   if (!value) return new Date();
   const [y, m, d] = value.split('-').map(Number);
@@ -82,7 +87,7 @@ function DayAppointmentCard({
         <PatientAvatar
           name={appointment.animalName || appointment.patientName || t('schedule.patient')}
           image={appointment.animalImage || appointment.patientAvatar}
-          size={44}
+          size={52}
         />
         {isUpcoming && (
           <View style={styles.greenDot}>
@@ -124,6 +129,22 @@ export default function DailyScheduleScreen() {
     [bookings, selectedDate],
   );
 
+  const monthAppointmentDates = useMemo(() => {
+    const dates = new Set<string>();
+    bookings.forEach((b) => dates.add(formatDateKey(new Date(b.startAt))));
+    return dates;
+  }, [bookings]);
+
+  const handleSelectDate = useCallback(
+    (date: Date) => {
+      router.replace({
+        pathname: '/daily-schedule',
+        params: { date: formatDateKey(date) },
+      });
+    },
+    [router],
+  );
+
   const now = new Date();
   const isToday = isSameDay(selectedDate, now);
   const currentHour = now.getHours();
@@ -159,7 +180,7 @@ export default function DailyScheduleScreen() {
 
   const dayName = t(DAY_FULL[selectedDate.getDay()]);
   const monthName = t(MONTH_NAMES[selectedDate.getMonth()]);
-  const headerTitle = `${dayName}, ${selectedDate.getDate()} ${monthName} ${selectedDate.getFullYear()}`;
+  const dayCardTitle = `${dayName}, ${selectedDate.getDate()} ${monthName}`;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -176,13 +197,41 @@ export default function DailyScheduleScreen() {
           <SvgXml width={20} height={20} xml={backButtonSvg} />
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>
-          {headerTitle}
+          {t('schedule.title')}
         </Text>
       </View>
 
-      <Text style={styles.countText}>
-        {t('schedule.appointmentCount', { count: dayAppointments.length })}
-      </Text>
+      <View style={styles.viewToggle}>
+        <TouchableOpacity
+          style={[styles.viewToggleButton, styles.viewToggleButtonActive]}
+          onPress={() => router.back()}
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.viewToggleText, styles.viewToggleTextActive]}>
+            {t('schedule.fullCalendar')}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.viewToggleButton}
+          onPress={() => router.push('/schedule')}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.viewToggleText}>
+            {t('schedule.listView')}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.calendarSection}>
+        <Text style={styles.monthLabel}>
+          {monthName} {selectedDate.getFullYear()}
+        </Text>
+        <ScheduleWeekStrip
+          selectedDate={selectedDate}
+          onSelectDate={handleSelectDate}
+          appointmentDates={monthAppointmentDates}
+        />
+      </View>
 
       {isLoading ? (
         <ActivityIndicator size="large" color="#BD632F" style={styles.loader} />
@@ -196,45 +245,53 @@ export default function DailyScheduleScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.timelineScroll}
         >
-          {hourRange.map((hour) => {
-            const hourAppts = appointmentsByHour.get(hour) ?? [];
-            return (
-              <View key={hour}>
-                {isToday && hour === currentHour && (
-                  <View style={styles.currentTimeRow}>
-                    <View style={styles.currentTimeLine} />
-                    <View style={styles.currentTimeDot} />
-                    <Text style={styles.currentTimeLabel}>
-                      {formatClock(currentHour, currentMinutes)}
-                    </Text>
-                    <View style={styles.currentTimeLineRight} />
-                  </View>
-                )}
-                <View style={styles.hourRow}>
-                  <Text style={styles.timeLabel}>{formatHourLabel(hour)}</Text>
-                  <View style={styles.trackColumn}>
-                    <View
-                      style={[
-                        styles.trackDot,
-                        hourAppts.length > 0 && styles.trackDotActive,
-                      ]}
-                    />
-                    <View style={styles.trackBar} />
-                  </View>
-                  <View style={styles.hourContent}>
-                    {hourAppts.map((appt, idx) => (
-                      <DayAppointmentCard
-                        key={appt.id}
-                        appointment={appt}
-                        isPast={new Date(appt.endAt) < now}
-                        isUpcoming={idx === 0 && new Date(appt.startAt) >= now}
+          <View style={styles.dayCard}>
+            <View style={styles.dayCardHeaderRow}>
+              <Text style={styles.dayCardTitle}>{dayCardTitle}</Text>
+              <Text style={styles.dayCardCount}>
+                {t('schedule.appointmentCount', { count: dayAppointments.length })}
+              </Text>
+            </View>
+            {hourRange.map((hour) => {
+              const hourAppts = appointmentsByHour.get(hour) ?? [];
+              return (
+                <View key={hour}>
+                  {isToday && hour === currentHour && (
+                    <View style={styles.currentTimeRow}>
+                      <View style={styles.currentTimeLine} />
+                      <View style={styles.currentTimeDot} />
+                      <Text style={styles.currentTimeLabel}>
+                        {formatClock(currentHour, currentMinutes)}
+                      </Text>
+                      <View style={styles.currentTimeLineRight} />
+                    </View>
+                  )}
+                  <View style={styles.hourRow}>
+                    <Text style={styles.timeLabel}>{formatHourLabel(hour)}</Text>
+                    <View style={styles.trackColumn}>
+                      <View
+                        style={[
+                          styles.trackDot,
+                          hourAppts.length > 0 && styles.trackDotActive,
+                        ]}
                       />
-                    ))}
+                      <View style={styles.trackBar} />
+                    </View>
+                    <View style={styles.hourContent}>
+                      {hourAppts.map((appt, idx) => (
+                        <DayAppointmentCard
+                          key={appt.id}
+                          appointment={appt}
+                          isPast={new Date(appt.endAt) < now}
+                          isUpcoming={idx === 0 && new Date(appt.startAt) >= now}
+                        />
+                      ))}
+                    </View>
                   </View>
                 </View>
-              </View>
-            );
-          })}
+              );
+            })}
+          </View>
         </ScrollView>
       )}
     </SafeAreaView>
@@ -273,21 +330,79 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#1A1817',
   },
-  countText: {
+  viewToggle: {
+    flexDirection: 'row',
+    marginHorizontal: 20,
+    marginBottom: 12,
+    backgroundColor: '#FFF2EB',
+    borderRadius: 20,
+    padding: 4,
+  },
+  viewToggleButton: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderRadius: 16,
+  },
+  viewToggleButtonActive: {
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  viewToggleText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#BD632F',
+    color: '#6F6863',
+  },
+  viewToggleTextActive: {
+    color: '#1A1817',
+    fontWeight: '700',
+  },
+  calendarSection: {
     paddingHorizontal: 20,
-    marginBottom: 12,
+    marginBottom: 4,
+  },
+  monthLabel: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1A1817',
+    marginBottom: 4,
   },
   loader: { marginTop: 40 },
   emptyContainer: { alignItems: 'center', marginTop: 60, gap: 12 },
   emptyText: { fontSize: 14, color: '#9C9690', fontWeight: '500' },
   timelineScroll: { paddingHorizontal: 20, paddingBottom: 100 },
 
+  dayCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 16,
+  },
+  dayCardHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  dayCardTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1A1817',
+    flex: 1,
+    minWidth: 0,
+  },
+  dayCardCount: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#7C7672',
+    marginLeft: 8,
+  },
   hourRow: { flexDirection: 'row', minHeight: 56, paddingBottom: 12 },
   timeLabel: {
-    width: 72,
+    width: 64,
     fontSize: 11,
     fontWeight: '600',
     color: '#9C9690',
@@ -325,24 +440,27 @@ const styles = StyleSheet.create({
   apptCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FDF4EE',
     borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#E6E1DC',
-    padding: 12,
+    padding: 10,
     marginBottom: 8,
     gap: 10,
   },
   apptCardPast: { opacity: 0.6 },
   apptAvatar: { position: 'relative' },
+  apptAvatarImage: {
+    width: 52,
+    height: 52,
+    borderRadius: 12,
+    backgroundColor: '#FFF2EB',
+  },
   apptInfo: { flex: 1 },
   apptName: { fontSize: 14, fontWeight: '700', color: '#1A1817' },
   apptDetail: { fontSize: 12, color: '#9C9690', fontWeight: '500', marginTop: 2 },
   apptSymptoms: {
     fontSize: 12,
-    color: '#BD632F',
+    color: '#9C9690',
     fontWeight: '500',
-    fontStyle: 'italic',
     marginTop: 2,
   },
   greenDot: {

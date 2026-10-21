@@ -44,6 +44,7 @@ export const doctorsApi = createApi({
         consultationType?: string;
         animalId?: number;
         reasonForConsultation?: string;
+        symptoms?: string[];
       }
     >({
       query: (body) => ({ url: '/doctors/book', method: 'POST', body }),
