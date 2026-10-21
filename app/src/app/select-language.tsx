@@ -17,7 +17,6 @@ import {
   backButtonSvg,
   languageActiveSpeakerSvg,
   languageUnactiveSpeakerSvg,
-  languageSelectionMicrophoneSvg,
 } from '@/components/icons/svg-icon-sources';
 
 export default function SelectLanguageScreen() {
@@ -69,14 +68,6 @@ export default function SelectLanguageScreen() {
             );
           })}
         </View>
-
-        {/* Voice Selection Mode */}
-        <TouchableOpacity style={styles.voiceRow} activeOpacity={0.8}>
-          <Text style={[styles.voiceText, { fontFamily }]}>{t('selectLanguage.voiceMode')}</Text>
-          <View style={styles.micCircle}>
-            <SvgXml width={18} height={18} xml={languageSelectionMicrophoneSvg} />
-          </View>
-        </TouchableOpacity>
       </ScrollView>
 
       {/* Save Button */}
@@ -135,25 +126,6 @@ const styles = StyleSheet.create({
   speakerBadgeActive: {
     backgroundColor: '#BD632F',
   },
-  voiceRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#E6E1DC',
-    padding: 16,
-  },
-  micCircle: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: '#F5F2EC',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  voiceText: { fontSize: 14, fontWeight: '600', color: '#1A1817' },
   bottomBar: {
     position: 'absolute',
     bottom: 0,

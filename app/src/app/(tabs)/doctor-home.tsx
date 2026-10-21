@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { useRequireDoctor } from '@/hooks/use-require-doctor';
 import {
   StyleSheet,
@@ -11,6 +11,7 @@ import {
   StatusBar,
   Alert,
 } from 'react-native';
+import { BlurView, BlurTargetView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -36,6 +37,7 @@ import {
   doctorHomeAppointmentMessageSquareSvg,
 } from '@/components/icons/svg-icon-sources';
 import { useTranslation } from '@/hooks/use-translation';
+import { getLanguageLabel } from '@/constants/languages';
 
 type T = ReturnType<typeof useTranslation>['t'];
 
@@ -68,7 +70,10 @@ export default function DoctorHomeScreen() {
   const insets = useSafeAreaInsets();
   const isDoctor = useRequireDoctor();
   const user = useSelector((state: RootState) => state.auth.user);
-  const { languageCode } = useLanguage();
+  const { language } = useLanguage();
+
+  // Ref to the scroll content — Android BlurView blurs via BlurTargetView
+  const scrollContentRef = useRef<View | null>(null);
 
   const { data: doctorProfile } = useGetMyDoctorProfileQuery(undefined, { skip: !isDoctor });
   const { data: bookings = [], isLoading } = useGetDoctorBookingsQuery();
@@ -131,12 +136,14 @@ export default function DoctorHomeScreen() {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
-      {/* Scrollable Content */}
-      <ScrollView
-        contentContainerStyle={styles.scrollContainer}
-        showsVerticalScrollIndicator={false}
-        bounces={false}
-      >
+      {/* Scrollable Content — wrapped in BlurTargetView so the Android
+          status-bar BlurView can blur whatever scrolls underneath */}
+      <BlurTargetView ref={scrollContentRef} style={styles.blurTarget}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContainer}
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+        >
         {/* Orange Header Banner - Inside ScrollView so it scrolls, or keep it fixed? Figma usually scrolls everything. Let's make it fixed at top and scroll below it for a cooler effect, or just scroll together. We'll scroll together. */}
         <View style={styles.headerBannerWrapper}>
           <ImageBackground
@@ -157,7 +164,7 @@ export default function DoctorHomeScreen() {
                   activeOpacity={0.8}
                 >
                   <SvgXml width={16} height={16} xml={languageGlobeSvg} />
-                  <Text style={styles.langPillText}>{languageCode}</Text>
+                  <Text style={[styles.langPillText, { fontSize: 14 }]}>{getLanguageLabel(language)}</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -287,6 +294,18 @@ export default function DoctorHomeScreen() {
           </View>
         </View>
       </ScrollView>
+      </BlurTargetView>
+
+      {/* Blurred strip behind the OS status bar so scrolled content
+          doesn't clash with the clock / network icons */}
+      <BlurView
+        blurTarget={scrollContentRef}
+        intensity={55}
+        tint="dark"
+        blurMethod="dimezisBlurView"
+        style={[styles.statusBarBlur, { height: insets.top }]}
+        pointerEvents="none"
+      />
     </View>
   );
 }
@@ -295,6 +314,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FAF9F6',
+  },
+  blurTarget: {
+    flex: 1,
+  },
+  statusBarBlur: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
   },
   scrollContainer: {
     paddingBottom: 120,

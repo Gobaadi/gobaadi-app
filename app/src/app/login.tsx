@@ -17,7 +17,8 @@ import { API_URL } from '@/constants/api';
 import { useLoginMutation } from '@/store/authApi';
 // import { useSocialAuth } from '@/hooks/use-social-auth'; // social login disabled
 import { PasswordField } from '@/components/password-field';
-import { IdentifierTabs, IdentifierMode } from '@/components/identifier-tabs';
+// import { IdentifierTabs, IdentifierMode } from '@/components/identifier-tabs'; // phone login hidden — email-only flow
+import { IdentifierMode } from '@/components/identifier-tabs';
 import { store } from '@/store/store';
 import { setCredentials } from '@/store/authSlice';
 import { jwtToAuthUser } from '@/store/decode-jwt';
@@ -30,7 +31,9 @@ export default function LoginScreen() {
   const router = useRouter();
   const { t } = useTranslation();
 
-  const [mode, setMode] = useState<IdentifierMode>('phone');
+  // Phone login hidden — email-only flow
+  // const [mode, setMode] = useState<IdentifierMode>('phone');
+  const [mode, setMode] = useState<IdentifierMode>('email');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -94,8 +97,11 @@ export default function LoginScreen() {
 
           {/* Form Fields */}
           <View style={styles.form}>
+            {/* IdentifierTabs — phone login hidden, email-only flow
             <IdentifierTabs mode={mode} onChange={setMode} />
+            */}
 
+            {/* Phone Number — phone login hidden, email-only flow
             {mode === 'phone' ? (
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>{t('login.phoneLabel')}</Text>
@@ -132,6 +138,23 @@ export default function LoginScreen() {
                 />
               </View>
             )}
+            */}
+
+            {/* Email */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>{t('login.emailLabel')}</Text>
+              <TextInput
+                style={styles.emailInput}
+                value={email}
+                onChangeText={setEmail}
+                placeholder="johndoe@email.com"
+                placeholderTextColor="#A39E99"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoComplete="email"
+                textContentType="emailAddress"
+              />
+            </View>
 
             {/* Password */}
             <View style={styles.inputGroup}>

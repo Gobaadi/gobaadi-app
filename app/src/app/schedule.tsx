@@ -24,6 +24,7 @@ import {
   doctorScheduleVideoSvg,
   bgPatternSvg,
 } from '@/components/icons/svg-icon-sources';
+import ScheduleWeekStrip from '@/components/schedule-week-strip';
 
 type ViewMode = 'calendar' | 'list';
 type CalendarGranularity = 'yearly' | 'monthly';
@@ -77,18 +78,6 @@ function formatDateKey(date: Date): string {
 
 function isSameDay(a: Date, b: Date): boolean {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
-}
-
-function getWeekDates(reference: Date): Date[] {
-  const start = new Date(reference);
-  start.setDate(start.getDate() - start.getDay());
-  const dates: Date[] = [];
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(start);
-    d.setDate(start.getDate() + i);
-    dates.push(d);
-  }
-  return dates;
 }
 
 function MonthGrid({
@@ -162,54 +151,6 @@ function MonthGrid({
   );
 }
 
-function WeekStrip({
-  selectedDate,
-  onSelectDate,
-}: {
-  selectedDate: Date;
-  onSelectDate: (d: Date) => void;
-}) {
-  const { t } = useTranslation();
-  const weekDates = useMemo(() => getWeekDates(selectedDate), [selectedDate]);
-
-  return (
-    <View style={styles.weekStrip}>
-      <View style={styles.weekDateRow}>
-        {weekDates.map((date, i) => {
-          const isSelected = isSameDay(date, selectedDate);
-          const isToday = isSameDay(date, new Date());
-          return (
-            <TouchableOpacity
-              key={i}
-              style={[styles.weekDateCell, isSelected && styles.weekDateCellSelected]}
-              onPress={() => onSelectDate(date)}
-              activeOpacity={0.7}
-            >
-              <Text
-                style={[
-                  styles.weekDateLetter,
-                  isSelected && styles.weekDateLetterSelected,
-                ]}
-              >
-                {t(DAY_LETTERS[date.getDay()])}
-              </Text>
-              <Text
-                style={[
-                  styles.weekDateNumber,
-                  isSelected && styles.weekDateNumberSelected,
-                  isToday && !isSelected && styles.weekDateNumberToday,
-                ]}
-              >
-                {date.getDate()}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-    </View>
-  );
-}
-
 function ListView({
   appointments,
 }: {
@@ -269,6 +210,7 @@ function ListView({
 
 function ListAppointmentCard({ appointment }: { appointment: DoctorAppointment }) {
   const { t } = useTranslation();
+  const router = useRouter();
   const startDate = new Date(appointment.startAt);
 
   const formatTimeShort = (iso: string) => {
@@ -285,14 +227,23 @@ function ListAppointmentCard({ appointment }: { appointment: DoctorAppointment }
     appointment.animalAge,
   ].filter((v): v is string => Boolean(v));
 
-  const symptomsList = Array.isArray(appointment.symptoms)
-    ? appointment.symptoms
+  const symptomsText = Array.isArray(appointment.symptoms)
+    ? appointment.symptoms.join(', ').trim()
     : appointment.symptoms
-      ? [appointment.symptoms]
-      : [];
+      ? String(appointment.symptoms).trim()
+      : '';
 
   return (
-    <View style={styles.listAppointmentCard}>
+    <TouchableOpacity
+      style={styles.listAppointmentCard}
+      activeOpacity={0.8}
+      onPress={() =>
+        router.push({
+          pathname: '/appointment-details',
+          params: { id: String(appointment.id) },
+        })
+      }
+    >
       <View style={styles.listAppointmentDateBadge}>
         <Ionicons name="time-outline" size={14} color="#FFFFFF" />
         <Text style={styles.listAppointmentDateBadgeText}>
@@ -304,7 +255,7 @@ function ListAppointmentCard({ appointment }: { appointment: DoctorAppointment }
           <PatientAvatar
             name={appointment.animalName || appointment.patientName || t('schedule.patient')}
             image={appointment.animalImage || appointment.patientAvatar}
-            size={44}
+            size={52}
           />
           <View style={styles.greenDot}><SvgXml width={11} height={11} xml={doctorScheduleVideoSvg} /></View>
         </View>
@@ -317,18 +268,14 @@ function ListAppointmentCard({ appointment }: { appointment: DoctorAppointment }
               {metaParts.join(' • ')}
             </Text>
           )}
-          {symptomsList.length > 0 && (
-            <View style={styles.symptomChipRow}>
-              {symptomsList.map((symptom, idx) => (
-                <View key={`${symptom}-${idx}`} style={styles.symptomChip}>
-                  <Text style={styles.symptomChipText}>{symptom}</Text>
-                </View>
-              ))}
-            </View>
+          {symptomsText && (
+            <Text style={styles.listAppointmentSymptoms} numberOfLines={1}>
+              {symptomsText}
+            </Text>
           )}
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -545,15 +492,6 @@ export default function ScheduleScreen() {
 
           {granularity === 'yearly' ? (
             <>
-              <View style={styles.yearNavigation}>
-                <TouchableOpacity onPress={() => setCurrentYear((y) => y - 1)} style={styles.navBtn} activeOpacity={0.7}>
-                  <Ionicons name="chevron-back" size={18} color="#BD632F" />
-                </TouchableOpacity>
-                <Text style={styles.yearNavTitle}>{currentYear}</Text>
-                <TouchableOpacity onPress={() => setCurrentYear((y) => y + 1)} style={styles.navBtn} activeOpacity={0.7}>
-                  <Ionicons name="chevron-forward" size={18} color="#BD632F" />
-                </TouchableOpacity>
-              </View>
               {Array.from({ length: 12 }, (_, i) => (
                 <MonthGrid
                   key={i}
@@ -583,7 +521,7 @@ export default function ScheduleScreen() {
                 selectedDate={selectedDate}
                 onSelectDate={handleSelectDate}
               />
-              <WeekStrip selectedDate={selectedDate} onSelectDate={handleSelectDate} />
+              <ScheduleWeekStrip selectedDate={selectedDate} onSelectDate={handleSelectDate} />
             </>
         )}
       </ScrollView>
@@ -779,13 +717,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     gap: 16,
   },
-  yearNavigation: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-    gap: 16,
-  },
   navBtn: {
     width: 32,
     height: 32,
@@ -799,57 +730,53 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#1A1817',
   },
-  yearNavTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#1A1817',
-  },
   monthGrid: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   monthTitle: {
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: '700',
     color: '#1A1817',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   dayHeaderRow: {
     flexDirection: 'row',
     marginBottom: 0,
-    paddingBottom: 8,
-    borderBottomWidth: 1.5,
+    paddingBottom: 6,
+    borderBottomWidth: 1,
     borderBottomColor: '#BD632F',
   },
   dayHeaderText: {
     flex: 1,
     textAlign: 'center',
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
     color: '#BD632F',
   },
   daysGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginTop: 8,
+    marginTop: 4,
   },
   dayCell: {
     width: `${100 / 7}%`,
     alignItems: 'center',
-    paddingVertical: 4,
+    paddingVertical: 2,
   },
   dayNumber: {
-    width: 36,
-    height: 36,
+    width: 30,
+    height: 30,
     borderRadius: 9999,
     justifyContent: 'center',
     alignItems: 'center',
+    marginVertical: 2,
   },
   dayNumberHasAppointment: {
     backgroundColor: '#BD632F',
     borderRadius: 9999,
   },
   dayNumberText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
     color: '#1A1817',
   },
@@ -880,48 +807,6 @@ const styles = StyleSheet.create({
     borderColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  weekStrip: {
-    marginTop: 4,
-    marginBottom: 16,
-  },
-  weekDateRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 4,
-  },
-  weekDateCell: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 6,
-    paddingHorizontal: 4,
-    borderRadius: 20,
-  },
-  weekDateCellSelected: {
-    backgroundColor: '#BD632F',
-  },
-  weekDateLetter: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#9C9690',
-    marginBottom: 2,
-  },
-  weekDateLetterSelected: {
-    color: '#FFFFFF',
-  },
-  weekDateNumber: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1A1817',
-  },
-  weekDateNumberSelected: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-  },
-  weekDateNumberToday: {
-    color: '#BD632F',
-    fontWeight: '700',
   },
   listScrollContainer: {
     paddingHorizontal: 20,
@@ -954,8 +839,8 @@ const styles = StyleSheet.create({
   },
   listDateDayName: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#9C9690',
+    fontWeight: '700',
+    color: '#BD632F',
     textTransform: 'uppercase',
   },
   listDateDayNumber: {
@@ -990,13 +875,13 @@ const styles = StyleSheet.create({
   listAppointmentCardBody: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    gap: 10,
+    padding: 14,
+    gap: 12,
   },
   listAppointmentAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 52,
+    height: 52,
+    borderRadius: 14,
     backgroundColor: '#FFF2EB',
     justifyContent: 'center',
     alignItems: 'center',
@@ -1015,22 +900,10 @@ const styles = StyleSheet.create({
     color: '#9C9690',
     fontWeight: '500',
   },
-  symptomChipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-    marginTop: 2,
-  },
-  symptomChip: {
-    backgroundColor: '#FFF2EB',
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  symptomChipText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#BD632F',
+  listAppointmentSymptoms: {
+    fontSize: 12,
+    color: '#9C9690',
+    fontWeight: '500',
   },
   emptyContainer: {
     flex: 1,

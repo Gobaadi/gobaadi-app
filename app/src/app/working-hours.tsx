@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRequireDoctor } from '@/hooks/use-require-doctor';
 import {
   StyleSheet,
@@ -6,23 +6,34 @@ import {
   Text,
   TouchableOpacity,
   ScrollView,
+  FlatList,
   Switch,
   ActivityIndicator,
   Alert,
-  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
-import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import {
   useGetMyDoctorProfileQuery,
   useGetAvailabilityQuery,
   useSetAvailabilityMutation,
 } from '@/store/doctorPortalApi';
 
-const DAY_KEYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+const DAY_ORDER_KEYS = ['saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+const DAY_OF_WEEK: Record<string, number> = {
+  saturday: 6,
+  sunday: 0,
+  monday: 1,
+  tuesday: 2,
+  wednesday: 3,
+  thursday: 4,
+  friday: 5,
+};
+const HOURS = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0'));
+const MINUTES = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
+const WHEEL_ITEM_HEIGHT = 36;
 
 interface DaySchedule {
   day: string;
@@ -50,27 +61,69 @@ function time12to24(time12: string): string {
   return `${String(hour).padStart(2, '0')}:${m}`;
 }
 
-function time12ToDate(time12: string): Date {
-  const [h, m] = time12to24(time12).split(':').map(Number);
-  const d = new Date();
-  d.setHours(h, m, 0, 0);
-  return d;
-}
-
-function dateToTime12(d: Date): string {
-  const h = String(d.getHours()).padStart(2, '0');
-  const m = String(d.getMinutes()).padStart(2, '0');
-  return formatTime12h(`${h}:${m}`);
-}
-
 function buildEmptySchedule(): DaySchedule[] {
-  return DAY_KEYS.map((day, idx) => ({
+  return DAY_ORDER_KEYS.map((day) => ({
     day,
-    dayOfWeek: idx,
+    dayOfWeek: DAY_OF_WEEK[day],
     enabled: false,
     startTime: '09:00 AM',
     endTime: '05:00 PM',
   }));
+}
+
+function settledIndex(offset: number, len: number): number {
+  let i = Math.round(offset / WHEEL_ITEM_HEIGHT);
+  if (i < 0) i = 0;
+  if (i > len - 1) i = len - 1;
+  return i;
+}
+
+function WheelColumn({
+  values,
+  index,
+  onChange,
+}: {
+  values: string[];
+  index: number;
+  onChange: (i: number) => void;
+}) {
+  const listRef = useRef<FlatList>(null);
+  const mounted = useRef(false);
+
+  useEffect(() => {
+    if (!mounted.current && listRef.current) {
+      listRef.current.scrollToOffset({ offset: index * WHEEL_ITEM_HEIGHT, animated: false });
+      mounted.current = true;
+    }
+  }, [index]);
+
+  const settle = useCallback(
+    (offset: number) => {
+      const i = settledIndex(offset, values.length);
+      if (i !== index) onChange(i);
+    },
+    [index, values.length, onChange],
+  );
+
+  return (
+    <FlatList
+      ref={listRef}
+      data={values}
+      keyExtractor={(v) => v}
+      showsVerticalScrollIndicator={false}
+      snapToInterval={WHEEL_ITEM_HEIGHT}
+      decelerationRate="fast"
+      getItemLayout={(_, i) => ({ length: WHEEL_ITEM_HEIGHT, offset: WHEEL_ITEM_HEIGHT * i, index: i })}
+      contentContainerStyle={styles.wheelInner}
+      onMomentumScrollEnd={(e) => settle(e.nativeEvent.contentOffset.y)}
+      onScrollEndDrag={(e) => settle(e.nativeEvent.contentOffset.y)}
+      renderItem={({ item, index: i }) => (
+        <View style={styles.wheelItem} key={item}>
+          <Text style={[styles.wheelText, i === index && styles.wheelTextActive]}>{item}</Text>
+        </View>
+      )}
+    />
+  );
 }
 
 export default function WorkingHoursScreen() {
@@ -87,13 +140,11 @@ export default function WorkingHoursScreen() {
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
 
-  const [pickerVisible, setPickerVisible] = useState(false);
-  const [pickerTarget, setPickerTarget] = useState<{ dayIndex: number; field: 'startTime' | 'endTime' } | null>(null);
-  const [pickerDate, setPickerDate] = useState(new Date());
 
   useEffect(() => {
     if (availability && availability.length > 0) {
-      const mapped: DaySchedule[] = DAY_KEYS.map((day, idx) => {
+      const mapped: DaySchedule[] = DAY_ORDER_KEYS.map((day) => {
+        const idx = DAY_OF_WEEK[day];
         const entry = availability.find((a) => a.dayOfWeek === idx);
         if (entry) {
           return {
@@ -124,29 +175,6 @@ export default function WorkingHoursScreen() {
     setSelectedDay(day);
   };
 
-  const openTimePicker = (dayIndex: number, field: 'startTime' | 'endTime') => {
-    const time12 = schedule[dayIndex][field];
-    setPickerTarget({ dayIndex, field });
-    setPickerDate(time12ToDate(time12));
-    setPickerVisible(true);
-  };
-
-  const handleTimeChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
-    if (Platform.OS === 'android') {
-      setPickerVisible(false);
-    }
-    if (event.type === 'dismissed' || !selectedDate || !pickerTarget) return;
-    const newTime12 = dateToTime12(selectedDate);
-    const { dayIndex, field } = pickerTarget;
-    setSchedule((prev) =>
-      prev.map((item, i) => (i === dayIndex ? { ...item, [field]: newTime12 } : item))
-    );
-    setHasChanges(true);
-    if (Platform.OS === 'ios') {
-      setPickerVisible(false);
-    }
-  };
-
   const toggleAmPm = (dayIndex: number, field: 'startTime' | 'endTime', ampm: 'AM' | 'PM') => {
     const current12 = schedule[dayIndex][field];
     const timePart = current12.split(' ')[0];
@@ -159,8 +187,8 @@ export default function WorkingHoursScreen() {
     setHasChanges(true);
   };
 
-  const handleSaveAll = async () => {
-    if (!doctorId) return;
+  const handleSaveAll = async (): Promise<boolean> => {
+    if (!doctorId) return false;
     // Same-day windows must be chronological — reject end <= start before
     // hitting the API (backend re-validates).
     const invalidDay = schedule.find(
@@ -173,7 +201,7 @@ export default function WorkingHoursScreen() {
           day: t(`workingHours.days.${invalidDay.day}`),
         }),
       );
-      return;
+      return false;
     }
     const entries = schedule
       .filter((s) => s.enabled)
@@ -186,14 +214,44 @@ export default function WorkingHoursScreen() {
       await setAvailability({ doctorId, entries }).unwrap();
       setHasChanges(false);
       Alert.alert(t('workingHours.alerts.savedTitle'), t('workingHours.alerts.savedMsg'));
+      return true;
     } catch {
       Alert.alert(t('workingHours.alerts.errorTitle'), t('workingHours.alerts.saveFailedMsg'));
+      return false;
     }
+  };
+
+  const updateDayTime = (
+    dayIndex: number,
+    field: 'startTime' | 'endTime',
+    hour12?: number,
+    minute?: number,
+  ) => {
+    setSchedule((prev) =>
+      prev.map((item, i) => {
+        if (i !== dayIndex) return item;
+        const raw = item[field];
+        const apm = raw.includes('AM') ? 'AM' : 'PM';
+        const currentHour12 = parseInt(raw.split(':')[0], 10);
+        const currentMinute = parseInt(raw.split(':')[1], 10);
+        const h = hour12 ?? currentHour12;
+        const m = minute ?? currentMinute;
+        return { ...item, [field]: `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')} ${apm}` };
+      }),
+    );
+    setHasChanges(true);
+  };
+
+  const handleSaveDay = async () => {
+    const ok = await handleSaveAll();
+    if (ok) setSelectedDay(null);
   };
 
   if (selectedDay) {
     const dayIndex = schedule.findIndex((d) => d.day === selectedDay);
     const dayData = schedule[dayIndex];
+    const hourToIndex = (v: string) => Math.max(0, parseInt(v.split(':')[0], 10) - 1);
+    const minuteToIndex = (v: string) => Math.max(0, parseInt(v.split(':')[1], 10));
     const startIsAM = dayData.startTime.includes('AM');
     const endIsAM = dayData.endTime.includes('AM');
 
@@ -209,14 +267,18 @@ export default function WorkingHoursScreen() {
 
         <ScrollView contentContainerStyle={styles.timePickerContent}>
           <Text style={styles.timeLabel}>{t('workingHours.start')}</Text>
-          <View style={styles.timePickerRow}>
-            <TouchableOpacity
-              style={styles.timeBox}
-              activeOpacity={0.7}
-              onPress={() => openTimePicker(dayIndex, 'startTime')}
-            >
-              <Text style={styles.timeValue}>{dayData.startTime.split(' ')[0]}</Text>
-            </TouchableOpacity>
+          <View style={styles.wheelRow}>
+            <WheelColumn
+              values={[...HOURS]}
+              index={hourToIndex(dayData.startTime)}
+              onChange={(i) => updateDayTime(dayIndex, 'startTime', i + 1)}
+            />
+            <Text style={styles.wheelColon}>:</Text>
+            <WheelColumn
+              values={[...MINUTES]}
+              index={minuteToIndex(dayData.startTime)}
+              onChange={(i) => updateDayTime(dayIndex, 'startTime', undefined, i)}
+            />
             <View style={styles.ampmRow}>
               <TouchableOpacity
                 style={[styles.ampmBtn, startIsAM && styles.ampmBtnActive]}
@@ -235,15 +297,19 @@ export default function WorkingHoursScreen() {
             </View>
           </View>
 
-          <Text style={[styles.timeLabel, { marginTop: 32 }]}>{t('workingHours.end')}</Text>
-          <View style={styles.timePickerRow}>
-            <TouchableOpacity
-              style={styles.timeBox}
-              activeOpacity={0.7}
-              onPress={() => openTimePicker(dayIndex, 'endTime')}
-            >
-              <Text style={styles.timeValue}>{dayData.endTime.split(' ')[0]}</Text>
-            </TouchableOpacity>
+          <Text style={[styles.timeLabel, { marginTop: 28 }]}>{t('workingHours.end')}</Text>
+          <View style={styles.wheelRow}>
+            <WheelColumn
+              values={[...HOURS]}
+              index={hourToIndex(dayData.endTime)}
+              onChange={(i) => updateDayTime(dayIndex, 'endTime', i + 1)}
+            />
+            <Text style={styles.wheelColon}>:</Text>
+            <WheelColumn
+              values={[...MINUTES]}
+              index={minuteToIndex(dayData.endTime)}
+              onChange={(i) => updateDayTime(dayIndex, 'endTime', undefined, i)}
+            />
             <View style={styles.ampmRow}>
               <TouchableOpacity
                 style={[styles.ampmBtn, endIsAM && styles.ampmBtnActive]}
@@ -263,15 +329,20 @@ export default function WorkingHoursScreen() {
           </View>
         </ScrollView>
 
-        {pickerVisible && pickerTarget && (
-          <DateTimePicker
-            value={pickerDate}
-            mode="time"
-            is24Hour={true}
-            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-            onChange={handleTimeChange}
-          />
-        )}
+        <View style={styles.bottomBar}>
+          <TouchableOpacity
+            style={[styles.saveBtn, saving && styles.saveBtnDisabled]}
+            onPress={handleSaveDay}
+            activeOpacity={0.85}
+            disabled={saving}
+          >
+            {saving ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Text style={styles.saveBtnText}>{t('workingHours.save')}</Text>
+            )}
+          </TouchableOpacity>
+        </View>
       </SafeAreaView>
     );
   }
@@ -361,7 +432,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  headerTitle: { fontSize: 24, fontWeight: '800', color: '#1A1817' },
+  headerTitle: { fontSize: 20, fontWeight: '700', color: '#1A1817' },
   listContent: { paddingHorizontal: 20, paddingBottom: 100 },
   dayRow: {
     flexDirection: 'row',
@@ -374,16 +445,12 @@ const styles = StyleSheet.create({
   timeRange: { fontSize: 13, fontWeight: '500', color: '#7C7672', marginRight: 14 },
   timePickerContent: { paddingHorizontal: 20, paddingBottom: 100 },
   timeLabel: { fontSize: 14, fontWeight: '600', color: '#1A1817', marginBottom: 12 },
-  timePickerRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  timeBox: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#E6E1DC',
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-  },
-  timeValue: { fontSize: 28, fontWeight: '700', color: '#BD632F' },
+  wheelRow: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#FFFFFF', borderRadius: 14, borderWidth: 1, borderColor: '#E6E1DC', paddingVertical: 4, paddingHorizontal: 8 },
+  wheelInner: { paddingVertical: WHEEL_ITEM_HEIGHT * 2 },
+  wheelItem: { width: 48, height: WHEEL_ITEM_HEIGHT, alignItems: 'center', justifyContent: 'center' },
+  wheelText: { fontSize: 16, fontWeight: '600', color: '#9C9690' },
+  wheelTextActive: { fontSize: 18, fontWeight: '700', color: '#BD632F' },
+  wheelColon: { fontSize: 18, fontWeight: '700', color: '#BD632F' },
   ampmRow: { flexDirection: 'row', gap: 8 },
   ampmBtn: {
     paddingHorizontal: 20,

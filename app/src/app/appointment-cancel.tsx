@@ -160,6 +160,11 @@ export default function AppointmentCancelScreen() {
               {animalDetails && (
                 <Text style={styles.cardDetail}>{animalDetails}</Text>
               )}
+              <Text style={styles.scheduleText}>
+                {formatDate(appointment.startAt)}
+                {' · '}
+                {formatTimeRange(appointment.startAt, appointment.endAt)}
+              </Text>
               {appointment.patientName && (
                 <View style={styles.ownerBlock}>
                   <Text style={styles.ownerLabel}>{t('appointmentCancel.ownerLabel')}</Text>
@@ -167,10 +172,6 @@ export default function AppointmentCancelScreen() {
                 </View>
               )}
             </View>
-          </View>
-          <View style={styles.dateRow}>
-            <Text style={styles.dateText}>{formatDate(appointment.startAt)}</Text>
-            <Text style={styles.timeText}>{formatTimeRange(appointment.startAt, appointment.endAt)}</Text>
           </View>
         </View>
 
@@ -246,7 +247,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  headerTitle: { fontSize: 20, fontWeight: '800', color: '#1A1817' },
+  headerTitle: { fontSize: 20, fontWeight: '800', color: '#1A1817', marginLeft: 12, marginRight: 'auto' },
   scrollContent: { paddingHorizontal: 20, paddingBottom: 100 },
   infoCard: {
     backgroundColor: '#FFFFFF',
@@ -265,20 +266,10 @@ const styles = StyleSheet.create({
   cardInfo: { flex: 1, justifyContent: 'center' },
   cardName: { fontSize: 16, fontWeight: '700', color: '#1A1817', marginBottom: 2 },
   cardDetail: { fontSize: 13, fontWeight: '500', color: '#7C7672', marginBottom: 2 },
+  scheduleText: { fontSize: 13, fontWeight: '500', color: '#7C7672', marginBottom: 2 },
   ownerBlock: { marginTop: 2 },
   ownerLabel: { fontSize: 12, fontWeight: '600', color: '#BD632F', marginBottom: 2 },
   ownerName: { fontSize: 13, fontWeight: '600', color: '#1A1817' },
-  dateRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#E6E1DC',
-  },
-  dateText: { fontSize: 13, fontWeight: '500', color: '#1A1817' },
-  timeText: { fontSize: 13, fontWeight: '500', color: '#1A1817' },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '700',

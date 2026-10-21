@@ -18,6 +18,22 @@ import { appointmentCancelCalendarSvg } from '@/components/icons/svg-icon-source
 import { formatAnimalDetails } from '@/utils/appointment';
 import { RegistrationBackground } from '@/components/registration-background';
 
+function formatTimeRange(start: string, end: string): string {
+  const s = new Date(start);
+  const e = new Date(end);
+  const fmt = (d: Date) =>
+    d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+  return `${fmt(s)} - ${fmt(e)}`;
+}
+
+function formatDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString('en-US', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+}
+
 export default function AppointmentCancelledScreen() {
   const { t } = useTranslation();
   const router = useRouter();
@@ -69,6 +85,11 @@ export default function AppointmentCancelledScreen() {
                 {animalDetails && (
                   <Text style={styles.cardDetail}>{animalDetails}</Text>
                 )}
+                <Text style={styles.scheduleText}>
+                  {formatDate(String(appointment.startAt))}
+                  {' · '}
+                  {formatTimeRange(String(appointment.startAt), String(appointment.endAt))}
+                </Text>
                 {appointment.patientName && (
                   <View style={styles.ownerBlock}>
                     <Text style={styles.ownerLabel}>{t('appointmentCancelled.ownerLabel')}</Text>
@@ -103,7 +124,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: { fontSize: 20, fontWeight: '800', color: '#1A1817' },
   content: { flex: 1, alignItems: 'center', paddingHorizontal: 20 },
-  iconContainer: { marginTop: 40, marginBottom: 20 },
+  iconContainer: { marginTop: 28, marginBottom: 16 },
   iconCircle: {
     width: 80,
     height: 80,
@@ -116,7 +137,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     color: '#1A1817',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   subtitle: {
     fontSize: 15,
@@ -124,7 +145,7 @@ const styles = StyleSheet.create({
     color: '#9C9690',
     textAlign: 'center',
     lineHeight: 22,
-    marginBottom: 32,
+    marginBottom: 24,
   },
   infoCard: {
     width: '100%',
@@ -132,13 +153,13 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: '#E6E1DC',
-    padding: 16,
+    padding: 14,
   },
   cancelledLabel: {
     fontSize: 14,
     fontWeight: '600',
     color: '#1A1817',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   cardRow: { flexDirection: 'row', gap: 14 },
   avatar: { width: 56, height: 56, borderRadius: 14 },
@@ -150,6 +171,7 @@ const styles = StyleSheet.create({
   cardInfo: { flex: 1, justifyContent: 'center' },
   cardName: { fontSize: 15, fontWeight: '700', color: '#1A1817', marginBottom: 2 },
   cardDetail: { fontSize: 13, fontWeight: '500', color: '#7C7672', marginBottom: 2 },
+  scheduleText: { fontSize: 13, fontWeight: '500', color: '#7C7672', marginBottom: 2 },
   ownerBlock: { marginTop: 2 },
   ownerLabel: { fontSize: 12, fontWeight: '600', color: '#BD632F', marginBottom: 2 },
   ownerName: { fontSize: 13, fontWeight: '600', color: '#1A1817' },

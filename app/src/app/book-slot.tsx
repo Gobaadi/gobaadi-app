@@ -52,6 +52,7 @@ export default function BookSlotScreen() {
   const [selectedDay, setSelectedDay] = useState(today.getDate());
   const [selectedTimeSlot, setSelectedTimeSlot] = useState('');
   const [bookingReason, setBookingReason] = useState('');
+  const [bookingSymptoms, setBookingSymptoms] = useState('');
   const [selectedAnimalId, setSelectedAnimalId] = useState<number | null>(null);
   const [showAnimalOptions, setShowAnimalOptions] = useState(false);
 
@@ -138,6 +139,10 @@ export default function BookSlotScreen() {
         consultationType: selectedVisitType === 'Online' ? 'online_video' : 'physical',
         ...(effectiveAnimalId ? { animalId: effectiveAnimalId } : {}),
         reasonForConsultation: bookingReason.trim(),
+        symptoms: bookingSymptoms
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean),
       }).unwrap();
     } catch (err) {
       console.log('Error booking slot:', err);
@@ -346,6 +351,18 @@ export default function BookSlotScreen() {
               placeholderTextColor="#A39E99"
               value={bookingReason}
               onChangeText={setBookingReason}
+              multiline
+              textAlignVertical="top"
+            />
+
+            {/* Symptoms (optional, comma-separated) */}
+            <Text style={styles.sectionTitle}>{t('bookSlot.symptomsLabel')}</Text>
+            <TextInput
+              style={styles.reasonInput}
+              placeholder={t('bookSlot.symptomsPlaceholder')}
+              placeholderTextColor="#A39E99"
+              value={bookingSymptoms}
+              onChangeText={setBookingSymptoms}
               multiline
               textAlignVertical="top"
             />

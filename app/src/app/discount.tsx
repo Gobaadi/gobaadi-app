@@ -184,7 +184,10 @@ export default function DiscountScreen() {
           </View>
           <View style={styles.patientInfo}>
             <Text style={styles.patientName}>{patientName}</Text>
-            <Text style={styles.patientOwner}>{t('discount.ownerLabel', { name: ownerName })}</Text>
+            <View style={styles.patientOwner}>
+              <Text style={styles.patientOwnerLabel}>{t('discount.owner')}</Text>
+              <Text style={styles.patientOwnerName}>: {ownerName}</Text>
+            </View>
           </View>
           <View style={styles.contactIcons}>
             <TouchableOpacity style={styles.contactBtn} activeOpacity={0.7}>
@@ -331,8 +334,8 @@ const styles = StyleSheet.create({
   headerTitle: {
     flex: 1,
     minWidth: 0,
-    fontSize: 24,
-    fontWeight: '800',
+    fontSize: 20,
+    fontWeight: '700',
     color: '#1A1817',
   },
   scrollContainer: {
@@ -371,10 +374,19 @@ const styles = StyleSheet.create({
     color: '#1A1817',
   },
   patientOwner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
+  },
+  patientOwnerLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#BD632F',
+  },
+  patientOwnerName: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#7C7672',
-    marginTop: 2,
+    color: '#1A1817',
   },
   contactIcons: {
     flexDirection: 'row',
@@ -390,7 +402,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '500',
     color: '#7C7672',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   placeholderSpacer: {
     height: 20,
@@ -400,20 +412,20 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: '#E6E1DC',
-    padding: 16,
-    marginBottom: 24,
+    padding: 14,
+    marginBottom: 20,
   },
   priceRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 10,
+    paddingVertical: 8,
   },
   priceDividerDashed: {
     borderBottomWidth: 1,
     borderBottomColor: '#E6E1DC',
     borderStyle: 'dashed',
-    marginVertical: 4,
+    marginVertical: 2,
   },
   priceLabel: {
     fontSize: 14,
@@ -439,16 +451,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#1A1817',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   quickDiscountRow: {
     flexDirection: 'row',
     gap: 12,
-    marginBottom: 24,
+    marginBottom: 20,
   },
   quickDiscountBtn: {
     flex: 1,
-    paddingVertical: 14,
+    paddingVertical: 12,
     borderRadius: 14,
     borderWidth: 1.5,
     borderColor: '#BD632F',
@@ -479,24 +491,24 @@ const styles = StyleSheet.create({
   },
   customInput: {
     flex: 1,
-    height: 52,
+    height: 48,
     paddingHorizontal: 16,
     fontSize: 15,
     color: '#1A1817',
   },
   customInputIcon: {
-    width: 52,
-    height: 52,
+    width: 48,
+    height: 48,
     justifyContent: 'center',
     alignItems: 'center',
   },
   infoBanner: {
     flexDirection: 'row',
-    backgroundColor: '#FFF2EB',
+    backgroundColor: '#FDECEA',
     borderRadius: 12,
-    padding: 14,
-    marginBottom: 16,
-    gap: 10,
+    padding: 12,
+    marginBottom: 14,
+    gap: 8,
   },
   infoText: {
     flex: 1,

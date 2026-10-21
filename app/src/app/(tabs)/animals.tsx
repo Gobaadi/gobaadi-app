@@ -21,6 +21,7 @@ import { useDebounce } from '@/hooks/use-debounce';
 import { isRenderableImageUri } from '@/utils/photo-uri';
 import { parseDate, monthsSince } from '@/utils/age';
 import { useTranslation } from '@/hooks/use-translation';
+import { getLanguageLabel } from '@/constants/languages';
 
 type Chip = 'All' | 'Calf' | 'Bull';
 
@@ -100,7 +101,7 @@ export default function AnimalsListScreen() {
   const [genderFilter, setGenderFilter] = useState<'All' | 'Male' | 'Female'>('All');
   const debouncedSearch = useDebounce(searchQuery, 300);
   const { data: animals = [], isLoading } = useGetAnimalsQuery();
-  const { languageCode } = useLanguage();
+  const { language } = useLanguage();
   const [failedImageUris, setFailedImageUris] = useState<string[]>([]);
 
   const counts = useMemo(
@@ -150,7 +151,7 @@ export default function AnimalsListScreen() {
             onPress={() => router.push('/select-language')}
           >
             <Ionicons name="globe-outline" size={20} color="#BD632F" />
-            <Text style={styles.langText}>{languageCode}</Text>
+            <Text style={[styles.langText, { fontSize: 14 }]}>{getLanguageLabel(language)}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.notificationButton}

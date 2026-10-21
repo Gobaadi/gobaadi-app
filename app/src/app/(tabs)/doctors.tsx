@@ -51,6 +51,7 @@ import { useLocation } from '@/hooks/use-location';
 import LocationBottomSheet from '@/components/LocationBottomSheet';
 import { DoctorAvatar } from '@/components/doctor-avatar';
 import { useTranslation } from '@/hooks/use-translation';
+import { getLanguageLabel } from '@/constants/languages';
 import { matchesDoctorLocation } from '@/utils/location';
 
 interface Category {
@@ -82,7 +83,7 @@ export default function DoctorsScreen() {
   const [activeSlide, setActiveSlide] = useState(0);
   const [activeCategory, setActiveCategory] = useState('General');
   const { data: clinics = [], isLoading: clinicsLoading } = useGetClinicsQuery();
-  const { languageCode } = useLanguage();
+  const { language } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearch = useDebounce(searchQuery, 300);
   const { location, setLocation } = useLocation();
@@ -308,7 +309,7 @@ export default function DoctorsScreen() {
               onPress={() => router.push('/select-language')}
             >
               <SvgXml width={24} height={24} xml={tintSvg(languageGlobeSvg, 'white', '#BD632F')} />
-              <Text style={styles.langText}>{languageCode}</Text>
+              <Text style={[styles.langText, { fontSize: 14 }]}>{getLanguageLabel(language)}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.notificationButton}

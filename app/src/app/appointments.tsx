@@ -80,9 +80,12 @@ const STATUS_PILL_LABEL_KEYS: Record<string, string> = {
   CONFIRMED: 'appointments.filters.status.upcoming',
 };
 
-const STATUS_PILL_TONES: Record<string, { bg: string; color: string }> = {
-  COMPLETED: { bg: '#E7F6EC', color: '#2E7D32' },
-  CANCELLED: { bg: '#FDECEA', color: '#D64545' },
+const STATUS_TEXT_TONES: Record<string, string> = {
+  COMPLETED: '#4CAF50',
+  CANCELLED: '#E53935',
+  RESCHEDULED: '#E65100',
+  PENDING: '#F59E0B',
+  CONFIRMED: '#4CAF50',
 };
 
 function isSameDay(a: Date, b: Date): boolean {
@@ -152,16 +155,15 @@ function AppointmentCard({ appointment, onPress, variant = 'today' }: Appointmen
   const displayName =
     appointment.animalName || appointment.patientName || t('appointments.fallback.patient');
 
+  const typeLabelKey = appointment.consultationType
+    ? CONSULTATION_TYPE_LABEL_KEYS[appointment.consultationType]
+    : undefined;
+  const typeLabel = typeLabelKey ? t(typeLabelKey) : t('appointments.liveChat');
+
   if (variant === 'previous') {
-    const typeLabelKey = appointment.consultationType
-      ? CONSULTATION_TYPE_LABEL_KEYS[appointment.consultationType]
-      : undefined;
-    const typeLabel = typeLabelKey ? t(typeLabelKey) : t('appointments.liveChat');
-    const pillLabelKey = STATUS_PILL_LABEL_KEYS[appointment.status];
-    const pillTone = STATUS_PILL_TONES[appointment.status] ?? {
-      bg: '#FFF2EB',
-      color: '#BD632F',
-    };
+    const statusLabelKey = STATUS_PILL_LABEL_KEYS[appointment.status];
+    const statusColor =
+      STATUS_TEXT_TONES[appointment.status] ?? '#7C7672';
 
     return (
       <TouchableOpacity
@@ -185,18 +187,13 @@ function AppointmentCard({ appointment, onPress, variant = 'today' }: Appointmen
         <View style={styles.cardContent}>
           <View style={styles.cardTopRow}>
             <Text style={styles.cardType}>{typeLabel}</Text>
-            <View
-              style={[
-                styles.statusPill,
-                { backgroundColor: pillTone.bg },
-              ]}
-            >
-              <Text style={[styles.statusPillText, { color: pillTone.color }]}>
-                {pillLabelKey
-                  ? t(pillLabelKey)
-                  : appointment.status}
-              </Text>
-            </View>
+            <Text style={styles.dot}> · </Text>
+            <Text style={[styles.cardStatus, { color: statusColor }]}>
+              {statusLabelKey ? t(statusLabelKey) : appointment.status}
+            </Text>
+            <Text style={styles.cardTimeRange}>
+              {formatTimeRange(appointment.startAt, appointment.endAt)}
+            </Text>
           </View>
 
           <Text style={styles.cardName}>{displayName}</Text>
@@ -215,10 +212,6 @@ function AppointmentCard({ appointment, onPress, variant = 'today' }: Appointmen
               <Text style={styles.ownerName}>{appointment.patientName}</Text>
             </View>
           )}
-
-          <Text style={styles.cardTime}>
-            {formatTimeRange(appointment.startAt, appointment.endAt)}
-          </Text>
         </View>
       </TouchableOpacity>
     );
@@ -241,7 +234,7 @@ function AppointmentCard({ appointment, onPress, variant = 'today' }: Appointmen
 
       <View style={styles.cardContent}>
         <View style={styles.cardTopRow}>
-          <Text style={styles.cardType}>{t('appointments.liveChat')}</Text>
+          <Text style={styles.cardType}>{typeLabel}</Text>
           <Text style={styles.dot}> · </Text>
           <Text
             style={[
@@ -260,6 +253,9 @@ function AppointmentCard({ appointment, onPress, variant = 'today' }: Appointmen
               {formatMinutesRemaining(appointment.startAt, t)}
             </Text>
           )}
+          <Text style={styles.cardTimeRange}>
+            {formatTimeRange(appointment.startAt, appointment.endAt)}
+          </Text>
         </View>
 
         <Text style={styles.cardName}>{displayName}</Text>
@@ -275,10 +271,6 @@ function AppointmentCard({ appointment, onPress, variant = 'today' }: Appointmen
         {appointment.patientName && (
           <Text style={styles.cardOwner}>{t('appointments.owner', { name: appointment.patientName })}</Text>
         )}
-
-        <Text style={styles.cardTime}>
-          {formatTimeRange(appointment.startAt, appointment.endAt)}
-        </Text>
       </View>
     </TouchableOpacity>
   );
@@ -791,13 +783,6 @@ const styles = StyleSheet.create({
   cardStatus: { fontSize: 13, fontWeight: '600' },
   statusInProgress: { color: '#4CAF50' },
   statusUpcoming: { color: '#BD632F' },
-  statusPill: {
-    marginLeft: 'auto',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  statusPillText: { fontSize: 11, fontWeight: '700' },
   ownerRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 },
   ownerLabel: { fontSize: 12, fontWeight: '600', color: '#BD632F' },
   ownerName: { fontSize: 13, fontWeight: '600', color: '#1A1817' },
@@ -805,8 +790,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     color: '#9C9690',
-    marginLeft: 'auto',
+    marginLeft: 6,
   },
+  cardTimeRange: { marginLeft: 'auto', fontSize: 12, fontWeight: '600', color: '#3B82F6' },
   cardName: { fontSize: 15, fontWeight: '700', color: '#1A1817', marginBottom: 2 },
   cardSpecies: { fontSize: 13, fontWeight: '500', color: '#7C7672', marginBottom: 2 },
   cardOwner: { fontSize: 13, fontWeight: '500', color: '#7C7672', marginBottom: 2 },

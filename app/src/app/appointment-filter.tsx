@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  headerTitle: { fontSize: 20, fontWeight: '800', color: '#1A1817' },
+  headerTitle: { fontSize: 20, fontWeight: '800', color: '#1A1817', marginLeft: 12, marginRight: 'auto' },
   clearText: { fontSize: 15, fontWeight: '600', color: '#BD632F' },
   scrollContent: { paddingHorizontal: 20, paddingBottom: 100 },
   sectionTitle: {
