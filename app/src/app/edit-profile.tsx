@@ -27,8 +27,10 @@ import {
   editProfilePhotoCameraSvg,
   editProfileNameMicrophoneSvg,
   editProfileNumberCheckSvg,
+  editProfileNumberErrorSvg,
   editProfileLocationSvg,
 } from '@/components/icons/svg-icon-sources';
+import { isValidBdMobile } from '@/utils/phone';
 import { useTranslation } from '@/hooks/use-translation';
 
 export default function EditProfileScreen() {
@@ -41,6 +43,10 @@ export default function EditProfileScreen() {
 
   const [name, setName] = useState(profile?.name || '');
   const [phone, setPhone] = useState(profile?.phone || '');
+  // Inline mobile validation (GOB-FAR-TC-026): blank is allowed (optional
+  // field), anything entered must be a valid Bangladeshi mobile number.
+  const phoneTrimmed = phone.trim();
+  const phoneInvalid = phoneTrimmed !== '' && !isValidBdMobile(phoneTrimmed);
   const [locationInput, setLocationInput] = useState<string | null>(null);
   const [pickedPhotoUri, setPickedPhotoUri] = useState<string | null>(null);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
@@ -133,6 +139,10 @@ export default function EditProfileScreen() {
       Alert.alert(t('editProfile.alerts.requiredField'), t('editProfile.alerts.enterName'));
       return;
     }
+    if (phoneInvalid) {
+      Alert.alert(t('editProfile.alerts.requiredField'), t('editProfile.phoneInvalid'));
+      return;
+    }
     try {
       await updateProfile({ name: name.trim(), phone: phone.trim() }).unwrap();
     } catch (err) {
@@ -210,7 +220,7 @@ export default function EditProfileScreen() {
             <Text style={styles.fieldLabel}>{t('editProfile.phoneLabel')}</Text>
             <View style={styles.inputWrapper}>
               <TextInput
-                style={styles.textInput}
+                style={[styles.textInput, phoneInvalid && styles.textInputError]}
                 value={phone}
                 onChangeText={setPhone}
                 editable={true}
@@ -218,8 +228,15 @@ export default function EditProfileScreen() {
                 placeholderTextColor="#A39E99"
                 keyboardType="phone-pad"
               />
-              <SvgXml width={20} height={20} xml={editProfileNumberCheckSvg} />
+              <SvgXml
+                width={20}
+                height={20}
+                xml={phoneInvalid ? editProfileNumberErrorSvg : editProfileNumberCheckSvg}
+              />
             </View>
+            {phoneInvalid ? (
+              <Text style={styles.fieldErrorText}>{t('editProfile.phoneInvalid')}</Text>
+            ) : null}
           </View>
 
           <View style={styles.fieldContainer}>
@@ -356,6 +373,15 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#1A1817',
     fontWeight: '700',
+  },
+  textInputError: {
+    color: '#C6363C',
+  },
+  fieldErrorText: {
+    fontSize: 12,
+    color: '#C6363C',
+    marginTop: 6,
+    fontWeight: '600',
   },
   inputActionBtn: {
     padding: 4,
