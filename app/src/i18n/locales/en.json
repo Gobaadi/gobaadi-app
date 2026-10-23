@@ -191,11 +191,14 @@
     },
     "validation": {
       "colorRequired": "Please add animal color.",
+      "costInvalid": "Purchase cost must be a valid amount (numbers only, greater than zero).",
       "costRequired": "Please add purchase cost.",
       "descriptionInvalid": "Description can only contain letters, numbers, spaces, and basic punctuation.",
       "descriptionRequired": "Please enter description.",
+      "dobFuture": "Date of birth cannot be in the future.",
       "dobRequired": "Please enter date of birth.",
       "genderRequired": "Please select gender.",
+      "joinedFarmFuture": "Joined farm date cannot be in the future.",
       "nameInvalid": "Name can only contain letters, numbers, spaces, and basic punctuation.",
       "nameRequired": "Please enter animal name.",
       "photoRequired": "Please add at least one photo.",
@@ -353,6 +356,7 @@
     "errors": {
       "analysisIncomplete": "The analysis could not be completed. Please try again.",
       "captureFailed": "Could not capture the photo. Please try again.",
+      "mountFailed": "Camera could not start. Please try again.",
       "photoTooLarge": "Photo is too large — please take a smaller photo.",
       "startFailed": "Could not start the analysis. Please try again.",
       "timeout": "The analysis is taking longer than expected. Please try again.",
@@ -360,6 +364,7 @@
       "uploadFailed": "Upload failed. Please check your connection and try again."
     },
     "holdStill": "Please hold still…",
+    "loadingCamera": "Starting camera…",
     "permission": {
       "allow": "Allow Camera",
       "goBack": "Go back",
@@ -891,20 +896,39 @@
   },
   "bookSlot": {
     "alerts": {
+      "bookingFailed": "Booking Failed",
+      "bookingFailedMsg": "Could not book the slot. Please try again.",
       "enterReason": "Please enter a booking reason before proceeding.",
+      "pastDate": "Please select a current or future date.",
       "required": "Required",
       "selectPet": "Please select the pet for this appointment."
     },
+    "bookingInProgress": "Booking...",
     "bookingReason": "Booking Reason",
-    "calendarMonth": "December 2026",
     "choosePet": "Choose your pet",
     "confirmReschedule": "Confirm Reschedule",
     "confirmSlot": "Confirm Slot",
     "doctorNotFound": "Doctor not found",
     "goBack": "Go Back",
     "loading": "Loading doctor info...",
+    "months": {
+      "april": "April",
+      "august": "August",
+      "december": "December",
+      "february": "February",
+      "january": "January",
+      "july": "July",
+      "june": "June",
+      "march": "March",
+      "may": "May",
+      "november": "November",
+      "october": "October",
+      "september": "September"
+    },
+    "nextMonth": "Next month",
     "noSlots": "No open slots for this date.",
     "petFallback": "Pet",
+    "prevMonth": "Previous month",
     "reasonPlaceholder": "Description of symptoms",
     "required": "(Required)",
     "reschedule": "Reschedule",
@@ -1199,6 +1223,11 @@
     "title": "Consultation Ended"
   },
   "contactSupport": {
+    "alerts": {
+      "cannotOpenTitle": "Cannot open",
+      "noEmailApp": "No email app is installed on this device. Please email us at ceo.gobaadi@gmail.com",
+      "noPhoneApp": "No calling app is available. Please call customer service at +8801911418977"
+    },
     "customerService": "Customer Service",
     "email": "Email",
     "title": "Contact Support"
@@ -1529,6 +1558,7 @@
     "nameLabel": "Your name",
     "namePlaceholder": "Enter name",
     "phoneLabel": "Mobile Number",
+    "phoneInvalid": "Enter a valid Bangladeshi mobile number (e.g. 01712345678)",
     "phonePlaceholder": "Enter Phone",
     "saveChanges": "Save Changes"
   },
@@ -1806,6 +1836,8 @@
     "addedMessage": "{{name}} has been listed in the Gobadi marketplace.",
     "addedTitle": "Added to Marketplace",
     "age": "Age",
+    "ageMonths_one": "{{count}} month",
+    "ageMonths_other": "{{count}} months",
     "animal": "Animal",
     "basicInfo": "Basic Informations",
     "breed": "Breed",
@@ -1817,6 +1849,7 @@
     "descriptions": "Descriptions",
     "dob": "Date Of Birth",
     "editDetails": "Edit Animal Details",
+    "feedingEmpty": "No feeding records added for today yet.",
     "gender": "Gender",
     "healthy": "Healthy",
     "joinedFarm": "Joined Farm",
@@ -1828,7 +1861,8 @@
     "shareMessage": "Check out {{name}} ({{breed}}) on Gobadi! Live Weight: {{weight}}.",
     "source": "Source",
     "stage": "Stage",
-    "thisAnimal": "this animal"
+    "thisAnimal": "this animal",
+    "todaysFeedingRecord": "Today's Feeding Record"
   },
   "myAppointments": {
     "dates": {
@@ -1961,9 +1995,11 @@
     "searchPlaceholder": "Search doctor",
     "service": "Service",
     "status": {
+      "cancelled": "Cancelled",
       "completed": "Completed",
       "upcoming": "Upcoming"
     },
+    "time": "Time",
     "title": "My Treatment"
   },
   "notificationPreferences": {
