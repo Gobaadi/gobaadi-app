@@ -19,8 +19,6 @@ import { useGetMyDoctorProfileQuery, useGetDashboardStatsQuery } from '@/store/d
 import { useGetReviewsQuery } from '@/store/reviewsApi';
 import { useGetAnimalsQuery } from '@/store/animalsApi';
 import { useGetBalanceQuery } from '@/store/walletApi';
-import { useGetMySubscriptionQuery } from '@/store/subscriptionsApi';
-import { SUBSCRIPTION_PLANS } from '@/constants/subscription-plans';
 import type { RootState, AppDispatch } from '@/store/store';
 import { DoctorAvatar } from '@/components/doctor-avatar';
 import {
@@ -29,7 +27,6 @@ import {
   profileMyTaskSvg,
   profileNotificationSvg,
   profileLanguageSvg,
-  profileReferAndEarnSvg,
   profileHelpAndSupportSvg,
   profilePrivacyPolicySvg,
   profileLegalAndAboutSvg,
@@ -59,17 +56,7 @@ export default function ProfileScreen() {
   // Wallet data
   const { data: walletBalance } = useGetBalanceQuery();
 
-  // Subscription data (farmer only)
-  const { data: mySubscription } = useGetMySubscriptionQuery(undefined, { skip: isDoctor });
-  const activePlan = SUBSCRIPTION_PLANS.find((p) => p.id === mySubscription?.planId);
-  const planPrice = activePlan ? `$${activePlan.price.toFixed(2)}` : '$00.00';
-  const nextBillingDate = mySubscription?.endDate
-    ? new Date(mySubscription.endDate).toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-      })
-    : '';
+  // Subscription UI is intentionally hidden until the billing feature ships.
 
   const uniquePatients = dashboardStats?.totalPatients ?? 0;
   const completedConsultations = dashboardStats?.totalConsultations ?? 0;
@@ -320,25 +307,7 @@ export default function ProfileScreen() {
               </View>
             </View>
 
-            {/* Subscription Section */}
-            <Text style={styles.subscriptionSectionTitle}>{t('profile.subscription.section')}</Text>
-            <View style={styles.subscriptionDashedDivider} />
-
-            {/* Current Plan Card */}
-            <TouchableOpacity
-              style={styles.planCard}
-              activeOpacity={0.85}
-              onPress={() => router.push('/subscription')}
-            >
-              <View style={styles.planLeft}>
-                <Text style={styles.planTitle}>{t('profile.subscription.currentPlan')}</Text>
-                <Text style={styles.planPrice}>{planPrice}</Text>
-                <Text style={styles.planBilling}>
-                  {t('profile.subscription.nextBilling')}{nextBillingDate}
-                </Text>
-              </View>
-              <SvgXml width={10} height={20} xml={profileArrowRightSvg} />
-            </TouchableOpacity>
+            {/* Subscription section intentionally hidden until billing ships. */}
 
             {/* Farmer Menu Items */}
             <View >
@@ -390,21 +359,8 @@ export default function ProfileScreen() {
 
               <View style={styles.divider} />
 
-              <TouchableOpacity
-                style={styles.menuItem}
-                activeOpacity={0.7}
-                onPress={() => router.push('/refer-earn')}
-              >
-                <View style={styles.menuLeft}>
-                  <View style={styles.iconCircle}>
-                    <SvgXml width={22} height={22} xml={profileReferAndEarnSvg} />
-                  </View>
-                  <Text style={styles.menuLabel}>{t('profile.menu.referEarn')}</Text>
-                </View>
-                <SvgXml width={9} height={18} xml={tintSvg(profileArrowRightSvg, '#737373', '#9C9690')} />
-              </TouchableOpacity>
-
-              <View style={styles.divider} />
+              {/* Refer & Earn menu item intentionally hidden until the
+                  referrals feature is functional (backend incomplete). */}
 
               <TouchableOpacity
                 style={styles.menuItem}
