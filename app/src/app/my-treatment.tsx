@@ -21,6 +21,7 @@ import {
   type AppointmentStatus,
 } from '@/store/doctorPortalApi';
 import { useGetServiceQuery } from '@/store/servicesApi';
+import { formatTime12h } from '@/utils/date';
 import { useGetReviewsQuery } from '@/store/reviewsApi';
 import { DoctorAvatar } from '@/components/doctor-avatar';
 import {
@@ -41,6 +42,7 @@ interface Treatment {
   avatar: string;
   location?: string;
   date: string;
+  time: string;
   bookedOn: string;
   status: AppointmentStatus;
   consultationType: string;
@@ -92,6 +94,7 @@ function TreatmentCard({ item, onPress }: { item: Treatment; onPress: () => void
 
   const online = isOnlineConsultation(item.consultationType);
   const upcoming = isUpcoming(item.status);
+  const cancelled = item.status === 'CANCELLED';
   const serviceName = service?.name || t('myTreatment.consultation');
 
   return (
@@ -156,6 +159,10 @@ function TreatmentCard({ item, onPress }: { item: Treatment; onPress: () => void
               <Text style={styles.gridValue}>{item.date}</Text>
             </View>
             <View style={styles.detailRow}>
+              <Text style={styles.gridLabel}>{t('myTreatment.time')}</Text>
+              <Text style={styles.gridValue}>{item.time || '—'}</Text>
+            </View>
+            <View style={styles.detailRow}>
               <Text style={styles.gridLabel}>{t('myTreatment.bookedOn')}</Text>
               <Text style={styles.gridValue}>{item.bookedOn}</Text>
             </View>
@@ -168,16 +175,28 @@ function TreatmentCard({ item, onPress }: { item: Treatment; onPress: () => void
         <View
           style={[
             styles.statusIndicatorBadge,
-            upcoming ? styles.statusUpcoming : styles.statusCompleted,
+            cancelled
+              ? styles.statusCancelled
+              : upcoming
+                ? styles.statusUpcoming
+                : styles.statusCompleted,
           ]}
         >
           <Text
             style={[
               styles.statusIndicatorText,
-              upcoming ? styles.statusTextUpcoming : styles.statusTextCompleted,
+              cancelled
+                ? styles.statusTextCancelled
+                : upcoming
+                  ? styles.statusTextUpcoming
+                  : styles.statusTextCompleted,
             ]}
           >
-            {upcoming ? t('myTreatment.status.upcoming') : t('myTreatment.status.completed')}
+            {cancelled
+              ? t('myTreatment.status.cancelled')
+              : upcoming
+                ? t('myTreatment.status.upcoming')
+                : t('myTreatment.status.completed')}
           </Text>
         </View>
         <View style={styles.priceContainer}>
@@ -223,6 +242,7 @@ export default function MyTreatmentScreen() {
           avatar: a.doctorAvatar || doctor?.avatar || '',
           location: doctor?.location,
           date: formatDate(a.startAt),
+          time: formatTime12h(a.startAt),
           bookedOn: formatDate(a.createdAt),
           status: a.status,
           consultationType: a.consultationType || 'online_video',
@@ -652,6 +672,9 @@ const styles = StyleSheet.create({
   statusCompleted: {
     backgroundColor: '#E8F5E9',
   },
+  statusCancelled: {
+    backgroundColor: '#F1EEE9',
+  },
   statusIndicatorText: {
     fontSize: 11,
     fontWeight: '700',
@@ -661,6 +684,9 @@ const styles = StyleSheet.create({
   },
   statusTextCompleted: {
     color: '#2E7D32',
+  },
+  statusTextCancelled: {
+    color: '#9C6750',
   },
   priceContainer: {
     flexDirection: 'row',

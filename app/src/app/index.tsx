@@ -152,7 +152,7 @@ export default function OnboardingScreen() {
     return (
       <ScrollView
         style={{ width }}
-        contentContainerStyle={styles.slideScrollContent}
+        contentContainerStyle={styles.slideScrollContentCentered}
         showsVerticalScrollIndicator={false}
         bounces={false}
       >
@@ -170,8 +170,6 @@ export default function OnboardingScreen() {
           <Text style={styles.titleFull}>{t(item.titleFull)}</Text>
           <Text style={styles.subtitleText}>{t(item.subtitle)}</Text>
         </View>
-
-        <View style={{ flex: 1, minHeight: 20 }} />
       </ScrollView>
     );
   };
@@ -241,6 +239,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 10,
     paddingBottom: 20,
+  },
+  slideScrollContentCentered: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 20,
   },
   illustrationWrapper: {
     width: '100%',
