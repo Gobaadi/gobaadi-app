@@ -22,6 +22,7 @@ export function useAgora(
   appId: string,
   uid: number,
   startCameraOff = false,
+  onTokenExpiring?: () => void,
 ) {
   const [state, setState] = useState<AgoraState>({
     localUid: null,
@@ -41,6 +42,13 @@ export function useAgora(
     stateRef.current = state;
   }, [state]);
 
+  // Keep callback in a ref so the join effect never re-runs (a rejoin
+  // would drop an live call if the parent recreates the callback).
+  const onTokenExpiringRef = useRef(onTokenExpiring);
+  useEffect(() => {
+    onTokenExpiringRef.current = onTokenExpiring;
+  }, [onTokenExpiring]);
+
   useEffect(() => {
     let mounted = true;
 
@@ -48,6 +56,9 @@ export function useAgora(
       onJoinChannelSuccess: (_connection: RtcConnection, _elapsed: number) => {
         if (mounted) {
           setState(prev => ({ ...prev, localUid: uid, isConnected: true, joinError: null }));
+          // Speaker route is channel-scoped — setEnableSpeakerphone is only
+          // valid once joined (per SDK docs).
+          agoraManager.setSpeaker(stateRef.current.isSpeakerOn);
         }
       },
       onError: (err, msg) => {
@@ -88,8 +99,9 @@ export function useAgora(
         }
       },
       onTokenPrivilegeWillExpire: () => {
-        // Token will expire — the parent component should handle refresh
-        // via the video-call screen's re-join flow or token refresh endpoint
+        // Token about to expire mid-call — parent fetches a fresh one and
+        // calls agoraManager.renewToken so the join privileges extend.
+        onTokenExpiringRef.current?.();
       },
     };
 
@@ -105,20 +117,26 @@ export function useAgora(
       }
 
       engine.registerEventHandler(handler);
-      // Audio call: never publish camera. Also resets the singleton engine
-      // after a previous audio call so later video calls start with camera on.
-      await agoraManager.muteVideo(startCameraOff);
+      // Engine reconfiguration can reject on some native builds (e.g. calling
+      // stopPreview without a prior startPreview on an audio-only session).
+      // Log and continue — these must never fake a join failure since the
+      // join itself may still succeed.
+      await agoraManager
+        .muteVideo(startCameraOff)
+        .catch((err: unknown) => console.warn('[use-agora] muteVideo failed:', err));
+      // Audio call: stop preview left running by a previous video call.
       // Video call: start local preview so own face renders in the PiP
       // (Agora does not show self-view until startPreview is called).
-      // Audio call: stop preview left running by a previous video call.
       if (startCameraOff) {
-        await agoraManager.stopPreview();
+        await agoraManager
+          .stopPreview()
+          .catch((err: unknown) => console.warn('[use-agora] stopPreview failed:', err));
       } else {
-        await agoraManager.startPreview();
+        await agoraManager
+          .startPreview()
+          .catch((err: unknown) => console.warn('[use-agora] startPreview failed:', err));
       }
       await agoraManager.join(token, channelName, uid);
-      // Speaker route is channel-scoped — re-apply after every (re)join.
-      agoraManager.setSpeaker(stateRef.current.isSpeakerOn);
     };
 
     setup().catch((err: unknown) => {

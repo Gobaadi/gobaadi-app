@@ -8,10 +8,17 @@ import {
 
 class AgoraManager {
   private engine: IRtcEngine | null = null;
+  private previewActive = false;
 
   async init(appId: string): Promise<void> {
     if (this.engine) return;
-    this.engine = createAgoraRtcEngine();
+    try {
+      this.engine = createAgoraRtcEngine();
+    } catch {
+      throw new Error(
+        'Call engine unavailable — Expo Go is not supported, use a development build',
+      );
+    }
     this.engine.initialize({ appId });
     this.engine.setChannelProfile(ChannelProfileType.ChannelProfileCommunication);
     // Louder, clearer call audio: higher-quality encoding than the default
@@ -31,7 +38,12 @@ class AgoraManager {
   }
 
   async leave(): Promise<void> {
+    this.previewActive = false;
     await this.engine?.leaveChannel();
+  }
+
+  async renewToken(token: string): Promise<void> {
+    this.engine?.renewToken(token);
   }
 
   async muteAudio(muted: boolean): Promise<void> {
@@ -43,10 +55,14 @@ class AgoraManager {
   }
 
   async startPreview(): Promise<void> {
+    if (this.previewActive) return;
+    this.previewActive = true;
     this.engine?.startPreview();
   }
 
   async stopPreview(): Promise<void> {
+    if (!this.previewActive) return;
+    this.previewActive = false;
     this.engine?.stopPreview();
   }
 

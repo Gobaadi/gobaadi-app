@@ -46,4 +46,5 @@ export const {
   useJoinSessionQuery,
   useEndSessionMutation,
   useGetTokenQuery,
+  useLazyGetTokenQuery,
 } = videoCallApi;
