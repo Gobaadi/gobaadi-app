@@ -70,6 +70,7 @@ export class UsersService {
       allergies?: string;
       emergencyContactName?: string;
       emergencyContactPhone?: string;
+      language?: string;
     },
   ): Promise<User> {
     const hasData = Object.values(data).some((v) => v !== undefined);

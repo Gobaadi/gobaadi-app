@@ -69,7 +69,7 @@ export class UsersController {
   ): Promise<{ success: boolean; language: string }> {
     await this.usersService.updateProfile(user.sub, {
       language: body.language,
-    } as any);
+    });
     return { success: true, language: body.language };
   }
 
