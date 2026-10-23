@@ -30,6 +30,7 @@ export default function BookingDetailsScreen() {
   const params = useLocalSearchParams();
   const doctorId = String(params.id || '');
   const selectedDay = params.day ? String(params.day) : '28';
+  const selectedDateStr = params.date ? String(params.date) : '';
   const selectedTime = params.timeSlot ? String(params.timeSlot) : '09.00 AM';
   const selectedVisitType = params.visitType ? String(params.visitType) : 'Online';
   const bookingReason = params.reason ? String(params.reason) : '';
@@ -59,14 +60,28 @@ export default function BookingDetailsScreen() {
     };
   }, [doctorData, doctorId, t]);
 
-  const today = new Date();
+  // Screen opens with the real booked date (YYYY-MM-DD); fall back to the
+  // legacy day-number param within the current month when absent.
+  const bookedDate = useMemo(() => {
+    const today = new Date();
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(selectedDateStr);
+    if (match) {
+      return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+    }
+    return new Date(today.getFullYear(), today.getMonth(), Number(selectedDay));
+  }, [selectedDateStr, selectedDay]);
   const monthKeys = [
     'january', 'february', 'march', 'april', 'may', 'june',
     'july', 'august', 'september', 'october', 'november', 'december',
   ];
   const dayKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
-  const dateObj = new Date(today.getFullYear(), today.getMonth(), Number(selectedDay));
-  const fullDateDisplay = `${t(`bookingDetails.days.${dayKeys[dateObj.getDay()]}`)}, ${pad(Number(selectedDay))} ${t(`bookingDetails.months.${monthKeys[today.getMonth()]}`)} ${today.getFullYear()}`;
+  const fullDateDisplay = `${t(`bookingDetails.days.${dayKeys[bookedDate.getDay()]}`)}, ${pad(bookedDate.getDate())} ${t(`bookingDetails.months.${monthKeys[bookedDate.getMonth()]}`)} ${bookedDate.getFullYear()}`;
+
+  // Booking reference — real one is handed down by the booking flow;
+  // deterministic fallback for deep opens without one.
+  const bookingRef = params.bookingRef
+    ? String(params.bookingRef)
+    : `GB-${doctorId || '0'}-${pad(bookedDate.getMonth() + 1)}${pad(bookedDate.getDate())}`;
 
   const barcodePattern = [
     2, 1, 4, 2, 1, 3, 1, 2, 4, 1, 2, 3, 1, 4, 2, 1, 2, 3, 1, 4,
@@ -157,7 +172,7 @@ export default function BookingDetailsScreen() {
                 />
               ))}
             </View>
-            <Text style={styles.barcodeCode}>PC123456789</Text>
+            <Text style={styles.barcodeCode}>{bookingRef}</Text>
           </View>
         </View>
       </ScrollView>
