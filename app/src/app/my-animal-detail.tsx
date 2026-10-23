@@ -20,6 +20,7 @@ import { useTranslation } from 'react-i18next';
 import { SvgXml } from 'react-native-svg';
 import { useGetAnimalByIdQuery, useDeleteAnimalMutation } from '@/store/animalsApi';
 import { isRenderableImageUri } from '@/utils/photo-uri';
+import { ageToMonths } from '@/utils/age';
 import {
   animalDetailShareSvg,
   animalDetailShopCartSvg,
@@ -156,12 +157,18 @@ export default function MyAnimalDetailScreen() {
     );
   }
 
+  const ageMonths = ageToMonths(animal?.age, animal?.dob);
+  const ageDisplay =
+    ageMonths !== null
+      ? t('myAnimalDetail.ageMonths', { count: ageMonths })
+      : animal?.age?.trim() || 'N/A';
+
   const basicInfo = [
     { label: t('myAnimalDetail.dob'), value: animal?.dob || 'N/A' },
     { label: t('myAnimalDetail.gender'), value: animal?.gender || 'N/A' },
     { label: t('myAnimalDetail.source'), value: animal?.source || 'N/A' },
     { label: t('myAnimalDetail.breed'), value: animal?.breed || 'N/A' },
-    { label: t('myAnimalDetail.age'), value: animal?.age || 'N/A' },
+    { label: t('myAnimalDetail.age'), value: ageDisplay },
     { label: t('myAnimalDetail.color'), value: animal?.color || 'N/A' },
     { label: t('myAnimalDetail.joinedFarm'), value: animal?.joinedFarm || 'N/A' },
     { label: t('myAnimalDetail.stage'), value: animal?.source || 'N/A' },
@@ -299,6 +306,14 @@ export default function MyAnimalDetailScreen() {
               <Text style={styles.descriptionText}>{animal.description}</Text>
             </>
           )}
+
+          {/* Today's Feeding Record */}
+          <Text style={[styles.sectionTitle, styles.descriptionSectionTitle]}>
+            {t('myAnimalDetail.todaysFeedingRecord')}
+          </Text>
+          <View style={styles.feedingEmptyCard}>
+            <Text style={styles.feedingEmptyText}>{t('myAnimalDetail.feedingEmpty')}</Text>
+          </View>
         </View>
       </ScrollView>
 
@@ -500,6 +515,21 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 22,
     color: '#5A5754',
+  },
+  feedingEmptyCard: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E6E1DC',
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  feedingEmptyText: {
+    fontSize: 13,
+    lineHeight: 20,
+    color: '#9C9690',
+    textAlign: 'center',
   },
   gridContainer: {
     flexDirection: 'row',

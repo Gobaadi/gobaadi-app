@@ -57,3 +57,49 @@ export function ageToMonthsInput(value?: string | null): string {
 
   return '';
 }
+
+/**
+ * Single source of truth for an animal's age in whole months.
+ * Prefers the date of birth, then falls back to the stored `age`
+ * string (plain months number, "X years", "X months" or a date).
+ */
+export function ageToMonths(age?: string | null, dob?: string | null): number | null {
+  const fromDob = parseDate(dob);
+  if (fromDob) return monthsSince(fromDob);
+
+  if (!age) return null;
+  const trimmed = age.trim();
+  if (!trimmed) return null;
+
+  if (/^\d+$/.test(trimmed)) return Number(trimmed);
+
+  const fromDate = parseDate(trimmed);
+  if (fromDate) return monthsSince(fromDate);
+
+  const years = trimmed.match(/^(\d+)\s*years?$/i);
+  if (years) return Number(years[1]) * 12;
+
+  const months = trimmed.match(/^(\d+)\s*months?$/i);
+  if (months) return Number(months[1]);
+
+  return null;
+}
+
+/** Keep only digits, a single decimal point and max 2 decimals (money/amount input). */
+export function sanitizeAmount(value: string): string {
+  let v = value.replace(/[^\d.]/g, '');
+  const dot = v.indexOf('.');
+  if (dot !== -1) {
+    v = v.slice(0, dot + 1) + v.slice(dot + 1).replace(/\./g, '');
+    const [intPart, decPart] = v.split('.');
+    v = intPart + (decPart !== undefined ? `.${decPart.slice(0, 2)}` : '');
+  }
+  return v;
+}
+
+/** Strict positive numeric amount: "150", "150.5", "150.50" — rejects "", "0", "100k", "100kg". */
+export function isValidAmount(value?: string | null): boolean {
+  const trimmed = (value ?? '').trim();
+  if (!/^\d+(\.\d{1,2})?$/.test(trimmed)) return false;
+  return Number(trimmed) > 0;
+}

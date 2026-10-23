@@ -19,7 +19,7 @@ import { MediaCardSkeleton } from '@/components/ui/skeleton';
 import { useLanguage } from '@/hooks/use-language';
 import { useDebounce } from '@/hooks/use-debounce';
 import { isRenderableImageUri } from '@/utils/photo-uri';
-import { parseDate, monthsSince } from '@/utils/age';
+import { ageToMonths } from '@/utils/age';
 import { useTranslation } from '@/hooks/use-translation';
 import { getLanguageLabel } from '@/constants/languages';
 
@@ -45,37 +45,12 @@ function isBull(a: Animal): boolean {
 }
 
 function formatAge(t: T, age?: string, dob?: string): string {
-  const fromDob = parseDate(dob);
-  if (fromDob) {
-    const m = monthsSince(fromDob);
-    return t('animalsTab.ageMonths', { count: m });
+  const m = ageToMonths(age, dob);
+  if (m === null) {
+    const trimmed = (age || '').trim();
+    return trimmed ? trimmed : t('animalsTab.notAvailable');
   }
-
-  if (!age) return t('animalsTab.notAvailable');
-
-  const trimmed = age.trim();
-
-  // Numeric age is stored in whole months.
-  if (/^\d+$/.test(trimmed)) {
-    return t('animalsTab.ageMonths', { count: Number(trimmed) });
-  }
-
-  const fromDate = parseDate(trimmed);
-  if (fromDate) {
-    const m = monthsSince(fromDate);
-    return t('animalsTab.ageMonths', { count: m });
-  }
-
-  const years = trimmed.match(/^(\d+)\s*years?$/i);
-  if (years) {
-    const m = Number(years[1]) * 12;
-    return t('animalsTab.ageMonths', { count: m });
-  }
-
-  const months = trimmed.match(/^(\d+)\s*months?$/i);
-  if (months) return t('animalsTab.ageMonths', { count: Number(months[1]) });
-
-  return age;
+  return t('animalsTab.ageMonths', { count: m });
 }
 
 function formatWeight(t: T, weight?: string): string {

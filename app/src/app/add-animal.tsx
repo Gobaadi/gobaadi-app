@@ -25,7 +25,7 @@ import {
 } from '@/store/animalsApi';
 import { compressImageForUpload } from '@/utils/compress-image';
 import { isRenderableImageUri } from '@/utils/photo-uri';
-import { ageToMonthsInput, digitsOnly } from '@/utils/age';
+import { ageToMonthsInput, digitsOnly, parseDate, sanitizeAmount, isValidAmount } from '@/utils/age';
 import { useTranslation } from '@/hooks/use-translation';
 
 const MONTH_KEYS = [
@@ -80,8 +80,7 @@ function CalendarModal({ visible, title, onClose, onSelectDate }: CalendarModalP
   }
 
   const today = new Date();
-  const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
-  const currentTodayNum = today.getDate();
+  const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -122,14 +121,23 @@ function CalendarModal({ visible, title, onClose, onSelectDate }: CalendarModalP
               if (cell === null) {
                 return <View key={idx} style={styles.calendarCellEmpty} />;
               }
-              const isToday = isCurrentMonth && cell === currentTodayNum;
+              const cellDate = new Date(year, month, cell);
+              const isToday = cellDate.getTime() === startOfToday.getTime();
+              const isFuture = cellDate.getTime() > startOfToday.getTime();
               return (
                 <TouchableOpacity
                   key={idx}
-                  style={[styles.calendarCell, isToday && styles.calendarCellToday]}
+                  style={[styles.calendarCell, isToday && styles.calendarCellToday, isFuture && styles.calendarCellDisabled]}
                   onPress={() => handleSelectDay(cell)}
+                  disabled={isFuture}
                 >
-                  <Text style={[styles.calendarCellText, isToday && styles.calendarCellTextToday]}>
+                  <Text
+                    style={[
+                      styles.calendarCellText,
+                      isToday && styles.calendarCellTextToday,
+                      isFuture && styles.calendarCellTextDisabled,
+                    ]}
+                  >
                     {cell}
                   </Text>
                 </TouchableOpacity>
@@ -217,7 +225,24 @@ export default function AddAnimalScreen() {
     setCalendarVisible(true);
   };
 
+  const isFutureDate = (dateStr: string) => {
+    const selected = parseDate(dateStr);
+    if (!selected) return false;
+    const today = new Date();
+    const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    return selected.getTime() > startOfToday.getTime();
+  };
+
   const handleCalendarSelect = (dateStr: string) => {
+    if (isFutureDate(dateStr)) {
+      Alert.alert(
+        t('addAnimal.alerts.invalidInputTitle'),
+        calendarTarget === 'joinedFarm'
+          ? t('addAnimal.validation.joinedFarmFuture')
+          : t('addAnimal.validation.dobFuture'),
+      );
+      return;
+    }
     if (calendarTarget === 'dob') {
       setDob(dateStr);
     } else if (calendarTarget === 'joinedFarm') {
@@ -344,6 +369,10 @@ export default function AddAnimalScreen() {
         Alert.alert(t('addAnimal.alerts.requiredTitle'), t('addAnimal.validation.dobRequired'));
         return;
       }
+      if (isFutureDate(dob.trim())) {
+        Alert.alert(t('addAnimal.alerts.invalidInputTitle'), t('addAnimal.validation.dobFuture'));
+        return;
+      }
       setStep(2);
     } else if (step === 2) {
       if (!weight.trim()) {
@@ -364,6 +393,18 @@ export default function AddAnimalScreen() {
     } else {
       if (!photoCost.trim()) {
         Alert.alert(t('addAnimal.alerts.requiredTitle'), t('addAnimal.validation.costRequired'));
+        return;
+      }
+      if (!isValidAmount(photoCost)) {
+        Alert.alert(t('addAnimal.alerts.invalidInputTitle'), t('addAnimal.validation.costInvalid'));
+        return;
+      }
+      if (sellingPrice.trim() && !isValidAmount(sellingPrice)) {
+        Alert.alert(t('addAnimal.alerts.invalidInputTitle'), t('addAnimal.validation.priceInvalid'));
+        return;
+      }
+      if (liveWeightPrice.trim() && !isValidAmount(liveWeightPrice)) {
+        Alert.alert(t('addAnimal.alerts.invalidInputTitle'), t('addAnimal.validation.priceInvalid'));
         return;
       }
       try {
@@ -760,10 +801,11 @@ export default function AddAnimalScreen() {
                 <TextInput
                   style={styles.input}
                   value={photoCost}
-                  onChangeText={setPhotoCost}
+                  onChangeText={(text) => setPhotoCost(sanitizeAmount(text))}
                   placeholder={t('addAnimal.placeholders.purchaseCost')}
                   placeholderTextColor="#A39E99"
                   keyboardType="numeric"
+                  maxLength={12}
                 />
               </View>
 
@@ -773,10 +815,11 @@ export default function AddAnimalScreen() {
                 <TextInput
                   style={styles.input}
                   value={sellingPrice}
-                  onChangeText={setSellingPrice}
+                  onChangeText={(text) => setSellingPrice(sanitizeAmount(text))}
                   placeholder={t('addAnimal.placeholders.sellingPrice')}
                   placeholderTextColor="#A39E99"
                   keyboardType="numeric"
+                  maxLength={12}
                 />
               </View>
 
@@ -786,10 +829,11 @@ export default function AddAnimalScreen() {
                 <TextInput
                   style={styles.input}
                   value={liveWeightPrice}
-                  onChangeText={setLiveWeightPrice}
+                  onChangeText={(text) => setLiveWeightPrice(sanitizeAmount(text))}
                   placeholder={t('addAnimal.placeholders.sellingPrice')}
                   placeholderTextColor="#A39E99"
                   keyboardType="numeric"
+                  maxLength={12}
                 />
               </View>
             </View>
@@ -1253,5 +1297,11 @@ const styles = StyleSheet.create({
   calendarCellTextToday: {
     color: '#FFFFFF',
     fontWeight: '700',
+  },
+  calendarCellDisabled: {
+    opacity: 0.35,
+  },
+  calendarCellTextDisabled: {
+    color: '#C6C1BB',
   },
 });
