@@ -36,21 +36,26 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       let initial = DEFAULT_LANGUAGE;
       try {
         const saved = await getLanguage();
-        // Priority: server (account-level, new device) > local > device locale.
-        // Legacy values ('hi', 'ur') from the old 4-language picker are normalized.
+        // Priority: local (device, but newest explicit user choice) > server
+        // (account-level, covers sign-in on a new device) > device locale.
+        // A stale server value (failed sync / older backend) must never
+        // override what the user picked on this device — that is the TC-024
+        // revert bug. Server value is used only when this device has no
+        // local choice yet. Legacy values ('hi', 'ur') from the old
+        // 4-language picker are normalized.
         const local = saved === 'bn' || saved === 'en' ? saved : null;
         let server: string | null = null;
         try {
-          if (await getToken()) {
+          if (!local && (await getToken())) {
             const me = await apiFetch<{ language?: string }>('/users/me');
             if (me?.language === 'bn' || me?.language === 'en') {
               server = me.language;
             }
           }
         } catch {
-          // Not logged in / offline / old backend — fall through to local
+          // Not logged in / offline / old backend — fall through to device locale
         }
-        initial = server ?? local ?? detectDeviceLanguage();
+        initial = local ?? server ?? detectDeviceLanguage();
       } catch (error) {
         console.error('Failed to load language:', error);
         initial = detectDeviceLanguage();

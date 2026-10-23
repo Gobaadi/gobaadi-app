@@ -32,9 +32,11 @@ export default function ConfirmBookingScreen() {
   const params = useLocalSearchParams();
   const doctorId = String(params.id || '');
   const selectedDay = params.day ? String(params.day) : '28';
+  const selectedDateStr = params.date ? String(params.date) : '';
   const selectedTime = params.timeSlot ? String(params.timeSlot) : '09.00 AM';
   const selectedVisitType = params.visitType ? String(params.visitType) : 'Online';
   const bookingReason = params.reason ? String(params.reason) : '';
+  const bookingRef = params.bookingRef ? String(params.bookingRef) : '';
 
   const { data: doctorData, isLoading: doctorLoading } = useGetDoctorByIdQuery(doctorId, { skip: !doctorId });
 
@@ -61,18 +63,26 @@ export default function ConfirmBookingScreen() {
     };
   }, [doctorData, doctorId, t]);
 
-  const today = new Date();
+  // Screen opens with the real booked date (YYYY-MM-DD); fall back to the
+  // legacy day-number param within the current month when absent.
+  const bookedDate = useMemo(() => {
+    const today = new Date();
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(selectedDateStr);
+    if (match) {
+      return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+    }
+    return new Date(today.getFullYear(), today.getMonth(), Number(selectedDay));
+  }, [selectedDateStr, selectedDay]);
   const monthKeys = [
     'january', 'february', 'march', 'april', 'may', 'june',
     'july', 'august', 'september', 'october', 'november', 'december',
   ];
   const dayKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
-  const dateObj = new Date(today.getFullYear(), today.getMonth(), Number(selectedDay));
   const fullDateDisplay = t('confirmBooking.fullDate', {
-    day: t(`confirmBooking.daysShort.${dayKeys[dateObj.getDay()]}`),
-    dayNum: pad(Number(selectedDay)),
-    month: t(`confirmBooking.months.${monthKeys[today.getMonth()]}`),
-    year: today.getFullYear(),
+    day: t(`confirmBooking.daysShort.${dayKeys[bookedDate.getDay()]}`),
+    dayNum: pad(bookedDate.getDate()),
+    month: t(`confirmBooking.months.${monthKeys[bookedDate.getMonth()]}`),
+    year: bookedDate.getFullYear(),
   });
 
   const handleConfirmPayment = () => {
@@ -81,7 +91,9 @@ export default function ConfirmBookingScreen() {
       params: {
         id: doctor.id,
         timeSlot: selectedTime,
-        day: selectedDay,
+        day: String(bookedDate.getDate()),
+        date: `${bookedDate.getFullYear()}-${pad(bookedDate.getMonth() + 1)}-${pad(bookedDate.getDate())}`,
+        bookingRef: bookingRef || `GB-${doctor.id}-${Date.now().toString(36).toUpperCase()}`,
         visitType: selectedVisitType,
         reason: bookingReason,
       },

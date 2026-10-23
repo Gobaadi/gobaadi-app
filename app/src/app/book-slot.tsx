@@ -31,6 +31,57 @@ function pad(n: number): string {
   return String(n).padStart(2, '0');
 }
 
+const MONTH_KEYS = [
+  'january', 'february', 'march', 'april', 'may', 'june',
+  'july', 'august', 'september', 'october', 'november', 'december',
+];
+
+interface CalendarCell {
+  day: number;
+  month: number;
+  year: number;
+  inMonth: boolean;
+}
+
+/** Build week rows (Sunday-start) for any month, with adjacent-month overflow cells. */
+function buildMonthGrid(year: number, month: number): CalendarCell[][] {
+  const firstDayOfWeek = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const prevMonthDays = new Date(year, month, 0).getDate();
+
+  const cells: CalendarCell[] = [];
+  for (let i = firstDayOfWeek - 1; i >= 0; i--) {
+    cells.push({ day: prevMonthDays - i, month: month - 1, year, inMonth: false });
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    cells.push({ day: d, month, year, inMonth: true });
+  }
+  const leadingCount = firstDayOfWeek + daysInMonth;
+  while (cells.length % 7 !== 0) {
+    cells.push({ day: cells.length - leadingCount + 1, month: month + 1, year, inMonth: false });
+  }
+
+  const rows: CalendarCell[][] = [];
+  for (let i = 0; i < cells.length; i += 7) {
+    rows.push(cells.slice(i, i + 7));
+  }
+  return rows;
+}
+
+function startOfToday(): Date {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+}
+
+function isSameMonthAndDay(cell: CalendarCell, date: Date): boolean {
+  return (
+    cell.inMonth &&
+    cell.day === date.getDate() &&
+    cell.month === date.getMonth() &&
+    cell.year === date.getFullYear()
+  );
+}
+
 const VISIT_TYPES = [
   { value: 'Online', labelKey: 'bookSlot.visitTypes.online' },
   { value: 'Physical', labelKey: 'bookSlot.visitTypes.physical' },
@@ -46,15 +97,25 @@ export default function BookSlotScreen() {
   const { id, appointmentId, mode } = useLocalSearchParams();
   const doctorId = String(id || '');
   const isReschedule = mode === 'reschedule' && !!appointmentId;
-  const today = new Date();
+  const today = startOfToday();
   const [selectedVisitType, setSelectedVisitType] = useState('Online');
   const [showVisitTypeOptions, setShowVisitTypeOptions] = useState(false);
-  const [selectedDay, setSelectedDay] = useState(today.getDate());
+  const [selectedDate, setSelectedDate] = useState<Date>(today);
+  const [viewDate, setViewDate] = useState<Date>(today);
   const [selectedTimeSlot, setSelectedTimeSlot] = useState('');
   const [bookingReason, setBookingReason] = useState('');
   const [bookingSymptoms, setBookingSymptoms] = useState('');
   const [selectedAnimalId, setSelectedAnimalId] = useState<number | null>(null);
   const [showAnimalOptions, setShowAnimalOptions] = useState(false);
+  const [isBooking, setIsBooking] = useState(false);
+
+  const viewYear = viewDate.getFullYear();
+  const viewMonth = viewDate.getMonth();
+  const calendarRows = useMemo(
+    () => buildMonthGrid(viewYear, viewMonth),
+    [viewYear, viewMonth],
+  );
+  const calendarMonthTitle = `${t(`bookSlot.months.${MONTH_KEYS[viewMonth]}`)} ${viewYear}`;
 
   const { data: animals = [] } = useGetAnimalsQuery();
 
@@ -63,7 +124,7 @@ export default function BookSlotScreen() {
   const effectiveAnimalId =
     selectedAnimalId ?? (animals.length === 1 ? animals[0].id : null);
 
-  const selectedDateStr = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(selectedDay)}`;
+  const selectedDateStr = `${selectedDate.getFullYear()}-${pad(selectedDate.getMonth() + 1)}-${pad(selectedDate.getDate())}`;
 
   const { data: availableSlots = [], refetch: refetchSlots } = useGetSlotsQuery(
     { doctorId, date: selectedDateStr },
@@ -105,13 +166,16 @@ export default function BookSlotScreen() {
   }, [doctorData]);
 
   const handleConfirmSlot = async () => {
-    if (!selectedTimeSlot || !doctor) return;
-
-    console.log("selectedTimeSlot", selectedTimeSlot)
+    if (!selectedTimeSlot || !doctor || isBooking) return;
 
     // Require booking reason
     if (!bookingReason.trim()) {
       Alert.alert(t('bookSlot.alerts.required'), t('bookSlot.alerts.enterReason'));
+      return;
+    }
+
+    if (selectedDate < today) {
+      Alert.alert(t('bookSlot.alerts.required'), t('bookSlot.alerts.pastDate'));
       return;
     }
 
@@ -121,6 +185,7 @@ export default function BookSlotScreen() {
       return;
     }
 
+    setIsBooking(true);
     try {
       if (isReschedule) {
         await rescheduleBooking({
@@ -128,58 +193,52 @@ export default function BookSlotScreen() {
           date: selectedDateStr,
           time: selectedTimeSlot,
         }).unwrap();
-        router.back();
-        return;
+      } else {
+        await bookSlot({
+          doctorId: doctor.id,
+          date: selectedDateStr,
+          time: selectedTimeSlot,
+          animalId: effectiveAnimalId ?? undefined,
+          consultationType: selectedVisitType === 'Online' ? 'online_video' : 'physical',
+          reasonForConsultation: bookingReason.trim(),
+          symptoms: bookingSymptoms
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean),
+        }).unwrap();
       }
-      await bookSlot({
-        doctorId: doctor.id,
-        date: selectedDateStr,
-        time: selectedTimeSlot,
-        animalId: effectiveAnimalId ?? undefined,
-        consultationType: selectedVisitType === 'Online' ? 'online_video' : 'physical',
-        ...(effectiveAnimalId ? { animalId: effectiveAnimalId } : {}),
-        reasonForConsultation: bookingReason.trim(),
-        symptoms: bookingSymptoms
-          .split(',')
-          .map((s) => s.trim())
-          .filter(Boolean),
-      }).unwrap();
-    } catch (err) {
+    } catch (err: any) {
       console.log('Error booking slot:', err);
+      setIsBooking(false);
+      Alert.alert(
+        t('bookSlot.alerts.bookingFailed'),
+        err?.data?.message || err?.message || t('bookSlot.alerts.bookingFailedMsg'),
+      );
       return;
     }
+    setIsBooking(false);
+
+    if (isReschedule) {
+      router.back();
+      return;
+    }
+    // Booking reference generated at success time — unique per booking.
+    const bookingRef = `GB-${doctorId.padEnd(3, '0')}-${Date.now().toString(36).toUpperCase()}`;
     router.push({
       pathname: '/confirm-booking',
       params: {
         id: doctor.id,
         timeSlot: selectedTimeSlot,
-        day: selectedDay,
+        day: selectedDate.getDate(),
+        date: selectedDateStr,
+        bookingRef,
         visitType: selectedVisitType,
         reason: bookingReason,
       },
     });
   };
 
-  // Custom Dec 2026 calendar data
-  // Dec 1, 2026 starts on Tuesday
   const daysOfWeek = ['bookSlot.weekdays.sun', 'bookSlot.weekdays.mon', 'bookSlot.weekdays.tue', 'bookSlot.weekdays.wed', 'bookSlot.weekdays.thu', 'bookSlot.weekdays.fri', 'bookSlot.weekdays.sat'];
-
-  // Grid layout helper:
-  // Week rows representing Dec 2026:
-  const calendarRows = [
-    [26, 27, 28, 1, 2, 3, 4],     // Nov 26-28, Dec 1-4
-    [5, 6, 7, 8, 9, 10, 11],
-    [12, 13, 14, 15, 16, 17, 18],
-    [19, 20, 21, 22, 23, 24, 25],
-    [26, 27, 28, 29, 30, 31, 1],  // Dec 26-31, Jan 1
-  ];
-
-  const handleDaySelect = (dayNum: number, rowIndex: number) => {
-    // Prevent selecting previous/next month overflow dates
-    if (rowIndex === 0 && dayNum > 20) return;
-    if (rowIndex === 4 && dayNum === 1) return;
-    setSelectedDay(dayNum);
-  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -373,9 +432,21 @@ export default function BookSlotScreen() {
             <View style={styles.calendarContainer}>
               {/* Calendar Month Header */}
               <View style={styles.calendarHeader}>
-                <TouchableOpacity><Text style={styles.navArrow}>‹</Text></TouchableOpacity>
-                <Text style={styles.calendarMonthTitle}>{t('bookSlot.calendarMonth')}</Text>
-                <TouchableOpacity><Text style={styles.navArrow}>›</Text></TouchableOpacity>
+                <TouchableOpacity
+                  accessibilityLabel={t('bookSlot.prevMonth')}
+                  onPress={() => setViewDate(new Date(viewYear, viewMonth - 1, 1))}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.navArrow}>‹</Text>
+                </TouchableOpacity>
+                <Text style={styles.calendarMonthTitle}>{calendarMonthTitle}</Text>
+                <TouchableOpacity
+                  accessibilityLabel={t('bookSlot.nextMonth')}
+                  onPress={() => setViewDate(new Date(viewYear, viewMonth + 1, 1))}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.navArrow}>›</Text>
+                </TouchableOpacity>
               </View>
 
               {/* Days of Week Header */}
@@ -389,32 +460,33 @@ export default function BookSlotScreen() {
               <View style={styles.calendarGrid}>
                 {calendarRows.map((row, rowIndex) => (
                   <View key={rowIndex} style={styles.calendarGridRow}>
-                    {row.map((dayNum, colIndex) => {
-                      const isCurrentMonth = !(
-                        (rowIndex === 0 && dayNum > 20) ||
-                        (rowIndex === 4 && dayNum === 1)
-                      );
-                      const isSelected = isCurrentMonth && dayNum === selectedDay;
+                    {row.map((cell, colIndex) => {
+                      const cellDate = new Date(cell.year, cell.month, cell.day);
+                      const isPast = cellDate < today;
+                      const isSameDayAsToday = cellDate.getTime() === today.getTime();
+                      const isSelected = isSameMonthAndDay(cell, selectedDate);
 
                       return (
                         <TouchableOpacity
                           key={colIndex}
                           style={[
                             styles.calendarDayCell,
+                            isSameDayAsToday && styles.calendarDayCellToday,
                             isSelected && styles.calendarDayCellSelected
                           ]}
-                          onPress={() => handleDaySelect(dayNum, rowIndex)}
-                          disabled={!isCurrentMonth}
+                          onPress={() => setSelectedDate(cellDate)}
+                          disabled={!cell.inMonth || isPast}
                           activeOpacity={0.7}
                         >
                           <Text
                             style={[
                               styles.calendarDayText,
-                              !isCurrentMonth && styles.calendarDayTextDisabled,
+                              (!cell.inMonth || isPast) && styles.calendarDayTextDisabled,
+                              (!isSelected && isSameDayAsToday) && styles.calendarDayTextToday,
                               isSelected && styles.calendarDayTextSelected
                             ]}
                           >
-                            {dayNum}
+                            {cell.day}
                           </Text>
                         </TouchableOpacity>
                       );
@@ -458,14 +530,16 @@ export default function BookSlotScreen() {
           {/* Floating Bottom Confirm Button */}
           <View style={styles.bottomBar}>
             <TouchableOpacity
-              style={[styles.confirmButton, (!selectedTimeSlot || !bookingReason.trim() || !doctor || (animals.length > 0 && !effectiveAnimalId)) && { opacity: 0.5 }]}
+              style={[styles.confirmButton, (!selectedTimeSlot || !bookingReason.trim() || !doctor || (animals.length > 0 && !effectiveAnimalId) || isBooking) && { opacity: 0.5 }]}
               onPress={handleConfirmSlot}
-              disabled={!selectedTimeSlot || !bookingReason.trim() || !doctor || (animals.length > 0 && !effectiveAnimalId)}
+              disabled={!selectedTimeSlot || !bookingReason.trim() || !doctor || (animals.length > 0 && !effectiveAnimalId) || isBooking}
               activeOpacity={0.85}
             >
               <SvgXml width={20} height={20} xml={confirmBookSvg} style={styles.confirmButtonIcon} />
               <Text style={styles.confirmButtonText}>
-                {isReschedule ? t('bookSlot.confirmReschedule') : t('bookSlot.confirmSlot')}
+                {isBooking
+                  ? t('bookSlot.bookingInProgress')
+                  : isReschedule ? t('bookSlot.confirmReschedule') : t('bookSlot.confirmSlot')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -714,10 +788,17 @@ const styles = StyleSheet.create({
   calendarDayCellSelected: {
     backgroundColor: '#BD632F',
   },
+  calendarDayCellToday: {
+    borderWidth: 1.5,
+    borderColor: '#BD632F',
+  },
   calendarDayText: {
     fontSize: 13,
     fontWeight: '600',
     color: '#1A1817',
+  },
+  calendarDayTextToday: {
+    color: '#BD632F',
   },
   calendarDayTextDisabled: {
     color: '#E0DCD8',

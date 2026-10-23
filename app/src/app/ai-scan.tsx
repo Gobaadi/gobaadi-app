@@ -61,30 +61,29 @@ export default function AiScanScreen() {
     }
 
     let imageUrl: string | undefined;
-    if (imageUri) {
-      const file = await compressImageForUpload(imageUri, {
-        fileName: imageUri.split('/').pop() || `scan-${Date.now()}.jpg`,
-        mimeType: 'image/jpeg',
-      });
-      const formData = new FormData();
-      formData.append('file', {
-        uri: file.uri,
-        name: file.name,
-        type: file.type,
-      } as any);
-
-      try {
+    try {
+      if (imageUri) {
+        const file = await compressImageForUpload(imageUri, {
+          fileName: imageUri.split('/').pop() || `scan-${Date.now()}.jpg`,
+          mimeType: 'image/jpeg',
+        });
+        const formData = new FormData();
+        formData.append('file', {
+          uri: file.uri,
+          name: file.name,
+          type: file.type,
+        } as any);
         const result = await uploadDiagnosisImage(formData).unwrap();
         imageUrl = result.url;
-      } catch (err) {
-        console.log('Error uploading scan image:', err);
-        const status = (err as { status?: number | string })?.status;
-        Alert.alert(
-          t('aiScan.alerts.uploadFailed'),
-          status === 413 ? t('aiScan.alerts.photoTooLarge') : t('aiScan.alerts.tryAgain'),
-        );
-        return;
       }
+    } catch (err) {
+      console.log('Error uploading scan image:', err);
+      const status = (err as { status?: number | string })?.status;
+      Alert.alert(
+        t('aiScan.alerts.uploadFailed'),
+        status === 413 ? t('aiScan.alerts.photoTooLarge') : t('aiScan.alerts.tryAgain'),
+      );
+      return;
     }
 
     router.push({

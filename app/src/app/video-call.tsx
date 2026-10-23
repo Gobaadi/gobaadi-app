@@ -29,6 +29,7 @@ import {
 import {
   useJoinSessionQuery,
   useEndSessionMutation,
+  useLazyGetTokenQuery,
 } from '@/store/videoCallApi';
 import { socketManager } from '@/lib/socket-manager';
 import { useGetConversationsQuery } from '@/store/chatApi';
@@ -104,6 +105,7 @@ export default function VideoCallScreen() {
     skip: !appointmentId,
   });
   const [endSession] = useEndSessionMutation();
+  const [getToken] = useLazyGetTokenQuery();
   const { data: consultation } = useConsultationForAppointmentQuery(
     appointmentId ? String(appointmentId) : '',
     { skip: !appointmentId },
@@ -121,6 +123,16 @@ export default function VideoCallScreen() {
   const connectedRef = useRef(false);
 
   const uid = user?.id ?? 0;
+
+  const handleTokenExpiring = useCallback(async () => {
+    if (!appointmentId) return;
+    try {
+      const fresh = await getToken(appointmentId).unwrap();
+      await agoraManager.renewToken(fresh.token);
+    } catch {
+      // Best effort — join keeps working until the token actually expires.
+    }
+  }, [appointmentId, getToken]);
 
   const {
     localUid,
@@ -141,6 +153,7 @@ export default function VideoCallScreen() {
     callData?.appId || '',
     uid,
     isAudioCall,
+    handleTokenExpiring,
   );
 
   useEffect(() => {

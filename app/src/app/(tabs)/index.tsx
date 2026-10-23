@@ -28,7 +28,6 @@ import Svg, { Path, SvgXml } from 'react-native-svg';
 import { EmptyState } from '@/components/ui/empty-state';
 import {
   languageGlobeSvg,
-  notificationBellSvg,
   homeLocationSvg,
   farmWeatherCardSvg,
   farmerHomeArrowDownSvg,
@@ -144,13 +143,6 @@ export default function HomeDashboard() {
               >
                 <SvgXml width={24} height={24} xml={languageGlobeSvg} />
                 <Text style={[styles.langTextHeader, { fontSize: 14 }]}>{getLanguageLabel(language)}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.notifBtnWhite}
-                onPress={() => router.push('/notifications')}
-                activeOpacity={0.8}
-              >
-                <SvgXml width={24} height={24} xml={notificationBellSvg} />
               </TouchableOpacity>
             </View>
           </ImageBackground>
@@ -514,22 +506,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: '#FFFFFF',
-  },
-  notifBtnWhite: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: '#FFFFFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  bellIcon: {
-    fontSize: 18,
   },
   weatherCard: {
     backgroundColor: '#FFFFFF',

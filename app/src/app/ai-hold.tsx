@@ -51,6 +51,7 @@ export default function AiHoldScreen() {
   const [capturedUri, setCapturedUri] = useState<string | null>(null);
   const [pendingId, setPendingId] = useState<number | null>(null);
   const [uploadedUrl, setUploadedUrl] = useState<string | undefined>(imageUrl || undefined);
+  const [cameraReady, setCameraReady] = useState(false);
 
   const [progress] = useState(new Animated.Value(0));
   const [modalY] = useState(new Animated.Value(height));
@@ -98,29 +99,57 @@ export default function AiHoldScreen() {
 
     let url = remoteUrl;
     if (!url && capturedUri) {
-      const file = await compressImageForUpload(capturedUri, {
-        fileName: capturedUri.split('/').pop() || `scan-${Date.now()}.jpg`,
-        mimeType: 'image/jpeg',
-      });
-      const formData = new FormData();
-      formData.append('file', {
-        uri: file.uri,
-        name: file.name,
-        type: file.type,
-      } as any);
       try {
-        const uploaded = await uploadDiagnosisImage(formData).unwrap();
-        url = uploaded.url;
-      } catch (err) {
-        const status = (err as { status?: number | string })?.status;
-        setErrorMessage(
-          status === 413
-            ? t('aiHold.errors.photoTooLarge')
-            : t('aiHold.errors.uploadFailed'),
-        );
-        setPhase('error');
-        showSheet();
-        return;
+        const file = await compressImageForUpload(capturedUri, {
+          fileName: capturedUri.split('/').pop() || `scan-${Date.now()}.jpg`,
+          mimeType: 'image/jpeg',
+        });
+        const formData = new FormData();
+        formData.append('file', {
+          uri: file.uri,
+          name: file.name,
+          type: file.type,
+        } as any);
+        try {
+          const uploaded = await uploadDiagnosisImage(formData).unwrap();
+          url = uploaded.url;
+        } catch (err) {
+          const status = (err as { status?: number | string })?.status;
+          setErrorMessage(
+            status === 413
+              ? t('aiHold.errors.photoTooLarge')
+              : t('aiHold.errors.uploadFailed'),
+          );
+          setPhase('error');
+          showSheet();
+          return;
+        }
+      } catch {
+        // Compression itself failed → fall back to uploading the raw capture
+        // was never produced; surface the standard upload error path below.
+        url = undefined;
+        if (capturedUri) {
+          const formData = new FormData();
+          formData.append('file', {
+            uri: capturedUri,
+            name: capturedUri.split('/').pop() || `scan-${Date.now()}.jpg`,
+            type: 'image/jpeg',
+          } as any);
+          try {
+            const uploaded = await uploadDiagnosisImage(formData).unwrap();
+            url = uploaded.url;
+          } catch (err) {
+            const status = (err as { status?: number | string })?.status;
+            setErrorMessage(
+              status === 413
+                ? t('aiHold.errors.photoTooLarge')
+                : t('aiHold.errors.uploadFailed'),
+            );
+            setPhase('error');
+            showSheet();
+            return;
+          }
+        }
       }
     }
 
@@ -143,7 +172,7 @@ export default function AiHoldScreen() {
   }
 
   async function handleShutter() {
-    if (!cameraRef.current || phase !== 'camera') return;
+    if (!cameraRef.current || !cameraReady || phase !== 'camera') return;
     setPhase('capturing');
     try {
       const photo = await cameraRef.current.takePictureAsync({ quality: 0.8 });
@@ -166,6 +195,7 @@ export default function AiHoldScreen() {
       runAnalysis(uploadedUrl);
     } else {
       setPhase('camera');
+      setCameraReady(false);
       setErrorMessage(null);
       setCapturedUri(null);
       modalY.setValue(height);
@@ -230,8 +260,19 @@ export default function AiHoldScreen() {
     : imageUrl
       ? { uri: imageUrl }
       : null;
-  const showBottomControls = displayPhase === 'camera';
+  const showBottomControls = displayPhase === 'camera' || phase === 'capturing';
   const showAnalyzingBadge = displayPhase === 'uploading' || displayPhase === 'analyzing';
+
+  if (!backgroundSource && phase === 'camera' && !permission) {
+    // Camera permission state is still resolving — don't mount the camera yet.
+    return (
+      <View style={styles.container}>
+        <View style={styles.permissionSpinnerWrap}>
+          <Text style={styles.permissionSpinnerText}>{t('aiHold.loadingCamera')}</Text>
+        </View>
+      </View>
+    );
+  }
 
   if (!backgroundSource && phase === 'camera' && permission && !permission.granted) {
     return (
@@ -269,7 +310,17 @@ export default function AiHoldScreen() {
           )}
         </ImageBackground>
       ) : (
-        <CameraView ref={cameraRef} style={styles.cameraBackground} facing="back" />
+        <CameraView
+          ref={cameraRef}
+          style={styles.cameraBackground}
+          facing="back"
+          onCameraReady={() => setCameraReady(true)}
+          onMountError={() => {
+            setErrorMessage(t('aiHold.errors.mountFailed'));
+            setPhase('error');
+            showSheet();
+          }}
+        />
       )}
 
       {/* Back Button */}
@@ -284,7 +335,7 @@ export default function AiHoldScreen() {
       </SafeAreaView>
 
       {/* Framing overlay: dimmed edges + grid + corner brackets */}
-      {phase === 'camera' && !backgroundSource && (
+      {(phase === 'camera' || phase === 'capturing') && !backgroundSource && (
         <>
           <View style={[styles.dimBand, { top: 0, height: height * 0.25 }]} />
           <View style={[styles.dimBand, { top: height * 0.65, bottom: 0 }]} />
@@ -323,7 +374,7 @@ export default function AiHoldScreen() {
             style={styles.shutterContainer}
             onPress={handleShutter}
             activeOpacity={0.9}
-            disabled={phase !== 'camera'}
+            disabled={displayPhase !== 'camera' || !cameraReady}
           >
             <View style={styles.shutterOuterRing}>
               <View style={styles.shutterInnerCircle} />
@@ -764,6 +815,16 @@ const styles = StyleSheet.create({
   },
   permissionLinkText: {
     color: '#7C7672',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  permissionSpinnerWrap: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  permissionSpinnerText: {
+    color: '#FAF9F6',
     fontSize: 14,
     fontWeight: '600',
   },
